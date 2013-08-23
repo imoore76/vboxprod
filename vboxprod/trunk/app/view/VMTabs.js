@@ -9,18 +9,20 @@ Ext.define('vboxprod.view.VMTabs', {
     alias: 'widget.VMTabs',
     defaults: {
     	border: false,
-    	layout: 'fit',
     	padding: 5
     },    
     items: [{
-    
+    	
     	/* Summary tab */
         title: 'Summary',
         itemId: 'SummaryTab',
+        /*xtype: 'form',*/
+        autoScroll: true,
         items: [{
         	// Summary container
         	xtype: 'panel',
         	flex: 1,
+        	border: false,
         	layout: {
         		type: 'vbox',
         		pack: 'start'
@@ -28,19 +30,64 @@ Ext.define('vboxprod.view.VMTabs', {
         	/*defaults: { border: false },*/
         	defaults: { margin: 5 },
         	items : [{
-        		defaults: { border: false },
-        		itemId: 'baseinfo',
+        		xtype: 'panel',
+        		layout: 'hbox',
         		width: '100%',
-        		tpl: new Ext.XTemplate('<table style="width:100%;border:0px;border-spacing:0px;">'+
-        				'<tr><td width="100%"><h3 align="center">{name}</h3><div>{description}</div></td>'+
-        				'<td><div align="center" style="width:300px">'+
-        				'<img src="images/vbox/{[vboxGuestOSTypeIcon(values.OSTypeId)]}" style="width:64px;height:64px;display:block;margin:10px;"/>'+
-						'<div align="center">{[values.OSTypeId]}</div></td></tr></table>')
+        		border: false,
+        		items: [{
+        			itemId: 'baseinfo',
+        			flex: 1,
+        			xtype: 'panel',
+        			border: false,
+        			tpl: new Ext.XTemplate('<table style="border:0px;border-spacing:0px;">'+
+        					'<tr valign="top">'+
+        					'<td style="border: 0px solid #000; padding: 10px; width: 120px;"><div align="center">'+
+        					'<img src="images/vbox/{[vboxGuestOSTypeIcon(values.OSTypeId)]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
+        					'<div align="center">{[values.OSTypeId]}</div></td>'+
+        					'<td><h3 align="left" style="margin-left: 10px">{name}</h3><div>{description}</div></td>'+
+        			'</tr></table>')        			
+        		},{
+        			xtype: 'panel',
+        			title: 'Resources',
+        			width: 300,
+        			defaults: { xtype: 'displayfield'},
+        			items: [{
+        				fieldLabel: 'CPU(s)',
+        				name: 'cpus'
+        			},{
+        				fieldLabel: 'Execution cap',
+        				name: 'executionCap'
+        			},{
+        				fieldLabel: 'Memory',
+        				name: 'baseMemory'
+        			}]        			
+        		}]
         	},{
         		xtype: 'panel',
-        		title: 'Resources',
+        		title: 'Actions',
+        		layout: 'vbox',
         		width: 300,
-        		html: 'asdf a;lsdkjf;lkajs dflk '
+        		defaults: { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' },
+        		items: [{
+        			text: 'Start',
+        			icon: 'images/vbox/start_16px.png'
+        		},{
+        			text: 'Stop'
+        		},{
+        			text: 'Pause'
+        		},{
+        			text: 'Save State'
+        		},{
+        			text: 'Take Snapshot'
+        		},{
+        			text: 'Clone'
+        		},{
+        			text: 'Resume'
+        		},{
+        			text: 'Settings'
+        		},{
+        			text: 'Export'
+        		}]
         	}]
         }]
     }, {

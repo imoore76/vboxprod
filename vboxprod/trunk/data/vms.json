@@ -3,10 +3,10 @@
 	responseData : [
 		{ id:'asdf12', name:'ogre', state: 'Running', group:'','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows7_64' },
 		{ id:'asdf123', name:'newt', state: 'Running', group:'','order':0, sessionState: 'Unlocked', OSTypeId: 'Gentoo_64' },
-		{ id:'asdf12r', name:'git', state: 'PoweredOff', group:'top1','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows31' },
+		{ id:'asdf12r', name:'git', state: 'PoweredOff', group:'top3','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows31' },
 		{ id:'asdf', name:'elf', state: 'Paused', group:'top2','order':0, sessionState: 'Unlocked', OSTypeId: 'Debian_64' },
 		{ id:'basdf', name:'poppy', state: 'Saved', group:'top4','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows7_64' },
-		{ id:'poij', name:'freebird', state: 'Running', group:'top1','order':0, sessionState: 'Unlocked', OSTypeId: 'FreeBSD' }
+		{ id:'poij', name:'freebird', state: 'Running', group:'top6','order':0, sessionState: 'Unlocked', OSTypeId: 'FreeBSD' }
 		
 	]
 

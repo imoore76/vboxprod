@@ -3,7 +3,7 @@ Ext.define('vboxprod.view.Viewport', {
     requires: [
            'vboxprod.view.ProgressOps',
            'vboxprod.view.VMToolbar',
-           'vboxprod.view.SelectionTabs',
+           'vboxprod.view.MainPanel',
            'vboxprod.view.NavTree',
            'vboxprod.view.VMMenubar',
    ],
@@ -29,8 +29,7 @@ Ext.define('vboxprod.view.Viewport', {
 	   xtype: 'VMToolbar'
    },{
 	   region: 'center',
-	   xtype:'SelectionTabs',
-	   html : 'SelectionTabs',
+	   xtype: 'MainPanel',
 	   flex: 1
    }]
 });           

@@ -22,6 +22,9 @@ Ext.define('vboxprod.controller.NavTree', {
         this.application.on({
             login: this.populateTree, 
             scope: this
+        },{
+        	launch: this.showWelcome,
+        	scope: this
         });
         
         /* Tree events */
@@ -66,7 +69,6 @@ Ext.define('vboxprod.controller.NavTree', {
         			newNode.set('leaf',true);
         			newNode.set('icon','images/vbox/' + vboxGuestOSTypeIcon(newNode.raw.OSTypeId));
         			newNode.set('iconCls', 'navTreeIcon');
-        			console.log('vmState' + (newNode.raw.state) + ' vmSession' + newNode.raw.sessionState + ' vmOSType' + newNode.raw.OSTypeId);
         		}
         	}),
 

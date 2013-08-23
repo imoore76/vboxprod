@@ -12,7 +12,8 @@ Ext.define('vboxprod.view.MainPanel', {
     defaults: {
     	hidden: true,
     	flex: 1,
-    	border: false
+    	border: false,
+    	layout: 'fit'
     },
     items: [{
     	xtype: 'Welcome',

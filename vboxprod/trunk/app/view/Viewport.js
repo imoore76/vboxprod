@@ -1,3 +1,6 @@
+/**
+ * Main viewport
+ */
 Ext.define('vboxprod.view.Viewport', {
     extend: 'Ext.container.Viewport',
     requires: [
@@ -30,6 +33,7 @@ Ext.define('vboxprod.view.Viewport', {
    },{
 	   region: 'center',
 	   xtype: 'MainPanel',
+	   layout: 'fit',
 	   flex: 1
    }]
 });           

@@ -4,7 +4,7 @@
 Ext.define('vboxprod.controller.MainPanel', {
     extend: 'Ext.app.Controller',
     
-    // Hold nav tree ref so that we only have to get this once
+    // View references
     refs : [{
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
@@ -46,10 +46,6 @@ Ext.define('vboxprod.controller.MainPanel', {
     	// Group Selected
     	} else {
     		this.getGroupTabsView().show();
-    	}
-    	console.log(record.get('leaf'));
-    	if(record && record.raw && record.raw) {
-    		
     	}
     }
     

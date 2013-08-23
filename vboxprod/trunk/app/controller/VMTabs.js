@@ -1,13 +1,16 @@
 /*
- * Group Tabs Controller
+ * VM Tabs Controller
  */
-Ext.define('vboxprod.controller.GroupTabs', {
+Ext.define('vboxprod.controller.VMTabs', {
     extend: 'Ext.app.Controller',
     
     // Hold nav tree ref so that we only have to get this once
     refs : [{
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
+    },{
+    	selector: 'viewport > MainPanel > VMTabs',
+    	ref: 'VMTabsView'
     }],
     
     /* Watch for events */
@@ -24,9 +27,15 @@ Ext.define('vboxprod.controller.GroupTabs', {
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
 
-    	// Only load if group is selected
-    	if(!record || record.get('leaf'))
+    	// Only load if VM is selected
+    	if(!record || !record.get('leaf'))
     		return;
+    	
+    	var tabPanel = this.getVMTabsView();
+
+    	// Summary tab items
+    	var summaryTab = tabPanel.getComponent('SummaryTab');
+    	summaryTab.down('#baseinfo').update(record.raw);
 
     }
     

@@ -1,7 +1,7 @@
 {
 	success: true,
 	responseData : [
-		{ id:'asdf12', name:'ogre', state: 'Running', group:'','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows7_64' },
+		{ id:'asdf12', name:'ogre', state: 'Running', group:'','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows7_64', description:"Some new machine that is\n just liek kick ass!!!" },
 		{ id:'asdf123', name:'newt', state: 'Running', group:'','order':0, sessionState: 'Unlocked', OSTypeId: 'Gentoo_64' },
 		{ id:'asdf12r', name:'git', state: 'PoweredOff', group:'top3','order':0, sessionState: 'Unlocked', OSTypeId: 'Windows31' },
 		{ id:'asdf', name:'elf', state: 'Paused', group:'top2','order':0, sessionState: 'Unlocked', OSTypeId: 'Debian_64' },

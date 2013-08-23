@@ -12,7 +12,7 @@ Ext.application({
     name: 'vboxprod',
     autoCreateViewport: true,
     stores: ['Session'],
-    controllers: ['NavTree','MainPanel'],
+    controllers: ['NavTree','MainPanel','GroupTabs','VMTabs'],
     launch: function() {
 
     	var s = this.getSessionStore().getAt(0);

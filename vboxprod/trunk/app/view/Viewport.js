@@ -5,7 +5,6 @@ Ext.define('vboxprod.view.Viewport', {
     extend: 'Ext.container.Viewport',
     requires: [
            'vboxprod.view.ProgressOps',
-           'vboxprod.view.VMToolbar',
            'vboxprod.view.MainPanel',
            'vboxprod.view.NavTree',
            'vboxprod.view.VMMenubar',
@@ -25,11 +24,8 @@ Ext.define('vboxprod.view.Viewport', {
 	   xtype: 'NavTree'
    },{
 	   region: 'north',
-	   xtype: 'VMMenubar'
-		
-   },{
-	   region : 'north',
-	   xtype: 'VMToolbar'
+	   xtype: 'VMMenubar',
+	   border: false
    },{
 	   region: 'center',
 	   xtype: 'MainPanel',

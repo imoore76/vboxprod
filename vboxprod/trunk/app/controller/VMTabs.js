@@ -35,7 +35,15 @@ Ext.define('vboxprod.controller.VMTabs', {
 
     	// Summary tab items
     	var summaryTab = tabPanel.getComponent('SummaryTab');
+
+    	// Draw preview and resize panel
+    	vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
+    	summaryTab.down('#PreviewPanel').doLayout();
+
     	summaryTab.down('#baseinfo').update(record.raw);
+    	summaryTab.down('#state').update(record.raw);
+    	
+    	
 
     }
     

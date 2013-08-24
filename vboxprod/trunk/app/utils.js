@@ -1,3 +1,45 @@
+
+
+/**
+ * Return the correct icon relative to images/vbox/ for the VM state.
+ * @param {String} state - virtual machine state
+ * @return {String} icon file name
+ */
+function vboxMachineStateIcon(state)
+{
+	var strIcon = "state_powered_off_16px.png";
+    var strNoIcon = "state_running_16px.png";
+
+    switch (state)
+    {
+        case "PoweredOff": strIcon = "state_powered_off_16px.png"; break;
+        case "Saved": strIcon = "state_saved_16px.png"; break;
+        case "Teleported": strIcon = strNoIcon; break;
+        case "LiveSnapshotting": strIcon = "online_snapshot_16px.png"; break;
+        case "Aborted": strIcon = "state_aborted_16px.png"; break;
+        case "Running": strIcon = "state_running_16px.png"; break;
+        case "Paused": strIcon = "state_paused_16px.png"; break;
+        case "Stuck": strIcon = "state_stuck_16px.png"; break;
+        case "Teleporting": strIcon = strNoIcon; break;
+        case "Starting": strIcon = strNoIcon; break;
+        case "Stopping": strIcon = strNoIcon; break;
+        case "Saving": strIcon = "state_discarding_16px.png"; break;
+        case "Restoring": strIcon = "settings_16px.png"; break;
+        case "TeleportingPausedVM": strIcon = strNoIcon; break;
+        case "TeleportingIn": strIcon = strNoIcon; break;
+        case "RestoringSnapshot": strIcon = "discard_cur_state_16px.png"; break;
+        case "DeletingSnapshot": strIcon = "state_discarding_16px.png"; break;
+        case "SettingUp": strIcon = strNoIcon; break;
+        case "Hosting" : strIcon = "settings_16px.png"; break;
+        case "Inaccessible": strIcon = "state_aborted_16px.png"; break;
+        default:
+            break;
+    }
+    
+    return strIcon;
+
+}
+
 /**
  * Return the correct icon string relative to images/vbox/ for the guest OS type
  * @param {String} osTypeId - guest OS type id

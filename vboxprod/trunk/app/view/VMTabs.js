@@ -17,7 +17,7 @@ Ext.define('vboxprod.view.VMTabs', {
         title: 'Summary',
         itemId: 'SummaryTab',
 		bodyStyle: 'background: url(images/vbox/vmw_first_run_bg.png) 700px 40px no-repeat',
-        /*xtype: 'form',*/
+        xtype: 'form',
         autoScroll: true,
         defaults: {
         	bodyStyle: { background: 'transparent' }
@@ -70,36 +70,55 @@ Ext.define('vboxprod.view.VMTabs', {
         						'<td width=100%><h3 align="left" style="margin-left: 10px">{name}</h3><div>{description}</div></td>'+
         						'<td style="border: 0px solid #000; width: 120px;"><div align="center">'+
         						'<img src="images/vbox/{[vboxGuestOSTypeIcon(values.OSTypeId)]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
-        						'<div align="center">{[values.OSTypeId]}</div></td>'+
+        						'</td>'+
         				'</tr></table>')        			
         			},{
         				height: 20,
         				html: '',
         				border: false
         			},{
-        				itemId: 'state',
-        				tpl: new Ext.XTemplate('<img src="images/vbox/{[vboxMachineStateIcon(values.state)]}" height=16 width=16 valign=top/>&nbsp;{[values.state]}')
-        			},{
-        				height: 20,
-        				html: '',
-        				border: false
-        			},{
-	        			xtype: 'panel',
-	        			title: 'Resources',
-	        			border: true,
-	        			width: 300,
-	        			defaults: { xtype: 'displayfield'},
-	        			bodyStyle: { background: '#fff' },
-	        			items: [{
-	        				fieldLabel: 'CPU(s)',
-	        				name: 'cpus'
-	        			},{
-	        				fieldLabel: 'Execution cap',
-	        				name: 'executionCap'
-	        			},{
-	        				fieldLabel: 'Memory',
-	        				name: 'baseMemory'
-	        			}]        			
+        				xtype: 'panel',
+        				layout: 'hbox',
+        				items: [{
+        					xtype: 'panel',
+        					title: 'Info',
+        					border: true,
+        					width: 300,
+        					defaults: { xtype: 'displayfield'},
+        					bodyStyle: { background: '#fff' },
+        					items: [{
+        						fieldLabel: 'OS Type',
+        						name: 'OSTypeDesc'
+        					},{
+        						fieldLabel: 'State',
+        						name: 'state',
+        						displayTpl: new Ext.XTemplate('d<img src="images/vbox/{[vboxMachineStateIcon(state)]}" height=16 width=16 valign=top/>&nbsp;{[state]}')
+        					},{
+        						fieldLabel: 'Current Snapshot',
+        						name: 'currentSnapshot'
+        					}]
+        				},{
+        					html: '',
+        					width: 20,
+        					border: false
+        				},{
+        					xtype: 'panel',
+        					title: 'Resources',
+        					border: true,
+        					width: 300,
+        					defaults: { xtype: 'displayfield'},
+        					bodyStyle: { background: '#fff' },
+        					items: [{
+        						fieldLabel: 'CPU(s)',
+        						name: 'CPUCount'
+        					},{
+        						fieldLabel: 'Execution cap',
+        						name: 'CPUExecutionCap'
+        					},{
+        						fieldLabel: 'Memory',
+        						name: 'memorySize'
+        					}]        			        					
+        				}]
         				
         			}]
         		},{
@@ -115,23 +134,33 @@ Ext.define('vboxprod.view.VMTabs', {
         			defaults: { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' },
         			items: [{
         				text: 'Start',
+        				icon: 'images/vbox/start_16px.png',
+        				disabled: true
+        			},{
+        				text: 'Power Off',
+        				icon: 'images/vbox/poweroff_16px.png'
+        			},{
+        				text: 'Pause',
+        				icon: 'images/vbox/pause_16px.png',
+        				disabled: true
+        			},{
+        				text: 'Save State',
+        				icon: 'images/vbox/save_state_16px.png'
+        			},{
+        				text: 'Take Snapshot',
+        				icon: 'images/vbox/take_snapshot_16px.png'
+        			},{
+        				text: 'Clone',
+        				icon: 'images/vbox/vm_clone_16px.png'
+        			},{
+        				text: 'Resume',
         				icon: 'images/vbox/start_16px.png'
         			},{
-        				text: 'Power Off'
+        				text: 'Settings',
+        				icon: 'images/vbox/settings_16px.png'
         			},{
-        				text: 'Pause'
-        			},{
-        				text: 'Save State'
-        			},{
-        				text: 'Take Snapshot'
-        			},{
-        				text: 'Clone'
-        			},{
-        				text: 'Resume'
-        			},{
-        				text: 'Settings'
-        			},{
-        				text: 'Export'
+        				text: 'Export',
+        				icon: 'images/vbox/export_16px.png'
         			}]
         		}]
         	}]

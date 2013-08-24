@@ -40,8 +40,12 @@ Ext.define('vboxprod.controller.VMTabs', {
     	vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
     	summaryTab.down('#PreviewPanel').doLayout();
 
+    	
+    	
+    	summaryTab.getForm().setValues(record.raw);
+    	
     	summaryTab.down('#baseinfo').update(record.raw);
-    	summaryTab.down('#state').update(record.raw);
+    	//summaryTab.down('#state').update(record.raw);
     	
     	
 

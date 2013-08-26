@@ -1,3 +1,313 @@
+/**
+ * Storage Controller Types conversions
+ * 
+ * @param {String}
+ *            c - storage controller type
+ * @return {String} string used for translation
+ */
+function vboxStorageControllerType(c) {
+	switch(c) {
+		case 'LsiLogic': return 'Lsilogic';
+		case 'LsiLogicSas': return 'LsiLogic SAS';
+		case 'IntelAhci': return 'AHCI';
+	}
+	return c;
+}
+/**
+ * Serial port mode conversions
+ * 
+ * @param {String}
+ *            m - serial port mode
+ * @return {String} string used for translation
+ */
+function vboxSerialMode(m) {
+	switch(m) {
+		case 'HostPipe': return 'Host Pipe';
+		case 'HostDevice': return 'Host Device';
+		case 'RawFile': return 'Raw File';
+	}
+	return m;
+}
+
+/**
+ * Network adapter type conversions
+ * 
+ * @param {String}
+ *            t - network adapter type
+ * @return {String} string used for translation
+ */
+function vboxNetworkAdapterType(t) {
+	switch(t) {
+		case 'Am79C970A': return 'PCnet-PCI II (Am79C970A)';
+		case 'Am79C973': return 'PCnet-FAST III (Am79C973)';
+		case 'I82540EM': return 'Intel PRO/1000 MT Desktop (82540EM)';
+		case 'I82543GC': return 'Intel PRO/1000 T Server (82543GC)';
+		case 'I82545EM': return 'Intel PRO/1000 MT Server (82545EM)';
+		case 'Virtio': return 'Paravirtualized Network (virtio-net)';
+	}
+}
+
+/**
+ * Audio controller conversions
+ * 
+ * @param {String}
+ *            c - audio controller type
+ * @return {String} string used for translation
+ */
+function vboxAudioController(c) {
+	switch(c) {
+		case 'AC97': return 'ICH AC97';
+		case 'SB16': return 'SoundBlaster 16';
+		case 'HDA': return 'Intel HD Audio';
+	}
+}
+/**
+ * Audio driver conversions
+ * 
+ * @param {String}
+ *            d - audio driver type
+ * @return {String} string used for translation
+ */
+function vboxAudioDriver(d) {
+	switch(d) {
+		case 'OSS': return 'OSS Audio Driver';
+		case 'ALSA': return 'ALSA Audio Driver';
+		case 'Pulse': return 'PulseAudio';
+		case 'WinMM': return 'Windows Multimedia';
+		case 'DirectSound': return 'Windows DirectSound';
+		case 'Null': return 'Null Audio Driver';
+		case 'SolAudio': return 'Solaris Audio';
+	}
+	return d;
+}
+/**
+ * VM storage device conversions
+ * 
+ * @param {String}
+ *            d - storage device type
+ * @return {String} string used for translation
+ */
+function vboxDevice(d) {
+	switch(d) {
+		case 'DVD': return 'CD/DVD-ROM';
+		case 'HardDisk': return 'Hard Disk';
+	}
+	return d;
+}
+
+/**
+ * VM State functions namespace
+ * 
+ * @namespace vboxVMStates
+ */
+var vboxVMStates = {
+	
+	/* Return whether or not vm is running */
+	isRunning: function(vm) {
+		return (vm && jQuery.inArray(vm.state, ['Running','LiveSnapshotting','Teleporting']) > -1);
+	},
+	
+	/* Return whether or not a vm is stuck */
+	isStuck: function (vm) {
+		return (vm && vm.state == 'Stuck');
+	},
+	
+	/* Whether or not a vm is paused */
+	isPaused: function(vm) {
+		return (vm && jQuery.inArray(vm.state, ['Paused','TeleportingPausedVM']) > -1);
+	},
+	
+	/* True if vm is powered off */
+	isPoweredOff: function(vm) {
+		return (vm && jQuery.inArray(vm.state, ['PoweredOff','Saved','Teleported', 'Aborted']) > -1);
+	},
+	
+	/* True if vm is saved */
+	isSaved: function(vm) {
+		return (vm && vm.state == 'Saved');
+	},
+	
+	/* True if vm is editable */
+	isEditable: function(vm) {
+		return (vm && vm.sessionState == 'Unlocked');
+	},
+	
+	/* True if one VM in list matches item */
+	isOne: function(test, vmlist) {
+	
+		for(var i = 0; i < vmlist.length; i++) {
+			if(vboxVMStates['is'+test](vmlist[i]))
+				return true;
+		}
+		return false;
+	},
+	
+	/* Convert Machine state to translatable state */
+	convert: function(state) {
+		switch(state) {
+			case 'PoweredOff': return 'Powered Off';
+			case 'LiveSnapshotting': return 'Live Snapshotting';
+			case 'TeleportingPausedVM': return 'Teleporting Paused VM';
+			case 'TeleportingIn': return 'Teleporting In';
+			case 'TakingLiveSnapshot': return 'Taking Live Snapshot';
+			case 'RestoringSnapshot': return 'Restoring Snapshot';
+			case 'DeletingSnapshot': return 'Deleting Snapshot';
+			case 'SettingUp': return 'Setting Up';
+			default: return state;
+		}
+	}
+};
+
+/**
+ * VM storage device conversions
+ * 
+ * @param {String}
+ *            d - storage device type
+ * @return {String} string used for translation
+ */
+function vboxDevice(d) {
+	switch(d) {
+		case 'DVD': return 'CD/DVD-ROM';
+		case 'HardDisk': return 'Hard Disk';
+	}
+	return d;
+}
+
+/**
+ * Common VM storage / controller namespace
+ * 
+ * @namespace vboxStorage
+ */
+var vboxStorage = {
+
+	/**
+	 * Return list of bus types
+	 * 
+	 * @memberOf vboxStorage
+	 * @static
+	 * @return {Array} list of all storage bus types
+	 */
+	getBusTypes : function() {
+		var busts = [];
+		for(var i in vboxStorage) {
+			if(typeof i == 'function') continue;
+			if(!vboxStorage[i].maxPortCount) continue;
+			busts[busts.length] = i;
+		}
+		return busts;
+	},
+	
+	/**
+	 * Return icon name for bus
+	 * 
+	 * @memberOf vboxStorage
+	 * @param {String} bus - bus type
+	 * @return {String} icon name
+	 */
+	getBusIcon : function(bus) {
+		if(vboxStorage[bus].displayInherit) bus = vboxStorage[bus].displayInherit
+		return bus.toLowerCase();
+	},
+	
+	IDE : {
+		maxPortCount : 2,
+		limitOneInstance : true,
+		maxDevicesPerPortCount : 2,
+		types :['PIIX3','PIIX4','ICH6' ],
+		ignoreFlush : true,
+		slotName : function(p,d) {
+			switch(p+'-'+d) {
+				case '0-0' : return (trans('IDE Primary Master','VBoxGlobal'));
+				case '0-1' : return (trans('IDE Primary Slave','VBoxGlobal'));
+				case '1-0' : return (trans('IDE Secondary Master','VBoxGlobal'));
+				case '1-1' : return (trans('IDE Secondary Slave','VBoxGlobal'));
+			}
+		},
+		driveTypes : ['dvd','disk'],
+		slots : function() { return {
+		          	'0-0' : (trans('IDE Primary Master','VBoxGlobal')),
+		          	'0-1' : (trans('IDE Primary Slave','VBoxGlobal')),
+		          	'1-0' : (trans('IDE Secondary Master','VBoxGlobal')),
+		          	'1-1' : (trans('IDE Secondary Slave','VBoxGlobal'))
+			};
+		}
+	},
+		
+	SATA : {
+		maxPortCount : 30,
+		maxDevicesPerPortCount : 1,
+		ignoreFlush : true,
+		types : ['IntelAhci'],
+		driveTypes : ['dvd','disk'],
+		slotName : function(p,d) { return trans('SATA Port %1','VBoxGlobal').replace('%1',p); },
+		slots : function() {
+					var s = {};
+					for(var i = 0; i < 30; i++) {
+						s[i+'-0'] = trans('SATA Port %1','VBoxGlobal').replace('%1',i);
+					}
+					return s;
+				}
+	},
+		
+	SCSI : {
+		maxPortCount : 16,
+		maxDevicesPerPortCount : 1,
+		driveTypes : ['disk'],
+		types : ['LsiLogic','BusLogic'],
+		ignoreFlush : true,
+		slotName : function(p,d) { return trans('SCSI Port %1','VBoxGlobal').replace('%1',p); },
+		slots : function() {
+						var s = {};
+						for(var i = 0; i < 16; i++) {
+							s[i+'-0'] = trans('SCSI Port %1','VBoxGlobal').replace('%1',i);
+						}
+						return s;				
+					}
+	},
+	SAS : {
+		maxPortCount : 8,
+		maxDevicesPerPortCount : 1,
+		types : ['LsiLogicSas'],
+		driveTypes : ['disk'],
+		slotName : function(p,d) { return trans('SAS Port %1','VBoxGlobal').replace('%1',p); },
+		slots : function() {
+			var s = {};
+			for(var i = 0; i < 8; i++) {
+				s[i+'-0'] = trans('SAS Port %1','VBoxGlobal').replace('%1',i);
+			}
+			return s;				
+		},
+		displayInherit : 'SATA'
+	},
+		
+
+	Floppy : {
+		maxPortCount : 1,
+		limitOneInstance : true,
+		maxDevicesPerPortCount : 2,
+		types : ['I82078'],
+		driveTypes : ['floppy'],
+		slotName : function(p,d) { return trans('Floppy Device %1','VBoxGlobal').replace('%1',d); },
+		slots : function() { return { '0-0':trans('Floppy Device %1','VBoxGlobal').replace('%1','0'), '0-1' :trans('Floppy Device %1','VBoxGlobal').replace('%1','1') }; }	
+	}
+
+};
+
+/**
+ * Storage Controller Types conversions
+ * 
+ * @param {String}
+ *            c - storage controller type
+ * @return {String} string used for translation
+ */
+function vboxStorageControllerType(c) {
+	switch(c) {
+		case 'LsiLogic': return 'Lsilogic';
+		case 'LsiLogicSas': return 'LsiLogic SAS';
+		case 'IntelAhci': return 'AHCI';
+	}
+	return c;
+}
 
 
 /**
@@ -38,6 +348,10 @@ function vboxMachineStateIcon(state)
     
     return strIcon;
 
+}
+
+function trans(a,b,c,d,e) {
+	return a;
 }
 
 /**

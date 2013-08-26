@@ -32,6 +32,9 @@ Ext.define('vboxprod.controller.VMTabs', {
     		return;
     	
     	var tabPanel = this.getVMTabsView();
+    	
+    	// Set raw data
+    	tabPanel.rawData = record.raw;
 
     	// Summary tab items
     	var summaryTab = tabPanel.getComponent('SummaryTab');
@@ -41,11 +44,15 @@ Ext.define('vboxprod.controller.VMTabs', {
     	summaryTab.down('#PreviewPanel').doLayout();
 
     	
-    	
-    	summaryTab.getForm().setValues(record.raw);
+    	summaryTab.getForm().reset().setValues(record.raw);
     	
     	summaryTab.down('#baseinfo').update(record.raw);
-    	//summaryTab.down('#state').update(record.raw);
+    	summaryTab.down('#state').update(record.raw);
+    	
+    	var detailsTab  = tabPanel.getComponent('DetailsTab');
+    	for(var i in detailsTab.items.items) {    		
+    		detailsTab.items.items[i].update(record.raw);
+    	}
     	
     	
 

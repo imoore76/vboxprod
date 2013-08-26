@@ -33,19 +33,30 @@ Ext.define('vboxprod.controller.MainPanel', {
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
     	
-    	this.getWelcomeView().hide();
-    	this.getGroupTabsView().hide();
-    	this.getVMTabsView().hide();
+    	var welcome = this.getWelcomeView();
+    	var groupTabs = this.getGroupTabsView();
+    	var vmTabs = this.getVMTabsView();
     	
     	// Show welcome
     	if(!record) {
-    		this.getWelcomeView().show();
+    		if(welcome.isVisible()) return;
+    		groupTabs.hide();
+    		vmTabs.hide();
+    		welcome.show();
+    		
     	// VM selected
     	} else if(record.get('leaf')) {
-    		this.getVMTabsView().show();
+    		if(vmTabs.isVisible()) return;
+    		groupTabs.hide();
+    		welcome.hide();
+    		vmTabs.show();
+    		
     	// Group Selected
     	} else {
-    		this.getGroupTabsView().show();
+    		if(groupTabs.isVisible()) return;
+    		welcome.hide();
+    		vmTabs.hide();
+    		groupTabs.show();
     	}
     }
     

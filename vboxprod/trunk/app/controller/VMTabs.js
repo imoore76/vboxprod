@@ -4,6 +4,8 @@
 Ext.define('vboxprod.controller.VMTabs', {
     extend: 'Ext.app.Controller',
     
+    models: ['Snapshot'],
+    
     // Hold nav tree ref so that we only have to get this once
     refs : [{
     	selector: 'viewport > NavTree',
@@ -47,14 +49,12 @@ Ext.define('vboxprod.controller.VMTabs', {
     	summaryTab.getForm().reset().setValues(record.raw);
     	
     	summaryTab.down('#baseinfo').update(record.raw);
-    	summaryTab.down('#state').update(record.raw);
+    	//summaryTab.down('#state').update(record.raw);
     	
     	var detailsTab  = tabPanel.getComponent('DetailsTab');
     	for(var i in detailsTab.items.items) {    		
     		detailsTab.items.items[i].update(record.raw);
     	}
-    	
-    	
 
     }
     

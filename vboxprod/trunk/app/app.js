@@ -12,6 +12,7 @@ Ext.application({
     name: 'vboxprod',
     autoCreateViewport: true,
     stores: ['Session'],
+    requires: ['vboxprod.AppJsonReader'],
     controllers: ['NavTree','MainPanel','GroupTabs','VMTabs'],
     launch: function() {
 

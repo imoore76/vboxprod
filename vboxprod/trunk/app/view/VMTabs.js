@@ -3,10 +3,6 @@
  * 
  */
 
-Ext.override(Ext.form.field.Display, {
-	valueToRaw: function(v) { return v; }
-});
-		
 Ext.define('vboxprod.view.VMTabs', {
     extend: 'Ext.tab.Panel',
     alias: 'widget.VMTabs',
@@ -61,7 +57,10 @@ Ext.define('vboxprod.view.VMTabs', {
     				border: false
     			},{
         			xtype: 'panel',
-        			layout: 'vbox',
+        			layout: {
+        				type: 'vbox',
+        				align: 'stretch'
+        			},
         			flex: 1,
         			border: false,
         			bodyStyle: { background: 'transparent' },
@@ -84,7 +83,12 @@ Ext.define('vboxprod.view.VMTabs', {
         				border: false
         			},{
         				xtype: 'panel',
-        				layout: 'hbox',
+        				defaults: {
+        					style:{
+        						display:'inline-block',
+        						float: 'left'
+        					}
+        		        },
         				items: [{
         					xtype: 'panel',
         					title: 'Info',
@@ -93,6 +97,7 @@ Ext.define('vboxprod.view.VMTabs', {
         					width: 300,
         					defaults: { xtype: 'displayfield'},
         					bodyStyle: { background: '#fff' },
+        					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
         					items: [{
         						fieldLabel: 'State',
         						itemId: 'state',
@@ -111,13 +116,10 @@ Ext.define('vboxprod.view.VMTabs', {
         						}
         					}]
         				},{
-        					html: '',
-        					width: 20,
-        					border: false
-        				},{
         					xtype: 'panel',
         					title: 'Resources',
         					icon: 'images/vbox/chipset_16px.png',
+        					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
         					border: true,
         					width: 300,
         					defaults: { xtype: 'displayfield'},
@@ -128,6 +130,12 @@ Ext.define('vboxprod.view.VMTabs', {
         					},{
         						fieldLabel: 'Execution Cap',
         						name: 'CPUExecutionCap',
+        						listeners: {
+        							change: function(f,v) {
+        								if(!v || parseInt(v) == 100) f.hide();
+        								else f.show();
+        							}
+        						},
         						renderer: function(c) {
         							return c + '%';
         						}
@@ -653,36 +661,75 @@ Ext.define('vboxprod.view.VMTabs', {
     	layout: 'fit',
     	listeners: {
     		show: function(p) {
-    			console.log('showing...');
-    			p.doLayout();
+    			console.log('show here...');
+    			p.getComponent('snapshottree').doLayout().getStore().getRootNode().expand();
+    			
     		}
     	},
     	items: [{
     		xtype: 'treepanel',
+    		itemId: 'snapshottree',
     		tbar: [
-    		   {xtype:'button',tooltip:trans('Take Snapshot...','UIActionPool'),icon:'images/vbox/take_snapshot_16px.png'},
+    		   {xtype:'button',tooltip:trans('Take Snapshot...','UIActionPool').replace('...',''),icon:'images/vbox/take_snapshot_16px.png'},
     		   '-',
     		   {xtype:'button',tooltip:trans('Restore Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/discard_cur_state_16px.png'},
     		   {xtype:'button',tooltip:trans('Delete Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/delete_snapshot_16px.png'},
     		   '-',
-    		   {xtype:'button',tooltip:trans('Clone...','UIActionPool'),icon:'images/vbox/vm_clone_16px.png'},
+    		   {xtype:'button',tooltip:trans('Clone...','UIActionPool').replace('...',''),icon:'images/vbox/vm_clone_16px.png'},
     		   '-',
     		   {xtype:'button',tooltip:trans('Show Details','VBoxSnapshotsWgt'),icon:'images/vbox/show_snapshot_details_16px.png'}
-    		   
-    		   
     		],
-    		width: '100',
     	    viewConfig:{
     	        markDirty:false
     	    },
     	    rootVisible: false,
     	    lines: true,
-    	    root: {
-    	    	expanded: true,
-    	    	children: [
-    	    	    {text:'asdf',leaf: true}
-    	    	]
-    	    }
+    	    store: new Ext.data.TreeStore({
+    	        
+    	    	model: 'vboxprod.model.Snapshot',
+    	        autoLoad: false,
+    	        
+    	        listeners: {
+    	        	
+    	        	
+    	        	append: function(thisNode,newNode,index,eOpts) {
+    	        		newNode.set('text',newNode.raw.name + ' <span class="vboxSnapshotTimestamp"> </span>');
+    	        		newNode.set('icon', 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png');
+    	        		newNode.set('expanded',(newNode.raw.children && newNode.raw.children.length));
+    	        	},
+    	        	
+    	        	// Append current state
+    	        	load: function(s, node, records, success) {
+    	        		var cState = {
+    	        			id: 'current',
+    	        			text: 'Current State',
+    	        			name: 'Current State',
+    	        			leaf: true
+    	        		};
+    	        		var rData = s.getProxy().getReader().responseData;
+    	        		var pNode = null;
+    	        		if(rData.currentSnapshotId) {
+    	        			pNode = s.getNodeById(rData.currentSnapshotId);
+    	        		} else {
+    	        			pNode = s.getRootNode();
+    	        		}
+    	        		
+    	        		pNode.appendChild(pNode.createNode(cState));
+    	        		pNode.expand();
+    	        	}
+    	        },
+    	        
+    	        proxy: {
+    	            type: 'ajax',
+    	            url: 'data/operasnapshots.json',
+    	            reader: {
+    	                type: 'AppJsonReader',
+	                	initialRoot: 'snapshot',
+	                	asChildren: true
+    	            }
+    	        }
+
+    	    })
 
     	}]
     		

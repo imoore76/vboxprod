@@ -5,7 +5,7 @@ Ext.define('vboxprod.view.MainPanel', {
     requires: [           
       'vboxprod.view.Welcome',
       'vboxprod.view.GroupTabs',
-      'vboxprod.view.VMTabs',
+      'vboxprod.view.VMTabs'
     ],
     
     alias: 'widget.MainPanel',

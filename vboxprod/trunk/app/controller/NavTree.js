@@ -16,8 +16,6 @@ Ext.define('vboxprod.controller.NavTree', {
     /* Watch for events */
     init: function(){
     	
-    	console.log("nav tree controller init");
-    	
     	/* Application level events */
         this.application.on({
             login: this.populateTree, 
@@ -37,13 +35,11 @@ Ext.define('vboxprod.controller.NavTree', {
     
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
-    	console.log(record);
+    	//console.log(record);
     },
     
     /* Populate navigation tree with groups and VMs */
     populateTree: function() {
-    	
-    	console.log("populating tree");
     	
     	var NavTreeView = this.getNavTreeView();    	
     	var NavTreeGroupsStore = this.getNavTreeGroupsStore();

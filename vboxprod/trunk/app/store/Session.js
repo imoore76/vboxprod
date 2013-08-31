@@ -1,6 +1,6 @@
 Ext.define('vboxprod.store.Session', {
     extend: 'Ext.data.Store',
-    model: 'vboxprod.model.Session',
+    fields: [ 'id', 'username', 'valid', 'admin' ],
     data: {id:'asdf',username:'ian',valid:true,admin:true},
     init: function(){
     	console.log("init session store");

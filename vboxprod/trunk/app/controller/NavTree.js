@@ -18,7 +18,7 @@ Ext.define('vboxprod.controller.NavTree', {
     	
     	/* Application level events */
         this.application.on({
-            login: this.populateTree, 
+            start: this.populateTree, 
             scope: this
         },{
         	launch: this.showWelcome,
@@ -76,9 +76,13 @@ Ext.define('vboxprod.controller.NavTree', {
         		// Step through each VM adding it to the correct group
         		for(var i = 0; i < records.length; i++) {
         			var group = (records[i].raw.group ? NavTreeView.getStore().getNodeById(records[i].raw.group) : NavTreeView.getRootNode());
+        			if(!group) group = NavTreeView.getRootNode();
         			group.appendChild(group.createNode(records[i]));        			
         		}
 
+        		// expand tree
+        		NavTreeView.getRootNode().expand();
+        		
         		// Hide load mask
         		NavTreeView.setLoading(false);
         		
@@ -115,7 +119,7 @@ Ext.define('vboxprod.controller.NavTree', {
 		
     		// Get top level
     		var rootNode = NavTreeView.getRootNode();
-    		addChildren('',rootNode);
+    		addChildren(0,rootNode);
     		
     		// Now load VMs
     		loadVMs();

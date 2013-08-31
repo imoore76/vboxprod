@@ -10,10 +10,9 @@ Ext.define('vboxprod.store.NavTreeGroups', {
 	}],
 	proxy: {
         type: 'ajax',
-        url : 'data/groups.json',
+        url : 'ajax.php?fn=getVMGroups',
         reader: {
-        	type: 'json',
-        	root: 'responseData'
+        	type: 'AppJsonReader'
         }
     }
 });

@@ -6,3 +6,8 @@
 
 .vboxSnapshot, .vboxSnapshot.x-grid-tree-node-expanded { background-image:url(images/vbox/offline_snapshot_16px.png) }
 .vboxSnapshotOnline, .vboxSnapshotOnline.x-grid-tree-node-expanded { background-image:url(images/vbox/online_snapshot_16px.png) }
+.x-mask, .x-mask.x-mask-gray
+{
+    background-color: #ccc;
+    opacity: 1.0;
+}

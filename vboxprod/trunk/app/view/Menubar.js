@@ -1,6 +1,6 @@
-Ext.define('vboxprod.view.VMMenubar', {
+Ext.define('vboxprod.view.Menubar', {
 	extend: 'Ext.panel.Panel',
-    alias: 'widget.VMMenubar',
+    alias: 'widget.Menubar',
     items: [{
         xtype: 'toolbar',
         dock: 'top',
@@ -14,7 +14,9 @@ Ext.define('vboxprod.view.VMMenubar', {
 	    		          vboxprodActions.global.importappliance,
 	    		          vboxprodActions.global.exportappliance,
 	    		          '-',
-	    		          vboxprodActions.global.preferences
+	    		          vboxprodActions.global.preferences,
+	    		          '-',
+	    		          {text:'Logout',itemId:'logout'}
 	    		]
 	       },
 	       {

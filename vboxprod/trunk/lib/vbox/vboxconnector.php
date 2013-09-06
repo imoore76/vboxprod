@@ -48,8 +48,8 @@ class vboxconnector {
 	
 	/**
 	 * Settings object
-	 * @var phpVBoxConfigClass
-	 * @see phpVBoxConfigClass
+	 * @var app_configClass
+	 * @see app_configClass
 	 */
 	var $settings = null;
 
@@ -117,7 +117,7 @@ class vboxconnector {
 	/**
 	 * Obtain configuration settings and set object vars
 	 * @param boolean $useAuthMaster use the authentication master obtained from configuration class
-	 * @see phpVBoxConfigClass
+	 * @see app_configClass
 	 */
 	public function __construct($useAuthMaster = false) {
 
@@ -126,8 +126,8 @@ class vboxconnector {
 
 		/* Set up.. .. settings */
 		
-		/** @var phpVBoxConfigClass */
-		$this->settings = new phpVBoxConfigClass();
+		/** @var app_configClass */
+		$this->settings = new app_configClass();
 
 		// Are default settings being used?
 		if(@$this->settings->warnDefault) {
@@ -149,7 +149,7 @@ class vboxconnector {
 	/**
 	 * Connect to vboxwebsrv
 	 * @see SoapClient
-	 * @see phpVBoxConfigClass
+	 * @see app_configClass
 	 * @return boolean true on success or if already connected
 	 */
 	public function connect() {

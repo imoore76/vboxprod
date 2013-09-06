@@ -5,12 +5,10 @@
  * @author Ian Moore (imoore76 at yahoo dot com)
  * @copyright Copyright (C) 2010-2013 Ian Moore (imoore76 at yahoo dot com)
  * @version $Id: utils.php 531 2013-07-29 18:41:18Z imoore76 $
- * @see phpVBoxConfigClass
+ * @see app_configClass
  * @package phpVirtualBox
  * 
 */
-
-require_once(dirname(__FILE__).'/config.php');
 
 /**
  * Initialize session.
@@ -20,7 +18,7 @@ require_once(dirname(__FILE__).'/config.php');
  */
 function session_init($keepopen = false) {
 	
-	$settings = new phpVBoxConfigClass();
+	$settings = new app_configClass();
 	
 	
 	// Sessions provided by auth module?

@@ -1,11 +1,26 @@
 <?php
+/**
+ * Wrapper for remote application level functions
+ * @author ian_moore
+ *
+ */
+require_once(dirname(dirname(__FILE__)).'/service.php');
 
-class service_session {
+class service_app extends service {
+	
+	/**
+	 * Get session object
+	 */
+	function remote_getSession() {
+		
+		return $_SESSION;
+		
+	}
 	
 	/*
 	 * Pass login to authentication module.
 	*/
-	function login() {
+	function remote_login() {
 			
 			
 		// NOTE: Do not break. Fall through to 'getSession
@@ -16,7 +31,7 @@ class service_session {
 		// Session
 		session_init(true);
 			
-		$settings = new phpVBoxConfigClass();
+		$settings = new app_configClass();
 	
 		// Try / catch here to hide login credentials
 		try {
@@ -36,7 +51,7 @@ class service_session {
 	 * Revalidate login info and set authCheckHeartbeat session variable.
 	 * @param vboxconnector $vbox vboxconnector object instance
 	 */
-	function heartbeat($vbox)
+	function remote_heartbeat($vbox)
 	{
 		global $_SESSION;
 	
@@ -62,7 +77,7 @@ class service_session {
 	 * Log out user present in $_SESSION
 	 * @param array $response response passed byref by ajax.php and populated within function
 	 */
-	function logout(&$response)
+	function remote_logout(&$response)
 	{
 		global $_SESSION;
 		if(function_exists('session_destroy')) session_destroy();

@@ -8,7 +8,7 @@ class service_users {
 	*/
 	function changePassword($old,$new) {
 	
-		$settings = new phpVBoxConfigClass();
+		$settings = new app_configClass();
 		$settings->auth->changePassword($vboxRequest['old'], $vboxRequest['new']);
 		
 	}
@@ -25,7 +25,7 @@ class service_users {
 		// Must be an admin
 		if(!$_SESSION['admin']) break;
 			
-		$settings = new phpVBoxConfigClass();
+		$settings = new app_configClass();
 		return $settings->auth->listUsers();
 			
 	}
@@ -42,7 +42,7 @@ class service_users {
 		// Must be an admin
 		if(!$_SESSION['admin']) break;
 	
-		$settings = new phpVBoxConfigClass();
+		$settings = new app_configClass();
 		$settings->auth->deleteUser($vboxRequest['u']);
 				
 	}

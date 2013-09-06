@@ -6,16 +6,15 @@
  * @author Ian Moore (imoore76 at yahoo dot com)
  * @copyright Copyright (C) 2010-2013 Ian Moore (imoore76 at yahoo dot com)
  * @version $Id: ajax.php 531 2013-07-29 18:41:18Z imoore76 $
- * @package phpVirtualBox
- * @see vboxprodconnector
- * @see vboxAjaxRequest
  * 
- * @global array $GLOBALS['response'] resopnse data sent back via json 
- * @name $response
 */
 
-# Turn off PHP errors
-error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_WARNING);
+/* Error reporting and exceptions */
+function exception_error_handler($errno, $errstr, $errfile, $errline ) {
+	if($errno & (E_NOTICE | E_STRICT | E_WARNING)) return;
+	throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
+}
+set_error_handler("exception_error_handler");
 
 
 //Set no caching
@@ -24,26 +23,16 @@ header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
 header("Pragma: no-cache");
 
-require_once(dirname(__FILE__).'/lib/config.php');
+require_once(dirname(__FILE__).'/lib/app.php');
 require_once(dirname(__FILE__).'/lib/utils.php');
-require_once(dirname(__FILE__).'/lib/mysqlconnector.php');
-require_once(dirname(__FILE__).'/lib/vboxprodconnector.php');
-
-// Init session
-global $_SESSION;
 
 /*
  * Clean request
  */
-$vboxRequest = clean_request();
+$cleanRequest = clean_request();
 
 global $response;
 $response = array('data'=>array('responseData'=>array()),'errors'=>array(),'persist'=>array(),'messages'=>array());
-
-/*
- * Built-in requests
- */
-$vbox = null; // May be set during request handling
 
 /**
  * Main try / catch. Logic dictated by incoming 'fn' request
@@ -51,257 +40,37 @@ $vbox = null; // May be set during request handling
  */
 try {
 	
-	/* Check for password recovery file */
-	if(file_exists(dirname(dirname(__FILE__)).'/recovery.php')) {
-		throw new Exception('recovery.php exists in phpVirtualBox\'s folder. This is a security hazard. phpVirtualBox will not run until recovery.php has been renamed to a file name that does not end in .php such as <b>recovery.php-disabled</b>.',vboxprodconnector::PHPVB_ERRNO_FATAL);	
-	}
-	
 	/* Check for PHP version */
 	if (!version_compare(PHP_VERSION, '5.2.0', '>=')) {
-		throw new Exception('phpVirtualBox requires PHP >= 5.2.0, but this server is running version '. PHP_VERSION .'. Please upgrade PHP.');
+		throw new Exception('This application requires PHP >= 5.2.0, but this server is running version '. PHP_VERSION .'. Please upgrade PHP.');
 	}
 
-	/* Check for function called */
-	switch($vboxRequest['fn']) {
+	/*
+	 * Get service instance
+	 */
+	$service = app::getInstance()->getService($cleanRequest['service']);
 	
-		/*
-		 * Return phpVirtualBox's configuration data
-		 */
-		case 'getConfig':
-			
-			$settings = new phpVBoxConfigClass();
-			$response['data']['responseData'] = get_object_vars($settings);
-			$response['data']['responseData']['host'] = parse_url($response['data']['responseData']['location']);
-			$response['data']['responseData']['host'] = $response['data']['responseData']['host']['host'];
-			$response['data']['responseData']['phpvboxver'] = @constant('PHPVBOX_VER');
-			
-			// Session
-			session_init();
-			
-			// Hide credentials
-			unset($response['data']['responseData']['username']);
-			unset($response['data']['responseData']['password']);
-			foreach($response['data']['responseData']['servers'] as $k => $v)
-				$response['data']['responseData']['servers'][$k] = array('name'=>$v['name']);
-						
-			// Are default settings being used?
-			if(@$settings->warnDefault) {
-				throw new Exception("No configuration found. Rename the file <b>config.php-example</b> in phpVirtualBox's folder to <b>config.php</b> and edit as needed.<p>For more detailed instructions, please see the installation wiki on phpVirtualBox's web site. <p><a href='http://code.google.com/p/phpvirtualbox/w/list' target=_blank>http://code.google.com/p/phpvirtualbox/w/list</a>.</p>",vboxprodconnector::PHPVB_ERRNO_FATAL);
-			}
-			
-			// Vbox version			
-			$vbox = new vboxprodconnector();
-			$response['data']['responseData']['version'] = $vbox->getVersion();
-			$response['data']['responseData']['hostOS'] = $vbox->vbox->host->operatingSystem;
-			$response['data']['responseData']['DSEP'] = $vbox->getDsep();
-			$response['data']['responseData']['groupDefinitionKey'] = ($settings->phpVboxGroups ? vboxprodconnector::phpVboxGroupKey : 'GUI/GroupDefinitions');
-			
-			$response['data']['success'] = 1;
-			
-			break;
-	
-		/*
-		 * 
-		 * USER FUNCTIONS FOLLOW
-		 * 
-		 */
-			
+	/*
+	 *  Persistent request data
+	*/
+	if(is_array($cleanRequest['persist'])) {
+		$service->persistentRequest = $cleanRequest['persist'];
+	}
 		
-	 	/*
-	 	 * Get Groups
-	 	 */
-		case 'getVMGroups':
-			
-			$sql = new mysqlconnector();
-			
-			$response['data']['responseData'] = $sql->query("select * from vm_groups");
-			$response['data']['success'] = 1;
-			
-			break;
-		/*
-		 * Return $_SESSION data
-		 */
-		case 'getSession':
-			
-			$settings = new phpVBoxConfigClass();
-			if(method_exists($settings->auth,'autoLoginHook'))
-			{
-				// Session
-				session_init(true);			
-					
-				$settings->auth->autoLoginHook();
-				
-				// We're done writing to session
-				if(function_exists('session_write_close'))
-					@session_write_close();
-			
-			} else {
-				
-				session_init();
-				
-			}
-
-
-			$response['data']['responseData'] = $_SESSION;
-			$response['data']['success'] = 1;
-			break;
-			
-		/*
-		 * Change phpVirtualBox password. Passed to auth module's
-		 * changePassword method.
-		 */
-		case 'changePassword':
-
-			// Session
-			session_init(true);
-			
-			$settings = new phpVBoxConfigClass();
-			$response['data']['success'] = $settings->auth->changePassword($vboxRequest['old'], $vboxRequest['new']);
-
-			// We're done writing to session
-			if(function_exists('session_write_close'))
-				@session_write_close();
-			
-			break;
 		
-		/*
-		 * Get a list of phpVirtualBox users. Passed to auth module's
-		 * getUsers method.
-		 */
-		case 'getUsers':
-
-			// Session
-			session_init();
-			
-			// Must be an admin
-			if(!$_SESSION['admin']) break;
-			
-			$settings = new phpVBoxConfigClass();
-			$response['data']['responseData'] = $settings->auth->listUsers();
-			$response['date']['success'] = 1;
-			
-			break;
-			
-		/*
-		 * Remove a phpVirtualBox user. Passed to auth module's
-		 * deleteUser method.
-		 */
-		case 'delUser':
-
-			// Session
-			session_init();
-			
-			// Must be an admin
-			if(!$_SESSION['admin']) break;
-	
-			$settings = new phpVBoxConfigClass();
-			$settings->auth->deleteUser($vboxRequest['u']);
-			
-			$response['data']['success'] = 1;
-			break;
-			
-		/*
-		 * Edit a phpVirtualBox user. Passed to auth module's
-		 * updateUser method.
-		 */
-		case 'editUser':
-
-			$skipExistCheck = true;
-			// Fall to addUser
-
-		/*
-		 * Add a user to phpVirtualBox. Passed to auth module's
-		 * updateUser method.
-		 */
-		case 'addUser':
-	
-			// Session
-			session_init();
-
-			// Must be an admin
-			if(!$_SESSION['admin']) break;
-			
-			$settings = new phpVBoxConfigClass();
-			$settings->auth->updateUser($vboxRequest, @$skipExistCheck);
-						
-			$response['data']['success'] = 1;
-			break;
-
-		/*
-		 * Log out of phpVirtualBox. Passed to auth module's
-		 * logout method.
-		 */
-		case 'logout':
+	/*
+	 * Call to service
+	*/
+	$service->$cleanRequest['fn']($cleanRequest['requestData'],array(&$response));
 		
-			// Session
-			session_init(true);
-				
-			$vbox = new vboxprodconnector();
-			$vbox->skipSessionCheck = true;
-			
-			$settings = new phpVBoxConfigClass();
-			$settings->auth->logout($response);
-				
-			session_destroy();
-			
-			$response['data']['success'] = 1;
 		
-			break;
-					
-					
-		/*
-		 * If the above cases did not match, assume it is a request
-		 * that should be passed to vboxprodconnector.
-		 */
-		default:
+	/*
+	 * Send back persistent request in response
+	*/
+	if(is_array($service->persistentRequest) && count($service->persistentRequest)) {
+		$response['data']['persist'] = $service->persistentRequest;
+	}
 	
-			$vbox = new vboxprodconnector();
-
-			
-			/*
-			 * Every 1 minute we'll check that the account has not
-			 * been deleted since login, and update admin credentials.
-			 */
-			if($_SESSION['user'] && ((intval($_SESSION['authCheckHeartbeat'])+60) < time())) {
-				
-				// init session and keep it open
-				session_init(true);
-				$vbox->settings->auth->heartbeat($vbox);
-			
-				// We're done writing to session
-				if(function_exists('session_write_close'))
-					@session_write_close();
-								
-			} else {
-				
-				// init session but close it
-				session_init();
-				
-			}
-			
-			/*
-			 *  Persistent request data
-			 */
-			if(is_array($vboxRequest['_persist'])) {
-				$vbox->persistentRequest = $vboxRequest['_persist'];
-			}
-			
-			
-			/*
-			 * Call to vboxprodconnector
-			 */
-			$vbox->$vboxRequest['fn']($vboxRequest,array(&$response));
-			
-			
-			/*
-			 * Send back persistent request in response
-			*/
-			if(is_array($vbox->persistentRequest) && count($vbox->persistentRequest)) {
-				$response['data']['persist'] = $vbox->persistentRequest;
-			}
-			break;
-			
-	} // </switch()>
 
 /*
  * Catch all exceptions and populate errors in the
@@ -311,42 +80,41 @@ try {
 
 	// Just append to $vbox->errors and let it get
 	// taken care of below
-	if(!$vbox || !$vbox->errors) {
-		$vbox->errors = array();
+	if(empty($service)) $service = new stdClass();
+	if(empty($service->errors)) {
+		$service->errors = array();
 	}
-	$vbox->errors[] = $e;
+	$service->errors[] = $e;
 }
 
 
 // Add any messages
-if($vbox && count($vbox->messages)) {
-	foreach($vbox->messages as $m)
-		$response['messages'][] = 'vboxprodconnector('.$vboxRequest['fn'] .'): ' . $m;
+if($service && !empty($service->messages) && count($service->messages)) {
+	foreach($service->messages as $m)
+		$response['messages'][] = $serviceName.'('.$cleanRequest['fn'] .'): ' . $m;
 }
 // Add other error info
-if($vbox && $vbox->errors) {
+if($service && $service->errors) {
 	
-	foreach($vbox->errors as $e) { /* @var $e Exception */ 
+	foreach($service->errors as $e) { /* @var $e Exception */ 
 		
 		ob_start();
 		print_r($e);
 		$d = ob_get_contents();
 		ob_end_clean();
 		
-		# Add connection details to connection errors
-		if($e->getCode() == vboxprodconnector::PHPVB_ERRNO_CONNECT && isset($vbox->settings))
-			$d .= "\n\nLocation:" . $vbox->settings->location;
-		
-		$response['messages'][] = htmlentities($e->getMessage()).' ' . htmlentities($details);
+		$response['messages'][] = htmlentities($e->getMessage()).' ' . htmlentities($d);
 		
 		$response['errors'][] = array(
-			'error'=>htmlentities($e->getMessage()),
-			'details'=>htmlentities($d),
+			/*'error'=>htmlentities($e->getMessage()),
+			'details'=>htmlentities($d),*/
+			'error'=>$e->getMessage(),
+			'details'=>$d,
 			'errno'=>$e->getCode(),
 			// Fatal errors halt all processing
-			'fatal'=>($e->getCode()==vboxprodconnector::PHPVB_ERRNO_FATAL),
+			'fatal'=>($e->getCode()==app::ERRNO_FATAL),
 			// Connection errors display alternate servers options
-			'connection'=>($e->getCode()==vboxprodconnector::PHPVB_ERRNO_CONNECT)
+			'connection'=>($e->getCode()==app::ERRNO_CONNECT)
 		);
 	}
 }
@@ -355,6 +123,6 @@ if($vbox && $vbox->errors) {
  * Return response as JSON encoded data or use PHP's
  * print_r to dump data to browser.
  */
-if(isset($vboxRequest['printr'])) print_r($response);
+if(isset($cleanRequest['printr'])) print_r($response);
 else echo(json_encode($response));
 

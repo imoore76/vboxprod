@@ -46,7 +46,7 @@ class __vbox_language {
 	
 		self::$langdata = array();
 		
-		$settings = new phpVBoxConfigClass();
+		$settings = new app_configClass();
 		$lang = strtolower($settings->language);
 		
 		if(@$_COOKIE['vboxLanguage']) {

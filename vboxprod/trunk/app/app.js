@@ -64,7 +64,7 @@ Ext.application({
     },
     
     // Ajax request handlers
-    ajaxRequest: function(fn, addparams, callback) {
+    ajaxRequest: function(service, fn, addparams, callback) {
     	
     	// Halt if fatal error has occurred
     	if(this._fatalErrorOccurred) return;
@@ -74,19 +74,21 @@ Ext.application({
     	
     	// Add function to params
     	if(!addparams) addparams = {};
-    	addparams['fn'] = fn;
-    	
-    	console.log(addparams);
     	
     	Ext.Ajax.request({
     		
     		url: 'ajax.php',
-    		params: addparams,
+    		method: 'POST',
+    		params: {'fn':fn,'service':service},
+    		jsonData: addparams,
     		
     		success: function(response){
     			
-    			var data = Ext.JSON.decode(response.responseText).data;
+    			console.log({'fn':fn,'service':service,requestData:addparams});
     			
+    			var data = Ext.JSON.decode(response.responseText);
+    			
+    			//console.log(data);
     			// Append debug output to console
     			if(data && data.messages && window.console && window.console.log) {
     				for(var i = 0; i < data.messages.length; i++) {
@@ -103,7 +105,7 @@ Ext.application({
 						if(data.errors[i].fatal || data.errors[i].connection) {
 							
 							// Multiple Servers check
-							if(data.errors[i].connection && self.config) {
+							if(data.errors[i].connection) {
 								
 								self._fatalErrorOccurred = true;
 								
@@ -111,6 +113,7 @@ Ext.application({
 								//$('#vboxPane').css({'display':'none'});
 								
 								s='';
+								/*
 								if(self.config.servers && self.config.servers.length) {
 									var servers = self.config.servers;
 									for(var a = 0; a < servers.length; a++) {
@@ -121,14 +124,14 @@ Ext.application({
 								if(s) self.alert(s);
 								self.alert(data.errors[i],{'width':'400px'});
 								self.alert('<p>'+trans('An error occurred communicating with your vboxwebsrv. No more requests will be sent by phpVirtualBox until the error is corrected and this page is refreshedata. The details of this connection error should be displayed in a subsequent dialog box.','phpVirtualBox')+'</p>'+s,{'width':'50%'});
-								
+								*/
 								
 							
 							// Ignore connection errors until we have config data unless this was a login attempt
 							} else if(!data.errors[i].connection || fn == 'login') {
 								
 								// If we have config data, and the error is fatal, halt processing
-								if(data.errors[i].fatal && self.config) {
+								if(data.errors[i].fatal) { //} && self.config) {
 									self._fatalErrorOccurred = true;
 								}
 	
@@ -145,7 +148,7 @@ Ext.application({
 					} // </ foreach error >
 				
     			}
-    			if(callback) callback(data.responseData);
+    			if(callback) callback(data.data.responseData);
     		}
     	});       	
     },
@@ -156,11 +159,7 @@ Ext.application({
     	Ext.create('vboxprod.view.Login', {id: 'login_form'}).show();
     	
     },
-    
-    
-    // Config data
-    config: null,
-    
+        
     // User session data
     session: null,
     
@@ -176,23 +175,13 @@ Ext.application({
     	
     	// App ref
     	var self = this;
-    	self.ajaxRequest('getConfig',{},function(d){
-    		
-    		self.config = d;
+		self.ajaxRequest('app','getSession',{},function(d){
+    	
+			self.session = d;
+			
+			if(self.session && self.session.id) self.fireEvent('start');
+			else self.showLogin();
 
-    		self.ajaxRequest('getSession',{},function(d){
-        	
-    			self.session = d;
-    			
-    			console.log(self.config);
-    			console.log(self.session);
-    			
-    			if(self.session && self.session.valid) self.fireEvent('start');
-    			else self.showLogin();
-
-    			
-    		});
-    		
     	});
     	
     }

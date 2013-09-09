@@ -35,8 +35,8 @@ class session {
 	 * @param String $id
 	 */
 	function read($id) {
-		$data = $this->storage->get("select data from sessions where id = '". $this->storage->escape($id) ."'");
-		if(!is_array($data) || !@$data['data']) {
+		$data = $this->storage->get("select id, data from sessions where id = '". $this->storage->escape($id) ."'");
+		if(empty($data) || empty($data['id'])) {
 			$this->new = true;
 			$data = array('data'=>array());
 		}
@@ -50,13 +50,11 @@ class session {
 	 * @return boolean
 	 */
 	function write($id, $data) {
-		return;
 		if($this->new) {
 			$q = "insert into sessions (id, data, time) values ('". $id ."', '" . $data ."', ". time() .")";
 		} else {
-			$q = "update sessions set data = '" . $data ."', time = ". time() ." where id = '" . $id;
+			$q = "update sessions set data = '" . $data ."', time = ". time() ." where id = '" . $id ."'";
 		}
-		
 		return $this->storage->execute($q);
 	}
 	

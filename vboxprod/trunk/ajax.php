@@ -61,8 +61,12 @@ try {
 	/*
 	 * Call to service
 	*/
-	$service->$cleanRequest['fn']($cleanRequest['requestData'],array(&$response));
-		
+	if($cleanRequest['requestData']) {
+		$rdata = $cleanRequest['requestData'];
+	} else {
+		$rdata = json_decode(file_get_contents('php://input'), true);
+	}
+	$service->$cleanRequest['fn']($rdata,array(&$response));
 		
 	/*
 	 * Send back persistent request in response

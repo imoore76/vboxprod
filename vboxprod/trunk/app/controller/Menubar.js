@@ -40,7 +40,7 @@ Ext.define('vboxprod.controller.Menubar', {
     	
     		case 'logout':
     			this.application.stop();
-    			this.application.ajaxRequest('logout',{},function(){
+    			this.application.ajaxRequest('app','logout',{},function(){
     				location.reload(true);
     			});
     			break;
@@ -54,7 +54,7 @@ Ext.define('vboxprod.controller.Menubar', {
     
     /* Populate navigation tree with groups and VMs */
     updateLogout: function() {
-    	this.getLogoutItem().setText('Logout - ' + this.application.session.user);
+    	this.getLogoutItem().setText('Logout - ' + (this.application.session.name ? this.application.session.name : this.application.session.userid));
     }
     	
 });

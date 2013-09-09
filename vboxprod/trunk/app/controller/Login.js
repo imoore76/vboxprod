@@ -27,13 +27,11 @@ Ext.define('vboxprod.controller.Login', {
     	// only if submit buttin is enabled
     	if(this.getLoginButton().disabled) return;
     	
-    	console.log('trynig to log in...');
-    	
-    	this.application.ajaxRequest('login',{u:this.getUsernameField().getValue(),
+    	this.application.ajaxRequest('app','login',{u:this.getUsernameField().getValue(),
     		
     		p:this.getPasswordField().getValue()},function(data){
     			// This returns a session object wich must be valid
-    			if(data && data.valid) {
+    			if(data && data.id && data.id > 0) {
     				self.getLoginWindow().hide();
     				self.application.loadSession(data);
     			} else {

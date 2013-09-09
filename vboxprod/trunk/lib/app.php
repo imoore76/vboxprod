@@ -7,6 +7,7 @@
 
 // Use session object
 require_once(dirname(__FILE__).'/session.php');
+require_once(dirname(__FILE__).'/modulefactory.php');
 
 class app {
 	
@@ -47,6 +48,14 @@ class app {
 	var $session = null;
 	
 	/**
+	 * Default configuration items
+	 */
+	private static $configDefaults = array(
+		'dbType' => 'mysql',
+		'accountsModule' => 'Builtin'
+	);
+	
+	/**
 	 * Initialize session handlers and data
 	 * on connect
 	 */
@@ -72,6 +81,14 @@ class app {
 			self::$instance = new app();
 		}
 		return self::$instance;
+	}
+	
+	/**
+	 * Return a configuration item or its default
+	 */
+	static function getConfigItem($item) {
+		$config = self::getConfig();
+		return (!empty($config[$item]) ? $config[$item] : (!empty(self::$configDefaults[$item]) ? self::$configDefaults[$item] : null));
 	}
 	
 	/**
@@ -108,18 +125,8 @@ class app {
 		// Return connection if it exists
 		if(self::$storage) return self::$storage;
 	
-		// Get configuration
-		$config = self::getConfig();
+		self::$storage = new modulefactory('storage',self::getConfigItem('dbType'));
 		
-	
-		if(empty($config['dbType'])) $config['dbType'] = 'mysql';
-		$config['dbType'] = preg_replace('[^a-z]','',$config['dbType']);
-	
-		require_once(dirname(__FILE__).'/db/'.$config['dbType'].'connector.php');
-	
-		$sqlClass = $config['dbType'].'connector';
-		self::$storage = new $sqlClass();
-	
 		return self::$storage;
 	
 	}
@@ -147,6 +154,33 @@ class app {
 		$serviceClass = 'service_'.$service;
 		return new $serviceClass();
 				
+	}
+	
+	/**
+	 * Get current user
+	 */
+	function getUser() {
+		$a = new modulefactory('accounts', self::getConfigItem('accountsModule'));
+		return $a->getUser($_SESSION['userid']);
+	}
+	
+	/**
+	 * Log in to the application and return a session object
+	 */
+	function login($username, $password) {
+		
+		$a = new modulefactory('accounts', self::getConfigItem('accountsModule'));
+		$user = $a->authenticate($username, $password);
+		
+		if(!empty($user['id'])) {
+			$_SESSION['id'] = $user['id'];
+			$_SESSION['userid'] = $user['userid'];
+			$_SESSION['name'] = $user['name'];
+			$_SESSION['group_id'] = $user['group_id'];
+			return $_SESSION;
+		} else {
+			return array('id'=>0);
+		}
 	}
 	
 }

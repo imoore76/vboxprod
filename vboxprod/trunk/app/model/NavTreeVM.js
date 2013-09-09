@@ -3,6 +3,6 @@ Ext.define('vboxprod.model.NavTreeVM', {
     fields: [ 'id', 'name', 'state', 'OSTypeId', 'group_id', 'sessionState', 'customIcon' ],
     belongsTo: 'NavTreeGroup',
     init: function(){
-    	console.log("init NavTreeVM model");
+    	//console.log("init NavTreeVM model");
     }
 });

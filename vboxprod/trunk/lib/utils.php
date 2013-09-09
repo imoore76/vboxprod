@@ -10,57 +10,14 @@
  * 
 */
 
-/**
- * Initialize session.
- * @param boolean $keepopen keep session open? The default is
- * 			to close the session after $_SESSION has been populated.
- * @uses $_SESSION
- */
-function session_init($keepopen = false) {
-	
-	$settings = new app_configClass();
-	
-	
-	// Sessions provided by auth module?
-	if(@$settings->auth->capabilities['sessionStart']) {
-		call_user_func(array($settings->auth, $settings->auth->capabilities['sessionStart']), $keepopen);
-		return;
-	}
-	
-	// No session support? No login...
-	if(@$settings->noAuth || !function_exists('session_start')) {
-		global $_SESSION;
-		$_SESSION['valid'] = true;
-		$_SESSION['authCheckHeartbeat'] = time();
-		$_SESSION['admin'] = true;
-		return;
-	}
-
-	// start session
-	session_start();
-	
-	// Session is auto-started by PHP?
-	if(!ini_get('session.auto_start')) {
-	
-		ini_set('session.use_trans_sid', 0);
-		ini_set('session.use_only_cookies', 1);
-		
-		// Session path
-		if(isset($settings->sessionSavePath)) {
-			session_save_path($settings->sessionSavePath);
-		}
-	
-		session_name((isset($settings->session_name) ? $settings->session_name : md5('phpvbx'.$_SERVER['DOCUMENT_ROOT'].$_SERVER['HTTP_USER_AGENT'])));
-		session_start();
-	}
-	
-	
-	if(!$keepopen)
-		session_write_close();
-	
-	
+function encrypt($data) {
+	$salt = 'cH!swe!retReGu7W6bEDRup7usuDUh9THeD2CHeGE*ewr4n39=E@rAsp7c-Ph@pH';
+	$key = substr(hash('sha256', $salt.$key.$salt), 0, 32);
+	$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
+	$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+	$encrypted = base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $data, MCRYPT_MODE_ECB, $iv));
+	return $encrypted;
 }
-
 /**
  * Strip slashes from string. Needed to pass to array_walk
  * @param string $a string to strip slashes from

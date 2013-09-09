@@ -5,7 +5,7 @@ Ext.define('vboxprod.controller.NavTree', {
     extend: 'Ext.app.Controller',
     
     // VMs and Groups
-    stores: ['NavTreeGroups','NavTreeVMs'],
+    stores: ['NavTreeGroups','NavTreeVMs', 'ServerList'],
     
     // Hold nav tree ref so that we only have to get this once
     refs : [{
@@ -18,7 +18,8 @@ Ext.define('vboxprod.controller.NavTree', {
     	
     	/* Application level events */
         this.application.on({
-            start: this.populateTree, 
+        	start: this.populateServers,
+            serverChanged: this.populateTree, 
             scope: this
         },{
         	launch: this.showWelcome,
@@ -36,6 +37,13 @@ Ext.define('vboxprod.controller.NavTree', {
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
     	//console.log(record);
+    },
+    
+    /* Populate server list */
+    populateServers: function() {
+    	this.getStore('ServerList').load(function() {
+    		
+    	});
     },
     
     /* Populate navigation tree with groups and VMs */

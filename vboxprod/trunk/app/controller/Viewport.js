@@ -26,9 +26,9 @@ Ext.define('vboxprod.controller.Viewport', {
             start: function() {
             	loadMask.hide();
             },
- 		   stop: function() {
-			   loadMask.show();
-		   }
+			stop: function() {
+				loadMask.show();
+			}
         });
 
     } 	

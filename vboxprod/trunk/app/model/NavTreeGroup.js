@@ -11,6 +11,6 @@ Ext.define('vboxprod.model.NavTreeGroup', {
         associationKey: 'children' // read child data from child_groups
     }]
     init: function(){
-    	console.log("init NavTreeGroup model");
+    	//console.log("init NavTreeGroup model");
     }
 });

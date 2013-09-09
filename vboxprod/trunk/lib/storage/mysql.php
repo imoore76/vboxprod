@@ -5,9 +5,7 @@
  *
  */
 
-require_once(dirname(dirname(__FILE__)).'/app.php');
-
-class mysqlconnector {
+class storage_mysql implements storageinterface {
 
 	/**
 	 * true if connected to server

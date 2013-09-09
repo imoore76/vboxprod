@@ -5,6 +5,6 @@ Ext.define('vboxprod.model.vmdata', {
               'customIcon' ],
     belongsTo: 'NavTreeGroup',
     init: function(){
-    	console.log("init vmdata model");
+    	//console.log("init vmdata model");
     }
 });

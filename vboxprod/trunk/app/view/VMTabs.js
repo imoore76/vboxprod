@@ -661,7 +661,7 @@ Ext.define('vboxprod.view.VMTabs', {
     	layout: 'fit',
     	listeners: {
     		show: function(p) {
-    			console.log('show here...');
+    			//console.log('show here...');
     			p.getComponent('snapshottree').doLayout().getStore().getRootNode().expand();
     			
     		}

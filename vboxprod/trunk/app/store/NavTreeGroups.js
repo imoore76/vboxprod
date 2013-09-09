@@ -4,13 +4,11 @@
 Ext.define('vboxprod.store.NavTreeGroups', {
     extend: 'Ext.data.TreeStore',
 	autoLoad: false,
-	remoteSort: false,
-	sorters: [{
-		property: 'order'
-	}],
+	remoteSort: true,
 	proxy: {
         type: 'ajax',
-        url : 'ajax.php?fn=getVMGroups',
+        url : 'ajax.php',
+        extraParams: {'service':'vmgroups','fn':'getGroupsList'},
         reader: {
         	type: 'AppJsonReader'
         }

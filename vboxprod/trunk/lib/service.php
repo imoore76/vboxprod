@@ -55,4 +55,26 @@ class service {
 		return $response;
 	}
 	
+	static function getService($service) {
+		
+		/*
+		 * Include service file
+		*/
+		$service = preg_replace('[^a-z]','',$service);
+		
+		$serviceFile = dirname(__FILE__).'/services/'.$service .'.php';
+		if(!@file_exists($serviceFile)) {
+			throw new Exception("Unknown service: " . $service);
+		}
+		include_once($serviceFile);
+		
+		
+		/*
+		 * Instantiate class
+		*/
+		$serviceClass = 'service_'.$service;
+		return new $serviceClass();
+		
+	}
+	
 }

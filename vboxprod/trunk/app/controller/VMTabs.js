@@ -20,7 +20,7 @@ Ext.define('vboxprod.controller.VMTabs', {
     	
         /* Tree events */
         this.control({
-        	'NavTree' : {
+        	'viewport > NavTree' : {
         		select: this.selectItem
         	}
         });

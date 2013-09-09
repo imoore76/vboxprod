@@ -13,9 +13,10 @@ Ext.define('vboxprod.view.NavTree', {
 	   flex: 1,
 	   editable: false,
 	   store: 'ServerList',
+	   itemId: 'serverlist',
 	   displayField: 'name',
 	   valueField: 'id',
-		queryMode: 'local',
+	   queryMode: 'local'
    }],
     viewConfig:{
         markDirty:false

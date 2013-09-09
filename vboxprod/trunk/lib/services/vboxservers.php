@@ -4,7 +4,6 @@
  * @author ian_moore
  *
  */
-require_once(dirname(dirname(__FILE__)).'/service.php');
 
 class service_vboxservers extends service {
 	
@@ -12,6 +11,6 @@ class service_vboxservers extends service {
 		$fields = 'id, name';
 		//if(app::getUser()->isAdmin())
 			$fields = '*';
-		return app::getStorage()->query("select * from vboxservers");
+		return app::getStorage()->query("select {$fields} from vboxservers");
 	}	
 }

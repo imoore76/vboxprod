@@ -26,9 +26,7 @@ class session {
 
 	/** Dummy functions that are n/a  here **/
 	function close() { return true; }
-	function open() {  
-		return true;
-	}
+	function open() { return true; }
 	
 	/**
 	 * Read session data from table

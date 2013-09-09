@@ -31,6 +31,9 @@ Ext.application({
     
     views: ['Login'],
     
+    // Current vbox server id
+    vboxServerId: 0,
+    
     // Fatal error
     _fatalErrorOccurred: false,
     
@@ -79,7 +82,7 @@ Ext.application({
     		
     		url: 'ajax.php',
     		method: 'POST',
-    		params: {'fn':fn,'service':service},
+    		params: {'fn':fn,'service':service,'server':this.vboxServerId},
     		jsonData: addparams,
     		
     		success: function(response){
@@ -167,6 +170,14 @@ Ext.application({
     loadSession: function(sessionData) {
     	this.session = sessionData;
     	this.fireEvent('start');
+    },
+    
+    /**
+     * 
+     */
+    setVboxServer: function(id) {
+    	console.log("CHanging server to " + id);
+    	this.vboxServerId = id;
     },
     
     launch: function() {

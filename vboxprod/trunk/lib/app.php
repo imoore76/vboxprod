@@ -7,6 +7,7 @@
 
 // Use session object
 require_once(dirname(__FILE__).'/session.php');
+require_once(dirname(__FILE__).'/service.php');
 require_once(dirname(__FILE__).'/modulefactory.php');
 
 class app {
@@ -137,23 +138,7 @@ class app {
 	 */
 	function getService($service) {
 		
-		/*
-		 * Include service file
-		*/
-		$service = preg_replace('[^a-z]','',$service);
-		$serviceFile = dirname(__FILE__).'/services/'.$service .'.php';
-		if(!@file_exists($serviceFile)) {
-			throw new Exception("Unknown service: " . $service);
-		}
-		include_once($serviceFile);
-		
-		
-		/*
-		 * Instantiate class
-		*/
-		$serviceClass = 'service_'.$service;
-		return new $serviceClass();
-				
+		return service::getService($service);
 	}
 	
 	/**

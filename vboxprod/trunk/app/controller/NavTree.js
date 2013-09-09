@@ -28,10 +28,19 @@ Ext.define('vboxprod.controller.NavTree', {
         
         /* Tree events */
         this.control({
-        	'NavTree' : {
+        	'viewport > NavTree' : {
         		select: this.selectItem
+        	},
+        	'viewport > NavTree #serverlist' : {
+        		select: this.serverChange
         	}
         });
+    },
+    
+    /* Server selected from list */
+    serverChange: function(cbox, val) {
+    	console.log(val);
+    	this.application.setVboxServer(val[0].data.id);
     },
     
     /* An item is selected */
@@ -41,8 +50,22 @@ Ext.define('vboxprod.controller.NavTree', {
     
     /* Populate server list */
     populateServers: function() {
-    	this.getStore('ServerList').load(function() {
+    	
+    	this.getStore('ServerList').load(function(records) {
+
+    		var toolbar = Ext.ComponentQuery.query('viewport > NavTree > toolbar')[0];
     		
+    		if(records.length == 0) {
+    			
+    			toolbar.hide();
+    			
+    		} else if(records.length == 1) {
+    			
+    			var sl = Ext.ComponentQuery.query('viewport > NavTree #serverlist')[0];
+    			sl.select(records[0]);
+    			sl.fireEvent('select', sl, records);
+    			//toolbar.hide();
+    		}
     	});
     },
     

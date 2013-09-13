@@ -310,7 +310,7 @@ subscribe = []
 listeners = []
 
 # Enumerate all defined machines
-for mach in vbox.getMachines():
+for mach in vbox.machines:
      
     try:
         

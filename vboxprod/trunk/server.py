@@ -1,39 +1,31 @@
 import sys, os
-import json
 import threading
+import ConfigParser
 import traceback
 from pprint import pprint
 
+import logging
+ 
+#logging.basicConfig(level=logging.DEBUG)
+
+basepath = os.path.abspath(os.path.dirname(__file__))
+app = None
+
 # Our library modules
-sys.path.insert(0,os.path.abspath(os.path.dirname(__file__))+'/lib')
+sys.path.insert(0,basepath+'/lib')
 
 import cherrypy
 from utils import *
+from models import *
 
 
-"""
-
-    Ajax requests
-    
-"""
-class AjaxRequests(object):
-    pass
-
-# Load dispatchers
-import dispatchers
-
-dispatch_names = ['app','accounts','connectors','vbox','vmgroups']
-
-for d in dispatch_names:
-    __import__('dispatchers.' + d)
-    setattr(AjaxRequests, d, getattr(dispatchers, d).dispatcher())
     
 """
 
     Application
 
 """
-class app(object):
+class Application(threading.Thread):
     
     __metaclass__ = Singleton
     
@@ -57,6 +49,11 @@ class app(object):
         'accountsModule' : 'Builtin'
     }
     
+    config = None
+    
+    def __init__(self, config):
+        self.config = config
+        threading.Thread.__init__(self)
     
     """
      * Return a configuration item or its default
@@ -77,13 +74,16 @@ class app(object):
     
     
     """
-     * Log in to the application and return a session object
+     * Authenticate against the user db
      """
-    def login(username, password):       
-        pass
+    def auth(self, username, password):
+        user = User.select().where(User.name == username).get()
+        pprint(user)     
+        return True
             
     
-
+    def run(self):
+        pass
 
 """
        
@@ -92,7 +92,10 @@ class app(object):
 """
 class WebServerThread(threading.Thread):
        
-    def __init__(self):       
+    config = None
+    
+    def __init__(self, config):     
+        self.config = config  
         threading.Thread.__init__(self)
         
     def finish(self):
@@ -100,26 +103,63 @@ class WebServerThread(threading.Thread):
 
     def run(self):
 
+        dbconfig = {}
+        for k,v in self.config.items('storage'):
+            dbconfig[k] = v
         
-        config = {
+        webconfig = {
             '/': {
+                  
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': os.path.abspath(os.path.dirname(__file__))+'/webroot',                                                                                       
-                'tools.staticdir.index': 'index.html'}
+                'tools.staticdir.dir': basepath+'/webroot',                                                                                       
+                'tools.staticdir.index': 'index.html',
+                                 
+                'tools.sessions.on': True,
+                'tools.sessions.storage_type': "Mysql",
+                'tools.sessions.connect_arguments': dbconfig,
+                'tools.sessions.table_name': 'sessions'
+            }
         }
-
+        
+        """
+            All requests go through dispatchers in the /dispatchers folder 
+        """
+        class DispatchRoot(object):
+            pass
+        
+        # Load dispatchers
+        import dispatchers
+        
+        dispatch_names = ['app','accounts','connectors','vbox','vmgroups']
+        
+        for d in dispatch_names:
+            __import__('dispatchers.' + d, globals(), locals())
+            setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
+    
+        from mysqlsession import MySQLSession
             
-        cherrypy.quickstart(AjaxRequests(), '/', config)
+        cherrypy.quickstart(DispatchRoot(), '/', webconfig)
 
             
             
 def main(argv = sys.argv):
     
+    global app
+    
     # For proper UTF-8 encoding / decoding
     reload(sys)
     sys.setdefaultencoding('utf8')
     
-    webserver = WebServerThread()
+    # Read config 
+    config = ConfigParser.SafeConfigParser()
+    config.read(basepath + '/settings.ini')
+    
+    # Start application thread
+    app = Application(config)
+    app.start()
+    
+    # Start web thread
+    webserver = WebServerThread(config)
     webserver.start()
     
 

@@ -49,12 +49,4 @@ class dispatcher_parent(object):
     errors = []
     messages = []
     
-    def __getattr__(self, name):
-        print self
-        print name
-        
-        pprint(self['name'])
-        
-        return self['name']
-    
     

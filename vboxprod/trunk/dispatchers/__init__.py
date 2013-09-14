@@ -40,7 +40,10 @@ def require_admin(func):
         return func(args, kwargs)
     return decorated
 
-from pprint import pprint
+
+def setApp(app):
+    dispatcher_parent.app = app
+    
 """
     Parent dispatcher class
 """
@@ -48,5 +51,6 @@ class dispatcher_parent(object):
     
     errors = []
     messages = []
-    
+    app = None
+        
     

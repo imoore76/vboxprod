@@ -9,7 +9,6 @@ import logging
 #logging.basicConfig(level=logging.DEBUG)
 
 basepath = os.path.abspath(os.path.dirname(__file__))
-app = None
 
 # Our library modules
 sys.path.insert(0,basepath+'/lib')
@@ -19,7 +18,10 @@ from utils import *
 from models import *
 
 
-    
+app = None
+
+
+
 """
 
     Application
@@ -46,40 +48,30 @@ class Application(threading.Thread):
      """
     configDefaults = {
         'dbType' : 'mysql',
-        'accountsModule' : 'Builtin'
+        'accountsModule' : 'builtin'
     }
     
     config = None
+    accounts = None
     
     def __init__(self, config):
+
         self.config = config
+        
+        import accounts
+        __import__('accounts.' + self.getConfigItem('app','accountsModule') )
+        self.accounts = getattr(accounts, self.getConfigItem('app','accountsModule')).interface()
+        
         threading.Thread.__init__(self)
     
     """
      * Return a configuration item or its default
      """
-    def getConfigItem(self, item):
-        if config.get(item, None):
-            return config['item']
-        return configDefaults.get('item', None)
-    
-        
-    """
-     * Get current user
-     """
-    def getUser(self):
-        pass
-            #a = new modulefactory('accounts', self::getConfigItem('accountsModule'))
-            #return a.getUser(_SESSION['userid'])
-    
-    
-    """
-     * Authenticate against the user db
-     """
-    def auth(self, username, password):
-        user = User.select().where(User.name == username).get()
-        pprint(user)     
-        return True
+    def getConfigItem(self, section, item):
+        try:
+            return self.config.get(section, item)
+        except:
+            return self.configDefaults.get(item, None)    
             
     
     def run(self):
@@ -94,6 +86,7 @@ class WebServerThread(threading.Thread):
        
     config = None
     
+    
     def __init__(self, config):     
         self.config = config  
         threading.Thread.__init__(self)
@@ -102,7 +95,9 @@ class WebServerThread(threading.Thread):
         cherrypy.engine.exit()
 
     def run(self):
-
+        
+        global app
+        
         dbconfig = {}
         for k,v in self.config.items('storage'):
             dbconfig[k] = v
@@ -129,11 +124,12 @@ class WebServerThread(threading.Thread):
         
         # Load dispatchers
         import dispatchers
+        dispatchers.setApp(app)
         
         dispatch_names = ['app','accounts','connectors','vbox','vmgroups']
         
         for d in dispatch_names:
-            __import__('dispatchers.' + d, globals(), locals())
+            __import__('dispatchers.' + d)
             setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
     
         from mysqlsession import MySQLSession

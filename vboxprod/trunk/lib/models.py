@@ -1,9 +1,11 @@
 
 from peewee import *
 
+MODELS = ['User', 'Group', 'VMGroup', 'Connector', 'AppConfig']
+
 class User(Model):
     
-    id = BigIntegerField(sequence = True, primary_key = True)
+    id = PrimaryKeyField()
     username = CharField(unique = True, max_length=32, null = False)
     name = CharField(max_length=128)
     password = CharField(max_length=128, null = False)
@@ -11,13 +13,13 @@ class User(Model):
     
 class Group(Model):
     
-    id = BigIntegerField(sequence = True, primary_key = True)
+    id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)
     description = CharField(max_length=256)
     
 class VMGroup(Model):
 
-    id = BigIntegerField(sequence = True, primary_key = True)
+    id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)
     description = CharField(max_length=256)
     location = CharField(max_length=256)
@@ -26,7 +28,7 @@ class VMGroup(Model):
     
 class Connector(Model):
 
-    id = BigIntegerField(sequence = True, primary_key = True)
+    id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)    
     ip = CharField(max_length=256, null = False)
     port = IntegerField()
@@ -34,6 +36,6 @@ class Connector(Model):
     
 class AppConfig(Model):
     
-    id = BigIntegerField(sequence = True, primary_key = True)
+    id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32)
     value = CharField(max_length=256)

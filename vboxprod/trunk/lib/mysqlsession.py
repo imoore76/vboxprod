@@ -75,9 +75,9 @@ class MySQLSession(cherrypy.lib.sessions.Session):
         else:
             logger.debug("Connecting to %r" % cls.connect_arguments)
             db = MySQLdb.connect(**cls.connect_arguments)
-            cursor = db.cursor()
-            cursor.execute(cls.SCHEMA % cls.table_name)
-            db.commit()
+            #cursor = db.cursor()
+            #cursor.execute(cls.SCHEMA % cls.table_name)
+            #db.commit()
             local.db = db
             
             return db

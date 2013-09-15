@@ -137,10 +137,33 @@ class WebServerThread(threading.Thread):
         cherrypy.quickstart(DispatchRoot(), '/', webconfig)
 
             
-            
+
+def install_schema(config):
+    
+    import models
+    for m in models.MODELS:
+        pass
+        #getattr(models, m).create_table()
+    
+    # create dummy class
+    import MySQLdb
+    from mysqlsession import MySQLSession
+    
+    dbconfig = {}
+    for k,v in config.items('storage'):
+        dbconfig[k] = v
+
+    db = MySQLdb.connect(**dbconfig)
+    cursor = db.cursor()
+    cursor.execute(MySQLSession.SCHEMA % 'sessions')
+    db.commit()
+
+    
+    
 def main(argv = sys.argv):
     
     global app
+    
     
     # For proper UTF-8 encoding / decoding
     reload(sys)
@@ -150,6 +173,10 @@ def main(argv = sys.argv):
     config = ConfigParser.SafeConfigParser()
     config.read(basepath + '/settings.ini')
     
+    if len(argv) > 1 and argv[1] == 'installschema':
+        install_schema(config)
+        sys.exit()
+
     # Start application thread
     app = Application(config)
     app.start()

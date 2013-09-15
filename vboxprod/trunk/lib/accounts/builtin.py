@@ -1,12 +1,15 @@
 
-basepath = os.path.abspath(os.path.dirname(__file__))
+import os, sys
 
-import models.User, models.Group
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__)))+'/lib')
+
+from models import User, Group
 
 CAPABILITIES = [
     'groups',
     'updategroups',
-    'updateusers'
+    'updateusers',
+    'logout'
 ]
 
 class interface:
@@ -39,5 +42,5 @@ class interface:
         pass
     
     def authenticate(self, username, password):
-        u = models.User.get(User.username == username)
+        u = User.get(User.username == username)
         print u

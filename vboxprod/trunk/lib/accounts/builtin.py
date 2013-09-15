@@ -2,6 +2,8 @@
 import os, sys
 
 from models import User, Group
+from utils import genhash
+import pprint
 
 CAPABILITIES = [
     'groups',
@@ -40,11 +42,16 @@ class interface:
         pass
     
     def authenticate(self, username, password):
-        from utils import genhash
-        import pprint
         try:
             u = User.get(User.username == username)
-            pprint.pprint(u)
+            if u.password == genhash(password):
+                user = {
+                    'id':u.id,
+                    'username':u.username,
+                    'name':u.name,
+                    'group_id':u.group_id
+                }
+                return user
         except User.DoesNotExist:
-            return False
-        print u
+            pass
+        return False

@@ -1,4 +1,4 @@
-
+print "IN accounts dispatcher.."
 
 from dispatchers import dispatcher_parent, jsonout, require_admin
 

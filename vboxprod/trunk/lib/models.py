@@ -1,5 +1,6 @@
 
 from peewee import *
+
 import app
 
 MODELS = ['User', 'Group', 'VMGroup', 'Connector', 'AppConfig']

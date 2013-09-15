@@ -67,9 +67,9 @@ class WebServerThread(threading.Thread):
         # Load dispatchers
         import dispatchers
         
-        dispatch_names = ['app','accounts','connectors','vbox','vmgroups']
+        print "Getting dispatcherrs"
         
-        for d in dispatch_names:
+        for d in dispatchers.__all__:
             __import__('dispatchers.' + d)
             setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
     

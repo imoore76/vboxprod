@@ -2,12 +2,18 @@
 
 import json, cherrypy, traceback
 
+__all__ = ['accounts', 'connectors', 'vbox', 'appd', 'vmgroups']
+
 """"
     Send data as JSON
 """
 def jsonout(func):
     cherrypy.response.headers['Content-Type'] = 'application/json'
     def decorated(*args, **kwargs):
+        
+        if kwargs.get('_raw') == True:
+            return func(*args, **kwargs)
+        
         errors = []
         messages = []
         success = False
@@ -44,9 +50,6 @@ def require_admin(func):
     return decorated
 
 
-def setApp(app):
-    dispatcher_parent.app = app
-    
 """
     Parent dispatcher class
 """

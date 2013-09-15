@@ -1,5 +1,4 @@
 
-print "In vbox dispatcher"
 from dispatchers import dispatcher_parent, jsonout
 
 class dispatcher(dispatcher_parent):

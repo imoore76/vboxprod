@@ -1,8 +1,9 @@
 
-print "In connectors dispatcher"
 
 from dispatchers import dispatcher_parent, jsonout, require_admin
+from models import Connector
 import cherrypy
+import app
 
 class dispatcher(dispatcher_parent):
 

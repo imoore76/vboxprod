@@ -1,25 +1,28 @@
-print "IN accounts dispatcher.."
-
 from dispatchers import dispatcher_parent, jsonout, require_admin
+import cherrypy, pprint
+
+import app
 
 class dispatcher(dispatcher_parent):
+    
     
     @jsonout
     @require_admin
     def getUsers(self, *args, **kwargs):
-        pass
+        return app.getInstance().accounts.getUsers()
     getUsers.exposed = True
     
     @jsonout
     @require_admin
     def getGroups(self, *args, **kwargs):
-        pass
+        return app.getInstance().accounts.getGroups()
     getGroups.exposed = True
     
     @jsonout
     @require_admin
     def updateGroup(self, *args, **kwargs):
         pass
+
 
     @jsonout
     @require_admin
@@ -29,7 +32,9 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def addGroup(self, *args, **kwargs):
-        pass
+        pprint.pprint(kwargs)
+        return app.getInstance().accounts.addGroup(kwargs)
+    addGroup.exposed = True
 
     @jsonout
     @require_admin

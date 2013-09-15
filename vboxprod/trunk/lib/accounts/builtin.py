@@ -1,7 +1,7 @@
 
 import os, sys
 
-from models import User, Group
+from models import AuthUser, User, Group
 from utils import genhash
 import pprint
 
@@ -12,46 +12,69 @@ CAPABILITIES = [
     'logout'
 ]
 
+
 class interface:
     
     def getUser(self, username):
-        pass
+        return dict(User.get(User.username == username)._data.copy())
     
     def getGroup(self, groupname):
-        pass
+        return dict(User.get(Group.name == name)._data.copy())
     
     def getUsers(self):
-        pass
+        return list(User.select().dicts())
     
     def getGroups(self):
-        pass
+        return list(Group.select().dicts())
     
     def changePassword(self, username, password):
-        pass
+        u = AuthUser.get(AuthUser.username == username)
+        u.password = genhash(password)
+        u.save()
+        return True
     
-    def updateUser(self, updata):
-        pass
-    
+    def updateUser(self, **updata):
+        
+        username = updata.get('username', None)
+        if username is None: return False
+        del updata['username']
+        
+        u = User.get(username == updata.get('username'))
+        newpw = None
+        del updata['username']
+        for k, v in updata.iteritems():
+            if k == 'password':
+                newpw = v
+                continue
+            setattr(u, k, v)
+        u.save()
+        
+        if newpw is not None:
+            self.changePassword(username, newpw)
+            
+    def addGroup(self, name, description = ''):
+        g = Group()
+        g.name = name
+        g.description = description
+        g.save()
+        return True
+        
     def updateGroup(self, update):
         pass
     
     def deleteGroup(self, groupname):
-        pass
+        Group.get(name == groupname).delete()
+        return True
     
     def deleteUser(self, username):
-        pass
+        User.get(name == username).delete()
+        return True
     
     def authenticate(self, username, password):
         try:
-            u = User.get(User.username == username)
-            if u.password == genhash(password):
-                user = {
-                    'id':u.id,
-                    'username':u.username,
-                    'name':u.name,
-                    'group_id':u.group_id
-                }
-                return user
-        except User.DoesNotExist:
+            u = AuthUser.get(AuthUser.username == username and AuthUser.password == genhash(password))
+            return self.getUser(username)
+        except AuthUser.DoesNotExist:
             pass
         return False
+    

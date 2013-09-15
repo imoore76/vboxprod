@@ -3,7 +3,7 @@ from peewee import *
 
 import app
 
-MODELS = ['User', 'Group', 'VMGroup', 'Connector', 'AppConfig']
+INSTALLMODELS = ['User', 'Group', 'VMGroup', 'Connector', 'AppConfig']
 
 dbconfig = {}
 dbname = ''
@@ -22,8 +22,13 @@ class User(MySqlModel):
     id = PrimaryKeyField()
     username = CharField(unique = True, max_length=32, null = False)
     name = CharField(max_length=128)
-    password = CharField(max_length=128, null = False)
     group_id = IntegerField(default = 0)
+
+class AuthUser(User):
+    password = CharField(max_length=128, null = False)
+    class Meta:
+        database = db
+        db_table = 'User'
     
 
 class Group(MySqlModel):

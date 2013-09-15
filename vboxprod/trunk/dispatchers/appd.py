@@ -1,5 +1,4 @@
 
-print "in dispatcher app"
 from dispatchers import dispatcher_parent, jsonout
 
 import app

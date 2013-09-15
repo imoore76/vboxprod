@@ -6,7 +6,7 @@ from utils import genhash
 
 def database(config):
         
-    for m in models.MODELS:
+    for m in models.INSTALLMODELS:
         getattr(models, m).create_table()
     
     # create dummy class
@@ -25,9 +25,9 @@ def resetadmin(config):
     
     
     try:
-        u = User.get(User.username == 'admin')
-    except User.DoesNotExist:
-        u = User()
+        u = AuthUser.get(AuthUser.username == 'admin')
+    except AuthUser.DoesNotExist:
+        u = AuthUser()
         u.username = 'admin'
         u.name = 'Administrator'
         u.group_id = 0

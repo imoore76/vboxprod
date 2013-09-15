@@ -1,8 +1,6 @@
 
 import os, sys
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__)))+'/lib')
-
 from models import User, Group
 
 CAPABILITIES = [
@@ -42,5 +40,11 @@ class interface:
         pass
     
     def authenticate(self, username, password):
-        u = User.get(User.username == username)
+        from utils import genhash
+        import pprint
+        try:
+            u = User.get(User.username == username)
+            pprint.pprint(u)
+        except User.DoesNotExist:
+            return False
         print u

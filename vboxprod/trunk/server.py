@@ -1,81 +1,30 @@
 import sys, os
+
+# Our library modules
+basepath = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0,basepath+'/lib')
+
 import threading
 import ConfigParser
 import traceback
+import app
+import install
 from pprint import pprint
 
 import logging
  
 #logging.basicConfig(level=logging.DEBUG)
 
-basepath = os.path.abspath(os.path.dirname(__file__))
 
-# Our library modules
-sys.path.insert(0,basepath+'/lib')
 
 import cherrypy
 from utils import *
 from models import *
 
 
-app = None
+print "In server..."
 
 
-
-"""
-
-    Application
-
-"""
-class Application(threading.Thread):
-    
-    __metaclass__ = Singleton
-    
-    """
-      * Error number describing a fatal error
-      * @var integer
-    """
-    ERRNO_FATAL = 32
-    
-    """
-     * Error number describing a connection error
-     * @var integer
-     """
-    ERRNO_CONNECT = 64
-    
-    """
-     * Default configuration items
-     """
-    configDefaults = {
-        'dbType' : 'mysql',
-        'accountsModule' : 'builtin'
-    }
-    
-    config = None
-    accounts = None
-    
-    def __init__(self, config):
-
-        self.config = config
-        
-        import accounts
-        __import__('accounts.' + self.getConfigItem('app','accountsModule') )
-        self.accounts = getattr(accounts, self.getConfigItem('app','accountsModule')).interface()
-        
-        threading.Thread.__init__(self)
-    
-    """
-     * Return a configuration item or its default
-     """
-    def getConfigItem(self, section, item):
-        try:
-            return self.config.get(section, item)
-        except:
-            return self.configDefaults.get(item, None)    
-            
-    
-    def run(self):
-        pass
 
 """
        
@@ -83,23 +32,16 @@ class Application(threading.Thread):
        
 """
 class WebServerThread(threading.Thread):
-       
-    config = None
-    
-    
-    def __init__(self, config):     
-        self.config = config  
-        threading.Thread.__init__(self)
-        
+               
     def finish(self):
         cherrypy.engine.exit()
 
     def run(self):
         
-        global app
+        config = app.getConfig()
         
         dbconfig = {}
-        for k,v in self.config.items('storage'):
+        for k,v in config.items('storage'):
             dbconfig[k] = v
         
         webconfig = {
@@ -124,7 +66,6 @@ class WebServerThread(threading.Thread):
         
         # Load dispatchers
         import dispatchers
-        dispatchers.setApp(app)
         
         dispatch_names = ['app','accounts','connectors','vbox','vmgroups']
         
@@ -138,51 +79,26 @@ class WebServerThread(threading.Thread):
 
             
 
-def install_schema(config):
-    
-    import models
-    for m in models.MODELS:
-        pass
-        #getattr(models, m).create_table()
-    
-    # create dummy class
-    import MySQLdb
-    from mysqlsession import MySQLSession
-    
-    dbconfig = {}
-    for k,v in config.items('storage'):
-        dbconfig[k] = v
-
-    db = MySQLdb.connect(**dbconfig)
-    cursor = db.cursor()
-    cursor.execute(MySQLSession.SCHEMA % 'sessions')
-    db.commit()
 
     
     
 def main(argv = sys.argv):
     
-    global app
-    
-    
     # For proper UTF-8 encoding / decoding
-    reload(sys)
-    sys.setdefaultencoding('utf8')
+    #reload(sys)
+    #sys.setdefaultencoding('utf8')
     
-    # Read config 
-    config = ConfigParser.SafeConfigParser()
-    config.read(basepath + '/settings.ini')
     
-    if len(argv) > 1 and argv[1] == 'installschema':
-        install_schema(config)
+    if len(argv) > 1 and argv[1] == 'installdb':
+        install.database(config)
         sys.exit()
-
-    # Start application thread
-    app = Application(config)
-    app.start()
+        
+    if len(argv) > 1 and argv[1] == 'resetadmin':
+        install.resetadmin(config)
+        sys.exit()
     
     # Start web thread
-    webserver = WebServerThread(config)
+    webserver = WebServerThread()
     webserver.start()
     
 

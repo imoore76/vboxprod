@@ -21,3 +21,6 @@ class Singleton(type):
         return cls._instances[cls]
     
 
+def genhash(key):
+    import hashlib
+    return hashlib.sha224(key).hexdigest()

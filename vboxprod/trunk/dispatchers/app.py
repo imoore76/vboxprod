@@ -1,8 +1,8 @@
 
 
 from dispatchers import dispatcher_parent, jsonout
+import app as GlobalApp
 import cherrypy
-import server
 import pprint
 
 class dispatcher(dispatcher_parent):
@@ -18,7 +18,8 @@ class dispatcher(dispatcher_parent):
     
     @jsonout
     def login(self, *args, **kwargs):
-        self.app.accounts.authenticate(kwargs['u'], kwargs['p'])
+        pprint.pprint(GlobalApp)
+        GlobalApp.getInstance().accounts.authenticate(kwargs['u'], kwargs['p'])
         cherrypy.session['user'] = kwargs['u']
         return self.getSession()
         

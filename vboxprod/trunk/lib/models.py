@@ -1,9 +1,22 @@
 
 from peewee import *
+import app
 
 MODELS = ['User', 'Group', 'VMGroup', 'Connector', 'AppConfig']
 
-class User(Model):
+dbconfig = {}
+dbname = ''
+for k,v in app.getConfig().items('storage'):
+    if k == 'db': dbname = v
+    else: dbconfig[k] = v
+
+db = MySQLDatabase(dbname,**dbconfig)
+
+class MySqlModel(Model):
+    class Meta:
+        database = db
+
+class User(MySqlModel):
     
     id = PrimaryKeyField()
     username = CharField(unique = True, max_length=32, null = False)
@@ -11,13 +24,15 @@ class User(Model):
     password = CharField(max_length=128, null = False)
     group_id = IntegerField(default = 0)
     
-class Group(Model):
+
+class Group(MySqlModel):
     
     id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)
     description = CharField(max_length=256)
     
-class VMGroup(Model):
+    
+class VMGroup(MySqlModel):
 
     id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)
@@ -26,7 +41,7 @@ class VMGroup(Model):
     parent = ForeignKeyField('self', related_name = 'children')
     
     
-class Connector(Model):
+class Connector(MySqlModel):
 
     id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)    
@@ -34,7 +49,7 @@ class Connector(Model):
     port = IntegerField()
     status = IntegerField(default = 0)    
     
-class AppConfig(Model):
+class AppConfig(MySqlModel):
     
     id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32)

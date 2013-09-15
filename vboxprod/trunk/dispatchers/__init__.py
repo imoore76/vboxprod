@@ -15,8 +15,11 @@ def jsonout(func):
         try:
             responseData = func(*args, **kwargs)
             success = True
-        except:
-            errors.append(traceback.format_exc())
+        except Exception as ex:
+            import sys, pprint
+            print(ex.message)
+            e = {'details': traceback.format_exc(), 'error': ex.__class__.__name__ + ': ' + ex.message}
+            errors.append(e)
         
         (errors.append(x) for x in args[0].errors)
             
@@ -51,6 +54,5 @@ class dispatcher_parent(object):
     
     errors = []
     messages = []
-    app = None
         
     

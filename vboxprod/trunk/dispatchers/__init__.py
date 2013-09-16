@@ -37,7 +37,7 @@ def jsonout(func):
 """
 def require_auth(func):
     def decorated(*args, **kwargs):
-        return func(args, kwargs)
+        return func(*args, **kwargs)
     return decorated
 
 
@@ -45,8 +45,8 @@ def require_auth(func):
     Require an administrator
 """
 def require_admin(func):
-    def decorated(*args, **kwargs):
-        return func(args, kwargs)
+    def decorated(*args, **kwargs):        
+        return func(*args, **kwargs)
     return decorated
 
 

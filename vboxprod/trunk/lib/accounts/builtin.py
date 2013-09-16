@@ -19,7 +19,7 @@ class interface:
         return dict(User.get(User.username == username)._data.copy())
     
     def getGroup(self, groupname):
-        return dict(User.get(Group.name == name)._data.copy())
+        return dict(Group.get(Group.name == groupname)._data.copy())
     
     def getUsers(self):
         return list(User.select().dicts())
@@ -39,9 +39,8 @@ class interface:
         if username is None: return False
         del updata['username']
         
-        u = User.get(username == updata.get('username'))
+        u = User.get(User.username == username)
         newpw = None
-        del updata['username']
         for k, v in updata.iteritems():
             if k == 'password':
                 newpw = v
@@ -59,8 +58,20 @@ class interface:
         g.save()
         return True
         
-    def updateGroup(self, update):
-        pass
+    def updateGroup(self, updata):
+
+        id = updata.get('id', None)
+        if id is None: return False
+        del updata['id']
+        
+        g = Group.get(Group.id == id)
+        
+        for k, v in updata.iteritems():
+            setattr(g, k, v)
+        g.save()
+        
+        return self.getGroup(g.name)
+        
     
     def deleteGroup(self, groupname):
         Group.get(name == groupname).delete()

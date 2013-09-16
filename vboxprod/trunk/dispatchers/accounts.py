@@ -21,8 +21,11 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def updateGroup(self, *args, **kwargs):
-        pass
-
+        print "here..."
+        pprint.pprint(kwargs)
+        pprint.pprint(args)
+        return app.getInstance().accounts.updateGroup(kwargs)
+    updateGroup.exposed = True
 
     @jsonout
     @require_admin
@@ -32,7 +35,6 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def addGroup(self, *args, **kwargs):
-        pprint.pprint(kwargs)
         return app.getInstance().accounts.addGroup(kwargs)
     addGroup.exposed = True
 

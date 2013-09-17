@@ -2574,7 +2574,8 @@ class vboxconnector():
         
         retval = []
         for i in range(0,self.vbox.systemProperties.maxBootPosition):
-            if (b = str(m.getBootOrder(i + 1))) == 'None': continue
+            b = str(m.getBootOrder(i + 1))
+            if b == 'None': continue
             retval.append(b)
         return retval
 
@@ -2585,7 +2586,8 @@ class vboxconnector():
      * @param IMachine m virtual machine instance
      * @return array serial port info
      """
-    def _machineGetSerialPorts(&m) {
+    def _machineGetSerialPorts(self, m):
+        
         ports = array()
         for i in range(0, self.vbox.systemProperties.serialPortCount):
             try:
@@ -2596,7 +2598,7 @@ class vboxconnector():
                     'enabled' : int(p.enabled),
                     'IOBase' : '0x'.strtoupper(sprintf('%3s',dechex(p.IOBase))),
                     'IRQ' : p.IRQ,
-                    'hostMode' : str(p.hostMode,
+                    'hostMode' : str(p.hostMode),
                     'server' : int(p.server),
                     'path' : p.path
                 })
@@ -2635,11 +2637,11 @@ class vboxconnector():
      * @param IMachine m virtual machine instance
      * @return array shared folder info
      """
-    def _machineGetSharedFolders(&m) {
-        sfs = &m.sharedFolders
-        return = array()
-        foreach(sfs as sf) { """ @sf ISharedFolder """
-            return.append(array(
+    def _machineGetSharedFolders(self, m):
+        
+        folderlist = []
+        for sf in m.sharedFolders:
+            folderlist.append({
                 'name' : sf.name,
                 'hostPath' : sf.hostPath,
                 'accessible' : sf.accessible,
@@ -2647,11 +2649,9 @@ class vboxconnector():
                 'autoMount' : sf.autoMount,
                 'lastAccessError' : sf.lastAccessError,
                 'type' : 'machine'
-            )
-        }
-        return return
-    }
-
+            })
+        
+        return folderlist
 
     """
      * Get a list of transient (temporary) shared folders
@@ -2659,29 +2659,23 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array of shared folders
      """
-    def remote_consoleGetSharedFolders(args) {
-
-        self.connect()
+    def remote_consoleGetSharedFolders(self, args):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
 
         # No need to continue if machine is not running
-        if string)machine.state != 'Running') {
-            machine.releaseRemote()
+        if str(machine.state) != 'Running':
             return True
-        }
 
         self.session = self.websessionManager.getSessionObject(self.vbox.handle)
         machine.lockMachine(self.session.handle,'Shared')
 
-        sfs = self.session.console.sharedFolders
-
         response = array()
         
-        foreach(sfs as sf) { """ @sf ISharedFolder """
+        for sf in self.session.console.sharedFolders:
 
-            response.append(array(
+            response.append({
                 'name' : sf.name,
                 'hostPath' : sf.hostPath,
                 'accessible' : sf.accessible,
@@ -2689,46 +2683,29 @@ class vboxconnector():
                 'autoMount' : sf.autoMount,
                 'lastAccessError' : sf.lastAccessError,
                 'type' : 'transient'
-            )
-        }
+            })
 
         self.session.unlockMachine()
         self.session = None
-        machine.releaseRemote()
 
         return response
-    }
     
     """
      * Get VirtualBox Host OS specific directory separator
      * 
      * @return string directory separator string
      """
-    def getDsep() {
+    def getDsep(self):
 
-        if !self.dsep) {
+        if not self.dsep:
             
-            """ No need to go through vbox if local browser is True """
-            if self.settings.browserLocal) {
-
-                self.dsep = DIRECTORY_SEPARATOR
+            if self.vbox.host.operatingSystem.lower().find('windows') > -1:
+                self.dsep = '\\'
+            else:
+                self.dsep = '/'
             
-            } else {
-            
-                self.connect()
-                
-                if stripos(self.vbox.host.operatingSystem,'windows') !== False) {
-                    self.dsep = '\\'
-                } else {
-                    self.dsep = '/'
-                }
-            }
-            
-        
-        }
         
         return self.dsep
-    }
 
     """
      * Get medium attachment information for all medium attachments in mas
@@ -2736,28 +2713,26 @@ class vboxconnector():
      * @param IMediumAttachment[] mas list of IMediumAttachment instances
      * @return array medium attachment info
      """
-    def _machineGetMediumAttachments(&mas) {
+    def _machineGetMediumAttachments(self, mas):
 
-        return = array()
+        attachments = []
 
-        foreach(mas as ma) { """ @ma IMediumAttachment """
-            return.append(array(
-                'medium' : (ma.medium.handle ? array('id':ma.medium.id) : None),
+        for ma in mas:
+            attachments.append({
+                'medium' : {'id':ma.medium.id} if ma.medium else None,
                 'controller' : ma.controller,
                 'port' : ma.port,
                 'device' : ma.device,
-                'type' : str(ma.type,
+                'type' : str(ma.type),
                 'passthrough' : int(ma.passthrough),
                 'temporaryEject' : int(ma.temporaryEject),
                 'nonRotational' : int(ma.nonRotational)
-            )
-        }
+            })
 
         # sort by port then device
-        usort(return,create_function('a,b', 'if a["port"] == b["port"]) { if a["device"] < b["device"]) { return -1 } if a["device"] > b["device"]) { return 1 } return 0 } if a["port"] < b["port"]) { return -1 } return 1'))
+        #usort(return,create_function('a,b', 'if a["port"] == b["port"]) { if a["device"] < b["device"]) { return -1 } if a["device"] > b["device"]) { return 1 } return 0 } if a["port"] < b["port"]) { return -1 } return 1'))
         
-        return return
-    }
+        return attachments
 
     """
      * Save snapshot details ( description or name)
@@ -2765,12 +2740,8 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return boolean True on success
      """
-    def remote_snapshotSave(args) {
+    def remote_snapshotSave(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        """ @vm IMachine """
         vm = self.vbox.findMachine(args['vm'])
 
         """ @snapshot ISnapshot """
@@ -2778,12 +2749,7 @@ class vboxconnector():
         snapshot.name = args['name']
         snapshot.description = args['description']
 
-        # cleanup
-        snapshot.releaseRemote()
-        vm.releaseRemote()
-
         return True
-    }
 
     """
      * Get snapshot details
@@ -2791,10 +2757,7 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array containing snapshot details
      """
-    def remote_snapshotGetDetails(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_snapshotGetDetails(self, args):
 
         """ @vm IMachine """
         vm = self.vbox.findMachine(args['vm'])
@@ -2805,13 +2768,8 @@ class vboxconnector():
         response = self._snapshotGetDetails(snapshot,False)
         response['machine'] = self.remote_machineGetDetails(array(),snapshot.machine)
 
-        # cleanup
-        snapshot.releaseRemote()
-        vm.releaseRemote()
-
         return response
 
-    }
 
     """
      * Restore a snapshot
@@ -2819,10 +2777,7 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array response data containing progress operation id
      """
-    def remote_snapshotRestore(args, response) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_snapshotRestore(self, args, response):
 
         progress = self.session = None
 
@@ -2850,24 +2805,24 @@ class vboxconnector():
                     #self.errors.append(new Exception(progress.errorInfo.text)
                     progress.releaseRemote()
                     return False
-                }
+
             except: pass
 
             self._util_progressStore(progress)
 
         except Exception as e:
 
-            self.errors.append(e
+            self.errors.append(e)
 
-            if self.session.handle) {
-                try{self.session.unlockMachine()}catch(Exception e){}
-            }
+            if self.session:
+                try:
+                    self.session.unlockMachine()
+                    self.session = None
+                except:
+                    pass
             return False
-        }
 
         return {'progress' : progress}
-
-    }
 
     """
      * Delete a snapshot
@@ -2875,10 +2830,7 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array response data containing progress operation id
      """
-    def remote_snapshotDelete(args, response) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_snapshotDelete(self, args, response):
 
         progress = self.session = None
 
@@ -2894,15 +2846,11 @@ class vboxconnector():
             """ @progress IProgress """
             progress = self.session.console.deleteSnapshot(args['snapshot'])
 
-            machine.releaseRemote()
-
             # Does an exception exist?
             try:
                 if progress.errorInfo:
                     #self.errors.append(new Exception(progress.errorInfo.text)
-                    progress.releaseRemote()
                     return False
-                }
             except: pass
 
             self._util_progressStore(progress)
@@ -2910,18 +2858,18 @@ class vboxconnector():
 
         except Exception as e:
 
-            self.errors.append(e
+            self.errors.append(e)
 
-            if self.session.handle) {
-                try{self.session.unlockMachine()self.session=None}catch(Exception e){}
-            }
+            if self.session:
+                try:
+                    self.session.unlockMachine()
+                    self.session = None
+                except:
+                    pass
 
             return False
-        }
 
         return {'progress' : progress}
-
-    }
 
     """
      * Take a snapshot
@@ -2929,10 +2877,7 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array response data containing progress operation id
      """
-    def remote_snapshotTake(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_snapshotTake(self, args):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
@@ -2943,7 +2888,7 @@ class vboxconnector():
 
             # Open session to machine
             self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-            machine.lockMachine(self.session.handle, (str(machine.sessionState == 'Unlocked' ? 'Write' : 'Shared'))
+            machine.lockMachine(self.session, ('Write' if str(machine.sessionState) == 'Unlocked' else 'Shared'))
 
             """ @progress IProgress """
             progress = self.session.console.takeSnapshot(args['name'],args['description'])
@@ -2952,10 +2897,13 @@ class vboxconnector():
             try:
                 if progress.errorInfo:
                     #self.errors.append(new Exception(progress.errorInfo.text)
-                    progress.releaseRemote()
-                    try{self.session.unlockMachine() self.session=None}catch(Exception ed){}
-                    return False
-                }
+                    if self.session:
+                        try:
+                            self.session.unlockMachine()
+                            self.session = None
+                        except:
+                            pass
+
             except: pass
 
             
@@ -2963,18 +2911,18 @@ class vboxconnector():
 
         except Exception as e:
 
-            self.errors.append(e
+            self.errors.append(e)
 
-            if !progress.handle and self.session.handle) {
-                try{self.session.unlockMachine()self.session=None}catch(Exception e){}
-            }
+            if not progress and self.session:
+                try:
+                    self.session.unlockMachine()
+                    self.session = None
+                except:
+                    pass
 
             return False
-        }
 
         return {'progress' : progress}
-
-    }
 
     """
      * Get a list of snapshots for a machine
@@ -2982,35 +2930,28 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array list of snapshots
      """
-    def remote_machineGetSnapshots(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_machineGetSnapshots(self, args):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
 
-        response = array('vm' : args['vm'], 
-            'snapshot' : array(),
-            'currentSnapshotId' : None)
+        response = {'vm' : args['vm'], 
+            'snapshot' : {},
+            'currentSnapshotId' : None}
         
         """ No snapshots? Empty array """
-        if machine.snapshotCount < 1) {
+        if machine.snapshotCount < 1:
             return response
-        } else {
+        
+    
 
-            """ @s ISnapshot """
-            s = machine.findSnapshot(None)
-            response['snapshot'] = self._snapshotGetDetails(s,True)
-            s.releaseRemote()
-        }
+        """ @s ISnapshot """
+        s = machine.findSnapshot(None)
+        response['snapshot'] = self._snapshotGetDetails(s,True)
 
-        response['currentSnapshotId'] = (machine.currentSnapshot.handle ? machine.currentSnapshot.id : '')
-        if machine.currentSnapshot.handle) machine.currentSnapshot.releaseRemote()
-        machine.releaseRemote()
+        response['currentSnapshotId'] = (machine.currentSnapshot.id if machine.currentSnapshot else '')
 
         return response
-    }
 
 
     """
@@ -3020,30 +2961,27 @@ class vboxconnector():
      * @param boolean sninfo traverse child snapshots
      * @return array snapshot info
      """
-    def _snapshotGetDetails(&s,sninfo=False) {
+    def _snapshotGetDetails(self, s,sninfo=False):
 
-        children = array()
+        children = []
 
-        if sninfo)
-            foreach(s.children as c) { """ @c ISnapshot """
-                children.append(self._snapshotGetDetails(c, True)
-                c.releaseRemote()
-            }
+        if sninfo:
+            for c in s.children:
+                children.append(self._snapshotGetDetails(c, True))
 
         # Avoid multiple soap calls
-        timestamp = str(s.timeStamp
+        timestamp = str(s.timeStamp)
 
-        return array(
+        return {
             'id' : s.id,
             'name' : s.name,
             'description' : s.description,
             'timeStamp' : floor(timestamp/1000),
             'timeStampSplit' : self._util_splitTime(time() - floor(timestamp/1000)),
-            'online' : s.online
-        ) + (
-            (sninfo ? array('children' : children) : array())
-        )
-    }
+            'online' : s.online,
+            'children' : children
+        }
+
 
     """
      * Return details about storage controllers for machine m
@@ -3051,54 +2989,51 @@ class vboxconnector():
      * @param IMachine m virtual machine instance
      * @return array storage controllers' details
      """
-    def _machineGetStorageControllers(&m) {
+    def _machineGetStorageControllers(m):
 
-        sc = array()
+        sc = []
         scs = m.storageControllers
 
-        foreach(scs as c) { """ @c IStorageController """
-            sc.append(array(
+        for c in m.storageControllers:
+            
+            sc.append({
                 'name' : c.name,
                 'maxDevicesPerPortCount' : c.maxDevicesPerPortCount,
                 'useHostIOCache' : int(c.useHostIOCache),
                 'minPortCount' : c.minPortCount,
                 'maxPortCount' : c.maxPortCount,
                 'portCount' : c.portCount,
-                'bus' : str(c.bus,
-                'controllerType' : str(c.controllerType,
+                'bus' : str(c.bus),
+                'controllerType' : str(c.controllerType),
                 'mediumAttachments' : self._machineGetMediumAttachments(m.getMediumAttachmentsOfController(c.name), m.id)
-            )
-            c.releaseRemote()
-        }
+            })
 
-        for(i = 0 i < len(sc) i++) {
 
-            for(a = 0 a < len(sc[i]['mediumAttachments']) a++) {
+        for i in range(0, len(sc)):
+
+            for a in range(0, len(sc[i]['mediumAttachments'])):
 
                 # Value of '' means it is not applicable
                 sc[i]['mediumAttachments'][a]['ignoreFlush'] = ''
 
                 # Only valid for HardDisks
-                if sc[i]['mediumAttachments'][a]['type'] != 'HardDisk') continue
+                if sc[i]['mediumAttachments'][a]['type'] != 'HardDisk': continue
 
                 # Get appropriate key
                 xtra = self._util_getIgnoreFlushKey(sc[i]['mediumAttachments'][a]['port'], sc[i]['mediumAttachments'][a]['device'], sc[i]['controllerType'])
 
                 # No such setting for this bus type
-                if !xtra) continue
+                if not xtra: continue
 
                 sc[i]['mediumAttachments'][a]['ignoreFlush'] = m.getExtraData(xtra)
 
-                if trim(sc[i]['mediumAttachments'][a]['ignoreFlush']) == '')
+                if sc[i]['mediumAttachments'][a]['ignoreFlush'].strip() == '':
                     sc[i]['mediumAttachments'][a]['ignoreFlush'] = 1
-                else
+                else:
                     sc[i]['mediumAttachments'][a]['ignoreFlush'] = int(sc[i]['mediumAttachments'][a]['ignoreFlush'])
 
-            }
-        }
-
         return sc
-    }
+
 
     """
      * Resize a medium. Currently unimplemented in GUI.
@@ -3106,11 +3041,9 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array response data containing progress id
      """
-    def remote_mediumResize(args) {
+    def remote_mediumResize(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-        
+
         m = self.vbox.openMedium(args['medium'],'HardDisk')
 
         """ @progress IProgress """
@@ -3122,28 +3055,23 @@ class vboxconnector():
                 #self.errors.append(new Exception(progress.errorInfo.text)
                 progress.releaseRemote()
                 return False
-            }
-        } catch (Exception None) {
-        }
+        except:
+            pass
         
         self._util_progressStore(progress)
         
         return {'progress' : progress}
         
-    }
-    
     """
      * Clone a medium
      *
      * @param array args array of arguments. See def body for details.
      * @return array response data containing progress id
      """
-    def remote_mediumCloneTo(args) {
+    def remote_mediumCloneTo(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        format = strtoupper(args['format'])
+        format = args['format'].upper()
+        
         """ @target IMedium """
         target = self.vbox.createHardDisk(format,args['location'])
         mid = target.id
@@ -3151,31 +3079,26 @@ class vboxconnector():
         """ @src IMedium """
         src = self.vbox.openMedium(args['src'],'HardDisk')
 
-        type = (args['type'] == 'fixed' ? 'Fixed' : 'Standard')
-        mv = new MediumVariant()
-        type = mv.ValueMap[type]
-        if args['split']) type += mv.ValueMap['VmdkSplit2G']
+        type = 'fixed' if args['type'] == 'fixed' else 'Standard'
+        #mv = new MediumVariant()
+        #type = mv.ValueMap[type]
+        if args['split']:
+            type = type + mv.ValueMap['VmdkSplit2G']
 
         """ @progress IProgress """
         progress = src.cloneTo(target.handle,type,None)
-
-        src.releaseRemote()
-        target.releaseRemote()
 
         # Does an exception exist?
         try:
             if progress.errorInfo:
                 #self.errors.append(new Exception(progress.errorInfo.text)
-                progress.releaseRemote()
                 return False
-            }
         except: pass
 
         self._util_progressStore(progress)
 
-        return array('progress' : progress.handle, 'id' : mid)
+        return {'progress' : progress, 'id' : mid}
 
-    }
 
     """
      * Set medium to a specific type
@@ -3183,7 +3106,7 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return boolean True on success
      """
-    def remote_mediumSetType(args) {
+    def remote_mediumSetType(self, args):
 
         # Connect to vboxwebsrv
         self.connect()
@@ -3191,10 +3114,8 @@ class vboxconnector():
         """ @m IMedium """
         m = self.vbox.openMedium(args['medium'],'HardDisk')
         m.type = args['type']
-        m.releaseRemote()
 
         return True
-    }
 
     """
      * Add iSCSI medium
@@ -3202,44 +3123,43 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return response data
      """
-    def remote_mediumAddISCSI(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_mediumAddISCSI(self, args):
 
         # {'server':server,'port':port,'intnet':intnet,'target':target,'lun':lun,'enclun':enclun,'targetUser':user,'targetPass':pass}
 
         # Fix LUN
         args['lun'] = int(args['lun'])
-        if args['enclun']) args['lun'] = 'enc'.args['lun']
+        if args['enclun']: 
+            args['lun'] = 'enc' + args['lun']
 
         # Compose name
-        name = args['server'].'|'.args['target']
-        if args['lun'] != 0 and args['lun'] != 'enc0')
-            name .= '|'.args['lun']
+        name = args['server']+'|'+args['target']
+        
+        if args['lun'] != 0 and args['lun'] != 'enc0':
+            name = name + '|' + args['lun']
 
         # Create disk
         """ @hd IMedium """
         hd = self.vbox.createHardDisk('iSCSI',name)
 
-        if args['port']) args['server'] .= ':'.int(args['port'])
+        if args['port']:
+            args['server'] = args['server'] + ':' + int(args['port'])
 
         arrProps = array()
 
         arrProps["TargetAddress"] = args['server']
         arrProps["TargetName"] = args['target']
         arrProps["LUN"] = args['lun']
-        if args['targetUser']) arrProps["InitiatorUsername"] = args['targetUser']
-        if args['targetPass']) arrProps["InitiatorSecret"] = args['targetPass']
-        if args['intnet']) arrProps["HostIPStack"] = '0'
+        if args.get('targetUser',None): arrProps["InitiatorUsername"] = args['targetUser']
+        if args.get('targetPass',None): arrProps["InitiatorSecret"] = args['targetPass']
+        if args.get('intnet',None): arrProps["HostIPStack"] = '0'
 
-        hd.setProperties(array_keys(arrProps),array_values(arrProps))
+        hd.setProperties(arrProps.keys(),arrProps.values())
 
         hdid = hd.id
-        hd.releaseRemote()
         
-        return array('id' : hdid)
-    }
+        return {'id' : hdid}
+
 
     """
      * Add existing medium by file location
@@ -3247,19 +3167,15 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return resposne data containing new medium's id
      """
-    def remote_mediumAdd(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_mediumAdd(self, args):
 
         """ @m IMedium """
         m = self.vbox.openMedium(args['path'],args['type'],'ReadWrite',False)
 
         mid = m.id
-        m.releaseRemote()
         
-        return array('id':mid)
-    }
+        return {'id':mid}
+
 
     """
      * Get VirtualBox generated machine configuration file name
@@ -3267,14 +3183,9 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return string filename
      """
-    def remote_vboxGetComposedMachineFilename(args) {
+    def remote_vboxGetComposedMachineFilename(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        return self.vbox.composeMachineFilename(args['name'],(self.settings.phpVboxGroups ? '' : args['group']),self.vbox.systemProperties.defaultMachineFolder)
-
-    }
+        return self.vbox.composeMachineFilename(args['name'],'',self.vbox.systemProperties.defaultMachineFolder)
 
     """
      * Create base storage medium (virtual hard disk)
@@ -3282,16 +3193,14 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return response data containing progress id
      """
-    def remote_mediumCreateBaseStorage(args) {
+    def remote_mediumCreateBaseStorage(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        format = strtoupper(args['format'])
-        type = (args['type'] == 'fixed' ? 'Fixed' : 'Standard')
-        mv = new MediumVariant()
+        format = args['format'].upper()
+        type = ('fixed' if args['type'] == 'fixed' else 'Standard')
+        mv = MediumVariant()
         type = mv.ValueMap[type]
-        if args['split']) type += mv.ValueMap['VmdkSplit2G']
+        if args['split']:
+            type = type + mv.ValueMap['VmdkSplit2G']
 
         """ @hd IMedium """
         hd = self.vbox.createHardDisk(format,args['file'])
@@ -3303,18 +3212,12 @@ class vboxconnector():
         try:
             if progress.errorInfo:
                 #self.errors.append(new Exception(progress.errorInfo.text)
-                progress.releaseRemote()
                 return False
-            }
         except: pass
 
         self._util_progressStore(progress)
 
-        hd.releaseRemote()
-
         return {'progress' : progress}
-
-    }
 
     """
      * Release medium from all attachments
@@ -3322,10 +3225,7 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return boolean True
      """
-    def remote_mediumRelease(args,response) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_mediumRelease(self, args,response):
 
         """ @m IMedium """
         m = self.vbox.openMedium(args['medium'],args['type'])
@@ -3333,68 +3233,57 @@ class vboxconnector():
 
         # connected to...
         machines = m.machineIds
-        released = array()
-        foreach(machines as uuid) {
+        released = []
+        for uuid in machines:
 
             # Find medium attachment
             try:
                 """ @mach IMachine """
                 mach = self.vbox.findMachine(uuid)
             except Exception as e:
-                self.errors.append(e
+                self.errors.append(e)
                 continue
-            }
-            attach = mach.mediumAttachments
-            remove = array()
-            foreach(attach as a) {
-                if a.medium.handle and a.medium.id == mediumid) {
-                    remove.append(array(
+            
+            remove = []
+            for a in mach.mediumAttachments:
+
+                if a.medium and a.medium.id == mediumid:
+                    remove.append({
                         'controller' : a.controller,
                         'port' : a.port,
-                        'device' : a.device)
-                    break
-                }
-            }
+                        'device' : a.device
+                    })
+
             # save state
-            state = str(mach.sessionState
+            state = str(mach.sessionState)
 
-            if !len(remove)) continue
+            if not len(remove): continue
 
-            released.append(uuid
+            released.append(uuid)
 
             # create session
             self.session = self.websessionManager.getSessionObject(self.vbox.handle)
 
             # Hard disk requires machine to be stopped
-            if args['type'] == 'HardDisk' or state == 'Unlocked') {
-
+            if args['type'] == 'HardDisk' or state == 'Unlocked':
                 mach.lockMachine(self.session.handle, 'Write')
-
-            } else {
-
+            else:
                 mach.lockMachine(self.session.handle, 'Shared')
 
-            }
 
-            foreach(remove as r) {
-                if args['type'] == 'HardDisk') {
+            for r in remove:
+                
+                if args['type'] == 'HardDisk':
                     self.session.machine.detachDevice(r['controller'],r['port'],r['device'])
-                } else {
+                else:
                     self.session.machine.mountMedium(r['controller'],r['port'],r['device'],None,True)
-                }
-            }
 
             self.session.machine.saveSettings()
-            self.session.machine.releaseRemote()
             self.session.unlockMachine()
             self.session = None
-            mach.releaseRemote()
-
-        }
-        m.releaseRemote()
 
         return True
-    }
+
 
     """
      * Remove a medium
@@ -3402,41 +3291,31 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return response data possibly containing progress operation id
      """
-    def remote_mediumRemove(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
-
-        if !args['type']) args['type'] = 'HardDisk'
+    def remote_mediumRemove(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'],args['type'])
+        m = self.vbox.openMedium(args['medium'],args.get('type', 'HardDisk'))
 
-        if args['delete'] and @self.settings.deleteOnRemove and str(m.deviceType == 'HardDisk') {
+        if args.get('delete',None) and str(m.deviceType) == 'HardDisk':
 
             """ @progress IProgress """
             progress = m.deleteStorage()
-
-            m.releaseRemote()
 
             # Does an exception exist?
             try:
                 if progress.errorInfo:
                     #self.errors.append(new Exception(progress.errorInfo.text)
                     return False
-                }
             except: pass
 
             self._util_progressStore(progress)
             return {'progress' : progress}
 
-        } else {
+        else:
             m.close()
-            m.releaseRemote()
-        }
 
         return True
-    }
+
 
     """
      * Get a list of recent media
@@ -3444,21 +3323,18 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array of recent media
      """
-    def remote_vboxRecentMediaGet(args) {
+    def remote_vboxRecentMediaGet(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        mlist = array()
-        foreach(array(
-            array('type':'HardDisk','key':'GUI/RecentListHD'),
-            array('type':'DVD','key':'GUI/RecentListCD'),
-            array('type':'Floppy','key':'GUI/RecentListFD')) as r) {
+        mlist = {}
+        for r in [
+            {'type':'HardDisk','key':'GUI/RecentListHD'},
+            {'type':'DVD','key':'GUI/RecentListCD'},
+            {'type':'Floppy','key':'GUI/RecentListFD'}]:
+            
             list = self.vbox.getExtraData(r['key'])
-            mlist[r['type']] = array_filter(explode('', trim(list,'')))
-        }
+            mlist[r['type']] = list.split(',')
+        
         return mlist
-    }
 
     """
      * Get a list of recent media paths
@@ -3466,20 +3342,16 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array of recent media paths
      """
-    def remote_vboxRecentMediaPathsGet(args) {
+    def remote_vboxRecentMediaPathsGet(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        mlist = array()
-        foreach(array(
-            array('type':'HardDisk','key':'GUI/RecentFolderHD'),
-            array('type':'DVD','key':'GUI/RecentFolderCD'),
-            array('type':'Floppy','key':'GUI/RecentFolderFD')) as r) {
+        mlist = {}
+        for r in [
+            {'type':'HardDisk','key':'GUI/RecentFolderHD'},
+            {'type':'DVD','key':'GUI/RecentFolderCD'},
+            {'type':'Floppy','key':'GUI/RecentFolderFD'}]:
             mlist[r['type']] = self.vbox.getExtraData(r['key'])
-        }
+        
         return mlist
-    }
 
 
     """
@@ -3488,21 +3360,17 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return boolean True on success
      """
-    def remote_vboxRecentMediaPathSave(args) {
+    def remote_vboxRecentMediaPathSave(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        types = array(
+        types = {
             'HardDisk':'GUI/RecentFolderHD',
             'DVD':'GUI/RecentFolderCD',
             'Floppy':'GUI/RecentFolderFD'
-        )
+        }
 
         self.vbox.setExtraData(types[args['type']], args['folder'])
 
         return True
-    }
 
     """
      * Update recent media list
@@ -3510,22 +3378,17 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return boolean True on success
      """
-    def remote_vboxRecentMediaSave(args) {
+    def remote_vboxRecentMediaSave(self, args):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        types = array(
+        types = {
             'HardDisk':'GUI/RecentListHD',
             'DVD':'GUI/RecentListCD',
             'Floppy':'GUI/RecentListFD'
-        )
+        }
 
-        self.vbox.setExtraData(types[args['type']], implode('',array_unique(args['list'])).'')
+        self.vbox.setExtraData(types[args['type']], ','.join(args['list']))
 
         return True
-
-    }
 
     """
      * Mount a medium on the VM
@@ -3533,68 +3396,60 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return boolean True on success
      """
-    def remote_mediumMount(args,response) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_mediumMount(self, args,response):
 
         # Find medium attachment
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        state = str(machine.sessionState
-        save = (strtolower(machine.getExtraData('GUI/SaveMountedAtRuntime')) == 'yes')
+        state = str(machine.sessionState)
+        save = (machine.getExtraData('GUI/SaveMountedAtRuntime').lower() == 'yes')
 
         # create session
         self.session = self.websessionManager.getSessionObject(self.vbox.handle)
 
-        if state == 'Unlocked') {
+        if state == 'Unlocked':
             machine.lockMachine(self.session.handle,'Write')
             save = True # force save on closed session as it is not a "run-time" change
-        } else {
-
+        else:
             machine.lockMachine(self.session.handle, 'Shared')
-        }
+        
 
         # Empty medium / eject
-        if args['medium'] == 0) {
+        if args['medium'] == 0:
             med = None
-        } else {
+        else:
+            
             # Host drive
-            if strtolower(args['medium']['hostDrive']) == 'True' or args['medium']['hostDrive'] == True) {
+            if args['medium']['hostDrive'].lower() == 'True' or args['medium']['hostDrive'] == True:
                 # CD / DVD Drive
-                if args['medium']['deviceType'] == 'DVD') {
+                if args['medium']['deviceType'] == 'DVD':
                     drives = self.vbox.host.DVDDrives
                 # floppy drives
-                } else {
+                else:
                     drives = self.vbox.host.floppyDrives
-                }
-                foreach(drives as m) { """ @m IMedium """
-                    if m.id == args['medium']['id']) {
+                
+                for m in drives:
+                    if m.id == args['medium']['id']:
                         """ @med IMedium """
-                        med = &m
+                        med = m
                         break
-                    }
-                    m.releaseRemote()
-                }
+
             # Normal medium
-            } else {
+            else:
                 """ @med IMedium """
                 med = self.vbox.openMedium(args['medium']['location'],args['medium']['deviceType'])
-            }
-        }
+            
+        
 
-        self.session.machine.mountMedium(args['controller'],args['port'],args['device'],(is_object(med) ? med.handle : None),True)
+        self.session.machine.mountMedium(args['controller'],args['port'],args['device'], med,True)
 
-        if is_object(med)) med.releaseRemote()
-
-        if save) self.session.machine.saveSettings()
+        if save:
+            self.session.machine.saveSettings()
 
         self.session.unlockMachine()
-        machine.releaseRemote()
         self.session = None
 
         return True
-    }
 
     """
      * Get medium details
@@ -3602,65 +3457,59 @@ class vboxconnector():
      * @param IMedium m medium instance
      * @return array medium details
      """
-    def _mediumGetDetails(&m) {
+    def _mediumGetDetails(self, m):
 
-        children = array()
-        attachedTo = array()
+        children = []
+        attachedTo = []
         machines = m.machineIds
         hasSnapshots = 0
 
-        foreach(m.children as c) { """ @c IMedium """
-            children.append(self._mediumGetDetails(c)
-            c.releaseRemote()
-        }
+        for c in m.children:
+            children.append(self._mediumGetDetails(c))
 
-        foreach(machines as mid) {
+        for mid in machines:
             sids = m.getSnapshotIds(mid)
             try:
                 """ @mid IMachine """
                 mid = self.vbox.findMachine(mid)
             except Exception as e:
-                attachedTo.append(array('machine' : mid .' ('.e.getMessage().')', 'snapshots' : array())
                 continue
-            }
 
             c = len(sids)
             hasSnapshots = max(hasSnapshots,c)
-            for(i = 0 i < c i++) {
-                if sids[i] == mid.id) {
+            for i in range(0,c):
+                if sids[i] == mid.id:
                     unset(sids[i])
-                } else {
+                else:
                     try:
                         """ @sn ISnapshot """
                         sn = mid.findSnapshot(sids[i])
                         sids[i] = sn.name
-                        sn.releaseRemote()
-                    } catch(Exception e) { }
-                }
-            }
-            hasSnapshots = (len(sids) ? 1 : 0)
-            attachedTo.append(array('machine':mid.name,'snapshots':sids)
-            mid.releaseRemote()
-        }
+                        
+                    except:
+                        pass
+
+            hasSnapshots = int(len(sids) > 1)
+            attachedTo.append({'machine':mid.name,'snapshots':sids})
 
         # For fixed value
-        mv = new MediumVariant()
+        mv = MediumVariant()
         variant = m.variant
 
-        return array(
+        return {
                 'id' : m.id,
                 'description' : m.description,
-                'state' : str(m.refreshState(),
+                'state' : str(m.refreshState()),
                 'location' : m.location,
                 'name' : m.name,
-                'deviceType' : str(m.deviceType,
+                'deviceType' : str(m.deviceType),
                 'hostDrive' : m.hostDrive,
-                'size' : str(m.size, """ str( to support large disks. Bypass integer limit """
+                'size' : str(m.size), """ str( to support large disks. Bypass integer limit """
                 'format' : m.format,
-                'type' : str(m.type,
-                'parent' : ((str(m.deviceType == 'HardDisk' and m.parent.handle) ? m.parent.id : None),
+                'type' : str(m.type),
+                'parent' : (m.parent.id if (str(m.deviceType) == 'HardDisk' and m.parent) else None),
                 'children' : children,
-                'base' : ((str(m.deviceType == 'HardDisk' and m.base.handle) ? m.base.id : None),
+                'base' : (m.base.id if (str(m.deviceType) == 'HardDisk' and m.base) else None),
                 'readOnly' : m.readOnly,
                 'logicalSize' : (m.logicalSize/1024)/1024,
                 'autoReset' : m.autoReset,
@@ -3669,11 +3518,10 @@ class vboxconnector():
                 'variant' : variant,
                 'fixed' : int((int(variant) & mv.ValueMap['Fixed']) > 0),
                 'split' : int((int(variant) & mv.ValueMap['VmdkSplit2G']) > 0),
-                'machineIds' : array(),
+                'machineIds' : [],
                 'attachedTo' : attachedTo
-            )
+            }
 
-    }
 
     """
      * Store a progress operation so that its status can be polled via progressGet()
@@ -3681,68 +3529,64 @@ class vboxconnector():
      * @param IProgress progress progress operation instance
      * @return string progress operation handle / id
      """
-    def _util_progressStore(&progress) {
+    def _util_progressStore(self, progress):
 
         """ Store vbox handle """
         self.persistentRequest['vboxHandle'] = self.vbox.handle
         
         """ Store server if multiple servers are configured """
-        if @is_array(self.settings.servers) and len(self.settings.servers) > 1)
-            self.persistentRequest['vboxServer'] = self.settings.name
+        #if @is_array(self.settings.servers) and len(self.settings.servers) > 1)
+         #   self.persistentRequest['vboxServer'] = self.settings.name
         
-        return progress.handle
-    }
+        return progress
+    
 
     """
      * Get VirtualBox system properties
      * @param array args array of arguments. See def body for details.
      * @return array of system properties
      """
-    def remote_vboxSystemPropertiesGet(args,response) {
+    def remote_vboxSystemPropertiesGet(self, args,response):
 
-        # Connect to vboxwebsrv
-        self.connect()
-
-        mediumFormats = array()
+        mediumFormats = []
         
         # Shorthand
         sp = self.vbox.systemProperties
 
         # capabilities
-        mfCap = new MediumFormatCapabilities(None,'')
-        foreach(sp.mediumFormats as mf) { """ @mf IMediumFormat """
+        mfCap = MediumFormatCapabilities(None,'')
+        for mf in sp.mediumFormats: # @mf IMediumFormat """
             exts = mf.describeFileExtensions()
-            dtypes = array()
-            foreach(exts[1] as t) dtypes.append(str(t
-            caps = array()
-            foreach(mfCap.NameMap as k:v) {
-                if k & mf.capabilities)     caps.append(v
-            }
-            mediumFormats.append(array('id':mf.id,'name':mf.name,'extensions':array_map('strtolower',exts[0]),'deviceTypes':dtypes,'capabilities':caps)
-        }
+            dtypes = []
+            for t in exts[1]: dtypes.append(str(t))
+            caps = []
+            for k,v in mfCap.NameMap.iteritems():
+                if (k & mf.capabilities):
+                    caps.append(v)
+            
+            mediumFormats.append({'id':mf.id,'name':mf.name,'extensions':array_map('strtolower',exts[0]),'deviceTypes':dtypes,'capabilities':caps})
 
-        return array(
-            'minGuestRAM' : str(sp.minGuestRAM,
-            'maxGuestRAM' : str(sp.maxGuestRAM,
-            'minGuestVRAM' : str(sp.minGuestVRAM,
-            'maxGuestVRAM' : str(sp.maxGuestVRAM,
-            'minGuestCPUCount' : str(sp.minGuestCPUCount,
-            'maxGuestCPUCount' : str(sp.maxGuestCPUCount,
-            'autostartDatabasePath' : (@self.settings.vboxAutostartConfig ? sp.autostartDatabasePath : ''),
-            'infoVDSize' : str(sp.infoVDSize,
+        return {
+            'minGuestRAM' : sp.minGuestRAM,
+            'maxGuestRAM' : sp.maxGuestRAM,
+            'minGuestVRAM' : sp.minGuestVRAM,
+            'maxGuestVRAM' : sp.maxGuestVRAM,
+            'minGuestCPUCount' : sp.minGuestCPUCount,
+            'maxGuestCPUCount' : sp.maxGuestCPUCount,
+            'autostartDatabasePath' : sp.autostartDatabasePath,
+            'infoVDSize' : str(sp.infoVDSize),
             'networkAdapterCount' : 8, # static value for now
-            'maxBootPosition' : str(sp.maxBootPosition,
-            'defaultMachineFolder' : str(sp.defaultMachineFolder,
-            'defaultHardDiskFormat' : str(sp.defaultHardDiskFormat,
+            'maxBootPosition' : sp.maxBootPosition,
+            'defaultMachineFolder' : sp.defaultMachineFolder,
+            'defaultHardDiskFormat' : sp.defaultHardDiskFormat,
             'homeFolder' : self.vbox.homeFolder,
-            'VRDEAuthLibrary' : str(sp.VRDEAuthLibrary,
-            'defaultAudioDriver' : str(sp.defaultAudioDriver,
+            'VRDEAuthLibrary' : str(sp.VRDEAuthLibrary),
+            'defaultAudioDriver' : str(sp.defaultAudioDriver),
             'defaultVRDEExtPack' : sp.defaultVRDEExtPack,
             'serialPortCount' : sp.serialPortCount,
             'parallelPortCount' : sp.parallelPortCount,
             'mediumFormats' : mediumFormats
-        )
-    }
+        }
 
     """
      * Get a list of VM log file names
@@ -3750,25 +3594,23 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array of log file names
      """
-    def remote_machineGetLogFilesList(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_machineGetLogFilesList(self, args):
 
         """ @m IMachine """
         m = self.vbox.findMachine(args['vm'])
 
         logs = array()
 
-        try: i = 0 while(l = m.queryLogFilename(i++)) logs.append(l
+        try:
+            i = 0
+            l = m.queryLogFilename(i)
+            while l:
+                logs.append(l)
+                i = i + 1
+                l = m.queryLogFilename(i)
         except: pass
 
-        lf = m.logFolder
-        m.releaseRemote()
-        
-        return array('path' : lf, 'logs' : logs)
-
-    }
+        return {'path' : m.logFolder, 'logs' : logs}
 
     """
      * Get VM log file contents
@@ -3776,30 +3618,26 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return string log file contents
      """
-    def remote_machineGetLogFile(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_machineGetLogFile(self, args):
 
         """ @m IMachine """
         m = self.vbox.findMachine(args['vm'])
         log = ''
         try:
             # Read in 8k chunks
-            while(l = m.readLog(int(args['log']),strlen(log),8192)) {
-                if !len(l) or !strlen(l[0])) break
-                log .= base64_decode(l[0])
-            }
+            while True:
+                l = m.readLog(int(args['log']),strlen(log),8192)
+                if not l or not len(l) or not strlen(l[0]): break
+                log = log + base64_decode(l[0])
+            
         except: pass
-        m.releaseRemote()
 
         # Attempt to UTF-8 encode string or json_encode may choke
         # and return an empty string
-        if function_exists('utf8_encode'))
+        if function_exists('utf8_encode'):
             return utf8_encode(log)
         
         return log
-    }
 
     """
      * Get a list of USB devices attached to a given VM
@@ -3807,29 +3645,21 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details.
      * @return array list of devices
      """
-    def remote_consoleGetUSBDevices(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
+    def remote_consoleGetUSBDevices(self, args):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
         self.session = self.websessionManager.getSessionObject(self.vbox.handle)
         machine.lockMachine(self.session.handle, 'Shared')
 
-        response = array()
-        foreach(self.session.console.USBDevices as u) { """ @u IUSBDevice """
-            response[u.id] = array('id':u.id,'remote':u.remote)
-            u.releaseRemote()
-        }
+        response = {}
+        for u in self.session.console.USBDevices:
+            response[u.id] = {'id':u.id,'remote':u.remote}
         
         self.session.unlockMachine()
         self.session = None
-        machine.releaseRemote()
 
         return response
-
-    }
 
     """
      * Return a string representing the VirtualBox ExtraData key
@@ -3840,9 +3670,9 @@ class vboxconnector():
      * @param string cType controller type
      * @return string extra data setting string
      """
-    def _util_getIgnoreFlushKey(port,device,cType) {
+    def _util_getIgnoreFlushKey(self, port,device,cType):
 
-        cTypes = array(
+        cTypes = {
             'piix3' : 'piix3ide',
             'piix4' : 'piix3ide',
             'ich6' : 'piix3ide',
@@ -3850,18 +3680,15 @@ class vboxconnector():
             'lsilogic' : 'lsilogicscsi',
             'buslogic' : 'buslogic',
             'lsilogicsas' : 'lsilogicsas'
-        )
-
-        if !isset(cTypes[strtolower(cType)])) {
-            self.errors.append(new Exception('Invalid controller type: ' . cType)
-            return ''
         }
+
+        if not cTypes.get(cType.lower(),None):
+            self.errors.append(Exception('Invalid controller type: ' . cType))
+            return ''
 
         lun = ((int(device)*2) + int(port))
 
-        return str_replace('[b]',lun,str_replace('[a]',cTypes[strtolower(cType)],"VBoxInternal/Devices/[a]/0/LUN#[b]/Config/IgnoreFlush"))
-
-    }
+        return "VBoxInternal/Devices/%s/0/LUN#%s/Config/IgnoreFlush" %(cTypes[cType.lowser()], str(lun))
 
     """
      * Get a newly generated MAC address from VirtualBox
@@ -3869,105 +3696,32 @@ class vboxconnector():
      * @param array args array of arguments. See def body for details
      * @return string mac address
      """
-    def remote_vboxGenerateMacAddress(args) {
-
-        # Connect to vboxwebsrv
-        self.connect()
-
+    def remote_vboxGenerateMacAddress(self, args):
         return self.vbox.host.generateMACAddress()
         
-    }
-
-    """
-     * Set group definition
-     * 
-     * @param array args array of arguments. See def body for details
-     * @return boolean True on success
-     """
-    def remote_vboxGroupDefinitionsSet(args) {
-    
-        self.connect()
-        
-        # Save a list of valid paths
-        validGroupPaths = array()
-        
-        groupKey = (self.settings.phpVboxGroups ? self.phpVboxGroupKey : 'GUI/GroupDefinitions')
-        
-        # Write out each group definition
-        foreach(args['groupDefinitions'] as groupDef) {
-            
-            self.vbox.setExtraData(groupKey.groupDef['path'], groupDef['order'])
-            validGroupPaths.append(groupDef['path']
-            
-        }
-        
-        # Remove any unused group definitions
-        keys = self.vbox.getExtraDataKeys()
-        foreach(keys as k) {
-            if strpos(k,groupKey) !== 0) continue
-            if array_search(substr(k,strlen(groupKey)), validGroupPaths) == False)
-                self.vbox.setExtraData(k,'')
-        }
-        
-        return True
-    }
-    
-    """
-     * Return group definitions
-     * 
-     * @param array args array of arguments. See def body for details
-     * @return array group definitions
-     """
-    def remote_vboxGroupDefinitionsGet(args) {
-
-        self.connect()
-        
-        response = array()
-        
-        keys = self.vbox.getExtraDataKeys()
-        
-        groupKey = (self.settings.phpVboxGroups ? self.phpVboxGroupKey : 'GUI/GroupDefinitions')
-        foreach(keys as grouppath) {
-            
-            if strpos(grouppath,groupKey) !== 0) continue
-            
-            subgroups = array()
-            machines = array()
-            
-            response.append(array(
-                'name' : substr(grouppath,strrpos(grouppath,'/')+1),
-                'path' : substr(grouppath,strlen(groupKey)),
-                'order' : self.vbox.getExtraData(grouppath)
-            )
-        }
-
-        return response
-        
-    }
     
     """
      * Format a time span in seconds into days / hours / minutes / seconds
      * @param integer t number of seconds
      * @return array containing number of days / hours / minutes / seconds
      """
-    def _util_splitTime(t) {
+    def _util_splitTime(self, t):
 
-        spans = array(
+        spans = {
             'days' : 86400,
             'hours' : 3600,
             'minutes' : 60,
-            'seconds' : 1)
-
-        time = array()
-
-        foreach(spans as k : v) {
-            if !(floor(t / v) > 0)) continue
-            time[k] = floor(t / v)
-            t -= floor(time[k] * v)
+            'seconds' : 1
         }
 
+        time = {}
+
+        for k, v in spans.iteritems():
+            if not (floor(t / v) > 0): continue
+            time[k] = floor(t / v)
+            t = t - floor(time[k] * v)
+
         return time
-    }
     
 
     """
@@ -3976,15 +3730,14 @@ class vboxconnector():
      * @param integer result code number
      * @return string result code text
      """
-    def _util_resultCodeText(c) {
+    def _util_resultCodeText(self, c):
         
-        rcodes = new ReflectionClass('VirtualBox_COM_result_codes')
-        rcodes = array_flip(rcodes.getConstants())
-        rcodes['0x80004005'] = 'NS_ERROR_FAILURE'
+        #rcodes = ReflectionClass('VirtualBox_COM_result_codes')
+        #rcodes = array_flip(rcodes.getConstants())
+        #rcodes['0x80004005'] = 'NS_ERROR_FAILURE'
         
-        return @rcodes['0x'.strtoupper(dechex(c))] . ' (0x'.strtoupper(dechex(c)).')'
-    }
-}
+        return c
+        #return rcodes['0x'.strtoupper(dechex(c))] . ' (0x'.strtoupper(dechex(c)).')'
 
 
 class vboxEventListener(threading.Thread):

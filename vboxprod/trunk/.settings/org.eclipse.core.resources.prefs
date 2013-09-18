@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//lib/zerorpc/__init__.py=utf-8
+encoding//lib/zerorpc/core.py=utf-8
+encoding//lib/zerorpc/gevent_zmq.py=utf-8
+encoding//lib/zerorpc/socket.py=utf-8

@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, signal
 
 # Our library modules
 basepath = os.path.abspath(os.path.dirname(__file__))
@@ -98,8 +98,9 @@ def main(argv = sys.argv):
         sys.exit()
     
     # Start web thread
-    webserver = WebServerThread()
+    webserver = WebServerThread()    
     webserver.start()
+
     
 
 

@@ -13,8 +13,6 @@ sys.path.insert(0,os.path.dirname(os.path.abspath(__file__))+'/lib')
 from jsonrpc import *
 
 
-global vboxMgr, vbox
-
 vboxMgr = VirtualBoxManager(None, None)
 vbox = vboxMgr.vbox
 
@@ -893,7 +891,7 @@ class vboxconnector(object):
         machine = self.vbox.findMachine(args['id'])
         
         vmState = machine.state
-        vmRunning = (vmState == 'Running' or vmState == 'Paused' or vmState == 'Saved')
+        vmRunning = machine.state in [vboxMgr.constants.MachineState_Running, vboxMgr.constants.MachineState_Paused, vboxMgr.constants.MachineState_Saved]
         self.session = self.websessionManager.getSessionObject(self.vbox.handle)
         machine.lockMachine(self.session.handle, ('Shared' if vmRunning else 'Write'))
 
@@ -4062,8 +4060,6 @@ class vboxEventListenerPool(threading.Thread):
             vboxMgr.deinitPerThread()
 
 
-vboxMgr = None
-vbox = None
 
 incomingQueue = Queue.Queue()
 outgoingQueue = Queue.Queue()
@@ -4118,21 +4114,10 @@ def vboxinit():
         # Enumerate all defined machines
         for mach in vboxGetArray(vbox,'machines'):
              
+            
             try:
-                
-                vm = { 
-                   'id':mach.id,
-                   'name':mach.name,
-                   'state':vboxEnumToString("MachineState", mach.state),
-                   'sessionState':vboxEnumToString("SessionState", mach.sessionState),
-                   'OSTypeId':mach.OSTypeId
-                }
-                
-                if vm['state'] == 'Running':
-                    subscribe.append(vm['id'])
-                    
-                vmlist.append(vm)
-                
+                if mach.state == vboxMgr.constants.MachineState_Running:
+                    subscribe.append(vm['id'])                
             except:
                 traceback.print_exc()
         
@@ -4145,7 +4130,7 @@ def vboxinit():
         
         listenerPool.add('vbox', vbox.eventSource)
         
-        # Add running machines
+        # Add f machines
         for s in subscribe:
             try:
                 machine = vbox.findMachine(s)

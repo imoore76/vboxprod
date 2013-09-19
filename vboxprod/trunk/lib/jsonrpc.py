@@ -47,9 +47,8 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                 self.handler = handler
                 threading.Thread.__init__(self)
                 
-            def join(self, timeout = None):
+            def shutdown(self):
                 self.running = False
-                threading.Thread.join(self, timeout)
                 
             def run(self):
                 
@@ -64,11 +63,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                     for i in range(0, RPCHeartbeatInterval):
                         if self.running: time.sleep(1)
 
-        
-        # Start heartbeat
-        self.heartbeat = heartbeatrunner(self)
-        self.heartbeat.start()
-        
+                
         streamingService = False
         
         try:
@@ -122,12 +117,12 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                             errors = []
                             for e in serviceObj.errors:
                                 errors.append({
-                                    'error': e.__class__.__name__ + ': ' + e.message,
-                                    'details': traceback.format_exc()
+                                    'error': '%s: %s'%(e[0].__class__.__name__, e[0].msg),
+                                    'details': e[1]
                                 })
                                 
                             response = {
-                                'method_response' : response,
+                                '%s_response'%(method,) : response,
                                 'errors': errors,
                                 'messages': serviceObj.messages,
                                 'success': True
@@ -136,8 +131,8 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                         except Exception as ex:
                             
                             response = {
-                                'method_response' : False,
-                                'errors': [{'msgType':'rpc_exception','details': traceback.format_exc(), 'error': ex.__class__.__name__ + ': ' + ex.message}],
+                                '%s_response'%(method,) : False,
+                                'errors': [{'msgType':'rpc_exception','details': traceback.format_exc(), 'error': '%s: %s'%(ex.__class__.__name__,ex.msg) }],
                                 'messages': serviceObj.messages,
                                 'success': False
                             }
@@ -153,7 +148,12 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
                         serviceObj.registerClient(self)
                         streamingService = True
-                        response = {'msgType':'response','registerStream':True}
+                        response = {'msgType':'registerStream_response','registered':True}
+                        
+                        # Start heartbeat
+                        self.heartbeat = heartbeatrunner(self)
+                        self.heartbeat.start()
+
                         
                     else:
                         raise Exception("Invalid message type: %s" %(message.get('msgType',''),))
@@ -177,6 +177,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
                 
             # Stop heartbeat
             if self.heartbeat:
+                self.heartbeat.shutdown()
                 self.heartbeat.join()
             
         #cur_thread = threading.current_thread()

@@ -24,7 +24,7 @@ def jsonout(func):
         except Exception as ex:
             import sys, pprint
             print(ex.message)
-            e = {'details': traceback.format_exc(), 'error': ex.__class__.__name__ + ': ' + ex.message}
+            e = {'details': traceback.format_exc(), 'error': '%s: %s' %(ex.__class__.__name__,ex.msg) }
             errors.append(e)
         
         (errors.append(x) for x in args[0].errors)

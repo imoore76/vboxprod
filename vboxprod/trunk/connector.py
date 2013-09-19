@@ -3,32 +3,42 @@ import sys, os, time, traceback, threading, Queue
 import signal
 import pprint
 import ConfigParser
+import math
 
-from multiprocessing import Process
+import socket
+import SocketServer
+import json
+
 
 from vboxapi import VirtualBoxManager, PlatformXPCOM
 
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__))+'/lib')
 
-from jsonrpc import *
-
+"""
+    Globals
+"""
 
 vboxMgr = VirtualBoxManager(None, None)
 vbox = vboxMgr.vbox
 
 
+
 """ Helpers """
+
+# Delete pseudo machine states
+del vboxMgr.constants._Values['MachineState']['FirstOnline']
+del vboxMgr.constants._Values['MachineState']['FirstTransient']
+del vboxMgr.constants._Values['MachineState']['LastOnline']
+del vboxMgr.constants._Values['MachineState']['LastTransient']
+
 def vboxEnumToString(enum, elem):
-    global vboxMgr
     vals = vboxMgr.constants.all_values(enum)
-    return dict(zip(vals.values(), vals.keys())).get(elem, "<unknown>")
+    return dict(zip(vals.values(), vals.keys())).get(int(elem), "<unknown>")
 
 def vboxStringToEnum(enum, elem):
-    global vboxMgr
-    return vboxMgr.constants.all_values(enum).get(elem)
+    return vboxMgr.constants.get(enum + '_' + elem)
 
 def vboxEnumList(enum):
-    global vboxMgr
     return vboxMgr.constants.all_values(enum)
 
 # Safe vboxMgr array
@@ -37,88 +47,162 @@ def vboxGetArray(obj, elem):
     if vals is None: vals = []
     return vals
 
+
 """
 Return base machine info
 """
-def _machineGetBaseInfo(mach):
+def _machineGetBaseInfo(machine):
+    
     return { 
-       'id':mach.id,
-       'name':mach.name,
-       'state':vboxEnumToString("MachineState", mach.state),
-       'sessionState':vboxEnumToString("SessionState", mach.sessionState),
-       'OSTypeId':mach.OSTypeId
+        'name' :machine.name,
+        'state' : vboxEnumToString("MachineState", machine.state),
+        'group_id' : '',
+        'OSTypeId' : machine.OSTypeId,
+        'lastStateChange' : str((machine.lastStateChange/1000)),
+        'id' : machine.id,
+        'currentStateModified' : machine.currentStateModified,
+        'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
+        'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
+        'customIcon' : machine.getExtraData('phpvb/icon')
     }
 
-"""
-Return a list of network adapters attached to machine m
 
- @param IMachine m virtual machine instance
- @param int slot optional slot of single network adapter to get
- @return array of network adapter information
 """
-def _machineGetNetworkAdapters(m, slot=None):
-
-    adapters = []
+    Enrich vbox events with relevant data
+"""
+def enrichEvents(eventList):
     
-    if slot is not None:
-        adapterRange = [slot]
-    else:
-        adapterRange = range(0,7)
+    lastMachineId = None
+    machine = None
+    session = None
+    
+    # Try to keep machines in order to limit locking / unlocking
+    keys = eventList.keys()
+    keys.sort()
+    
+    # Wrap to always unlock any sessions that may be open
+    try:
+        for ek in keys:
+            
+            event = eventList[ek]
+            
+            # Close existing session
+            if session and lastMachineId and event.get('machineId','') != lastMachineId:
+                
+                session.unlockMachine()
+                session = None
+                
+            elif event.get('machineId','') and not session:
+                
+                machine = vbox.findMachine(event['machineId'])
+                session = vboxMgr.mgr.getSessionObject(vbox)
+                machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+                
+            # Network adapter changed            
+            if event['eventType'] == 'OnNetworkAdapterChanged':
+    
+                try:
+                    eventList[ek]['enrichmentData'] = vboxConnector._machineGetNetworkAdapters(session.machine, event['networkAdapterSlot'])
+                
+                except:
+                    #eventList[ek]['enrichmentData'] = array(e.getMessage())
+                    traceback.print_exc()
+               
+                    
+            
+            
+            # OnVRDEServerChanged
+            elif event['eventType'] == 'OnVRDEServerChanged':
+                
+                try:
+                    
+                    vrde = session.machine.VRDEServer
+                    
+                    try:
+                        eventList[ek]['enrichmentData'] = {
+                            'enabled' : int(vrde.enabled),
+                            'ports' : vrde.getVRDEProperty('TCP/Ports'),
+                            'netAddress' : vrde.getVRDEProperty('TCP/Address'),
+                            'VNCPassword' : vrde.getVRDEProperty('VNCPassword'),
+                            'authType' : vboxEnumToString('AuthType', vrde.authType),
+                            'authTimeout' : vrde.authTimeout
+                            } if vrde else None
+                            
+                    except:
+                        # Just unlock the machine
+                        #eventList[ek]['enrichmentData'] = array(e.getMessage())
+                        traceback.print_exc()
+                        
+                except:
+                    #eventList[ek]['enrichmentData'] = array(e.getMessage())
+                    traceback.print_exc()
+                
+                
+            # VRDE server info changed. Just need port and enabled/disabled
+            elif event['eventType'] == 'OnVRDEServerInfoChanged':
+                
+                try:
+                        
+                    try:
+                        eventList[ek]['enrichmentData'] = {
+                            'port' : session.console.VRDEServerInfo.port,
+                            'enabled' : int(session.machine.VRDEServer.enabled)
+                        }
+                    except:
+                        # Just unlock the machine
+                        eventList[ek]['enrichmentData'] = {}
+                                    
+                except:
+                    eventList[ek]['enrichmentData'] = [e.getMessage()]
+                
+            
+            # Machine registered or base data changed
+            elif event['eventType'] in ['OnMachineRegistered','OnMachineDataChanged']:
+                
+                if event.get('registered', None) != False:
+                
+                    # Get same data that is in VM list data
+                    eventList[ek]['enrichmentData'] = _machineGetBaseInfo(machine)
+                
         
-    for i in adapterRange:
-
-        n = m.getNetworkAdapter(i)
-
-        aType = vboxEnumToString('NetworkAttachmentType', n.attachmentType)
+            # Update lastStateChange on OnMachineStateChange events
+            elif event['eventType'] == 'OnMachineStateChanged':
+                try:
+                    eventList[ek]['enrichmentData'] = {
+                        'lastStateChange' : str(machine.lastStateChange/1000),
+                        'currentStateModified' : machine.currentStateModified
+                    }
+                    
+                except:
+                    eventList[ek]['enrichmentData'] = {'lastStateChange' : 0}
+                
+                
+            # enrich with snapshot name and new snapshot count
+            elif event['eventType'].startswith('OnSnapshot'):
+                        
+                try:
+                    eventList[ek]['enrichmentData'] = {
+                        'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
+                        'snapshotCount' : machine.snapshotCount,
+                        'currentStateModified' : machine.currentStateModified
+                    }
         
-        if aType == 'NAT':
-            nd = n.NATEngine
-        else:
-             nd = None
-
-        props = n.getProperties('')
-        props = dict(zip(props[0],props[1]))
-         
-        adapters.append({
-            'adapterType' : vboxEnumToString('NetworkAdapterType', n.adapterType),
-            'slot' : n.slot,
-            'enabled' : n.enabled,
-            'MACAddress' : n.MACAddress,
-            'attachmentType' : aType,
-            'genericDriver' : n.genericDriver,
-            'hostOnlyInterface' : n.hostOnlyInterface,
-            'bridgedInterface' : n.bridgedInterface,
-            'properties' : props,
-            'internalNetwork' : n.internalNetwork,
-            'NATNetwork' : n.NATNetwork,
-            'promiscModePolicy' : vboxEnumToString('NetworkAdapterPromiscModePolicy', n.promiscModePolicy),     
-            'cableConnected' : n.cableConnected,
-            'NATEngine' : {
-               'aliasMode' : nd.aliasMode,
-               'DNSPassDomain' : nd.DNSPassDomain,
-               'DNSProxy' : nd.DNSProxy,
-               'DNSUseHostResolver' : nd.DNSUseHostResolver,
-               'hostIP' : nd.hostIP} if aType == 'NAT' else {},
-            'lineSpeed' : n.lineSpeed,
-            'redirects' : nd.getRedirects() if aType == 'Nat' else []
-        })
+                except:
+                    pass
+     
+    # Don't leave open sessions to machines         
+    finally:      
+        if session is not None:
+            session.unlockMachine()
         
-    return adapters
+    return eventList
 
 
-class vboxconnector(object):
 
-    """
-     * Error number describing a fatal error
-     * @integer
-     """
-    PHPVB_ERRNO_FATAL = 32
-
-    """
-     * Error number describing a connection error
-     * @integer
-     """
-    PHPVB_ERRNO_CONNECT = 64
+"""
+    Access to virtualbox from RPC calls
+"""
+class vboxConnector(object):
 
     """
      * Holds any errors that occur during processing. Errors are placed in here
@@ -142,17 +226,6 @@ class vboxconnector(object):
      """
     vbox = None
     
-    """
-    * Settings
-    """
-    settings = {}
-
-    """
-     * VirtualBox web session manager
-     * @IWebsessionManager
-     """
-    websessionManager = None
-
     """
      * Holds IWebsessionManager session object if created
      * during processing so that it can be properly shutdown
@@ -188,7 +261,7 @@ class vboxconnector(object):
         
     """
      * Get VirtualBox version
-     * @return array version information
+     * @return dict version information
      """
     def getVersion(self):
 
@@ -201,8 +274,7 @@ class vboxconnector(object):
                 'major':int(self.version[0]),
                 'minor':int(self.version[1]),
                 'sub':int(self.version[2]),
-                'revision':self.vbox.revision,
-                'settingsFilePath' : self.vbox.settingsFilePath
+                'revision':self.vbox.revision
             }
 
         return self.version
@@ -216,12 +288,7 @@ class vboxconnector(object):
     def remote_machineEnumerateGuestProperties(self, args):
 
         """ @m IMachine """
-        m = self.vbox.findMachine(args['vm'])
-
-        props = m.enumerateGuestProperties(args['pattern'])
-        m.releaseRemote()
-
-        return props
+        return self.vbox.findMachine(args['vm']).enumerateGuestProperties(args.get('pattern',''))
 
     """
      * Set extra data of a vm
@@ -232,10 +299,7 @@ class vboxconnector(object):
     def remote_machineSetExtraData(self, args):
     
         """ @m IMachine """
-        m = self.vbox.findMachine(args['vm'])
-    
-        m.setExtraData(args['key'],args['value'])
-    
+        self.vbox.findMachine(args['vm']).setExtraData(args['key'],args['value'])
         return True
     
     """
@@ -270,9 +334,9 @@ class vboxconnector(object):
 
         dsep = self.getDsep()
 
-        path = args['file'].replace(desep + dsep, dsep)
-        dir = dirname(path)
-        file = basename(path)
+        path = args['file'].replace(dsep + dsep, dsep)
+        dir = os.path.dirname(path)
+        file = os.path.basename(path)
 
         if dir[-1] != dsep: dir = dir + dsep
 
@@ -281,16 +345,15 @@ class vboxconnector(object):
 
 
         """ @vfs IVFSExplorer """
-        vfs = appl.createVFSExplorer('file://'.dir)
+        vfs = appl.createVFSExplorer('file://%s' %(dir,))
 
         """ @progress IProgress """
         progress = vfs.update()
         progress.waitForCompletion(-1)
-        progress.releaseRemote()
 
-        exists = vfs.exists(array(file))
+        exists = vfs.exists([file])
 
-        return len(exists)
+        return bool(len(exists))
     
         
     """
@@ -356,8 +419,8 @@ class vboxconnector(object):
         # create session and lock machine
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        machine.lockMachine(self.session.handle, 'Shared')
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
 
         # Try update from guest if it is supported
         if not args.get('mount_only', None):
@@ -368,9 +431,8 @@ class vboxconnector(object):
                 progress = self.session.console.guest.updateGuestAdditions(gem.location,'WaitForUpdateStartOnly')
 
                 # No error info. Save progress.
-                gem.releaseRemote()
                 self._util_progressStore(progress)
-                results['progress'] = progress.handle
+                results['progress'] = progress
                 return results
 
             except:
@@ -390,7 +452,7 @@ class vboxconnector(object):
             for ma in machine.getMediumAttachmentsOfController(sc.name):
 
                 if ma.type == 'DVD':
-                    self.session.machine.mountMedium(sc.name, ma.port, ma.device, gem.handle, True)
+                    self.session.machine.mountMedium(sc.name, ma.port, ma.device, gem, True)
                     results['result'] = 'mounted'
                     mounted = True
                     break
@@ -415,12 +477,14 @@ class vboxconnector(object):
         # create session and lock machine
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        machine.lockMachine(self.session.handle, 'Shared')
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
 
         self.session.console.attachUSBDevice(args['id'])
-
+        
         self.session.unlockMachine()
+        self.session = None
+        
         return True
 
     """
@@ -434,65 +498,15 @@ class vboxconnector(object):
         # create session and lock machine
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        machine.lockMachine(self.session.handle, 'Shared')
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
 
         self.session.console.detachUSBDevice(args['id'])
 
         self.session.unlockMachine()
         self.session = None
-        machine.releaseRemote()
 
         return True
-
-    """
-     * Save vms' groups if they have changed
-     * 
-     * @param array args array of arguments. See def body for details.
-     * @return array response data
-     """
-    def remote_machinesSaveGroups(self, args):
-        
-        response = {'saved':[],'errored':False}
-        
-        for vm in args['vms']:
-            
-            # create session and lock machine
-            """ @machine IMachine """
-            try:
-                machine = self.vbox.findMachine(vm['id'])
-            except:
-                continue
-            
-            group = vm['group_id']
-
-            try:
-                
-                self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-                
-                machine.lockMachine(self.session.handle, 'Shared')
-                
-                machine.setExtraData(self.phpVboxGroupKey, group)
-                self.session.machine.saveSettings()
-                self.session.unlockMachine()
-                
-                self.session = None
-                
-            except Exception as e:
-                
-                self.errors.append(e)
-                response['errored'] = True
-                
-                continue
-
-            # Add to saved list
-            response['saved'].append(vm['id'])
-            
-        
-        
-        return response
-        
-      
 
 
     """
@@ -525,11 +539,11 @@ class vboxconnector(object):
         if args.get('link', None): opts.append('Link')
 
         """ @progress IProgress """
-        progress = src.cloneTo(m.handle,args['vmState'],opts)
+        progress = src.cloneTo(m,args['vmState'],opts)
 
         # Does an exception exist?
         try:
-            if progress.errorInfo.handle:
+            if progress.errorInfo:
                 ##self.errors.append(new Exception(progress.errorInfo.text))
                 return False
             
@@ -539,7 +553,7 @@ class vboxconnector(object):
         self._util_progressStore(progress)
 
         return {
-                'progress' : progress.handle,
+                'progress' : progress,
                 'settingsFilePath' : sfpath}
 
 
@@ -554,8 +568,8 @@ class vboxconnector(object):
         # create session and lock machine
         """ @m IMachine """
         m = self.vbox.findMachine(args['vm'])
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        m.lockMachine(self.session.handle, 'Shared')
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        m.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
         
         if int(args.get('enabled', 0)) == -1:
             args['enabled'] = not(self.session.machine.VRDEServer.enabled)
@@ -822,8 +836,8 @@ class vboxconnector(object):
          * USB Filters
          """
 
-        usbEx = array()
-        usbNew = array()
+        usbEx = []
+        usbNew = []
 
         usbc = self._machineGetUSBController(self.session.machine)
 
@@ -870,7 +884,7 @@ class vboxconnector(object):
                                 offset = offset - 1
 
                 except Exception as e:
-                    self.errors.append(e)
+                    self.errors.append((e,traceback.format_exc()))
 
         self.session.machine.saveSettings()
         self.session.unlockMachine()
@@ -892,8 +906,8 @@ class vboxconnector(object):
         
         vmState = machine.state
         vmRunning = machine.state in [vboxMgr.constants.MachineState_Running, vboxMgr.constants.MachineState_Paused, vboxMgr.constants.MachineState_Saved]
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        machine.lockMachine(self.session.handle, ('Shared' if vmRunning else 'Write'))
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(self.session, (vboxMgr.constants.LockType_Shared if vmRunning else vboxMgr.constants.LockType_Write))
 
         # Switch to machineSaveRunning()?
         if vmRunning:
@@ -908,12 +922,12 @@ class vboxconnector(object):
         m.CPUCount = args['CPUCount']
         m.memorySize = args['memorySize']
         m.firmwareType = args['firmwareType']
-        if args['chipsetType']: m.chipsetType = args['chipsetType']
+        if args['chipsetType']: m.chipsetType = vboxStringToEnum('ChipsetType', args['chipsetType'])
         if m.snapshotFolder != args['snapshotFolder']: m.snapshotFolder = args['snapshotFolder']
-        m.RTCUseUTC = (1 if args['RTCUseUTC'] else 0)
-        m.setCpuProperty('PAE', (1 if args['CpuProperties']['PAE'] else 0))
+        m.RTCUseUTC = (True if args['RTCUseUTC'] else False)
+        m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args['CpuProperties']['PAE'] else False))
         # IOAPIC
-        m.BIOSSettings.IOAPICEnabled = (1 if args['BIOSSettings']['IOAPICEnabled'] else 0)
+        m.BIOSSettings.IOAPICEnabled = (True if args['BIOSSettings']['IOAPICEnabled'] else False)
         m.CPUExecutionCap = int(args['CPUExecutionCap'])
         m.description = args['description']
         
@@ -923,29 +937,29 @@ class vboxconnector(object):
 
         
         # Determine if host is capable of hw accel
-        hwAccelAvail = int(self.vbox.host.getProcessorFeature(vboxStringToEnum("ProcessorFeature", 'HWVirtEx')))
+        hwAccelAvail = bool(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
 
-        m.setHWVirtExProperty('Enabled',(1 if int(args['HWVirtExProperties']['Enabled']) and hwAccelAvail else 0))
-        m.setHWVirtExProperty('NestedPaging', (1 if int(args['HWVirtExProperties']['Enabled']) and hwAccelAvail and int(args['HWVirtExProperties']['NestedPaging']) else 0))
+        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled,(True if int(args['HWVirtExProperties']['Enabled']) and hwAccelAvail else False))
+        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging, (True if int(args['HWVirtExProperties']['Enabled']) and hwAccelAvail and int(args['HWVirtExProperties']['NestedPaging']) else False))
         
         """ @def VBOX_WITH_PAGE_SHARING
          * Enables the page sharing code.
         * @remarks This must match GMMR0Init currently we only support page fusion on
          *          all 64-bit hosts except Mac OS X """
         
-        if int(self.vbox.host.getProcessorFeature(vboxStringToEnum("ProcessorFeature", 'LongMode'))) and self.vbox.host.operatingSystem.find("darwin") == -1:
+        if int(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_LongMode)) and self.vbox.host.operatingSystem.lower().find("darwin") == -1:
             try:
-                m.pageFusionEnabled = int(args['pageFusionEnabled'])
+                m.pageFusionEnabled = (True if int(args['pageFusionEnabled']) else False)
             except:
                 pass
 
         m.HPETEnabled = int(args['HPETEnabled'])
         m.setExtraData("VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled", args['disableHostTimeSync'])
-        m.keyboardHIDType = args['keyboardHIDType']
-        m.pointingHIDType = args['pointingHIDType']
-        m.setHWVirtExProperty('LargePages', (1 if int(args['HWVirtExProperties']['LargePages']) else 0))
-        m.setHWVirtExProperty('Exclusive', (1 if int(args['HWVirtExProperties']['Exclusive']) else 0))
-        m.setHWVirtExProperty('VPID', (1 if int(args['HWVirtExProperties']['VPID']) else 0))
+        m.keyboardHIDType = vboxStringToEnum("KeyboardHIDType",args['keyboardHIDType'])
+        m.pointingHIDType = vboxStringToEnum("PointingHIDType",args['pointingHIDType'])
+        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages, (True if int(args['HWVirtExProperties']['LargePages']) else False))
+        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Exclusive, (True if int(args['HWVirtExProperties']['Exclusive']) else False))
+        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
 
         """ Custom Icon """
         m.setExtraData('phpvb/icon', args['customIcon'])
@@ -966,7 +980,7 @@ class vboxconnector(object):
                 m.VRDEServer.allowMultiConnection = int(args['VRDEServer']['allowMultiConnection'])
 
         except Exception as e:
-            self.errors.append(e)
+            self.errors.append((e,traceback.format_exc()))
             
         # Audio controller settings
         m.audioAdapter.enabled = (1 if args['audioAdapter']['enabled'] else 0)
@@ -984,14 +998,14 @@ class vboxconnector(object):
         attachedEx = attachedNew = {}
         for sc in vboxGetArray(m,'storageControllers'): # @sc IStorageController """
 
-            cType = str(sc.controllerType)
+            cType = sc.controllerType
 
             for ma in m.getMediumAttachmentsOfController(sc.name):
 
                 attachedEx[sc.name.ma.port.ma.device] = (ma.medium.id if ma.medium else None)
 
                 # Remove IgnoreFlush key?
-                if self.settings.enableHDFlushConfig and str(ma.type) == 'HardDisk':
+                if self.settings.enableHDFlushConfig and ma.type == vboxMgr.constants.DeviceType_HardDisk:
                     xtra = self._util_getIgnoreFlushKey(ma.port, ma.device, cType)
                     if xtra:
                         m.setExtraData(xtra,'')    
@@ -1167,7 +1181,7 @@ class vboxconnector(object):
                 p.server = int(args['serialPorts'][i]['server'])
                 
             except Exception as e:
-                self.errors.append(e)
+                self.errors.append((e,traceback.format_exc()))
 
         # LPT Ports
         lptChanged = False
@@ -1184,9 +1198,9 @@ class vboxconnector(object):
                 p.IRQ = int(args['parallelPorts'][i]['IRQ'])
                 p.path = args['parallelPorts'][i]['path']
                 p.enabled = int(args['parallelPorts'][i]['enabled'])
-                p.releaseRemote()
+                
             except Exception as e:
-                self.errors.append(e)
+                self.errors.append((e,traceback.format_exc()))
 
 
         sharedEx = {}
@@ -1205,7 +1219,7 @@ class vboxconnector(object):
                 try:
                     m.createSharedFolder(s['name'],s['hostPath'],s['writable'],s['autoMount'])
                 except Exception as e:
-                    self.errors.append(e)
+                    self.errors.append((e,traceback.format_exc()))
                         
 
         # USB Filters
@@ -1220,7 +1234,7 @@ class vboxconnector(object):
             m.USBController.enabledEHCI = args['USBController']['enabledEHCI']
 
         # filters
-        if args['USBController'].get('deviceFilters', None) is None: args['USBController']['deviceFilters'] = array()
+        if args['USBController'].get('deviceFilters', None) is None: args['USBController']['deviceFilters'] = []
         if len(usbc['deviceFilters']) != len(args['USBController']['deviceFilters']) or serialize(usbc['deviceFilters']) != serialize(args['USBController']['deviceFilters']):
 
             # usb filter properties to change
@@ -1254,11 +1268,11 @@ class vboxconnector(object):
                             for p in usbProps:
                                 setattr(f,p,args['USBController']['deviceFilters'][i][p])
 
-                            m.USBController.insertDeviceFilter(i,f.handle)
+                            m.USBController.insertDeviceFilter(i,f)
                             offset = offset - 1
 
             except Exception as e:
-                self.errors.append(e)
+                self.errors.append((e,traceback.format_exc()))
 
 
         # Rename goes last
@@ -1284,7 +1298,7 @@ class vboxconnector(object):
 
         """ @m IMachine """
         m = self.vbox.openMachine(args['file'])
-        self.vbox.registerMachine(m.handle)
+        self.vbox.registerMachine(m)
         return True
 
     """
@@ -1296,11 +1310,9 @@ class vboxconnector(object):
     def remote_progressGet(self, args):
 
         # progress operation result
-        response = {}
-        success = 1
-        error = 0
-
-        return False
+        global progressOpPool
+        
+        return progressOpPool.getStatus(args['progress'])
     
     """
      * Cancel a running progress operation
@@ -1311,18 +1323,8 @@ class vboxconnector(object):
      """
     def remote_progressCancel(self, args):
 
-        return False
+        return progressOpPool.cancel(args['progress'])
 
-    """
-     * Destory a progress operation.
-     *
-     * @param array pop progress operation details
-     * @return boolean True on success
-     """
-    def _util_progressDestroy(self, pop):
-
-        return False
-    
     """
      * Returns a key : value mapping of an enumeration class contained
      * in vboxServiceWrappers.php (classes that extend VBox_Enum).
@@ -1333,7 +1335,12 @@ class vboxconnector(object):
      """
     def remote_vboxGetEnumerationMap(self, args):
         
-        return False
+        map = vboxEnumList(args['class'])
+        if args.get('ValueMap', None):
+            return dict(zip(map.values(), map.keys()))
+        else:
+            return map
+        
 
     """
      * Save VirtualBox system properties
@@ -1387,8 +1394,6 @@ class vboxconnector(object):
         """ @progress IProgress """
         progress = app.importMachines(['KeepNATMACs' if args['reinitNetwork'] else 'KeepAllMACs'])
 
-        app.releaseRemote()
-
         # Does an exception exist?
         try:
             if progress.errorInfo:
@@ -1401,7 +1406,7 @@ class vboxconnector(object):
         # Save progress
         self._util_progressStore(progress)
 
-        return {'progress' : progress.handle}
+        return {'progress' : progress}
 
 
     """
@@ -1412,12 +1417,10 @@ class vboxconnector(object):
      """
     def remote_vboxGetExportableMachines(self, args):
 
-        #Get a list of registered machines
-        machines = self.vbox.machines
-        
+        #Get a list of registered machines        
         mlist = []
 
-        for machine in machines: # @machine IMachine """
+        for machine in vboxGetArray(self.vbox, 'machines'): # @machine IMachine """
 
             try:
                 mlist.append({
@@ -1496,8 +1499,8 @@ class vboxconnector(object):
             dsep = self.getDsep()
 
             path = args['file'].replace(dsep.dsep,dsep)
-            dir = dirname(path)
-            file = basename(path)
+            dir = os.path.dirname(path)
+            file = os.path.basename(path)
 
             if dir[-1] != dsep: dir = dir + dsep
 
@@ -1507,9 +1510,6 @@ class vboxconnector(object):
             """ @progress IProgress """
             progress = vfs.remove([file])
             progress.waitForCompletion(-1)
-            progress.releaseRemote()
-
-            vfs.releaseRemote()
 
         appProps = {
             'name' : 'Name',
@@ -1526,7 +1526,7 @@ class vboxconnector(object):
 
             """ @m IMachine """
             m = self.vbox.findMachine(vm['id'])
-            desc = m.export(app.handle, args['file'])
+            desc = m.export(app, args['file'])
             props = desc.getDescription()
             ptypes = []
             for p in props[0]: ptypes.append(str(p))
@@ -1545,7 +1545,7 @@ class vboxconnector(object):
                     
                 typecount = typecount + 1
 
-            enabled = array_pad(array(),len(props[3]),True)
+            enabled = array_pad([],len(props[3]),True)
             for k in enabled.keys(): enabled[k] = enabled[k]
             desc.setFinalValues(enabled,props[3],props[4])
 
@@ -1584,20 +1584,19 @@ class vboxconnector(object):
         genericDrivers = []
         
         """ Get host nics """
-        for d in self.vbox.host.networkInterfaces:
+        for d in vboxGetArray(self.vbox.host, 'networkInterfaces'):
             nics.append(d.name)
 
         
         """ Get internal Networks """
-        networks = self.vbox.internalNetworks
+        networks = vboxGetArray(self.vbox,'internalNetworks')
         
         """ Generic Drivers """
-        genericDrivers = self.vbox.genericNetworkDrivers
+        genericDrivers = vboxGetArray(self.vbox,'genericNetworkDrivers')
         
         return {
             'nics' : nics,
             'networks' : networks,
-            'vdenetworks' : vdenetworks,
             'genericDrivers' : genericDrivers
         }
         
@@ -1614,9 +1613,9 @@ class vboxconnector(object):
          * NICs
          """
         response = {'networkInterfaces' : []}
-        for d in self.vbox.host.networkInterfaces:
+        for d in vboxGetArray(self.vbox.host, 'networkInterfaces'):
 
-            if d.interfaceType != 'HostOnly':
+            if d.interfaceType != vboxMgr.constants.HostNetworkInterfaceType_HostOnly:
                 continue
 
             # Get DHCP Info
@@ -1757,7 +1756,7 @@ class vboxconnector(object):
 
         ts = self.vbox.getGuestOSTypes()
 
-        supp64 = (self.vbox.host.getProcessorFeature(vboxStringToEnum("ProcessorFeature", 'LongMode')) and self.vbox.host.getProcessorFeature(vboxStringToEnum("ProcessorFeature", 'HWVirtEx')))
+        supp64 = (self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_LongMode) and self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
 
         for g in ts:
 
@@ -1788,15 +1787,15 @@ class vboxconnector(object):
         state = args['state']
 
         states = {
-            'powerDown' : {'result':'PoweredOff','progress':2},
+            'powerDown' : {'result':vboxMgr.constants.MachineState_PoweredOff,'progress':2},
             'reset' : {},
-            'saveState' : {'result':'Saved','progress':2},
+            'saveState' : {'result':vboxMgr.constants.MachineState_Saved,'progress':2},
             'powerButton' : {'acpi':True},
             'sleepButton' : {'acpi':True},
-            'pause' : {'result':'Paused','progress':False},
-            'resume' : {'result':'Running','progress':False},
-            'powerUp' : {'result':'Running'},
-            'discardSavedState' : {'result':'poweredOff','lock':'shared','force':True}
+            'pause' : {'result':vboxMgr.constants.MachineState_Paused,'progress':False},
+            'resume' : {'result':vboxMgr.constants.MachineState_Running,'progress':False},
+            'powerUp' : {'result':vboxMgr.constants.MachineState_Running},
+            'discardSavedState' : {'result':vboxMgr.constants.MachineState_PoweredOff,'lock':vboxMgr.constants.LockType_Shared,'force':True}
         }
 
         # Check for valid state
@@ -1816,7 +1815,7 @@ class vboxconnector(object):
                 return False
 
         # Special case for power up
-        if state == 'powerUp' and mstate == 'Paused':
+        if state == 'powerUp' and mstate == vboxMgr.constants.MachineState_Paused:
             state = 'resume'
             
         if state == 'powerUp':
@@ -1826,18 +1825,18 @@ class vboxconnector(object):
             try:
             
                 # create session
-                self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+                self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
                 # set first run
                 if machine.getExtraData('GUI/FirstRun') == 'yes':
                     machine.setExtraData('GUI/FirstRun', 'no')
                 
                 """ @progress IProgress """
-                progress = machine.launchVMProcess(self.session.handle, 'headless', '')
+                progress = machine.launchVMProcess(self.session, 'headless', '')
             
             except Exception as e:
                 # Error opening session
-                self.errors.append(e)
+                self.errors.append((e,traceback.format_exc()))
                 return False
             
             # Does an exception exist?
@@ -1855,10 +1854,10 @@ class vboxconnector(object):
             
 
         # Open session to machine
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
         # Lock machine
-        machine.lockMachine(self.session.handle,('Write' if states[state].get('lock',None) == 'write' else 'Shared'))
+        machine.lockMachine(self.session, states[state].get('lock',vboxMgr.constants.LockType_Shared))
 
         # If this operation returns a progress object save progress
         progress = None
@@ -1968,9 +1967,9 @@ class vboxconnector(object):
                 'IPV6Supported' : d.IPV6Supported,
                 'IPV6Address' : d.IPV6Address,
                 'IPV6NetworkMaskPrefixLength' : d.IPV6NetworkMaskPrefixLength,
-                'status' : str(d.status),
-                'mediumType' : str(d.mediumType),
-                'interfaceType' : str(d.interfaceType),
+                'status' : vboxEnumToString("HostNetworkInterfaceStatus", d.status),
+                'mediumType' : vboxEnumToString("HostNetworkInterfaceMediumType", d.mediumType),
+                'interfaceType' : vboxEnumToString("HostNetworkInterfaceType", d.interfaceType),
                 'hardwareAddress' : d.hardwareAddress,
                 'networkName' : d.networkName
             })
@@ -2028,7 +2027,7 @@ class vboxconnector(object):
                 'version' : d.version,
                 'portVersion' : d.portVersion,
                 'remote' : d.remote,
-                'state' : str(d.state),
+                'state' : vboxEnumToString("USBDeviceState", d.state),
                 })
 
         return response
@@ -2046,7 +2045,7 @@ class vboxconnector(object):
     def remote_machineGetDetails(self, args, snapshot=None):
 
         # Host instead of vm info
-        if args['vm'] == 'host':
+        if args.get('vm','') == 'host':
 
             response = self.remote_hostGetDetails(args)
 
@@ -2128,7 +2127,7 @@ class vboxconnector(object):
         machine = self.vbox.findMachine(args['vm'])
         data = {
             'id' : args['vm'],
-            'state' : machine.state
+            'state' : vboxEnumToString("MachineState", machine.state)
         }
         
         """
@@ -2145,8 +2144,8 @@ class vboxconnector(object):
         # Get current console port
         if data['state'] == 'Running' or data['state'] == 'Paused':
         
-            self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-            machine.lockMachine(self.session.handle, 'Shared')
+            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+            machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
             console = self.session.console
         
             # Get guest additions version
@@ -2203,7 +2202,7 @@ class vboxconnector(object):
             hds = []
             delete = machine.unregister('DetachAllReturnHardDisksOnly')
             for hd in delete:
-                hds.append(self.vbox.openMedium(hd.location,'HardDisk'))
+                hds.append(self.vbox.openMedium(hd.location,vboxMgr.constants.DeviceType_HardDisk))
 
             """ @progress IProgress """
             progress = machine.delete(hds)
@@ -2258,12 +2257,12 @@ class vboxconnector(object):
 
         try:
 
-            self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
             # Lock VM
             """ @machine IMachine """
             machine = self.vbox.findMachine(vm)
-            machine.lockMachine(self.session.handle,'Write')
+            machine.lockMachine(self.session, vboxMgr.constants.LockType_Write)
 
             # OS defaults
             defaults = self.vbox.getGuestOSType(args['ostype'])
@@ -2293,33 +2292,33 @@ class vboxconnector(object):
             # Other defaults
             self.session.machine.BIOSSettings.IOAPICEnabled = defaults.recommendedIOAPIC
             self.session.machine.RTCUseUTC = defaults.recommendedRTCUseUTC
-            self.session.machine.firmwareType = str(defaults.recommendedFirmware)
-            self.session.machine.chipsetType = str(defaults.recommendedChipset)
+            self.session.machine.firmwareType = defaults.recommendedFirmware
+            self.session.machine.chipsetType = defaults.recommendedChipset
             if int(defaults.recommendedVRAM) > 0: self.session.machine.VRAMSize = int(defaults.recommendedVRAM)
-            self.session.machine.setCpuProperty('PAE',defaults.recommendedPAE)
+            self.session.machine.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE,defaults.recommendedPAE)
 
             # USB input devices
             if defaults.recommendedUSBHid:
-                self.session.machine.pointingHIDType = 'USBMouse'
-                self.session.machine.keyboardHIDType = 'USBKeyboard'
+                self.session.machine.pointingHIDType = vboxStringToEnum("PointingHIDType",'USBMouse')
+                self.session.machine.keyboardHIDType = vboxStringToEnum("KeyboardHIDType", 'USBKeyboard')
 
             """ Only if acceleration configuration is available """
-            if self.vbox.host.getProcessorFeature(vboxStringToEnum("ProcessorFeature", 'HWVirtEx')):
+            if self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx):
                 self.session.machine.setHWVirtExProperty('Enabled',defaults.recommendedVirtEx)
 
             """
              * Hard Disk and DVD/CD Drive
              """
-            DVDbusType = str(defaults.recommendedDVDStorageBus)
-            DVDconType = str(defaults.recommendedDVDStorageController)
+            DVDbusType = defaults.recommendedDVDStorageBus
+            DVDconType = defaults.recommendedDVDStorageController
 
             # Attach harddisk?
             if args.get('disk',None):
 
-                HDbusType = str(defaults.recommendedHDStorageBus)
-                HDconType = str(defaults.recommendedHDStorageController)
+                HDbusType = defaults.recommendedHDStorageBus
+                HDconType = defaults.recommendedHDStorageController
 
-                sc = self.session.machine.addStorageController(str(HDbusType), str(HDbusType))
+                sc = self.session.machine.addStorageController(vboxEnumToString("StorageBus", HDbusType), HDbusType)
                 sc.controllerType = HDconType
                 sc.useHostIOCache = self.vbox.systemProperties.getDefaultIoCacheSettingForStorageController(HDconType)
                 
@@ -2327,16 +2326,16 @@ class vboxconnector(object):
                 if HDbusType == 'SATA':
                     sc.portCount = (2 if (HDbusType == DVDbusType) else 1)
                 
-                m = self.vbox.openMedium(args['disk'],'HardDisk')
+                m = self.vbox.openMedium(args['disk'],vboxMgr.constants.DeviceType_HardDisk)
 
-                self.session.machine.attachDevice(trans(HDbusType,'UIMachineSettingsStorage'),0,0,'HardDisk',m.handle)
+                self.session.machine.attachDevice(vboxEnumToString("StorageBus", HDbusType),0,0,vboxMgr.constants.DeviceType_HardDisk,m)
 
             # Attach DVD/CDROM
             if DVDbusType:
 
                 if not args.get('disk',None) or (HDbusType != DVDbusType):
 
-                    sc = self.session.machine.addStorageController(str(DVDbusType),str(DVDbusType))
+                    sc = self.session.machine.addStorageController(vboxEnumToString("StorageBus", DVDbusType), DVDbusType)
                     sc.controllerType = DVDconType
                     sc.useHostIOCache = self.vbox.systemProperties.getDefaultIoCacheSettingForStorageController(DVDconType)
                     
@@ -2352,7 +2351,7 @@ class vboxconnector(object):
             self.session = None
 
         except Exception as e:
-            self.errors.append(e)
+            self.errors.append((e,traceback.format_exc()))
             return False
 
         return True
@@ -2365,7 +2364,8 @@ class vboxconnector(object):
      * @param int slot optional slot of single network adapter to get
      * @return array of network adapter information
      """
-    def _machineGetNetworkAdapters(self, m, slot=False):
+    @staticmethod
+    def _machineGetNetworkAdapters(m, slot=False):
 
         adapters = []
         
@@ -2428,8 +2428,8 @@ class vboxconnector(object):
         # Look for a request for a single vm
         if args.get('vm',None):
             
-            machines = array(self.vbox.findMachine(args['vm']))
-        
+            machines = [self.vbox.findMachine(args['vm'])]
+            
         # Full list
         else:
             #Get a list of registered machines
@@ -2441,23 +2441,11 @@ class vboxconnector(object):
 
             try:
                 
-                vmlist.append({
-                    'name' :machine.name,
-                    'state' : vboxEnumToString("MachineState", machine.state),
-                    'group_id' : '',
-                    'OSTypeId' : machine.OSTypeId,
-                    'lastStateChange' : str((machine.lastStateChange/1000)),
-                    'id' : machine.id,
-                    'currentStateModified' : machine.currentStateModified,
-                    'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
-                    'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
-                    'customIcon' : machine.getExtraData('phpvb/icon')
-                })
+                vmlist.append(_machineGetBaseInfo(machine))
                 
                 
             except Exception as e:
 
-                pprint.pprint(e)
                 if machine:
 
                     vmlist.append({
@@ -2471,7 +2459,7 @@ class vboxconnector(object):
                     })
 
                 else:
-                    self.errors.append(e)
+                    self.errors.append((e,traceback.format_exc()))
 
         return vmlist
 
@@ -2544,8 +2532,8 @@ class vboxconnector(object):
             'HPETEnabled' : m.HPETEnabled,
             'memorySize' : m.memorySize,
             'VRAMSize' : m.VRAMSize,
-            'pointingHIDType' : str(m.pointingHIDType),
-            'keyboardHIDType' : str(m.keyboardHIDType),
+            'pointingHIDType' : vboxEnumToString("PointingHIDType", m.pointingHIDType),
+            'keyboardHIDType' : vboxEnumToString("KeyboardHIDType", m.keyboardHIDType),
             'accelerate3DEnabled' : m.accelerate3DEnabled,
             'accelerate2DVideoEnabled' : m.accelerate2DVideoEnabled,
             'BIOSSettings' : {
@@ -2553,7 +2541,7 @@ class vboxconnector(object):
                 'IOAPICEnabled' : m.BIOSSettings.IOAPICEnabled,
                 'timeOffset' : m.BIOSSettings.timeOffset
                 },
-            'firmwareType' : str(m.firmwareType),
+            'firmwareType' : vboxEnumToString("FirmwareType", m.firmwareType),
             'snapshotFolder' : m.snapshotFolder,
             'monitorCount' : m.monitorCount,
             'pageFusionEnabled' : int(m.pageFusionEnabled),
@@ -2562,26 +2550,26 @@ class vboxconnector(object):
                 'ports' : m.VRDEServer.getVRDEProperty('TCP/Ports'),
                 'netAddress' : m.VRDEServer.getVRDEProperty('TCP/Address'),
                 'VNCPassword' : m.VRDEServer.getVRDEProperty('VNCPassword'),
-                'authType' : str(m.VRDEServer.authType),
+                'authType' : vboxEnumToString("FirmwareType", m.VRDEServer.authType),
                 'authTimeout' : m.VRDEServer.authTimeout,
-                'allowMultiConnection' : int(m.VRDEServer.allowMultiConnection),
-                'VRDEExtPack' : str(m.VRDEServer.VRDEExtPack)
+                'allowMultiConnection' : m.VRDEServer.allowMultiConnection,
+                'VRDEExtPack' : m.VRDEServer.VRDEExtPack
                 }),
             'audioAdapter' : {
-                'enabled' : int(m.audioAdapter.enabled),
-                'audioController' : str(m.audioAdapter.audioController),
-                'audioDriver' : str(m.audioAdapter.audioDriver),
+                'enabled' : m.audioAdapter.enabled,
+                'audioController' : vboxEnumToString("AudioControllerType", m.audioAdapter.audioController),
+                'audioDriver' : vboxEnumToString("AudioDriverType", m.audioAdapter.audioDriver),
                 },
             'RTCUseUTC' : m.RTCUseUTC,
             'HWVirtExProperties' : {
-                'Enabled' : m.getHWVirtExProperty(vboxStringToEnum('HWVirtExPropertyType','Enabled')),
-                'NestedPaging' : m.getHWVirtExProperty(vboxStringToEnum('HWVirtExPropertyType','NestedPaging')),
-                'LargePages' : m.getHWVirtExProperty(vboxStringToEnum('HWVirtExPropertyType','LargePages')),
-                'Exclusive' : m.getHWVirtExProperty(vboxStringToEnum('HWVirtExPropertyType','Exclusive')),
-                'VPID' : m.getHWVirtExProperty(vboxStringToEnum('HWVirtExPropertyType','VPID'))
+                'Enabled' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled),
+                'NestedPaging' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging),
+                'LargePages' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages),
+                'Exclusive' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Exclusive),
+                'VPID' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID)
                 },
             'CpuProperties' : {
-                'PAE' : m.getCPUProperty(vboxStringToEnum('CPUPropertyType','PAE'))
+                'PAE' : m.getCPUProperty(vboxMgr.constants.CPUPropertyType_PAE)
                 },
             'bootOrder' : self._machineGetBootOrder(m),
             'chipsetType' : vboxEnumToString('ChipsetType', m.chipsetType),
@@ -2626,11 +2614,11 @@ class vboxconnector(object):
                 p = m.getSerialPort(i)
                 ports.append({
                     'slot' : p.slot,
-                    'enabled' : int(p.enabled),
+                    'enabled' : p.enabled,
                     'IOBase' : str('0x' + '%3s' %(hex(p.IOBase),)).upper(),
                     'IRQ' : p.IRQ,
-                    'hostMode' : str(p.hostMode),
-                    'server' : int(p.server),
+                    'hostMode' : vboxEnumToString("PortMode", p.hostMode),
+                    'server' : p.server,
                     'path' : p.path
                 })
             except: pass
@@ -2696,11 +2684,11 @@ class vboxconnector(object):
         machine = self.vbox.findMachine(args['vm'])
 
         # No need to continue if machine is not running
-        if vboxEnumToString("MachineState", machine.state) != 'Running':
-            return True
+        if machine.state != vboxMgr.constants.MachineState_Running:
+            return []
 
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        machine.lockMachine(self.session.handle,'Shared')
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(self.session,vboxMgr.constants.LockType_Shared)
 
         sflist = []
         
@@ -2797,7 +2785,7 @@ class vboxconnector(object):
         snapshot = vm.findSnapshot(args['snapshot'])
 
         response = self._snapshotGetDetails(snapshot,False)
-        response['machine'] = self.remote_machineGetDetails(array(),snapshot.machine)
+        response['machine'] = self.remote_machineGetDetails({},snapshot.machine)
 
         return response
 
@@ -2815,26 +2803,22 @@ class vboxconnector(object):
         try:
 
             # Open session to machine
-            self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
             """ @machine IMachine """
             machine = self.vbox.findMachine(args['vm'])
-            machine.lockMachine(self.session.handle,'Write')
+            machine.lockMachine(self.session, vboxMgr.constants.LockType_Write)
 
             """ @snapshot ISnapshot """
             snapshot = self.session.machine.findSnapshot(args['snapshot'])
 
             """ @progress IProgress """
-            progress = self.session.console.restoreSnapshot(snapshot.handle)
-
-            snapshot.releaseRemote()
-            machine.releaseRemote()
+            progress = self.session.console.restoreSnapshot(snapshot)
 
             # Does an exception exist?
             try:
                 if progress.errorInfo:
                     #self.errors.append(new Exception(progress.errorInfo.text)
-                    progress.releaseRemote()
                     return False
 
             except: pass
@@ -2843,7 +2827,7 @@ class vboxconnector(object):
 
         except Exception as e:
 
-            self.errors.append(e)
+            self.errors.append((e,traceback.format_exc()))
 
             if self.session:
                 try:
@@ -2868,11 +2852,11 @@ class vboxconnector(object):
         try:
 
             # Open session to machine
-            self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
             """ @machine IMachine """
             machine = self.vbox.findMachine(args['vm'])
-            machine.lockMachine(self.session.handle, 'Shared')
+            machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
 
             """ @progress IProgress """
             progress = self.session.console.deleteSnapshot(args['snapshot'])
@@ -2889,7 +2873,7 @@ class vboxconnector(object):
 
         except Exception as e:
 
-            self.errors.append(e)
+            self.errors.append((e,traceback.format_exc()))
 
             if self.session:
                 try:
@@ -2910,6 +2894,8 @@ class vboxconnector(object):
      """
     def remote_snapshotTake(self, args):
 
+        global progressOpPool
+        
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
 
@@ -2918,11 +2904,11 @@ class vboxconnector(object):
         try:
 
             # Open session to machine
-            self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-            machine.lockMachine(self.session, ('Write' if vboxEnumToString("SessionState", machine.sessionState) == 'Unlocked' else 'Shared'))
+            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+            machine.lockMachine(self.session, (vboxMgr.constants.LockType_Write if machine.sessionState == vboxMgr.constants.SessionState_Unlocked else vboxMgr.constants.LockType_Shared))
 
             """ @progress IProgress """
-            progress = self.session.console.takeSnapshot(args['name'],args['description'])
+            progress = self.session.console.takeSnapshot(args['name'],args.get('description',''))
 
             # Does an exception exist?
             try:
@@ -2936,13 +2922,12 @@ class vboxconnector(object):
                             pass
 
             except: pass
-
-            
-            self._util_progressStore(progress)
+                        
+            progressid = progressOpPool.store(progress, self.session)
 
         except Exception as e:
 
-            self.errors.append(e)
+            self.errors.append((e,traceback.format_exc()))
 
             if not progress and self.session:
                 try:
@@ -2953,7 +2938,7 @@ class vboxconnector(object):
 
             return False
 
-        return {'progress' : progress}
+        return {'progress' : progressid}
 
     """
      * Get a list of snapshots for a machine
@@ -2997,18 +2982,17 @@ class vboxconnector(object):
         children = []
 
         if sninfo:
-            for c in s.children:
+            for c in vboxGetArray(s,'children'):
                 children.append(self._snapshotGetDetails(c, True))
 
-        # Avoid multiple soap calls
-        timestamp = str(s.timeStamp)
+        timestamp = int(math.floor(s.timeStamp/1000))
 
         return {
             'id' : s.id,
             'name' : s.name,
             'description' : s.description,
-            'timeStamp' : floor(timestamp/1000),
-            'timeStampSplit' : self._util_splitTime(time() - floor(timestamp/1000)),
+            'timeStamp' : timestamp,
+            'timeStampSplit' : self._util_splitTime(int(time.time()) - timestamp),
             'online' : s.online,
             'children' : children
         }
@@ -3029,12 +3013,12 @@ class vboxconnector(object):
             sc.append({
                 'name' : c.name,
                 'maxDevicesPerPortCount' : c.maxDevicesPerPortCount,
-                'useHostIOCache' : int(c.useHostIOCache),
+                'useHostIOCache' : c.useHostIOCache,
                 'minPortCount' : c.minPortCount,
                 'maxPortCount' : c.maxPortCount,
                 'portCount' : c.portCount,
-                'bus' : str(c.bus),
-                'controllerType' : str(c.controllerType),
+                'bus' : vboxEnumToString("StorageBus", c.bus),
+                'controllerType' : vboxEnumToString("StorageControllerType", c.controllerType),
                 'mediumAttachments' : self._machineGetMediumAttachments(m.getMediumAttachmentsOfController(c.name))
             })
 
@@ -3074,7 +3058,7 @@ class vboxconnector(object):
     def remote_mediumResize(self, args):
 
 
-        m = self.vbox.openMedium(args['medium'],'HardDisk')
+        m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk)
 
         """ @progress IProgress """
         progress = m.resize(args['bytes'])
@@ -3083,7 +3067,6 @@ class vboxconnector(object):
         try:
             if progress.errorInfo:
                 #self.errors.append(new Exception(progress.errorInfo.text)
-                progress.releaseRemote()
                 return False
         except:
             pass
@@ -3107,7 +3090,7 @@ class vboxconnector(object):
         mid = target.id
 
         """ @src IMedium """
-        src = self.vbox.openMedium(args['src'],'HardDisk')
+        src = self.vbox.openMedium(args['src'], vboxMgr.constants.DeviceType_HardDisk)
 
         type = 'fixed' if args['type'] == 'fixed' else 'Standard'
         #mv = new MediumVariant()
@@ -3116,7 +3099,7 @@ class vboxconnector(object):
             type = type + mv.ValueMap['VmdkSplit2G']
 
         """ @progress IProgress """
-        progress = src.cloneTo(target.handle,type,None)
+        progress = src.cloneTo(target,type,None)
 
         # Does an exception exist?
         try:
@@ -3142,7 +3125,7 @@ class vboxconnector(object):
         self.connect()
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'],'HardDisk')
+        m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk)
         m.type = args['type']
 
         return True
@@ -3175,7 +3158,7 @@ class vboxconnector(object):
         if args['port']:
             args['server'] = args['server'] + ':' + int(args['port'])
 
-        arrProps = array()
+        arrProps = {}
 
         arrProps["TargetAddress"] = args['server']
         arrProps["TargetName"] = args['target']
@@ -3215,7 +3198,7 @@ class vboxconnector(object):
      """
     def remote_vboxGetComposedMachineFilename(self, args):
 
-        return self.vbox.composeMachineFilename(args['name'],'',self.vbox.systemProperties.defaultMachineFolder)
+        return self.vbox.composeMachineFilename(args['name'],'','','')
 
     """
      * Create base storage medium (virtual hard disk)
@@ -3258,7 +3241,7 @@ class vboxconnector(object):
     def remote_mediumRelease(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'],args['type'])
+        m = self.vbox.openMedium(args['medium'],vboxStringToEnum("DeviceType", args['type']))
         mediumid = m.id
 
         # connected to...
@@ -3271,7 +3254,7 @@ class vboxconnector(object):
                 """ @mach IMachine """
                 mach = self.vbox.findMachine(uuid)
             except Exception as e:
-                self.errors.append(e)
+                self.errors.append((e,traceback.format_exc()))
                 continue
             
             remove = []
@@ -3285,20 +3268,20 @@ class vboxconnector(object):
                     })
 
             # save state
-            state = str(mach.sessionState)
+            state = mach.sessionState
 
             if not len(remove): continue
 
             released.append(uuid)
 
             # create session
-            self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
             # Hard disk requires machine to be stopped
-            if args['type'] == 'HardDisk' or state == 'Unlocked':
-                mach.lockMachine(self.session.handle, 'Write')
+            if args['type'] == 'HardDisk' or state == vboxMgr.constants.SessionState_Unlocked:
+                mach.lockMachine(self.session, vboxMgr.constants.LockType_Write)
             else:
-                mach.lockMachine(self.session.handle, 'Shared')
+                mach.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
 
 
             for r in remove:
@@ -3324,9 +3307,9 @@ class vboxconnector(object):
     def remote_mediumRemove(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'],args.get('type', 'HardDisk'))
+        m = self.vbox.openMedium(args['medium'],args.get('type', vboxMgr.constants.DeviceType_HardDisk))
 
-        if args.get('delete',None) and vboxEnumToString("DeviceType", m.deviceType) == 'HardDisk':
+        if args.get('delete',None) and m.deviceType == vboxMgr.constants.DeviceType_HardDisk:
 
             """ @progress IProgress """
             progress = m.deleteStorage()
@@ -3431,17 +3414,17 @@ class vboxconnector(object):
         # Find medium attachment
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        state = vboxEnumToString("SessionState", machine.sessionState)
+        
         save = (machine.getExtraData('GUI/SaveMountedAtRuntime').lower() == 'yes')
 
         # create session
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
 
-        if state == 'Unlocked':
-            machine.lockMachine(self.session.handle,'Write')
+        if machine.sessionState == vboxMgr.constants.SessionState_Unlocked:
+            machine.lockMachine(self.session, vboxMgr.constants.LockType_Write)
             save = True # force save on closed session as it is not a "run-time" change
         else:
-            machine.lockMachine(self.session.handle, 'Shared')
+            machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
         
 
         # Empty medium / eject
@@ -3528,7 +3511,7 @@ class vboxconnector(object):
         return {
                 'id' : m.id,
                 'description' : m.description,
-                'state' : str(m.refreshState()),
+                'state' : vboxEnumToString("MediumState", m.refreshState()),
                 'location' : m.location,
                 'name' : m.name,
                 'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
@@ -3536,9 +3519,9 @@ class vboxconnector(object):
                 'size' : m.size, """ str( to support large disks. Bypass integer limit """
                 'format' : m.format,
                 'type' : vboxEnumToString("MediumType",m.type),
-                'parent' : (m.parent.id if (vboxEnumToString("DeviceType", m.deviceType) == 'HardDisk' and m.parent) else None),
+                'parent' : (m.parent.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.parent) else None),
                 'children' : children,
-                'base' : (m.base.id if (vboxEnumToString("DeviceType", m.deviceType) == 'HardDisk' and m.base) else None),
+                'base' : (m.base.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
                 'readOnly' : m.readOnly,
                 'logicalSize' : (m.logicalSize/1024)/1024,
                 'autoReset' : m.autoReset,
@@ -3561,7 +3544,7 @@ class vboxconnector(object):
     def _util_progressStore(self, progress):
 
         """ Store vbox handle """
-        self.persistentRequest['vboxHandle'] = self.vbox.handle
+        self.persistentRequest['vboxHandle'] = self.vbox
         
         """ Store server if multiple servers are configured """
         #if @is_array(self.settings.servers) and len(self.settings.servers) > 1)
@@ -3584,7 +3567,8 @@ class vboxconnector(object):
         for mf in vboxGetArray(self.vbox.systemProperties,'mediumFormats'): # @mf IMediumFormat """
             exts = mf.describeFileExtensions()
             dtypes = []
-            for t in exts[1]: dtypes.append(vboxEnumToString("DeviceType",t))
+            for t in exts[1]:
+                dtypes.append(vboxEnumToString("DeviceType",t))
             caps = []
             for v,k in mfCap.iteritems():
                 if (k & mf.capabilities):
@@ -3593,6 +3577,8 @@ class vboxconnector(object):
             mediumFormats.append({'id':mf.id,'name':mf.name,'extensions':exts[0],'deviceTypes':dtypes,'capabilities':caps})
 
         return {
+            'version' : self.getVersion(),
+            'settingsFilePath' : self.vbox.settingsFilePath,
             'minGuestRAM' : self.vbox.systemProperties.minGuestRAM,
             'maxGuestRAM' : self.vbox.systemProperties.maxGuestRAM,
             'minGuestVRAM' : self.vbox.systemProperties.minGuestVRAM,
@@ -3625,7 +3611,7 @@ class vboxconnector(object):
         """ @m IMachine """
         m = self.vbox.findMachine(args['vm'])
 
-        logs = array()
+        logs = []
 
         try:
             i = 0
@@ -3652,18 +3638,19 @@ class vboxconnector(object):
         try:
             # Read in 8k chunks
             while True:
-                l = m.readLog(int(args['log']),strlen(log),8192)
-                if not l or not len(l) or not strlen(l[0]): break
-                log = log + base64_decode(l[0])
+                l = m.readLog(int(args['log']),len(log),8192)
+                if not l or not len(l): break
+                log = log + l
             
-        except: pass
+        except Exception as ex:
+            self.errors.append((ex,traceback.format_exc()))
 
         # Attempt to UTF-8 encode string or json_encode may choke
         # and return an empty string
-        if function_exists('utf8_encode'):
-            return utf8_encode(log)
+        #if function_exists('utf8_encode'):
+        #    return utf8_encode(log)
         
-        return log
+        return unicode(log, "utf-8")
 
     """
      * Get a list of USB devices attached to a given VM
@@ -3675,8 +3662,8 @@ class vboxconnector(object):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        self.session = self.websessionManager.getSessionObject(self.vbox.handle)
-        machine.lockMachine(self.session.handle, 'Shared')
+        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
 
         response = {}
         for u in vboxGetArray(self.session.console,'USBDevices'):
@@ -3708,17 +3695,17 @@ class vboxconnector(object):
             'lsilogicsas' : 'lsilogicsas'
         }
         
-        print cType
-        cType = vboxEnumToString("StorageControllerType", cType)
+        if type(cType) is int:
+            cType = vboxEnumToString("StorageControllerType", cType)
         
 
         if not cTypes.get(cType.lower(),None):
-            self.errors.append(Exception('Invalid controller type: ' + cType))
+            self.errors.append((Exception('Invalid controller type: ' + cType), traceback.format_exc()))
             return ''
 
         lun = ((int(device)*2) + int(port))
 
-        return "VBoxInternal/Devices/%s/0/LUN#%s/Config/IgnoreFlush" %(cTypes[cType.lower()], str(lun))
+        return "VBoxInternal/Devices/%s/0/LUN#%s/Config/IgnoreFlush" %(cTypes[cType.lower()], lun)
 
     """
      * Get a newly generated MAC address from VirtualBox
@@ -3737,19 +3724,21 @@ class vboxconnector(object):
      """
     def _util_splitTime(self, t):
 
-        spans = {
-            'days' : 86400,
-            'hours' : 3600,
-            'minutes' : 60,
-            'seconds' : 1
-        }
+        spans = [
+            {'name':'days','value':86400},
+            {'name':'hours','value': 3600},
+            {'name':'minutes','value': 60},
+            {'name':'seconds','value': 1}
+        ]
 
         time = {}
 
-        for k, v in spans.iteritems():
-            if not (floor(t / v) > 0): continue
-            time[k] = floor(t / v)
-            t = t - floor(time[k] * v)
+        for span in spans:
+            k = span['name']
+            v = span['value']
+            if not (int(math.floor(t / v)) > 0): continue
+            time[k] = int(math.floor(t / v))
+            t = t - int(math.floor(time[k] * v))
 
         return time
     
@@ -3770,6 +3759,10 @@ class vboxconnector(object):
         #return rcodes['0x'.strtoupper(hex(c))] . ' (0x'.strtoupper(hex(c)).')'
 
 
+"""
+    Event listner listens to events from a single VirtualBox
+    event source and places them in a Queue
+"""
 class vboxEventListener(threading.Thread):
     
     eventSource = None
@@ -3794,11 +3787,10 @@ class vboxEventListener(threading.Thread):
         self.eventSource.registerListener(self.listener, [vboxMgr.constants.VBoxEventType_Any], False)
         self.registered = True
     
-    def join(self, timeout=None):
+    def shutdown(self):
         print "vboxEventListener shutting down (%s)" %(threading.current_thread(),)
         self.running = False
-        super(vboxEventListener, self).join(timeout)
-    
+        
     def getEventData(self, event):
         
         data = {'eventType':vboxEnumToString('VBoxEventType', event.type),'sourceId':self.listenerId} 
@@ -3945,34 +3937,48 @@ class vboxEventListener(threading.Thread):
         
         try:
 
+            eventList = []
+            
             while self.running:
-                event = self.eventSource.getEvent(self.listener, 500)
+                
+                event = self.eventSource.getEvent(self.listener, 200)
+                
                 if event is not None:
                     print "Listener got event " + str(event)
+                    self.eventSource.eventProcessed(self.listener, event)
                     try:
-                        self.eventListQueue.put(self.getEventData(event))
+                        eventList.append(self.getEventData(event))
                     except:
                         print "Error processing event"
                         traceback.print_exc()
                         
-                    self.eventSource.eventProcessed(self.listener, event)
+                    
+                elif len(eventList):
+                    
+                    for e in eventList:
+                        self.eventListQueue.put(e)
+                    eventList = []
                 
         except:
             print "Event source went away"
-            traceback.print_exc()
+            #traceback.print_exc()
             
     
         print "vboxEventListener unregistering (%s)" %(threading.current_thread(),)
-        if self.listener and self.registered:
-            try:
-                self.eventSource.unregisterListener(self.listener)
-            except:
-                print "Listener already unregistered"
+
+        try:
+            self.eventSource.unregisterListener(self.listener)
+        except:
+            print "Listener already unregistered"
           
         if vboxMgr:      
             vboxMgr.deinitPerThread()     
             
 
+
+"""
+    Event listener pool handles all vboxEventListener threads
+"""
 class vboxEventListenerPool(threading.Thread):
     
     running = True
@@ -4012,21 +4018,21 @@ class vboxEventListenerPool(threading.Thread):
         
         self.listenerLock.release()
         
-    def join(self, timeout=None):
+    def shutdown(self):
         
         print "vboxEventListenerPool shutting down (%s)" %(threading.current_thread(),)
         
         self.listenerLock.acquire(True)
         try:
             for id, l in self.listeners.iteritems():
-                l.join(timeout)
+                l.shutdown()
+                l.join()
         except:
             traceback.print_exc()
             
         self.running = False
         self.listenerLock.release()
         
-        super(vboxEventListenerPool, self).join(timeout)
         
     def run(self):
         
@@ -4060,221 +4066,209 @@ class vboxEventListenerPool(threading.Thread):
             vboxMgr.deinitPerThread()
 
 
+"""
+    RPC request handler
+"""
+RPCHeartbeatInterval = 60
+class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
-incomingQueue = Queue.Queue()
-outgoingQueue = Queue.Queue()
-listenerPool = vboxEventListenerPool(incomingQueue)
-
-def vboxinit():
+    sendLock = threading.Lock()
+    heartbeat = None
+    file = None
+    heartbeatTimer = None
     
-    global vboxMgr, vbox, listenerPool, incomingQueue
-    
-    """
-    try:
-        del VirtualBoxManager
-    except:
-        pass
-    """
-    
-    try:
+    def send(self, message):
         
-        # Initial connection
-        if vboxMgr is None:
-            vboxMgr = VirtualBoxManager(None, None)
-            vbox = vboxMgr.vbox
-        """    
-        # Attempt to get version
         try:
-            vbox.version
-            
+            response = json.dumps(message)
         except:
-            print "No connection to vbox. Attempting to reconnect."
-            try:
-                print "here..."
-                #vboxMgr = VirtualBoxManager(None, None)
-                vboxMgr.platform.deinit()
-                vboxMgr.platform = None
-                vboxMgr.platform = PlatformXPCOM(None)
-                print "here...2"
-                vbox = vboxMgr.getVirtualBox()
-                print "here...3"
-                vbox.version
-                print "here...4"
-            except:
-                print "Unable to connect to vbox. Is the service running?"
-                traceback.print_exc()
-                return False
-        """
-        print "Running VirtualBox version %s" %(vbox.version)
-        
-        # Start a thread that obtains all VMs and listens for events
-        vmlist = []
-        subscribe = []
-        
-        # Enumerate all defined machines
-        for mach in vboxGetArray(vbox,'machines'):
-             
-            
-            try:
-                if mach.state == vboxMgr.constants.MachineState_Running:
-                    subscribe.append(vm['id'])                
-            except:
-                traceback.print_exc()
-        
-        
-        # Start listener pool
-        if not listenerPool.isAlive():
-            listenerPool.start()
-        else:
-            listenerPool.reInit()
-        
-        listenerPool.add('vbox', vbox.eventSource)
-        
-        # Add f machines
-        for s in subscribe:
-            try:
-                machine = vbox.findMachine(s)
-                session = vboxMgr.mgr.getSessionObject(vbox)
-                machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
-                listenerPool.add(s, session.console.eventSource)
-                session.unlockMachine()
-            except:
-                traceback.print_exc()
-            
-        return True
-    
-    except:
-        traceback.print_exc()
-        return False
+            traceback.format_exc()
+            return
 
+        self.sendLock.acquire(True)
 
-"""
-
-    Enrich vbox events with relevant data
-    
-"""
-def enrichEvents(eventList):
-    
-    lastMachineId = None
-    machine = None
-    session = None
-    
-    # Try to keep machines in order to limit locking / unlocking
-    keys = eventList.keys()
-    keys.sort()
-    for ek in keys:
+        try:
+            self.request.sendall(response+"\n")
+        finally:
+            self.sendLock.release()
+            
+    def handle(self):
         
-        event = eventList[ek]
+        # Create file object from socket so that
+        # we can just call readline
+        self.file = self.request.makefile()
         
-        # Close existing session
-        if session and lastMachineId and event.get('machineId','') != lastMachineId:
             
-            session.unlockMachine()
-            session = None
+        class heartbeatrunner(threading.Thread):
             
-        elif event.get('machineId',None) and not session:
+            sendLock = None
+            request = None
+            timer = None
+            running = False
             
-            machine = vbox.findMachine(event['machineId'])
-            session = vboxMgr.mgr.getSessionObject(vbox)
-            machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
-            
-        # Network adapter changed            
-        if event['eventType'] == 'OnNetworkAdapterChanged':
-
-            try:
-                eventList[ek]['enrichmentData'] = _machineGetNetworkAdapters(session.machine, event['networkAdapterSlot'])
-            
-            except:
-                #eventList[ek]['enrichmentData'] = array(e.getMessage())
-                traceback.print_exc()
-           
+            def __init__(self, handler):
+                self.handler = handler
+                threading.Thread.__init__(self)
                 
-        
-        
-        # OnVRDEServerChanged
-        elif event['eventType'] == 'OnVRDEServerChanged':
-            
-            try:
+            def shutdown(self):
+                self.running = False
                 
-                vrde = session.machine.VRDEServer
+            def run(self):
+                
+                self.running = True
+                
+                global RPCHeartbeatInterval
+                
+                RPCHeartbeatMsg = {'msgType':'rpc_heartbeat','thread_id':str(threading.current_thread())}
+                
+                while self.running:
+                    self.handler.send(RPCHeartbeatMsg)
+                    for i in range(0, RPCHeartbeatInterval):
+                        if self.running: time.sleep(1)
+
+                
+        streamingService = False
+        
+        try:
+            
+            while True:
+                
+                request = self.file.readline()
+                response = {}
                 
                 try:
-                    eventList[ek]['enrichmentData'] = {
-                        'enabled' : int(vrde.enabled),
-                        'ports' : vrde.getVRDEProperty('TCP/Ports'),
-                        'netAddress' : vrde.getVRDEProperty('TCP/Address'),
-                        'VNCPassword' : vrde.getVRDEProperty('VNCPassword'),
-                        'authType' : vboxEnumToString('AuthType', vrde.authType),
-                        'authTimeout' : vrde.authTimeout
-                        } if vrde else None
+                    
+                    # Ignore empty lines
+                    if request.strip() == '': continue
+                    
+                    try:
+                        message = json.loads(request)
+                    except:
+                        raise Exception("Invalid json request: %s" %(request))
+                    
+                    
+                    service = message.get('service', None)
+                    if not service:
+                        raise Exception('No service specified') 
+
+                    
+                    """
+                        RPC messages are a simple call / response
+                    """
+                    if message.get('msgType', '') == 'rpc':
                         
-                except:
-                    # Just unlock the machine
-                    #eventList[ek]['enrichmentData'] = array(e.getMessage())
-                    traceback.print_exc()
-                    
-            except:
-                #eventList[ek]['enrichmentData'] = array(e.getMessage())
-                traceback.print_exc()
-            
-            
-        # VRDE server info changed. Just need port and enabled/disabled
-        elif event['eventType'] == 'OnVRDEServerInfoChanged':
-            
-            try:
-                    
-                try:
-                    eventList[ek]['enrichmentData'] = {
-                        'port' : session.console.VRDEServerInfo.port,
-                        'enabled' : int(session.machine.VRDEServer.enabled)
-                    }
-                except:
-                    # Just unlock the machine
-                    eventList[ek]['enrichmentData'] = {}
+                        """ Create instance of service and call method """
+                        serviceClass = self.server.getService(service)
+                        if not serviceClass:
+                            raise Exception("Unknown service: %s" %(service,))
+
+                        serviceObj = serviceClass()
+                        
+                        method = message.get('method', None)
+                        
+                        if not method:
+                            raise Exception("No method specified in rpc call: %s" %(request,))
+                        
+
+                        if not getattr(serviceObj, 'remote_%s' %(method,), None):
+                            raise Exception("Service '%s' has no method named '%s'" %(service, method))
+                        
+                        try:
+                            methodResponse = getattr(serviceObj, 'remote_%s' %(method,))(message.get('args',{}))
+                            
+                            # Format exceptions
+                            errors = []
+                            for e in serviceObj.errors:
+                                errors.append({
+                                    'error': '%s: %s'%(e[0].__class__.__name__, (e[0].msg if hasattr(e[0],'msg') else e[0].message)),
+                                    'details': e[1]
+                                })
                                 
-            except:
-                eventList[ek]['enrichmentData'] = array(e.getMessage())
-            
-        
-        # Machine registered or base data changed
-        elif event['eventType'] in ['OnMachineRegistered','OnMachineDataChanged']:
-            
-            if event.get('registered', None) != False:
-            
-                # Get same data that is in VM list data
-                eventList[ek]['enrichmentData'] = _machineGetBaseInfo(machine)
-            
-    
-        # Update lastStateChange on OnMachineStateChange events
-        elif event['eventType'] == 'OnMachineStateChanged':
-            try:
-                eventList[ek]['enrichmentData'] = {
-                    'lastStateChange' : str(machine.lastStateChange/1000),
-                    'currentStateModified' : machine.currentStateModified
-                }
-                
-            except:
-                eventList[ek]['enrichmentData'] = {'lastStateChange' : 0}
-            
-            
-        # enrich with snapshot name and new snapshot count
-        elif event['eventType'].startswith('OnSnapshot'):
+                            response = {
+                                '%s_response'%(method,) : methodResponse,
+                                'errors': errors,
+                                'messages': serviceObj.messages,
+                                'success': True
+                            }
+                            
+                        except Exception as ex:
+                            
+                            response = {
+                                '%s_response'%(method,) : False,
+                                'errors': [{'msgType':'rpc_exception','details': traceback.format_exc(), 'error': '%s: %s'%(ex.__class__.__name__,(ex.msg if hasattr(ex,'msg') else ex.message)) }],
+                                'messages': serviceObj.messages,
+                                'success': False
+                            }
+                            
+                        finally:
+                            pprint.pprint(methodResponse)
+
                     
-            try:
-                eventList[ek]['enrichmentData'] = {
-                    'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
-                    'snapshotCount' : machine.snapshotCount,
-                    'currentStateModified' : machine.currentStateModified
-                }
+                    # Clients expect a stream from the service
+                    elif message.get('msgType', '') == 'registerStream':
+
+                        """ Get instance of service and register stream """
+                        serviceObj = self.server.getService(service)
+                        if not serviceObj:
+                            raise Exception("Unknown service: %s" %(service,))
+
+                        serviceObj.registerClient(self)
+                        streamingService = True
+                        response = {'msgType':'registerStream_response','registered':True}
+                        
+                        # Start heartbeat
+                        self.heartbeat = heartbeatrunner(self)
+                        self.heartbeat.start()
+
+                        
+                    else:
+                        raise Exception("Invalid message type: %s" %(message.get('msgType',''),))
+                    
+                    
+                except Exception as ex:
+                    response = {'msgType':'rpc_exception','details': traceback.format_exc(), 'error': ex.__class__.__name__ + ': ' + ex.message}
+                    
+
+                self.send(response)
+                
+        except:
+            # assume connection closed
+            pass
+         
+        finally:
+            
+            # Unregister client?
+            if streamingService and serviceObj:
+                serviceObj.unregisterClient(self)
+                
+            # Stop heartbeat
+            if self.heartbeat:
+                self.heartbeat.shutdown()
+                self.heartbeat.join()
+            
+"""
+    RPC server
+"""
+class ThreadedRPCServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     
-            except:
-                pass
-       
-    # Don't leave open sessions to machines         
-    if session is not None:
-        session.unlockMachine()
+    allow_reuse_address = True
+    
+    services = {}
+    
+    def server_activate(self):
+        self.services['server'] = self
+        SocketServer.TCPServer.server_activate(self)
+    
+    def remote_shutdown(self, *args):
+        self.shutdown()
+        return True
+            
+    def registerService(self, name, service):
+        self.services[name] = service
         
-    return eventList
+    def getService(self, name):
+        return self.services.get(name, None)
+
 
 
 
@@ -4284,7 +4278,7 @@ def enrichEvents(eventList):
     events to connected clients
 
 """
-class VBOXEventService(threading.Thread):
+class vboxEventService(threading.Thread):
 
     eventQueue = None
     running = True
@@ -4342,6 +4336,76 @@ class VBOXEventService(threading.Thread):
 
 
 """
+    Manages progress operations
+"""
+class vboxProgressOpPool(object):
+    
+    progressOpsLock = threading.Lock() 
+    progressOps = {}
+    
+    def store(self, progressObj, session):
+        self.progressOpsLock.acquire(True)
+        try:
+            pid = 'progressOp-%s' %(str(id(progressObj)),)
+            self.progressOps[pid] = (progressObj, session)
+        finally:
+            self.progressOpsLock.release()
+            
+        return pid
+    
+    def cancel(self, progressId):
+        self.progressOpsLock.acquire(True)
+        try:
+            pass
+        finally:
+            self.progressOpsLock.release()
+        
+    def getStatus(self, progressId):
+        
+        self.progressOpsLock.acquire(True)
+        pprint.pprint(self.progressOps)
+        progress, status = self.progressOps.get(progressId)
+        try:
+            status = {
+                'completed' : progress.completed,
+                'canceled' : progress.canceled,
+                'description' : progress.description,
+                'operationDescription' : progress.operationDescription,
+                'timeRemaining' : progress.timeRemaining,
+                'percent' : progress.percent,
+                'cancelable' : progress.cancelable
+            }
+
+
+            error = {}
+            try:
+                if not status['canceled'] and progress.errorInfo:
+                    error = {'message':progress.errorInfo.text,'err':this._util_resultCodeText(progress.resultCode)}
+            except:
+                pass
+            
+
+        finally:
+            self.progressOpsLock.release()
+
+        # Completed? destroy progress op
+        if status['completed'] or status['canceled']:
+            self.destory(progressId)
+                    
+        return status
+    
+    def destory(self, progressId):
+        self.progressOpsLock.acquire(True)
+        try:
+            progress, session = self.progressOps[progressId]
+            try:
+                session.unlockMachine()
+            finally:
+                del self.progressOps[progressId]
+        finally:
+            self.progressOpsLock.release()
+
+"""
 
     Main()
     
@@ -4353,7 +4417,8 @@ def main(argv = sys.argv):
     #sys.setdefaultencoding('utf8')
     
     
-    global vboxMgr
+    global vboxMgr, running, progressOpPool
+    
 
     running = True
     
@@ -4361,6 +4426,57 @@ def main(argv = sys.argv):
         global running
         running = False
     signal.signal(signal.SIGINT, stop_sigint)
+    
+    """
+        Holds in-flight progress operations
+    """
+    progressOpPool = vboxProgressOpPool()
+    
+    """ Queues to pass events out of vbox to
+        connected event listener
+    """
+    incomingQueue = Queue.Queue()
+    outgoingQueue = Queue.Queue()
+
+    """
+    
+        VBOX event listener pool listens for vbox
+        and machine events
+        
+    """
+    listenerPool = vboxEventListenerPool(incomingQueue)
+
+    subscribe = []
+    
+    # Enumerate all defined machines
+    for mach in vboxGetArray(vbox,'machines'):
+         
+        try:
+            if mach.state == vboxMgr.constants.MachineState_Running:
+                subscribe.append(mach.id)                
+        except:
+            traceback.print_exc()
+    
+    
+    # Start listener pool
+    listenerPool.start()
+
+    # Add main virtualbox event source    
+    listenerPool.add('vbox', vbox.eventSource)
+    
+    # Add machines that are running
+    for s in subscribe:
+        try:
+            machine = vbox.findMachine(s)
+            session = vboxMgr.mgr.getSessionObject(vbox)
+            machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+            listenerPool.add(s, session.console.eventSource)
+        except:
+            traceback.print_exc()
+        finally:
+            session.unlockMachine()
+    
+    
     
     """
         RPC Server setup / startup
@@ -4382,7 +4498,7 @@ def main(argv = sys.argv):
         VBox event service sends events to RPC connected clients
         
     """
-    eventServer = VBOXEventService(outgoingQueue)
+    eventServer = vboxEventService(outgoingQueue)
     eventServer.start()
     
     rpcServer.registerService('vboxEvents', eventServer)
@@ -4391,8 +4507,9 @@ def main(argv = sys.argv):
     
         VBox service hands requests from connected RPC clients
         off to vbox
+        
     """
-    rpcServer.registerService('vbox', vboxconnector)
+    rpcServer.registerService('vbox', vboxConnector)
 
 
     """
@@ -4409,7 +4526,9 @@ def main(argv = sys.argv):
         # Create event listener - this must happen 
         # in the main thread
         if not listenerPool.isVboxAlive():
-            vboxinit()
+            print "Listener pool died. Exiting..."
+            running = False
+            continue
             
         """
             Get events from incoming queue (populated by listenerPool)
@@ -4431,17 +4550,28 @@ def main(argv = sys.argv):
                         session = vboxMgr.mgr.getSessionObject(vbox)
                         machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
                         listenerPool.add(event['machineId'], session.console.eventSource)
-                        session.unlockMachine()
                     except:
                         traceback.print_exc()
+                    finally:
+                        session.unlockMachine()
     
                 incomingQueue.task_done()
 
+        enrichEvents(eventList)
         for e in eventList.values():
+            pprint.pprint(e)
             outgoingQueue.put(e)
             
-        time.sleep(1)
+        # only sleep if we didn't have events
+        if not len(eventList):
+            time.sleep(0.5)
         
+    """
+        Shutdown the listener pool
+    """
+    listenerPool.shutdown()
+    listenerPool.join()
+
     """
         Shutdown the vbox event server
     """
@@ -4454,10 +4584,6 @@ def main(argv = sys.argv):
     rpcServer.shutdown()
     rpcServer_thread.join()
     
-    """
-        Shutdown the listener pool
-    """
-    listenerPool.join()
     
 
 if __name__ == '__main__':

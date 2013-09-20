@@ -16,25 +16,26 @@
 
 function getEvents() {
 	
-	var ws = new WebSocket('ws://'+location.host+'/events/eventStream');
+	var ws = new WebSocket('ws://'+location.host+'/eventStream');
 	
     ws.onopen = function()
     {
-       // Web Socket is connected, send data using send()
-       //ws.send("GET /events/eventStream HTTP/1.1")
-	   //ws.send("Host: " + location.hostname)
-	   ws.send("")
+    	
+    	console.log("OPened")
+       //Web Socket is connected, send data using send()
+       ws.send("Gasdf")
+	   ws.send("asdf")
 
     };
     ws.onmessage = function (evt) 
     { 
        var received_msg = evt.data;
-       alert("Message is received...");
+       console.log(evt.data)
     };
     ws.onclose = function()
     { 
        // websocket is closed.
-       alert("Connection is closed..."); 
+       console.log("Connection is closed..."); 
     };
 }
 

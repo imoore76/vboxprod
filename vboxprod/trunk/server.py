@@ -64,7 +64,9 @@ class WebServerThread(threading.Thread):
             All requests go through dispatchers in the /dispatchers folder 
         """
         class DispatchRoot(object):
-            pass
+            def eventStream(self):
+                pass
+            eventStream.exposed = True
         
         # Load dispatchers
         import dispatchers
@@ -77,9 +79,25 @@ class WebServerThread(threading.Thread):
     
         from mysqlsession import MySQLSession
         
+        from ws4py.websocket import WebSocket
+        
+        class EchoWebSocket(WebSocket):
+            def received_message(self, message):
+                """
+                Automatically sends back the provided ``message`` to
+                its originating endpoint.
+                """
+                self.send(message.data, message.is_binary)
+        
         WebSocketPlugin(cherrypy.engine).subscribe()
         cherrypy.tools.websocket = WebSocketTool()
-            
+        
+        webconfig['/eventStream']  = {
+            'tools.websocket.on': True,
+            'tools.websocket.handler_cls': EchoWebSocket
+        }
+
+
         cherrypy.quickstart(DispatchRoot(), '/', webconfig)
 
             

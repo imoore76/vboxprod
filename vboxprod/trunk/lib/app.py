@@ -1,4 +1,5 @@
-
+import cherrypy, json
+from ws4py.messaging import TextMessage
 import os, sys, ConfigParser, threading, time
 import MySQLdb
 
@@ -94,6 +95,12 @@ class Application(threading.Thread):
             
     
     def pumpEvents(self, events):
+        
+
+        for e in events:
+            cherrypy.engine.publish('websocket-broadcast', TextMessage(json.dumps(e)))
+        
+        return
         self.eventQueuesLock.acquire(True)
         try:
             for ev in events:

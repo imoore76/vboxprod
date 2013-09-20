@@ -1,5 +1,4 @@
-import cherrypy, json
-from ws4py.messaging import TextMessage
+import cherrypy, json, pprint
 import os, sys, ConfigParser, threading, time
 import MySQLdb
 
@@ -101,7 +100,6 @@ class Application(threading.Thread):
             cherrypy.engine.publish('webstream-broadcast', json.dumps(e))
             
         
-        return
         self.eventQueuesLock.acquire(True)
         try:
             for ev in events:
@@ -134,14 +132,12 @@ class Application(threading.Thread):
         finally:
             self.eventQueuesLock.release()
 
-    def join(self):
-        self.shutdown()
-        
     def shutdown(self):
         self.running = False
         
     def run(self):
         
+        print "here1.."
         self.running = True
         
         eid = 0
@@ -154,3 +150,6 @@ class Application(threading.Thread):
 
 app = Application()
 app.start()
+
+cherrypy.engine.subscribe('stop', app.shutdown)
+

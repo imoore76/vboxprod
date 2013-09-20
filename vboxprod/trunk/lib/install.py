@@ -1,13 +1,15 @@
 
 import app, models
 
-from models import User
 from utils import genhash 
 
 def database(config):
         
     for m in models.INSTALLMODELS:
-        getattr(models, m).create_table()
+        try:
+            getattr(models, m).create_table()
+        except:
+            pass
     
     # create dummy class
     from mysqlsession import MySQLSession
@@ -25,9 +27,9 @@ def resetadmin(config):
     
     
     try:
-        u = AuthUser.get(AuthUser.username == 'admin')
-    except AuthUser.DoesNotExist:
-        u = AuthUser()
+        u = models.AuthUser.get(models.AuthUser.username == 'admin')
+    except models.AuthUser.DoesNotExist:
+        u = models.AuthUser()
         u.username = 'admin'
         u.name = 'Administrator'
         u.group_id = 0

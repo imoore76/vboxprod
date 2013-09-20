@@ -571,6 +571,8 @@ class HTTPRequest(object):
         self.close_connection = self.__class__.close_connection
         self.chunked_read = False
         self.chunked_write = self.__class__.chunked_write
+        
+        print "In thread %s" %(threading.current_thread())
     
     def parse_request(self):
         """Parse the next HTTP request start-line and message-headers."""

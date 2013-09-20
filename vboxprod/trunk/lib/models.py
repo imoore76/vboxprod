@@ -3,7 +3,7 @@ from peewee import *
 
 import app
 
-INSTALLMODELS = ['User', 'Group', 'VMGroup', 'Connector', 'AppConfig']
+INSTALLMODELS = ['AuthUser', 'Group', 'VMGroup', 'Connector', 'AppConfig']
 
 dbconfig = {}
 dbname = ''

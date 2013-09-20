@@ -46,6 +46,8 @@ class WebServerThread(threading.Thread):
             dbconfig[k] = v
         
         webconfig = {
+            'global' : {
+                        'server.thread_pool' : 1},
             '/': {
                   
                 'tools.staticdir.on': True,
@@ -90,12 +92,14 @@ class WebServerThread(threading.Thread):
                 """
                 self.send(message.data, message.is_binary)
         
+        
         WebStreamPlugin(cherrypy.engine).subscribe()
         cherrypy.tools.websocket = WebStreamTool()
         
         webconfig['/eventStream']  = {
             'tools.websocket.on': True,
-            'tools.websocket.handler_cls': EchoWebSocket
+            'tools.websocket.handler_cls': EchoWebSocket,
+            'response.stream': True
         }
 
 
@@ -114,10 +118,12 @@ def main(argv = sys.argv):
     
     
     if len(argv) > 1 and argv[1] == 'installdb':
+        config = app.getConfig()
         install.database(config)
         sys.exit()
         
     if len(argv) > 1 and argv[1] == 'resetadmin':
+        config = app.getConfig()
         install.resetadmin(config)
         sys.exit()
     

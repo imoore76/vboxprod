@@ -8,6 +8,15 @@ import inspect
 import traceback
 import pprint
 
+# For HTTP date header
+from wsgiref.handlers import format_date_time
+from datetime import datetime
+
+# Fake HTTP request object's writing socket
+import socket as dummySocket
+def fakeSend(*args,**kwargs): return len(args[0])
+dummySocket.send = fakeSend
+
 
 import cherrypy
 from cherrypy import Tool
@@ -60,19 +69,7 @@ class WebStream(object):
         WSGI environ dictionary.
         """
 
-        self._local_address = None
         self._peer_address = None
-
-    @property
-    def local_address(self):
-        """
-        Local endpoint address as a tuple
-        """
-        if not self._local_address:
-            self._local_address = self.sock.getsockname()
-            if len(self._local_address) == 4:
-                self._local_address = self._local_address[:2]
-        return self._local_address
 
     @property
     def peer_address(self):
@@ -84,13 +81,6 @@ class WebStream(object):
             if len(self._peer_address) == 4:
                 self._peer_address = self._peer_address[:2]
         return self._peer_address
-
-    def opened(self):
-        """
-        Called by the server when the stream handshake
-        has succeeeded.
-        """
-        pass
 
     @property
     def terminated(self):
@@ -117,18 +107,6 @@ class WebStream(object):
             finally:
                 self.sock = None
 
-    def received_message(self, message):
-        """
-        Called whenever a complete ``message``, binary or text,
-        is received and ready for application's processing.
-
-        The passed message is an instance of :class:`messaging.TextMessage`
-        or :class:`messaging.BinaryMessage`.
-
-        .. note:: You should override this method in your subclass.
-        """
-        pass
-
     def send(self, data):
         """
         Sends the given ``payload`` out.
@@ -137,8 +115,9 @@ class WebStream(object):
         if self.terminated or self.sock is None:
             raise RuntimeError("Cannot send on a terminated webstream")
 
+        # Emulate chunked transfer encoding
         try:
-            self.sock.sendall(data + "\n")
+            self.sock.sendall("%x\r\n%s\r\n" %(len(data), data))
         except Exception as e:
             #print e.__class__.__name__
             pprint.pprint(e)
@@ -207,6 +186,8 @@ class WebStreamTool(Tool):
                      priority=p)
         hooks.attach('on_end_request', self.start_handler,
                      priority=70)
+        
+        
 
     def stream(self, handler_cls=WebStream):
         """
@@ -228,18 +209,52 @@ class WebStreamTool(Tool):
         response = cherrypy.serving.response
         response.stream = True
         response.headers['Content-Type'] = 'text/plain'
-
+        
+        
         addr = (request.remote.ip, request.remote.port)
         conn = request.rfile.rfile._sock
-        request.ws_handler = handler_cls(conn,
-                                         request.wsgi_environ.copy())
-
+        request.ws_handler = handler_cls(conn, request.wsgi_environ.copy())
+        
     def complete(self):
         """
         Sets some internal flags of CherryPy so that it
         doesn't close the socket down.
+
+        CherryPy has two internal flags that we are interested in
+        to enable WebStream within the server. They can't be set via
+        a public API and considering I'd want to make this extension
+        as compatible as possible whilst refraining in exposing more
+        than should be within CherryPy, I prefer performing a bit
+        of introspection to set those flags. Even by Python standards
+        such introspection isn't the cleanest but it works well
+        enough in this case.
+
+        This also means that we do that only on WebStream
+        connections rather than globally and therefore we do not
+        harm the rest of the HTTP server.
         """
-        self._set_internal_flags()
+        
+        current = inspect.currentframe()
+        while True:
+            if not current:
+                break
+            _locals = current.f_locals
+            if 'self' in _locals:
+               if type(_locals['self']) == HTTPRequest:
+                   _locals['self'].close_connection = True
+               if type(_locals['self']) == HTTPConnection:
+                   
+                   _locals['self'].linger = True
+                   _locals['self'].wfile._sock = None
+                   _locals['self'].wfile._sock = dummySocket
+                   
+                   # HTTPConnection is more inner than
+                   # HTTPRequest so we can leave once
+                   # we're done here
+                   return
+            _locals = None
+            current = current.f_back
+            
 
     def start_handler(self):
         """
@@ -258,40 +273,19 @@ class WebStreamTool(Tool):
         # By doing this we detach the socket from
         # the CherryPy stack avoiding memory leaks
         request.rfile.rfile._sock = None
+        
+        # Print HTTP header
+        headerLines = ['HTTP/1.1 200 OK',
+                       'Date: %s' %(format_date_time(time.mktime(datetime.now().timetuple())),),
+                       'Content-Type: application/json',
+                       'Server: webstreamer via CherryPy/3.2.2',
+                       'Transfer-Encoding: chunked']
+
+        ws_handler.sock.sendall("\r\n".join(headerLines) + "\r\n\r\n")
+        
 
         cherrypy.engine.publish('handle-webstream', ws_handler, addr)
 
-    def _set_internal_flags(self):
-        """
-        CherryPy has two internal flags that we are interested in
-        to enable WebStream within the server. They can't be set via
-        a public API and considering I'd want to make this extension
-        as compatible as possible whilst refraining in exposing more
-        than should be within CherryPy, I prefer performing a bit
-        of introspection to set those flags. Even by Python standards
-        such introspection isn't the cleanest but it works well
-        enough in this case.
-
-        This also means that we do that only on WebStream
-        connections rather than globally and therefore we do not
-        harm the rest of the HTTP server.
-        """
-        current = inspect.currentframe()
-        while True:
-            if not current:
-                break
-            _locals = current.f_locals
-            if 'self' in _locals:
-               if type(_locals['self']) == HTTPRequest:
-                   _locals['self'].close_connection = True
-               if type(_locals['self']) == HTTPConnection:
-                   _locals['self'].linger = True
-                   # HTTPConnection is more inner than
-                   # HTTPRequest so we can leave once
-                   # we're done here
-                   return
-            _locals = None
-            current = current.f_back
 
 class WebStreamPlugin(plugins.SimplePlugin):
     def __init__(self, bus):
@@ -326,14 +320,6 @@ class WebStreamPlugin(plugins.SimplePlugin):
         self.manager.close_all()
 
     def broadcast(self, message):
-        """
-        Broadcasts a message to all connected clients known to
-        the server.
-
-        :param message: a message suitable to pass to the send() method
-          of the connected handler.
-        :param binary: whether or not the message is a binary one
-        """
         self.manager.broadcast(message)
 
 

@@ -429,6 +429,7 @@ class WebSocket(object):
             finally:
                 self.terminate()
 
+
 class EchoWebSocket(WebSocket):
     def received_message(self, message):
         """

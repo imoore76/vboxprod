@@ -16,7 +16,7 @@
 
 function getEvents() {
 	
-	var ws = new WebSocket('ws://'+location.host+'/eventStream');
+	var ws = new WebSocket('ws://localhost:8080/eventStream');
 	
     ws.onopen = function()
     {

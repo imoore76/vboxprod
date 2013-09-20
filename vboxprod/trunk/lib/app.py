@@ -98,7 +98,8 @@ class Application(threading.Thread):
         
 
         for e in events:
-            cherrypy.engine.publish('websocket-broadcast', TextMessage(json.dumps(e)))
+            cherrypy.engine.publish('webstream-broadcast', json.dumps(e))
+            
         
         return
         self.eventQueuesLock.acquire(True)

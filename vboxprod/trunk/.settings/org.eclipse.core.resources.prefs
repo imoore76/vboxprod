@@ -1,3 +1,8 @@
 eclipse.preferences.version=1
+encoding//lib/webstreamer.py=utf-8
+encoding//lib/ws4py/compat.py=utf-8
+encoding//lib/ws4py/exc.py=utf-8
+encoding//lib/ws4py/manager.py=utf-8
 encoding//lib/ws4py/server/cherrypyserver.py=utf-8
+encoding//lib/ws4py/streaming.py=utf-8
 encoding//lib/ws4py/websocket.py=utf-8

@@ -4,7 +4,6 @@ import sys, os, signal
 basepath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0,basepath+'/lib')
 
-from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 
 import threading
 import ConfigParser
@@ -79,9 +78,11 @@ class WebServerThread(threading.Thread):
     
         from mysqlsession import MySQLSession
         
-        from ws4py.websocket import WebSocket
+        from webstreamer import WebStream, WebStreamPlugin, WebStreamTool
+        #from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+        #from ws4py.websocket import WebSocket
         
-        class EchoWebSocket(WebSocket):
+        class EchoWebSocket(WebStream):
             def received_message(self, message):
                 """
                 Automatically sends back the provided ``message`` to
@@ -89,8 +90,8 @@ class WebServerThread(threading.Thread):
                 """
                 self.send(message.data, message.is_binary)
         
-        WebSocketPlugin(cherrypy.engine).subscribe()
-        cherrypy.tools.websocket = WebSocketTool()
+        WebStreamPlugin(cherrypy.engine).subscribe()
+        cherrypy.tools.websocket = WebStreamTool()
         
         webconfig['/eventStream']  = {
             'tools.websocket.on': True,

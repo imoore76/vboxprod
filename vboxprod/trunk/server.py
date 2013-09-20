@@ -79,18 +79,7 @@ class WebServerThread(threading.Thread):
             setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
     
         from mysqlsession import MySQLSession
-        
         from webstreamer import WebStream, WebStreamPlugin, WebStreamTool
-        #from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
-        #from ws4py.websocket import WebSocket
-        
-        class EchoWebSocket(WebStream):
-            def received_message(self, message):
-                """
-                Automatically sends back the provided ``message`` to
-                its originating endpoint.
-                """
-                self.send(message.data, message.is_binary)
         
         
         WebStreamPlugin(cherrypy.engine).subscribe()
@@ -98,7 +87,6 @@ class WebServerThread(threading.Thread):
         
         webconfig['/eventStream']  = {
             'tools.websocket.on': True,
-            'tools.websocket.handler_cls': EchoWebSocket,
             'response.stream': True
         }
 

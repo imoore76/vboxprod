@@ -23,105 +23,38 @@ from cherrypy import Tool
 from cherrypy.process import plugins
 from cherrypy.wsgiserver import HTTPConnection, HTTPRequest
 
-"""
-from ws4py import WS_KEY, WS_VERSION
-from ws4py.exc import HandshakeError, StreamClosed
-from ws4py.streaming import Stream
-from ws4py.messaging import Message, PongControlMessage
-from ws4py.compat import basestring, unicode
-"""
 
-logger = logging.getLogger('ws4py')
+logger = logging.getLogger('WebStream')
 
-__all__ = ['WebStream']
+__all__ = ['WebStream', 'WebStreamTool', 'WebStreamPlugin']
 
 class WebStream(object):
     """ Represents a webstream endpoint and provides a high level interface to drive the endpoint. """
 
-    def __init__(self, sock, environ=None):
-        """ The ``sock`` is an opened connection
-        resulting from the webstream handshake.
-
-        If ``protocols`` is provided, it is a list of protocols
-        negotiated during the handshake as is ``extensions``.
-
-        If ``environ`` is provided, it is a copy of the WSGI environ
-        dictionnary from the underlying WSGI server.
-        """
-
-        self.sock = sock
+    def __init__(self, connection):
+        
+        self.connection = connection
         """
         Underlying connection.
         """
 
-        self.client_terminated = False
+        self.terminated = False
         """
-        Indicates if the client has been marked as terminated.
+        Indicates if the connection has been terminated.
         """
-
-        self.server_terminated = False
-        """
-        Indicates if the server has been marked as terminated.
-        """
-
-        self.environ = environ
-        """
-        WSGI environ dictionary.
-        """
-
-        self._peer_address = None
-
-    @property
-    def peer_address(self):
-        """
-        Peer endpoint address as a tuple
-        """
-        if not self._peer_address:
-            self._peer_address = self.sock.getpeername()
-            if len(self._peer_address) == 4:
-                self._peer_address = self._peer_address[:2]
-        return self._peer_address
-
-    @property
-    def terminated(self):
-        """
-        Returns ``True`` if both the client and server have been
-        marked as terminated.
-        """
-        return self.client_terminated is True and self.server_terminated is True
-
-    @property
-    def connection(self):
-        return self.sock
-
-    def close_connection(self):
-        """
-        Shutdowns then closes the underlying connection.
-        """
-        if self.sock:
-            try:
-                self.sock.shutdown(socket.SHUT_RDWR)
-                self.sock.close()
-            except:
-                pass
-            finally:
-                self.sock = None
 
     def send(self, data):
         """
-        Sends the given ``payload`` out.
+        Sends the given ``data`` out.
 
         """
-        if self.terminated or self.sock is None:
+        if self.terminated or self.connection is None:
             raise RuntimeError("Cannot send on a terminated webstream")
 
         # Emulate chunked transfer encoding
         try:
-            self.sock.sendall("%x\r\n%s\r\n" %(len(data), data))
+            self.connection.sendall("%x\r\n%s\r\n" %(len(data), data))
         except Exception as e:
-            #print e.__class__.__name__
-            pprint.pprint(e)
-            traceback.print_exc()
             # Can't write to socket, terminate
             self.terminate()
             
@@ -129,50 +62,28 @@ class WebStream(object):
 
     def terminate(self):
         """
-        Completes the webstream by calling the `closed`
-        method either using the received closing code
-        and reason, or when none was received, using
-        the special `1006` code.
-
-        Finally close the underlying connection for
-        good and cleanup resources by unsetting
-        the `environ` and `stream` attributes.
+            Terminate processing
         """
+        self.terminated = True
 
-        self.client_terminated = self.server_terminated = True
-
-        self.close_connection()
-
-        # Cleaning up resources
-        self.environ = None
-
-
-    def run(self):
         """
-        Performs the operation of reading from the underlying
-        connection in order to feed the stream of bytes.
-
-        We start with a small size of two bytes to be read
-        from the connection so that we can quickly parse an
-        incoming frame header. Then the stream indicates
-        whatever size must be read from the connection since
-        it knows the frame payload length.
-
-        Note that we perform some automatic opererations:
-
-        * On a closing message, we respond with a closing
-          message and finally close the connection
-        * We respond to pings with pong messages.
-        * Whenever an error is raised by the stream parsing,
-          we initiate the closing of the connection with the
-          appropiate error code.
-
-        This method is blocking and should likely be run
-        in a thread.
+        Shutdowns then closes the underlying connection.
         """
-        self.sock.setblocking(True)
+        if self.connection:
+            try:
+                self.connection.shutdown(socket.SHUT_RDWR)
+                self.connection.close()
+            finally:
+                self.connection = None
 
+
+"""
+    Initiates handlers when a relevant request comes
+    into cherry.py
+"""
 class WebStreamTool(Tool):
+    
+    
     def __init__(self):
         Tool.__init__(self, 'before_request_body', self.stream)
 
@@ -189,31 +100,21 @@ class WebStreamTool(Tool):
         
         
 
-    def stream(self, handler_cls=WebStream):
+    def stream(self):
         """
-        Performs the stream of the connection to the WebStream
-        protocol.
-
-        The provided protocols may be a list of WebStream
-        protocols supported by the instance of the tool.
-
-        When no list is provided and no protocol is either
-        during the stream, then the protocol parameter is
-        not taken into account. On the other hand,
-        if the protocol from the handshake isn't part
-        of the provided list, the stream fails immediatly.
+            Sets up web stream handler
         """
+        
         request = cherrypy.serving.request
         request.process_request_body = False
 
         response = cherrypy.serving.response
-        response.stream = True
-        response.headers['Content-Type'] = 'text/plain'
         
-        
+        # For logging
         addr = (request.remote.ip, request.remote.port)
+        
         conn = request.rfile.rfile._sock
-        request.ws_handler = handler_cls(conn, request.wsgi_environ.copy())
+        request.ws_handler = WebStream(conn)
         
     def complete(self):
         """
@@ -265,7 +166,6 @@ class WebStreamTool(Tool):
         if not hasattr(request, 'ws_handler'):
             return
 
-        addr = (request.remote.ip, request.remote.port)
         ws_handler = request.ws_handler
         request.ws_handler = None
         delattr(request, 'ws_handler')
@@ -278,16 +178,21 @@ class WebStreamTool(Tool):
         headerLines = ['HTTP/1.1 200 OK',
                        'Date: %s' %(format_date_time(time.mktime(datetime.now().timetuple())),),
                        'Content-Type: application/json',
-                       'Server: webstreamer via CherryPy/3.2.2',
+                       'Server: webstreamer via CherryPy/%s' %(cherrypy.__version__,),
                        'Transfer-Encoding: chunked']
 
-        ws_handler.sock.sendall("\r\n".join(headerLines) + "\r\n\r\n")
+        ws_handler.connection.sendall("\r\n".join(headerLines) + "\r\n\r\n")
         
 
-        cherrypy.engine.publish('handle-webstream', ws_handler, addr)
+        # Send event
+        cherrypy.engine.publish('handle-webstream', ws_handler)
 
 
+""""
+    Provides access between all handlers and WebStreamManager
+"""
 class WebStreamPlugin(plugins.SimplePlugin):
+    
     def __init__(self, bus):
         plugins.SimplePlugin.__init__(self, bus)
         self.manager = WebStreamManager()
@@ -304,12 +209,9 @@ class WebStreamPlugin(plugins.SimplePlugin):
         self.bus.unsubscribe('handle-webstream', self.handle)
         self.bus.unsubscribe('webstream-broadcast', self.broadcast)
 
-    def handle(self, ws_handler, peer_addr):
+    def handle(self, ws_handler):
         """
         Tracks the provided handler.
-
-        :param ws_handler: webstream handler instance
-        :param peer_addr: remote peer address for tracing purpose
         """
         self.manager.add(ws_handler)
 
@@ -326,9 +228,19 @@ class WebStreamPlugin(plugins.SimplePlugin):
 class WebStreamManager():
     
     handlerLock = threading.Lock()
+    """
+        Threadsafe lock for manipulating managed handlers
+    """
+    
     handlers = {}
+    """
+        List of managed handlers
+    """
     
     def add(self, handler):
+        """
+            Add handler to list
+        """
         self.handlerLock.acquire(True)
         hid = 'handler-%s' %(id(handler),)
         try:
@@ -336,7 +248,11 @@ class WebStreamManager():
         finally:
             self.handlerLock.release()
     
+    
     def close_all(self):
+        """
+            Close all managed handlers
+        """
         self.handlerLock.acquire(True)
         try:
             for h in self.handlers.values():
@@ -349,7 +265,11 @@ class WebStreamManager():
             self.handlerLock.release()                
         self.running = False
     
+    
     def broadcast(self, message):
+        """
+            Broadcast message to all managed handlers
+        """
         self.handlerLock.acquire(True)
         try:
             closedList = []

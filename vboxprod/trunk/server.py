@@ -4,6 +4,8 @@ import sys, os, signal
 basepath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0,basepath+'/lib')
 
+from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+
 import threading
 import ConfigParser
 import traceback
@@ -74,6 +76,9 @@ class WebServerThread(threading.Thread):
             setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
     
         from mysqlsession import MySQLSession
+        
+        WebSocketPlugin(cherrypy.engine).subscribe()
+        cherrypy.tools.websocket = WebSocketTool()
             
         cherrypy.quickstart(DispatchRoot(), '/', webconfig)
 

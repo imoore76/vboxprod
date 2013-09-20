@@ -3783,7 +3783,7 @@ class vboxEventListener(threading.Thread):
         self.eventListQueue = eventListQueue
         
         
-        self.listener = eventSource.createListener()
+        self.listener = self.eventSource.createListener()
         self.eventSource.registerListener(self.listener, [vboxMgr.constants.VBoxEventType_Any], False)
         self.registered = True
     

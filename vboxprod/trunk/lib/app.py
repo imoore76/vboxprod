@@ -1,5 +1,5 @@
 
-import os, sys, ConfigParser, threading
+import os, sys, ConfigParser, threading, time
 import MySQLdb
 
 print "Imported app"
@@ -38,7 +38,7 @@ def getDB():
     Application
 
 """
-class Application:
+class Application(threading.Thread):
         
     """
       * Error number describing a fatal error
@@ -62,11 +62,25 @@ class Application:
     
     accounts = None
     
+    running = False
+    
+    """
+     * Client vent queues waiting for events
+    """
+    eventQueues = {}
+    
+    """
+        Queue lock for adding / removing
+    """
+    eventQueuesLock = threading.Lock()
+    
     def __init__(self):
 
         import accounts
         __import__('accounts.' + self.getConfigItem('app','accountsModule') )
         self.accounts = getattr(accounts, self.getConfigItem('app','accountsModule')).interface()
+        
+        threading.Thread.__init__(self)
         
 
     """
@@ -79,8 +93,56 @@ class Application:
             return self.configDefaults.get(item, None)    
             
     
+    def pumpEvents(self, events):
+        self.eventQueuesLock.acquire(True)
+        try:
+            for ev in events:
+                for e in self.eventQueues.values():
+                    try:
+                        e.put(ev)
+                    except:
+                        pass
+            
+        finally:
+            self.eventQueuesLock.release()
+
+    def registerEventQueue(self, queue):
+        
+        eqid = 'eventQueue-%s'%(id(queue),)
+        
+        self.eventQueuesLock.acquire(True)
+        try:
+            self.eventQueues[eqid] = queue
+        finally:
+            self.eventQueuesLock.release()
+
+        return eqid
+
+    def unregisterEventQueue(self, eqid):
+        
+        self.eventQueuesLock.acquire(True)
+        try:
+            del self.eventQueues[eqid]
+        finally:
+            self.eventQueuesLock.release()
+
+    def join(self):
+        self.shutdown()
+        
+    def shutdown(self):
+        self.running = False
+        
     def run(self):
-        pass
+        
+        self.running = True
+        
+        eid = 0
+        
+        while self.running:
+            self.pumpEvents([{'asdf':'foo','id':eid, 'queues': len(self.eventQueues)}])
+            eid = eid + 1
+            time.sleep(2)
     
 
 app = Application()
+app.start()

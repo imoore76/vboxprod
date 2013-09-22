@@ -1,16 +1,17 @@
 import sys, os, signal
 
+import threading
+import ConfigParser
+import traceback
+from pprint import pprint
+
 # Our library modules
 basepath = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0,basepath+'/lib')
 
+import cherrypy
 
-import threading
-import ConfigParser
-import traceback
-import app
-import install
-from pprint import pprint
+from app import app, flash_policy_server, install
 
 import logging
  
@@ -18,12 +19,7 @@ import logging
 
 
 
-import cherrypy
-from utils import *
-from models import *
 
-
-print "In server..."
 
 
 
@@ -39,6 +35,8 @@ class WebServerThread(threading.Thread):
 
     def run(self):
         
+        from mysqlsession import MySQLSession
+
         config = app.getConfig()
         
         dbconfig = {}
@@ -46,8 +44,6 @@ class WebServerThread(threading.Thread):
             dbconfig[k] = v
         
         webconfig = {
-            'global' : {
-                        'server.thread_pool' : 1},
             '/': {
                   
                 'tools.staticdir.on': True,
@@ -78,19 +74,22 @@ class WebServerThread(threading.Thread):
             __import__('dispatchers.' + d)
             setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
     
-        from mysqlsession import MySQLSession
-        from webstreamer import WebStream, WebStreamPlugin, WebStreamTool
         
+        """
+            WebSocket server
+        """
+        from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+        from ws4py.websocket import WebSocket
+
+        WebSocketPlugin(cherrypy.engine).subscribe()
+        cherrypy.tools.websocket = WebSocketTool()
         
-        WebStreamPlugin(cherrypy.engine).subscribe()
-        cherrypy.tools.websocket = WebStreamTool()
-        
-        webconfig['/eventStream']  = {
-            'tools.websocket.on': True,
-            'response.stream': True
-        }
+        webconfig['/eventStream']  = {'tools.websocket.on': True }
 
 
+        """
+            Start server
+        """
         cherrypy.quickstart(DispatchRoot(), '/', webconfig)
 
             
@@ -103,15 +102,12 @@ def main(argv = sys.argv):
     # For proper UTF-8 encoding / decoding
     #reload(sys)
     #sys.setdefaultencoding('utf8')
-    
-    
+        
     if len(argv) > 1 and argv[1] == 'installdb':
-        config = app.getConfig()
         install.database(config)
         sys.exit()
         
     if len(argv) > 1 and argv[1] == 'resetadmin':
-        config = app.getConfig()
         install.resetadmin(config)
         sys.exit()
     
@@ -119,6 +115,9 @@ def main(argv = sys.argv):
     webserver = WebServerThread()    
     webserver.start()
 
+    # Flash policy server to allow flash
+    # app to use sockets
+    flash_policy_server.start()
     
 
 

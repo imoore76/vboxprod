@@ -4070,7 +4070,7 @@ class vboxEventListenerPool(threading.Thread):
     RPC request handler
 """
 RPCHeartbeatInterval = 60
-class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
+class RPCRequestHandler(SocketServer.BaseRequestHandler):
 
     sendLock = threading.Lock()
     heartbeat = None
@@ -4249,7 +4249,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 """
     RPC server
 """
-class ThreadedRPCServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class RPCServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     
     allow_reuse_address = True
     
@@ -4483,7 +4483,7 @@ def main(argv = sys.argv):
     """
     # Port 0 means to select an arbitrary unused port
     HOST, PORT = "localhost", 11033
-    rpcServer = ThreadedRPCServer((HOST, PORT), ThreadedTCPRequestHandler)
+    rpcServer = RPCServer((HOST, PORT), RPCRequestHandler)
     ip, port = rpcServer.server_address
 
     # Start a thread with the server -- that thread will then start one

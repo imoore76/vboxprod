@@ -1,6 +1,8 @@
 
 from dispatchers import dispatcher_parent, jsonout
 
+from app import app
+
 class dispatcher(dispatcher_parent):
     
     @jsonout

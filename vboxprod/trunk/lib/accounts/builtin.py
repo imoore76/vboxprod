@@ -1,8 +1,8 @@
 
 import os, sys
 
-from models import AuthUser, User, Group
-from utils import genhash
+from app.models import AuthUser, User, Group
+from app.utils import genhash
 import pprint
 
 CAPABILITIES = [

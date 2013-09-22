@@ -3,7 +3,7 @@
 from dispatchers import dispatcher_parent, jsonout, require_admin
 from models import Connector
 import cherrypy
-import app
+from app import app
 
 class dispatcher(dispatcher_parent):
 

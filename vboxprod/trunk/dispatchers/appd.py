@@ -1,7 +1,8 @@
 
 from dispatchers import dispatcher_parent, jsonout
 
-import app
+from app import app
+
 import cherrypy
 import pprint
 

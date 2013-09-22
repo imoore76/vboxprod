@@ -8,7 +8,7 @@ global config, app
 
 # Read config 
 config = ConfigParser.SafeConfigParser()
-config.read(os.path.abspath(os.path.dirname(os.path.dirname(__file__))) + '/settings.ini')
+config.read(os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))) + '/settings.ini')
 
 def getConfig():
     return config
@@ -97,7 +97,7 @@ class Application(threading.Thread):
         
 
         for e in events:
-            cherrypy.engine.publish('webstream-broadcast', json.dumps(e))
+            cherrypy.engine.publish('websocket-broadcast', json.dumps(e))
             
         
         self.eventQueuesLock.acquire(True)
@@ -133,11 +133,11 @@ class Application(threading.Thread):
             self.eventQueuesLock.release()
 
     def shutdown(self):
+        print "app shutting down"
         self.running = False
         
     def run(self):
         
-        print "here1.."
         self.running = True
         
         eid = 0

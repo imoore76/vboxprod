@@ -1,5 +1,7 @@
 from dispatchers import dispatcher_parent, jsonout, require_admin
-import cherrypy, app
+import cherrypy
+
+from app import app
 
 from models import VMGroup
 

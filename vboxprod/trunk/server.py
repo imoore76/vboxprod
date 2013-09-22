@@ -23,7 +23,6 @@ import logging
 
 
 
-
 """
        
     Web Server Thread starts cherrypy
@@ -116,8 +115,15 @@ def main(argv = sys.argv):
         install.resetadmin(config)
         sys.exit()
     
+    def pumpEvent(event):
+        cherrypy.engine.publish('websocket-broadcast', json.dumps(event))
+
     # Start application
     app.start()
+    
+    # Emit
+    app.onEvent(pumpEvent)
+
 
     # Flash policy server to allow flash
     flash_policy_server.start()

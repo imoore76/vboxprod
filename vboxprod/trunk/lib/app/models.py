@@ -52,7 +52,10 @@ class Connector(MySqlModel):
     id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)    
     location = CharField(max_length=256, null = False)
-    status = IntegerField(default = 0)    
+    description = CharField(max_length=256, null = True, default='')
+    status = IntegerField(default = 0)
+    status_text = CharField(max_length=256, null = True, default='')
+    
     
 class AppConfig(MySqlModel):
     

@@ -55,7 +55,7 @@ class eventListener(threading.Thread):
             sys.stdout.flush()
             
             # Error state
-            self.onStateChange(self.id, self.STATE_ERROR)
+            self.onStateChange(self.id, self.STATE_ERROR, str(e))
             
             self.stop()
             return
@@ -76,7 +76,7 @@ class eventListener(threading.Thread):
         except Exception as e:
 
             # Error state
-            self.onStateChange(self.id, self.STATE_ERROR)
+            self.onStateChange(self.id, self.STATE_ERROR, str(e))
 
             pprint.pprint(e)
             
@@ -118,7 +118,7 @@ class eventListener(threading.Thread):
                 self.disconnect()
                 
                 # Error state
-                self.onStateChange(self.id, self.STATE_ERROR)
+                self.onStateChange(self.id, self.STATE_ERROR, str(e))
 
                 break
                 

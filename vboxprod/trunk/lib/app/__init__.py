@@ -1,5 +1,5 @@
 import sys
-import cherrypy, json, pprint
+import json, pprint
 import os, sys, ConfigParser, threading, time
 import MySQLdb
 
@@ -29,22 +29,9 @@ def stop():
     global app
     app.stop()
     app.join()
-    
-def getDB():
-    global config
-    local = threading.local()
-    if hasattr(local, 'db'):
-        return local.db
-    else:
-        
-        dbconfig = {}
-        for k,v in config.items('storage'):
-            dbconfig[k] = v
-    
-        db = MySQLdb.connect(**dbconfig)
-        local.db = db
-        return db
 
+# Imported after these are defined
+from models import Connector
 
 """
 
@@ -93,6 +80,12 @@ class Application(threading.Thread):
     eventListeners = {}
     eventListenersLock = threading.Lock()
     
+    """
+        Event handlers - callbacks to call when we emit
+        an event
+    """
+    eventHandlers = []
+    
     def __init__(self):
 
         # Setup accounts interface
@@ -113,11 +106,17 @@ class Application(threading.Thread):
             return self.configDefaults.get(item, None)    
             
     
+    """
+        Run callbacks when an event is recieved
+    """
+    def onEvent(self, handler):
+        self.eventHandlers.append(handler)
+        
     def pumpEvent(self, event):
 
-        cherrypy.engine.publish('websocket-broadcast', json.dumps(event))
+        for eh in self.eventHandlers:
+            eh(event)
             
-        
         self.eventQueuesLock.acquire(True)
         try:
             for e in self.eventQueues.values():
@@ -158,18 +157,23 @@ class Application(threading.Thread):
         """
             Pump event to clients first
         """
-        event = {
-            'eventType':''
-        }
+        self.pumpEvent({
+            'eventType':'connectorStateChange',
+            'connector' : cid,
+            'status' : state,
+            'message' : message
+        })
         
-        self.pumpEvent({'eventType':''})
-        
-        from models import Connector
         
         c = Connector.get(Connector.id == int(cid))
         c.status = state
-        c.message = message
+        c.status_text = message
         c.save()
+        
+    def onConnectorMessage(self, message):
+        
+        if message.get('event', None):
+            self.pumpEvent(message['event'])
         
     def addConnector(self, connector):
         """
@@ -179,7 +183,7 @@ class Application(threading.Thread):
         try:
             if self.running:
                 print "Adding connector %s" %(connector['name'],)
-                self.eventListeners[str(connector['id'])] = eventListener(connector, self.pumpEvent, self.onConnectorStateChange)
+                self.eventListeners[str(connector['id'])] = eventListener(connector, self.onConnectorMessage, self.onConnectorStateChange)
                 self.eventListeners[str(connector['id'])].start()
         finally:
             self.eventListenersLock.release()
@@ -211,7 +215,6 @@ class Application(threading.Thread):
         self.running = True
         
         # Add connectors
-        from models import Connector
         for c in list(Connector.select().dicts()):
             pprint.pprint(c)
             self.addConnector(c)

@@ -1,8 +1,10 @@
-import socket, sys
+import sys
 import cherrypy, json, pprint
-from urlparse import urlparse
 import os, sys, ConfigParser, threading, time
 import MySQLdb
+
+
+from vboxconnectorclient import eventListener
 
 print "Imported app"
 
@@ -151,6 +153,24 @@ class Application(threading.Thread):
         self.running = False
         
     
+    def onConnectorStateChange(self, cid, state, message=''):
+        
+        """
+            Pump event to clients first
+        """
+        event = {
+            'eventType':''
+        }
+        
+        self.pumpEvent({'eventType':''})
+        
+        from models import Connector
+        
+        c = Connector.get(Connector.id == int(cid))
+        c.status = state
+        c.message = message
+        c.save()
+        
     def addConnector(self, connector):
         """
         Connect to a vbox connector server and get events
@@ -159,7 +179,7 @@ class Application(threading.Thread):
         try:
             if self.running:
                 print "Adding connector %s" %(connector['name'],)
-                self.eventListeners[str(connector['id'])] = vboxConnectorEventListener(connector, self.pumpEvent)
+                self.eventListeners[str(connector['id'])] = eventListener(connector, self.pumpEvent, self.onConnectorStateChange)
                 self.eventListeners[str(connector['id'])].start()
         finally:
             self.eventListenersLock.release()
@@ -214,116 +234,6 @@ class Application(threading.Thread):
             self.eventListenersLock.release()
     
 
-class vboxConnectorEventListener(threading.Thread):
-    
-    STATUS_DISCONNECTED = -1
-    STATUS_RUNNING = 5
-    STATUS_CONNECTED = 10
-    STATUS_ERROR = 20
-    
-    status = STATUS_DISCONNECTED
-    
-    server = None
-    
-    connected = False
-    
-    onEvent = None
-    
-    sock = None
-    
-    file = None
-    
-    running = False
-        
-    def __init__(self, server, onEvent):
-        self.server = server
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.onEvent = onEvent
-        threading.Thread.__init__(self)
-        
-    def connect(self):
-        
-        print "here in connect"
-        sys.stdout.flush()
-
-        try:
-            url = urlparse(self.server['location'])
-            
-        except Exception as e:
-            pprint.pprint(e)
-            print "Failed to parse server location %s" %(self.server['location'])
-            sys.stdout.flush()
-
-            self.stop()
-            return
-        
-        try:
-            
-            print "Trying to connect to %s:%s" %(url.hostname, url.port)
-            sys.stdout.flush()
-            self.sock.connect((url.hostname, url.port))
-            print "Connected..."
-            sys.stdout.flush()
-            self.file = self.sock.makefile()
-            self.connected = True
-            
-        except Exception as e:
-            pprint.pprint(e)
-            
-    def disconnect(self):
-        print "here in disconnect"
-        sys.stdout.flush()
-        if self.sock:
-            self.sock.close()
-        self.connected = False
-        self.sock = None
-    
-    def stop(self):
-        self.running = False
-        self.disconnect()
-        
-    def run(self):
-        
-        self.running = True
-        
-        while self.running:
-            
-            while not self.connected:
-                
-                if not self.running: break
-                self.connect()
-                if not self.running: break
-                
-                if not self.connected:
-                    for i in range(0,10):
-                        if self.running: time.sleep(i)
-                        else: break
-            
-            try:                
-                response = self.file.readline()
-            
-            # assume disconnect by server
-            except Exception as e:
-                pprint.pprint(e)
-                self.disconnect()
-                break
-                
-            if response.strip() == '': continue
-            
-            try:
-                message = json.loads(response)
-            except Exception as e:
-                print "Invalid json response: %s" %(response)
-                continue
-
-            
-            # Message has event
-            if message.get('event', None):
-                self.onEvent(message['event'])
-            else:
-                time.sleep(0.2)
-        
-        self.disconnect()
         
     
         

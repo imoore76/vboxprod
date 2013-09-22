@@ -1,9 +1,10 @@
 
 
-from dispatchers import dispatcher_parent, jsonout, require_admin
-from models import Connector
+from app.dispatchers import dispatcher_parent, jsonout, require_admin
+from app.models import Connector
 import cherrypy
-from app import app
+
+import app
 
 class dispatcher(dispatcher_parent):
 

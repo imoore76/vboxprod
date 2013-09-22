@@ -30,10 +30,11 @@ class FlashPolicyServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         
 
 server_thread = None
+server = None
 
 def start(ip="0.0.0.0",port=843):
     
-    global server_thread
+    global server_thread, server
     
     # Port 0 means to select an arbitrary unused port
     server = FlashPolicyServer((ip, port), RPCRequestHandler)
@@ -47,10 +48,10 @@ def start(ip="0.0.0.0",port=843):
 
 def stop():
     
-    global server_thread
+    global server_thread, server
     
     if server_thread is None: return
 
-    server_thread.shutdown()
+    server.shutdown()
     server_thread.join()
     server_thread = None

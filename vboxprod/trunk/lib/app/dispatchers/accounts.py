@@ -1,7 +1,6 @@
-from dispatchers import dispatcher_parent, jsonout, require_admin
+from app.dispatchers import dispatcher_parent, jsonout, require_admin
 import cherrypy, pprint
-
-from app import app
+import app
 
 class dispatcher(dispatcher_parent):
     

@@ -1,9 +1,9 @@
-from dispatchers import dispatcher_parent, jsonout, require_admin
+from app.dispatchers import dispatcher_parent, jsonout, require_admin
 import cherrypy
 
-from app import app
+import app
 
-from models import VMGroup
+from app.models import VMGroup
 
 class dispatcher(dispatcher_parent):
 

@@ -11,7 +11,8 @@ sys.path.insert(0,basepath+'/lib')
 
 import cherrypy
 
-from app import app, flash_policy_server, install
+import app
+from app import flash_policy_server, install
 
 import logging
  
@@ -36,7 +37,8 @@ class WebServerThread(threading.Thread):
     def run(self):
         
         from mysqlsession import MySQLSession
-
+        import app
+        
         config = app.getConfig()
         
         dbconfig = {}
@@ -66,13 +68,13 @@ class WebServerThread(threading.Thread):
             eventStream.exposed = True
         
         # Load dispatchers
-        import dispatchers
+        import app.dispatchers
         
         print "Getting dispatcherrs"
         
-        for d in dispatchers.__all__:
-            __import__('dispatchers.' + d)
-            setattr(DispatchRoot, d, getattr(dispatchers, d).dispatcher())
+        for d in app.dispatchers.__all__:
+            __import__('app.dispatchers.' + d)
+            setattr(DispatchRoot, d, getattr(app.dispatchers, d).dispatcher())
     
         
         """
@@ -84,7 +86,10 @@ class WebServerThread(threading.Thread):
         WebSocketPlugin(cherrypy.engine).subscribe()
         cherrypy.tools.websocket = WebSocketTool()
         
-        webconfig['/eventStream']  = {'tools.websocket.on': True }
+        webconfig['/eventStream']  = {
+            'tools.websocket.on': True,
+            'tools.websocket.heartbeat_freq' : 30
+        }
 
 
         """
@@ -111,14 +116,22 @@ def main(argv = sys.argv):
         install.resetadmin(config)
         sys.exit()
     
+    # Start application
+    app.start()
+
+    # Flash policy server to allow flash
+    flash_policy_server.start()
+
+    def cleanup():
+    
+        app.stop()
+        flash_policy_server.stop()
+
+    cherrypy.engine.subscribe('stop', cleanup)
+    
     # Start web thread
     webserver = WebServerThread()    
     webserver.start()
-
-    # Flash policy server to allow flash
-    # app to use sockets
-    flash_policy_server.start()
-    
 
 
 if __name__ == '__main__':

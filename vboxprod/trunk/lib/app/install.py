@@ -14,7 +14,13 @@ def database(config):
     # create dummy class
     from mysqlsession import MySQLSession
 
-    db = app.getDB()
+    config = app.getConfig()
+    
+    dbconfig = {}
+    for k,v in config.items('storage'):
+        dbconfig[k] = v
+
+    db = MySQLdb.connect(**dbconfig)
 
     cursor = db.cursor()
     cursor.execute(MySQLSession.SCHEMA % 'sessions')

@@ -1,7 +1,7 @@
 
-from dispatchers import dispatcher_parent, jsonout
+from app.dispatchers import dispatcher_parent, jsonout
 
-from app import app
+import app
 
 class dispatcher(dispatcher_parent):
     

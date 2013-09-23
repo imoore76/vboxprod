@@ -114,11 +114,10 @@ class eventListener(threading.Thread):
             
             # assume disconnect by server
             except Exception as e:
-                pprint.pprint(e)
                 self.disconnect()
                 
                 # Error state
-                self.onStateChange(self.id, self.STATE_ERROR, str(e))
+                self.onStateChange(self.id, self.STATE_ERROR, '')
 
                 break
                 

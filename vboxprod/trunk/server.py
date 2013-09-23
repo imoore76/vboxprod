@@ -1,5 +1,6 @@
 import sys, os, signal
 
+import json
 import threading
 import ConfigParser
 import traceback
@@ -122,7 +123,7 @@ def main(argv = sys.argv):
     app.start()
     
     # Emit
-    app.onEvent(pumpEvent)
+    app.getInstance().onEvent(pumpEvent)
 
 
     # Flash policy server to allow flash

@@ -29,7 +29,6 @@ function getEvents() {
 	  var ws = new WebSocket("ws://" + location.host + "/eventStream");
 	  ws.onmessage = function(e) {
 	    // Receives a message.
-	    console.log(e);
 	    console.log(e.data);
 	  };
 	  ws.onclose = function() {

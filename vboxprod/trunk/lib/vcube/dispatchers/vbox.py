@@ -1,7 +1,5 @@
 
-from app.dispatchers import dispatcher_parent, jsonout
-
-import app
+from vcube.dispatchers import dispatcher_parent, jsonout
 
 class dispatcher(dispatcher_parent):
     

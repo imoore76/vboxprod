@@ -1,5 +1,5 @@
 
-import app, models
+import vcube, models
 
 from utils import genhash 
 
@@ -14,7 +14,7 @@ def database(config):
     # create dummy class
     from mysqlsession import MySQLSession
 
-    config = app.getConfig()
+    config = vcube.getConfig()
     
     dbconfig = {}
     for k,v in config.items('storage'):

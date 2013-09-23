@@ -1,9 +1,9 @@
-from app.dispatchers import dispatcher_parent, jsonout, require_admin
+from vcube.dispatchers import dispatcher_parent, jsonout, require_admin
 import cherrypy
 
-import app
+import vcube
 
-from app.models import VMGroup
+from vcube.models import VMGroup
 
 class dispatcher(dispatcher_parent):
 

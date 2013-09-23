@@ -1,6 +1,6 @@
-from app.dispatchers import dispatcher_parent, jsonout, require_admin
+from vcube.dispatchers import dispatcher_parent, jsonout, require_admin
 import cherrypy, pprint
-import app
+import vcube
 
 class dispatcher(dispatcher_parent):
     
@@ -8,13 +8,13 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def getUsers(self, *args, **kwargs):
-        return app.getInstance().accounts.getUsers()
+        return vcube.getInstance().accounts.getUsers()
     getUsers.exposed = True
     
     @jsonout
     @require_admin
     def getGroups(self, *args, **kwargs):
-        return app.getInstance().accounts.getGroups()
+        return vcube.getInstance().accounts.getGroups()
     getGroups.exposed = True
     
     @jsonout
@@ -23,7 +23,7 @@ class dispatcher(dispatcher_parent):
         print "here..."
         pprint.pprint(kwargs)
         pprint.pprint(args)
-        return app.getInstance().accounts.updateGroup(kwargs)
+        return vcube.getInstance().accounts.updateGroup(kwargs)
     updateGroup.exposed = True
 
     @jsonout
@@ -34,7 +34,7 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def addGroup(self, *args, **kwargs):
-        return app.getInstance().accounts.addGroup(kwargs)
+        return vcube.getInstance().accounts.addGroup(kwargs)
     addGroup.exposed = True
 
     @jsonout

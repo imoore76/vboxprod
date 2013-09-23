@@ -12,8 +12,8 @@ sys.path.insert(0,basepath+'/lib')
 
 import cherrypy
 
-import app
-from app import flash_policy_server, install
+import vcube
+from vcube import flash_policy_server, install
 
 import logging
  
@@ -37,9 +37,9 @@ class WebServerThread(threading.Thread):
     def run(self):
         
         from mysqlsession import MySQLSession
-        import app
+        import vcube
         
-        config = app.getConfig()
+        config = vcube.getConfig()
         
         dbconfig = {}
         for k,v in config.items('storage'):
@@ -68,13 +68,13 @@ class WebServerThread(threading.Thread):
             eventStream.exposed = True
         
         # Load dispatchers
-        import app.dispatchers
+        import vcube.dispatchers
         
         print "Getting dispatcherrs"
         
-        for d in app.dispatchers.__all__:
-            __import__('app.dispatchers.' + d)
-            setattr(DispatchRoot, d, getattr(app.dispatchers, d).dispatcher())
+        for d in vcube.dispatchers.__all__:
+            __import__('vcube.dispatchers.' + d)
+            setattr(DispatchRoot, d, getattr(vcube.dispatchers, d).dispatcher())
     
         
         """
@@ -120,10 +120,10 @@ def main(argv = sys.argv):
         cherrypy.engine.publish('websocket-broadcast', json.dumps(event))
 
     # Start application
-    app.start()
+    vcube.start()
     
     # Emit
-    app.getInstance().onEvent(pumpEvent)
+    vcube.getInstance().onEvent(pumpEvent)
 
 
     # Flash policy server to allow flash
@@ -131,7 +131,7 @@ def main(argv = sys.argv):
 
     def cleanup():
     
-        app.stop()
+        vcube.stop()
         flash_policy_server.stop()
 
     cherrypy.engine.subscribe('stop', cleanup)

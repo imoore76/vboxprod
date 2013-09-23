@@ -1,10 +1,10 @@
 
 
-from app.dispatchers import dispatcher_parent, jsonout, require_admin
-from app.models import Connector
+from vcube.dispatchers import dispatcher_parent, jsonout, require_admin
+from vcube.models import Connector
 import cherrypy
 
-import app
+import vcube
 
 class dispatcher(dispatcher_parent):
 

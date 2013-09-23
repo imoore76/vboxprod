@@ -1,13 +1,13 @@
 
 from peewee import *
 
-import app
+import vcube
 
 INSTALLMODELS = ['AuthUser', 'Group', 'VMGroup', 'Connector', 'AppConfig']
 
 dbconfig = {}
 dbname = ''
-for k,v in app.getConfig().items('storage'):
+for k,v in vcube.getConfig().items('storage'):
     if k == 'db': dbname = v
     else: dbconfig[k] = v
 

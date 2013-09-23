@@ -90,8 +90,8 @@ class Application(threading.Thread):
 
         # Setup accounts interface
         import accounts
-        __import__('app.accounts.' + self.getConfigItem('app','accountsModule') )
-        self.accounts = getattr(accounts, self.getConfigItem('app','accountsModule')).interface()
+        __import__('vcube.accounts.' + self.getConfigItem('vcube','accountsModule') )
+        self.accounts = getattr(accounts, self.getConfigItem('vcube','accountsModule')).interface()
                     
         threading.Thread.__init__(self)
         

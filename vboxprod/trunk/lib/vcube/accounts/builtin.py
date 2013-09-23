@@ -1,8 +1,9 @@
 
 import os, sys
 
-from app.models import AuthUser, User, Group
-from app.utils import genhash
+from vcube.models import AuthUser, User, Group
+from vcube.utils import genhash
+
 import pprint
 
 CAPABILITIES = [

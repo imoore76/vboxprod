@@ -8,6 +8,8 @@ import socket
 import SocketServer
 import json
 
+import pprint
+
 import logging, logging.config
 logging.config.fileConfig("logging.conf")
 logger = logging.getLogger('connector')
@@ -3989,7 +3991,6 @@ class vboxEventListener(threading.Thread):
         self.eventSource = eventSource
         self.eventListQueue = eventListQueue
         
-        
         self.listener = self.eventSource.createListener()
         self.eventSource.registerListener(self.listener, vboxSubscribeEventList, False)
         self.registered = True
@@ -4019,6 +4020,8 @@ class vboxEventListener(threading.Thread):
         try:
 
             eventList = []
+            
+            logger.debug("vboxEventListener %s running" %(self.listenerId,))
             
             while self.running:
                 
@@ -4570,7 +4573,7 @@ def main(argv = sys.argv):
         RPC Server setup / startup
     """
     # Port 0 means to select an arbitrary unused port
-    HOST, PORT = "localhost", 11033
+    HOST, PORT = "127.0.0.1", 11033
     rpcServer = RPCServer((HOST, PORT), RPCRequestHandler)
     ip, port = rpcServer.server_address
 
@@ -4603,61 +4606,71 @@ def main(argv = sys.argv):
     """
         Main loop
     """
-    while running:
+    try:
+        while running:
+            
+            # We'll exit when the rpc server dies
+            if not rpcServer_thread.isAlive():
+                logger.critical("RPCServer died. Exiting ..")
+                running = False
+                continue
+                        
+            # Create event listener - this must happen 
+            # in the main thread
+            if not listenerPool.isVboxAlive():
+                logger.critical("vboxEventListenerPool died. Exiting...")
+                running = False
+                continue
+                
+            """
+                Get events from incoming queue (populated by listenerPool)
+                enrich them and place them in the outgoing queue (eventServer)
+            """
+            eventList = {}
+            while not incomingQueue.empty():
+                
+                event = incomingQueue.get(False)
+                
+                if event:
+                    
+                    eventList[event['dedupId']] = event
+                    
+                    # Subscribe to any machines that are running
+                    if event['eventType'] == 'OnMachineStateChanged' and event['state'] == 'Running':
+                        
+                        try:
+                            machine = vbox.findMachine(event['machineId'])
+                            session = vboxMgr.mgr.getSessionObject(vbox)
+                            machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+                            listenerPool.add(event['machineId'], session.console.eventSource)
+                            
+                        except Exception as e:
+                            logger.exception(str(e))
+                            
+                        finally:
+                            session.unlockMachine()
         
-        # We'll exit when the rpc server dies
-        if not rpcServer_thread.isAlive():
-            logger.critical("RPC server died. Exiting ..")
-            running = False
-            continue
-                    
-        # Create event listener - this must happen 
-        # in the main thread
-        if not listenerPool.isVboxAlive():
-            logger.critical("Listener pool died. Exiting...")
-            running = False
-            continue
-            
-        """
-            Get events from incoming queue (populated by listenerPool)
-            enrich them and place them in the outgoing queue (eventServer)
-        """
-        eventList = {}
-        while not incomingQueue.empty():
-            
-            event = incomingQueue.get(False)
-            
-            if event:
-                
-                eventList[event['dedupId']] = event
-                
-                # Subscribe to any machines that are running
-                if event['eventType'] == 'OnMachineStateChanged' and event['state'] == 'Running':
-                    
-                    try:
-                        machine = vbox.findMachine(event['machineId'])
-                        session = vboxMgr.mgr.getSessionObject(vbox)
-                        machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
-                        listenerPool.add(event['machineId'], session.console.eventSource)
-                        
-                    except Exception as e:
-                        logger.exception(str(e))
-                        
-                    finally:
-                        session.unlockMachine()
+                    incomingQueue.task_done()
     
-                incomingQueue.task_done()
+            if len(eventList):
+                enrichEvents(eventList)
+                
+            for e in eventList.values():
+                eventlogger.debug("Event %s" %(e,))
+                outgoingQueue.put(e)
+                
+            # only sleep if we didn't have events
+            if not len(eventList):
+                
+                try:
+                    time.sleep(0.2)
+                    
+                except IOError:
+                    #assume interupt and stop
+                    running = False
 
-        if len(eventList):
-            enrichEvents(eventList)
-            
-        for e in eventList.values():
-            eventlogger.debug("Got event %s" %(e,))
-            outgoingQueue.put(e)
-            
-        # only sleep if we didn't have events
-        if not len(eventList):
-            time.sleep(0.5)
+    except Exception as e:
+        logger.exception(str(e))
         
     """
         Shutdown the listener pool

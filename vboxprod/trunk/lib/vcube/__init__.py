@@ -2,9 +2,10 @@ import sys
 import json
 import os, sys, ConfigParser, threading, time
 import MySQLdb
+import pprint
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('vcube')
 
 from vboxconnectorclient import vboxRPCEventListener
 
@@ -169,16 +170,23 @@ class Application(threading.Thread):
             'message' : message
         })
         
+        try:
+            c = Connector.get(Connector.id == int(cid) and Connector.status > -1)
+            c.status = state
+            c.status_text = message
+            c.save()
+            
+        except Connector.DoesNotExist:
+            pass
         
-        c = Connector.get(Connector.id == int(cid))
-        c.status = state
-        c.status_text = message
-        c.save()
+        except Exception as e:
+            logger.exception(e)
+            
         
     def addConnector(self, connector):
         """
         Connect to a vbox connector server and get events
-        """
+        """        
         self.eventListenersLock.acquire(True)
         try:
             if self.running:
@@ -193,9 +201,20 @@ class Application(threading.Thread):
             Connector changed during runtime
         """
         cid = str(connector['id'])
+        
         if self.eventListeners.get(cid, None) and self.eventListeners[cid].server['location'] != connector['location']:
+            """ Updated location """
             self.removeConnector(cid)
             self.addConnector(connector)
+            
+        elif int(connector['status']) == -1 and self.eventListeners.get(cid, None):
+            """ disabled """
+            self.removeConnector(cid)
+        
+        elif int(connector['status']) == 0 and not self.eventListeners.get(cid, None):
+            """ enabled """
+            self.addConnector(connector)
+        
             
     def removeConnector(self, cid):
         """
@@ -215,7 +234,7 @@ class Application(threading.Thread):
         self.running = True
         
         # Add connectors
-        for c in list(Connector.select().dicts()):
+        for c in list(Connector.select().where(Connector.status > -1).dicts()):
             self.addConnector(c)
 
         

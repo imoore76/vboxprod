@@ -131,7 +131,7 @@ class vboxRPCEventListener(threading.Thread):
                         
         except Exception as e:
 
-            logger.exception(str(e))
+            logger.exception("%s %s" %(self.server['location'], str(e)))
 
             # Error state
             self.onStateChange(self.id, self.STATE_ERROR, str(e))
@@ -196,7 +196,8 @@ class vboxRPCEventListener(threading.Thread):
             # assume disconnect by server
             except Exception as e:
                 
-                logger.exception(str(e))
+                if self.file is not None:
+                    logger.exception(str(e))
                 
                 # Error state
                 if self.running:

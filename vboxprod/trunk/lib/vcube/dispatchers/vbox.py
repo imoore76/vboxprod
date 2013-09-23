@@ -1,5 +1,6 @@
 
 from vcube.dispatchers import dispatcher_parent, jsonout
+import pprint
 
 vboxFunctionList = []
 
@@ -10,7 +11,17 @@ for f in dir(vboxConnector):
 
 class dispatcher(dispatcher_parent):
     
+    def __init__(self):
+        for fn in vboxFunctionList:
+            def callback(*args, **kwargs):
+                self.vboxAction(fn, **kwargs)
+            setattr(self, fn, callback)
+            setattr(self, fn + '.exposed', True)
+            
+        
     def __getattr__(self, name):
+        pprint.pprint(dir(self))
+        
         print "attr: %s" %(name,)
         if name in vboxFunctionList:
             setattr(self, name + '.exposed', True)
@@ -23,12 +34,9 @@ class dispatcher(dispatcher_parent):
         
     @jsonout
     def getStuff(self, *args, **kwargs):
-        return "asdf"
-    
+        return "asdf"    
     getStuff.exposed = True
     
-    def getMedia(self, *args, **kwargs):
-        return "asdf"
 
 # Monkeypatch self
 """

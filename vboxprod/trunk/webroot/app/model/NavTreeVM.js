@@ -1,4 +1,4 @@
-Ext.define('vboxprod.model.NavTreeVM', {
+Ext.define('vcube.model.NavTreeVM', {
     extend: 'Ext.data.Model',
     fields: [ 'id', 'name', 'state', 'OSTypeId', 'group_id', 'sessionState', 'customIcon' ],
     belongsTo: 'NavTreeGroup',

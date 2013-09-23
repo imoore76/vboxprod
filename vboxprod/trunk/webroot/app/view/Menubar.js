@@ -1,4 +1,4 @@
-Ext.define('vboxprod.view.Menubar', {
+Ext.define('vcube.view.Menubar', {
 	extend: 'Ext.panel.Panel',
     alias: 'widget.Menubar',
     items: [{
@@ -9,12 +9,12 @@ Ext.define('vboxprod.view.Menubar', {
 	    	   'xtype':'button',
 	    	   'text':'File',
 	    		'menu' : [
-	    		          vboxprodActions.global.vmm,
+	    		          vcubeActions.global.vmm,
 	    		          '-',
-	    		          vboxprodActions.global.importappliance,
-	    		          vboxprodActions.global.exportappliance,
+	    		          vcubeActions.global.importappliance,
+	    		          vcubeActions.global.exportappliance,
 	    		          '-',
-	    		          vboxprodActions.global.preferences,
+	    		          vcubeActions.global.preferences,
 	    		          '-',
 	    		          {text:'Logout',itemId:'logout'}
 	    		]

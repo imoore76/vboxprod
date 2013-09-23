@@ -1,7 +1,7 @@
 /* 
  * Login form controller
  */
-Ext.define('vboxprod.controller.Login', {
+Ext.define('vcube.controller.Login', {
 	
     extend: 'Ext.app.Controller',
     

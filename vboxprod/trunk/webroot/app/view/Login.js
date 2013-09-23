@@ -3,7 +3,7 @@
  * 
  */
 
-Ext.define('vboxprod.view.Login', {
+Ext.define('vcube.view.Login', {
 	
 
     extend: 'Ext.window.Window',

@@ -1,7 +1,7 @@
 /*
  * Group Tabs Controller
  */
-Ext.define('vboxprod.controller.GroupTabs', {
+Ext.define('vcube.controller.GroupTabs', {
     extend: 'Ext.app.Controller',
     
     // Hold nav tree ref so that we only have to get this once

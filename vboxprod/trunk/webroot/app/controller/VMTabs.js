@@ -1,7 +1,7 @@
 /*
  * VM Tabs Controller
  */
-Ext.define('vboxprod.controller.VMTabs', {
+Ext.define('vcube.controller.VMTabs', {
     extend: 'Ext.app.Controller',
     
     models: ['Snapshot'],

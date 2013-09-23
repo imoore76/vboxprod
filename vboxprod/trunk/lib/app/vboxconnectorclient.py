@@ -6,24 +6,25 @@ class vboxAction():
 
 class eventListener(threading.Thread):
     
-    STATE_DISCONNECTED = -1
+    STATE_DISCONNECTED = 0
     STATE_RUNNING = 5
     STATE_ERROR = 20
     
+    id = None
     server = None
     
-    id = None
-    
-    connected = False
+    pollInterval = 0.2
     
     onEvent = None
     onStateChange = None
     
     sock = None
-    
     file = None
     
+    connected = False
     running = False
+    
+    connectionRetryInterval = 10
         
     def __init__(self, server, onEvent, onStateChange):
         
@@ -43,30 +44,24 @@ class eventListener(threading.Thread):
         
     def connect(self):
         
-        print "here in connect"
-        sys.stdout.flush()
         
         try:
             url = urlparse(self.server['location'])
             
         except Exception as e:
-            pprint.pprint(e)
-            print "Failed to parse server location %s" %(self.server['location'])
-            sys.stdout.flush()
-            
-            # Error state
-            self.onStateChange(self.id, self.STATE_ERROR, str(e))
-            
+
+            self.disconnect()            
             self.stop()
+
+            # Error state
+            self.onStateChange(self.id, self.STATE_ERROR, "Failed to parse server location %s" %(self.server['location']))
+            
             return
         
         try:
             
-            print "Trying to connect to %s:%s" %(url.hostname, url.port)
-            sys.stdout.flush()
             self.sock.connect((url.hostname, url.port))
-            print "Connected..."
-            sys.stdout.flush()
+            
             self.file = self.sock.makefile()
             self.connected = True
             
@@ -78,19 +73,21 @@ class eventListener(threading.Thread):
             # Error state
             self.onStateChange(self.id, self.STATE_ERROR, str(e))
 
-            pprint.pprint(e)
             
     def disconnect(self):
-        print "here in disconnect"
-        sys.stdout.flush()
+
         if self.sock:
             self.sock.close()
+        
         self.connected = False
         self.sock = None
     
     def stop(self):
         self.running = False
         self.disconnect()
+        
+        self.onStateChange(self.id, self.STATE_DISCONNECTED)
+
         
     def run(self):
         
@@ -105,7 +102,7 @@ class eventListener(threading.Thread):
                 if not self.running: break
                 
                 if not self.connected:
-                    for i in range(0,10):
+                    for i in range(0,self.connectionRetryInterval):
                         if self.running: time.sleep(i)
                         else: break
             
@@ -114,11 +111,13 @@ class eventListener(threading.Thread):
             
             # assume disconnect by server
             except Exception as e:
-                self.disconnect()
                 
                 # Error state
-                self.onStateChange(self.id, self.STATE_ERROR, '')
+                if self.running:
+                    self.onStateChange(self.id, self.STATE_ERROR, 'Connection closed')
 
+                self.disconnect()
+                
                 break
                 
             if response.strip() == '': continue
@@ -131,6 +130,6 @@ class eventListener(threading.Thread):
 
             self.onEvent(message)
             
-            time.sleep(0.2)
+            time.sleep(self.pollInterval)
         
         self.disconnect()

@@ -1,4 +1,4 @@
-Ext.define('vboxprod.model.machine', {
+Ext.define('vcube.model.machine', {
     extend: 'Ext.data.Model',
     fields: ['id', 'name', 'artist', 'album', 'played_date', 'station'],
  

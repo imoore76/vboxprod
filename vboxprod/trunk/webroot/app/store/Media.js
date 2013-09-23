@@ -1,6 +1,6 @@
-Ext.define('vboxprod.store.Config', {
+Ext.define('vcube.store.Config', {
     extend: 'Ext.data.Store',
-    model: 'vboxprod.model.Config',
+    model: 'vcube.model.Config',
     data: {id:'asdf',username:'ian',valid:true,admin:true},
     init: function(){
     	//console.log("init Config store");

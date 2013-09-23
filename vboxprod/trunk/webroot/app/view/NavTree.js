@@ -1,7 +1,7 @@
  /* 
  * view/NavTree
  */
-Ext.define('vboxprod.view.NavTree', {
+Ext.define('vcube.view.NavTree', {
     extend: 'Ext.tree.Panel',
     alias: 'widget.NavTree',
     width: 300,

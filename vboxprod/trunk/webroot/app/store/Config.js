@@ -1,4 +1,4 @@
-Ext.define('vboxprod.store.Config', {
+Ext.define('vcube.store.Config', {
     extend: 'Ext.data.Store',
     fields: [],
     init: function(){

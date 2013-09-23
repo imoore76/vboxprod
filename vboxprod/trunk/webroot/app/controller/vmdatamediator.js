@@ -1,4 +1,4 @@
-Ext.define('vboxprod.controller.vmdatamediator', {
+Ext.define('vcube.controller.vmdatamediator', {
 	
     extend: 'Ext.app.Controller',
 

@@ -1,14 +1,14 @@
 /**
  * Main viewport
  */
-Ext.define('vboxprod.view.Viewport', {
+Ext.define('vcube.view.Viewport', {
     extend: 'Ext.container.Viewport',
     
     requires: [
-           'vboxprod.view.ProgressOps',
-           'vboxprod.view.MainPanel',
-           'vboxprod.view.NavTree',
-           'vboxprod.view.Menubar',
+           'vcube.view.ProgressOps',
+           'vcube.view.MainPanel',
+           'vcube.view.NavTree',
+           'vcube.view.Menubar',
    ],
    
    layout: 'border',

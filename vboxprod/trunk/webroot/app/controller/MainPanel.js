@@ -1,7 +1,7 @@
 /*
  * Main Panel Controller
  */
-Ext.define('vboxprod.controller.MainPanel', {
+Ext.define('vcube.controller.MainPanel', {
     extend: 'Ext.app.Controller',
     
     // View references

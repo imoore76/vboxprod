@@ -1,5 +1,5 @@
 /* Define Actions */
-var vboxprodActions = {
+var vcubeActions = {
    'global' : {
       'vmm': {'text':'Virtual Media Manager...','icon':'images/vbox/diskimage_16px.png'},
       'importappliance' : {'text':'Import Appliance...','icon':'images/vbox/import_16px.png'},
@@ -12,20 +12,20 @@ var vboxprodActions = {
 Ext.Loader.setConfig({
 	enabled	: true,
 	paths	: {
-		vboxprod :"app"
+		vcube :"app"
 	}
 });
 
-Ext.require('vboxprod.view.Login');
-Ext.require('vboxprod.AppJsonReader');
+Ext.require('vcube.view.Login');
+Ext.require('vcube.AppJsonReader');
 
  */
 Ext.application({
 	
-    name: 'vboxprod',
+    name: 'vcube',
     autoCreateViewport: true,
     
-    requires: ['vboxprod.AppJsonReader'],
+    requires: ['vcube.AppJsonReader'],
     
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
     
@@ -159,7 +159,7 @@ Ext.application({
     // Show login box
     showLogin: function() {
 
-    	Ext.create('vboxprod.view.Login', {id: 'login_form'}).show();
+    	Ext.create('vcube.view.Login', {id: 'login_form'}).show();
     	
     },
         

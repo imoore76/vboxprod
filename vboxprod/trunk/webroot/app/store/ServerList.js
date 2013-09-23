@@ -1,10 +1,10 @@
 /*
  * store/NavTree
  */
-Ext.define('vboxprod.store.ServerList', {
+Ext.define('vcube.store.ServerList', {
     extend: 'Ext.data.Store',
 	autoLoad: false,
-	model: 'vboxprod.model.VboxServer',
+	model: 'vcube.model.VboxServer',
 	proxy: {
         type: 'ajax',
         url : 'ajax.php',

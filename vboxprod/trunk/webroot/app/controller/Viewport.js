@@ -1,7 +1,7 @@
 /*
  * Main Panel Controller
  */
-Ext.define('vboxprod.controller.Viewport', {
+Ext.define('vcube.controller.Viewport', {
     extend: 'Ext.app.Controller',
     
     laodMask: null,

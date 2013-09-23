@@ -1,4 +1,4 @@
-Ext.define('vboxprod.view.GroupTabs', {
+Ext.define('vcube.view.GroupTabs', {
     extend: 'Ext.tab.Panel',
     alias: 'widget.GroupTabs',
     defaults: {

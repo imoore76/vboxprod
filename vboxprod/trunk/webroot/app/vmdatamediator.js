@@ -22,7 +22,7 @@ var vboxVMDataMediator = {
 	/* Holds Basic VM data */
 	/*
 	vmData : Ext.create('Ext.data.Store', {
-		model:'vboxprod.data.vmdata'
+		model:'vcube.data.vmdata'
 	}),
 	*/
 	

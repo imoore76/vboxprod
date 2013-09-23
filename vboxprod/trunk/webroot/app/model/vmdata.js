@@ -1,4 +1,4 @@
-Ext.define('vboxprod.model.vmdata', {
+Ext.define('vcube.model.vmdata', {
     extend: 'Ext.data.Model',
     fields: [ 'id', 'name', 'state', 'OSTypeId', 'owner', 'group', {name:'lastStateChange', type: 'int'},
               { name: 'currentStateModified', type: 'int'}, 'sessionState', 'currentSnapshotName',

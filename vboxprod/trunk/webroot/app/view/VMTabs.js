@@ -3,7 +3,7 @@
  * 
  */
 
-Ext.define('vboxprod.view.VMTabs', {
+Ext.define('vcube.view.VMTabs', {
     extend: 'Ext.tab.Panel',
     alias: 'widget.VMTabs',
     defaults: {
@@ -686,7 +686,7 @@ Ext.define('vboxprod.view.VMTabs', {
     	    lines: true,
     	    store: new Ext.data.TreeStore({
     	        
-    	    	model: 'vboxprod.model.Snapshot',
+    	    	model: 'vcube.model.Snapshot',
     	        autoLoad: false,
     	        
     	        listeners: {

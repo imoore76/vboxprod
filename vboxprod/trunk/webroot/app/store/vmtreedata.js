@@ -1,6 +1,6 @@
-Ext.define('vboxprod.store.NavTreeVM', {
+Ext.define('vcube.store.NavTreeVM', {
     extend: 'Ext.data.Store',
-    model: 'vboxprod.model.NavTreeVM',
+    model: 'vcube.model.NavTreeVM',
     belongsTo: 'NavTreeGroup',
     init: function(){
     	//console.log("init NavTreeVM model");

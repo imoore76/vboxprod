@@ -1,11 +1,11 @@
-Ext.define('vboxprod.view.MainPanel', {
+Ext.define('vcube.view.MainPanel', {
 	
     extend: 'Ext.panel.Panel',
     
     requires: [           
-      'vboxprod.view.Welcome',
-      'vboxprod.view.GroupTabs',
-      'vboxprod.view.VMTabs'
+      'vcube.view.Welcome',
+      'vcube.view.GroupTabs',
+      'vcube.view.VMTabs'
     ],
     
     alias: 'widget.MainPanel',

@@ -1,4 +1,4 @@
-Ext.define('vboxprod.view.VMToolbar', {
+Ext.define('vcube.view.VMToolbar', {
 	extend: 'Ext.panel.Panel',
     alias: 'widget.VMToolbar',
     tbar : [

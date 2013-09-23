@@ -1,7 +1,7 @@
 /*
  * store/NavTree
  */
-Ext.define('vboxprod.store.NavTreeGroups', {
+Ext.define('vcube.store.NavTreeGroups', {
     extend: 'Ext.data.TreeStore',
 	autoLoad: false,
 	remoteSort: true,

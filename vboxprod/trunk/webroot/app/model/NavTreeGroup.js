@@ -1,10 +1,10 @@
-Ext.define('vboxprod.model.NavTreeGroup', {
+Ext.define('vcube.model.NavTreeGroup', {
     extend: 'Ext.data.TreeModel',
     fields: [ 'id', 'name', 'description', 'location', {name: 'parent_id', type: 'int'}, {name: 'order', type: 'int'}],
     
     associations: [{
         type: 'hasMany',
-        model: 'vboxprod.model.NavTreeGroup',
+        model: 'vcube.model.NavTreeGroup',
         primaryKey: 'id',
         foreignKey: 'parent_id',
         autoLoad: true,

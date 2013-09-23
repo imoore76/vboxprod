@@ -1,7 +1,7 @@
 /*
  * NavTree Controller
  */
-Ext.define('vboxprod.controller.NavTree', {
+Ext.define('vcube.controller.NavTree', {
     extend: 'Ext.app.Controller',
     
     // VMs and Groups

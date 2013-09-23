@@ -1,7 +1,7 @@
 /*
  * NavTree Controller
  */
-Ext.define('vboxprod.controller.Menubar', {
+Ext.define('vcube.controller.Menubar', {
     extend: 'Ext.app.Controller',
     
     // Hold nav tree ref so that we only have to get this once

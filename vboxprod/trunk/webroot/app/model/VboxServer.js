@@ -1,4 +1,4 @@
-Ext.define('vboxprod.model.VboxServer', {
+Ext.define('vcube.model.VboxServer', {
     extend: 'Ext.data.Model',
 	fields: [
 	   {name:'id', type:'int'},

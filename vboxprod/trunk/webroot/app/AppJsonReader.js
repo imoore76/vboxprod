@@ -1,4 +1,4 @@
-Ext.define('vboxprod.AppJsonReader', {
+Ext.define('vcube.AppJsonReader', {
     extend: 'Ext.data.reader.Json',
     alias: 'reader.AppJsonReader',
     responseData: null,

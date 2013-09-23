@@ -1,6 +1,6 @@
-Ext.define('vboxprod.store.vmdata', {
+Ext.define('vcube.store.vmdata', {
     extend: 'Ext.data.Store',
-    model: 'vboxprod.model.vmdata',
+    model: 'vcube.model.vmdata',
     init: function(){
     	//console.log("init vmdata model");
     }

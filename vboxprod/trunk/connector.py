@@ -1,13 +1,17 @@
 
 import sys, os, time, traceback, threading, Queue
 import signal
-import pprint
 import ConfigParser
 import math
 
 import socket
 import SocketServer
 import json
+
+import logging, logging.config
+logging.config.fileConfig("logging.conf")
+logger = logging.getLogger('connector')
+eventlogger = logging.getLogger('connector.events')
 
 
 from vboxapi import VirtualBoxManager, PlatformXPCOM
@@ -21,7 +25,37 @@ sys.path.insert(0,os.path.dirname(os.path.abspath(__file__))+'/lib')
 vboxMgr = VirtualBoxManager(None, None)
 vbox = vboxMgr.vbox
 
-
+vboxSubscribeEventList = [ vboxMgr.constants.VBoxEventType_OnMachineStateChanged,
+    vboxMgr.constants.VBoxEventType_OnMachineDataChanged,
+    vboxMgr.constants.VBoxEventType_OnExtraDataChanged,
+    vboxMgr.constants.VBoxEventType_OnMediumRegistered,
+    vboxMgr.constants.VBoxEventType_OnMachineRegistered,
+    vboxMgr.constants.VBoxEventType_OnSessionStateChanged,
+    vboxMgr.constants.VBoxEventType_OnSnapshotTaken,
+    vboxMgr.constants.VBoxEventType_OnSnapshotDeleted,
+    vboxMgr.constants.VBoxEventType_OnSnapshotChanged,
+    vboxMgr.constants.VBoxEventType_OnAdditionsStateChanged,
+    vboxMgr.constants.VBoxEventType_OnNetworkAdapterChanged,
+    vboxMgr.constants.VBoxEventType_OnSerialPortChanged,
+    vboxMgr.constants.VBoxEventType_OnParallelPortChanged,
+    vboxMgr.constants.VBoxEventType_OnStorageControllerChanged,
+    vboxMgr.constants.VBoxEventType_OnMediumChanged,
+    vboxMgr.constants.VBoxEventType_OnVRDEServerChanged,
+    vboxMgr.constants.VBoxEventType_OnUSBControllerChanged,
+    vboxMgr.constants.VBoxEventType_OnUSBDeviceStateChanged,
+    vboxMgr.constants.VBoxEventType_OnSharedFolderChanged,
+    vboxMgr.constants.VBoxEventType_OnRuntimeError,
+    vboxMgr.constants.VBoxEventType_OnCPUChanged,
+    vboxMgr.constants.VBoxEventType_OnVRDEServerInfoChanged,
+    vboxMgr.constants.VBoxEventType_OnEventSourceChanged,
+    vboxMgr.constants.VBoxEventType_OnCPUExecutionCapChanged,
+    vboxMgr.constants.VBoxEventType_OnNATRedirect,
+    vboxMgr.constants.VBoxEventType_OnHostPCIDevicePlug,
+    vboxMgr.constants.VBoxEventType_OnVBoxSVCAvailabilityChanged,
+    vboxMgr.constants.VBoxEventType_OnBandwidthGroupChanged,
+    vboxMgr.constants.VBoxEventType_OnGuestMonitorChanged,
+    vboxMgr.constants.VBoxEventType_OnStorageDeviceChanged
+ ]
 
 """ Helpers """
 
@@ -68,6 +102,137 @@ def _machineGetBaseInfo(machine):
 
 
 """
+    Format vbox event
+"""
+def formatEvent(data, eventDataObject):
+    
+    if data['eventType'] == 'OnMachineStateChanged':
+                    
+        data['machineId'] = eventDataObject.machineId
+        data['state'] = vboxEnumToString("MachineState", eventDataObject.state)
+        data['dedupId'] = data['dedupId'] + '-' + data['machineId']
+        
+    elif data['eventType'] == 'OnMachineDataChanged':
+        
+        data['machineId'] = eventDataObject.machineId
+        data['dedupId'] = data['dedupId'] + '-' + data['machineId']
+
+    elif data['eventType'] == 'OnExtraDataCanChange' or data['eventType'] == 'OnExtraDataChanged':
+        
+        data['machineId'] = eventDataObject.machineId
+        data['key'] = eventDataObject.key
+        data['value'] = eventDataObject.value
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['key']
+            
+    elif data['eventType'] == 'OnMediumRegistered':
+        data['machineId'] = data['sourceId']
+        data['mediumId'] = eventDataObject.mediumId
+        data['registered'] = eventDataObject.registered
+        data['dedupId'] = data['dedupId'] +  '-' + data['mediumId']
+            
+    elif data['eventType'] == 'OnMachineRegistered':
+        data['machineId'] = eventDataObject.machineId
+        data['registered'] = eventDataObject.registered
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
+            
+    elif data['eventType'] == 'OnSessionStateChanged':
+        data['machineId'] = eventDataObject.machineId
+        data['state'] = vboxEnumToString("SessionState", eventDataObject.state)
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
+            
+    elif data['eventType'] == 'OnSnapshotTaken' or data['eventType'] == 'OnSnapshotDeleted' or data['eventType'] == 'OnSnapshotChanged':
+        
+        data['machineId'] = eventDataObject.machineId
+        
+        # This fails sometimes for seemingly no reason at all
+        try:
+            data['snapshotId'] = eventDataObject.snapshotId
+        except:
+            data['snapshotId'] = ''
+            
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['snapshotId']
+            
+    elif data['eventType'] == 'OnGuestPropertyChanged':
+
+        data['machineId'] = eventDataObject.machineId
+        data['name'] = eventDataObject.name
+        data['value'] = eventDataObject.value
+        data['flags'] = eventDataObject.flags
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['name']
+
+           
+    elif data['eventType'] == 'OnAdditionsStateChanged':
+        data['machineId'] = eventDataObject.machineId
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
+        
+    elif data['eventType'] == 'OnCPUChanged':
+        data['machineId'] = data['sourceId']
+        data['cpu'] = eventDataObject.cpu
+        data['add'] = eventDataObject.add
+        data['dedupId'] = data['dedupId'] +  '-' + str(data['cpu'])
+            
+    # Same end-result as network adapter changed
+    elif data['eventType'] == 'OnNATRedirect':
+        data['machineId'] = data['sourceId']
+        data['eventType'] = 'OnNetworkAdapterChanged'
+        data['networkAdapterSlot'] = eventDataObject.slot
+        data['dedupId'] = self.listenerId + '-OnNetworkAdapterChanged-' + str(data['networkAdapterSlot'])
+            
+    elif data['eventType'] == 'OnNetworkAdapterChanged':
+        data['machineId'] = data['sourceId']
+        data['networkAdapterSlot'] = eventDataObject.networkAdapter.slot
+        data['dedupId'] = data['dedupId'] +  '-' + str(data['networkAdapterSlot'])
+            
+    elif data['eventType'] == 'OnStorageControllerChanged':
+        data['machineId'] = eventDataObject.machineId
+        data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
+            
+    elif data['eventType'] == 'OnMediumChanged':
+        data['machineId'] = data['sourceId']
+        data['controller'] = eventDataObject.mediumAttachment.controller
+        data['port'] = eventDataObject.mediumAttachment.port
+        data['device'] = eventDataObject.mediumAttachment.device
+        try:
+            data['medium'] = eventDataObject.mediumAttachment.medium.id
+        except:
+            data['medium'] = ''
+        data['dedupId'] = data['dedupId'] +  '-' + str(data['controller']) + '-' + str(data['port']) + '-' + str(data['device'])
+        
+    # Generic machine changes that should query IMachine
+    elif data['eventType'] in ['OnVRDEServerChanged','OnUSBControllerChanged','OnVRDEServerInfoChanged']:
+        data['machineId'] = data['sourceId']
+     
+    elif data['eventType'] == 'OnSharedFolderChanged':
+        data['machineId'] = data['sourceId']
+        data['scope'] = vboxEnumToString("Scope", eventDataObject.scope)
+
+    elif data['eventType'] == 'OnCPUExecutionCapChanged':
+        data['machineId'] = data['sourceId']
+        data['executionCap'] = eventDataObject.executionCap
+    
+
+    # Notification when a USB device is attached to or detached from the virtual USB controller
+    elif data['eventType'] == 'OnUSBDeviceStateChanged':
+        data['machineId'] = data['sourceId']
+        data['deviceId'] = eventDataObject.device.id
+        data['attached'] = eventDataObject.attached
+        data['dedupId'] = data['dedupId'] +  '-' + data['deviceId']
+        
+    # Machine execution error
+    elif data['eventType'] == 'OnRuntimeError':
+        data['machineId'] = eventDataObject.machineId
+        data['message'] = eventDataObject.message
+        
+    # Notification when a storage device is attached or removed
+    elif data['eventType'] == 'OnStorageDeviceChanged':
+        data['machineId'] = eventDataObject.machineId
+        data['storageDevice'] = eventDataObject.storageDevice
+        data['removed'] = eventDataObject.removed
+        data['dedupId'] = data['dedupId'] + str(eventDataObject.storageDevice)
+           
+    return data             
+
+"""
     Enrich vbox events with relevant data
 """
 def enrichEvents(eventList):
@@ -86,33 +251,50 @@ def enrichEvents(eventList):
             
             event = eventList[ek]
             
-            # Close existing session
-            if session and lastMachineId and event.get('machineId','') != lastMachineId:
-                
-                session.unlockMachine()
-                session = None
-                
-            elif event.get('machineId','') and not session:
-                
-                machine = vbox.findMachine(event['machineId'])
-                session = vboxMgr.mgr.getSessionObject(vbox)
-                machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
-                
             # Network adapter changed            
             if event['eventType'] == 'OnNetworkAdapterChanged':
     
+                # Unlock previous session?
+                if session and lastMachineId != event['machineId']:
+                    
+                    session.unlockMachine()
+                    session = None
+                    
+                # Get machine?
+                if not machine or (machine and machine.id != event['machineId']):
+                    machine = vbox.findMachine(event['machineId'])
+
+                if not session:
+                    session = vboxMgr.mgr.getSessionObject(vbox)
+                    machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+
+                    
                 try:
                     eventList[ek]['enrichmentData'] = vboxConnector._machineGetNetworkAdapters(session.machine, event['networkAdapterSlot'])
                 
-                except:
-                    #eventList[ek]['enrichmentData'] = array(e.getMessage())
-                    traceback.print_exc()
+                except Exception as e:
+                    logger.exception(str(e))
                
                     
             
             
             # OnVRDEServerChanged
             elif event['eventType'] == 'OnVRDEServerChanged':
+                
+                # Unlock previous session?
+                if session and lastMachineId != event['machineId']:
+                    
+                    session.unlockMachine()
+                    session = None
+                    
+                # Get machine?
+                if not machine or (machine and machine.id != event['machineId']):
+                    machine = vbox.findMachine(event['machineId'])
+
+                if not session:
+                    session = vboxMgr.mgr.getSessionObject(vbox)
+                    machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+
                 
                 try:
                     
@@ -128,19 +310,32 @@ def enrichEvents(eventList):
                             'authTimeout' : vrde.authTimeout
                             } if vrde else None
                             
-                    except:
-                        # Just unlock the machine
-                        #eventList[ek]['enrichmentData'] = array(e.getMessage())
-                        traceback.print_exc()
+                    except Exception as e:
+                        logger.exception(str(e))
                         
-                except:
-                    #eventList[ek]['enrichmentData'] = array(e.getMessage())
-                    traceback.print_exc()
+                except Exception as e:
+                    
+                    logger.exception(str(e))
                 
                 
             # VRDE server info changed. Just need port and enabled/disabled
             elif event['eventType'] == 'OnVRDEServerInfoChanged':
                 
+                
+                # Unlock previous session?
+                if session and lastMachineId != event['machineId']:
+                    
+                    session.unlockMachine()
+                    session = None
+                    
+                # Get machine?
+                if not machine or (machine and machine.id != event['machineId']):
+                    machine = vbox.findMachine(event['machineId'])
+
+                if not session:
+                    session = vboxMgr.mgr.getSessionObject(vbox)
+                    machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+
                 try:
                         
                     try:
@@ -162,11 +357,18 @@ def enrichEvents(eventList):
                 if event.get('registered', None) != False:
                 
                     # Get same data that is in VM list data
+                    if not machine or (machine and machine.id != event['machineId']):
+                        machine = vbox.findMachine(event['machineId'])
+                        
                     eventList[ek]['enrichmentData'] = _machineGetBaseInfo(machine)
                 
         
             # Update lastStateChange on OnMachineStateChange events
             elif event['eventType'] == 'OnMachineStateChanged':
+                
+                if not machine or (machine and machine.id != event['machineId']):
+                    machine = vbox.findMachine(event['machineId'])
+
                 try:
                     eventList[ek]['enrichmentData'] = {
                         'lastStateChange' : str(machine.lastStateChange/1000),
@@ -179,7 +381,10 @@ def enrichEvents(eventList):
                 
             # enrich with snapshot name and new snapshot count
             elif event['eventType'].startswith('OnSnapshot'):
-                        
+                
+                if not machine or (machine and machine.id != event['machineId']):
+                    machine = vbox.findMachine(event['machineId'])
+
                 try:
                     eventList[ek]['enrichmentData'] = {
                         'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
@@ -189,6 +394,8 @@ def enrichEvents(eventList):
         
                 except:
                     pass
+                
+            lastMachineId = event.get('machineId',None)
      
     # Don't leave open sessions to machines         
     finally:      
@@ -3784,11 +3991,11 @@ class vboxEventListener(threading.Thread):
         
         
         self.listener = self.eventSource.createListener()
-        self.eventSource.registerListener(self.listener, [vboxMgr.constants.VBoxEventType_Any], False)
+        self.eventSource.registerListener(self.listener, vboxSubscribeEventList, False)
         self.registered = True
     
     def shutdown(self):
-        print "vboxEventListener shutting down (%s)" %(threading.current_thread(),)
+        logger.debug("vboxEventListener %s shutting down" %(self.listenerId,))
         self.running = False
         
     def getEventData(self, event):
@@ -3801,138 +4008,12 @@ class vboxEventListener(threading.Thread):
         # Dedup ID is at least listener key ('vbox' or machine id) and event type
         data['dedupId'] = self.listenerId + '-' + data['eventType']
         
-        
-        if data['eventType'] == 'OnMachineStateChanged':
-                        
-            data['machineId'] = eventDataObject.machineId
-            data['state'] = vboxEnumToString("MachineState", eventDataObject.state)
-            data['dedupId'] = data['dedupId'] + '-' + data['machineId']
-            
-        elif data['eventType'] == 'OnMachineDataChanged':
-            
-            data['machineId'] = eventDataObject.machineId
-            data['dedupId'] = data['dedupId'] + '-' + data['machineId']
-
-        elif data['eventType'] == 'OnExtraDataCanChange' or data['eventType'] == 'OnExtraDataChanged':
-            
-            data['machineId'] = eventDataObject.machineId
-            data['key'] = eventDataObject.key
-            data['value'] = eventDataObject.value
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['key']
-                
-        elif data['eventType'] == 'OnMediumRegistered':
-            data['machineId'] = data['sourceId']
-            data['mediumId'] = eventDataObject.mediumId
-            data['registered'] = eventDataObject.registered
-            data['dedupId'] = data['dedupId'] +  '-' + data['mediumId']
-                
-        elif data['eventType'] == 'OnMachineRegistered':
-            data['machineId'] = eventDataObject.machineId
-            data['registered'] = eventDataObject.registered
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
-                
-        elif data['eventType'] == 'OnSessionStateChanged':
-            data['machineId'] = eventDataObject.machineId
-            data['state'] = vboxEnumToString("SessionState", eventDataObject.state)
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
-                
-        elif data['eventType'] == 'OnSnapshotTaken' or data['eventType'] == 'OnSnapshotDeleted' or data['eventType'] == 'OnSnapshotChanged':
-            
-            data['machineId'] = eventDataObject.machineId
-            
-            # This fails sometimes for seemingly no reason at all
-            try:
-                data['snapshotId'] = eventDataObject.snapshotId
-            except:
-                data['snapshotId'] = ''
-                
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['snapshotId']
-                
-        elif data['eventType'] == 'OnGuestPropertyChanged':
-
-            data['machineId'] = eventDataObject.machineId
-            data['name'] = eventDataObject.name
-            data['value'] = eventDataObject.value
-            data['flags'] = eventDataObject.flags
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['name']
-
-               
-        elif data['eventType'] == 'OnAdditionsStateChanged':
-            data['machineId'] = eventDataObject.machineId
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
-            
-        elif data['eventType'] == 'OnCPUChanged':
-            data['machineId'] = data['sourceId']
-            data['cpu'] = eventDataObject.cpu
-            data['add'] = eventDataObject.add
-            data['dedupId'] = data['dedupId'] +  '-' + str(data['cpu'])
-                
-        # Same end-result as network adapter changed
-        elif data['eventType'] == 'OnNATRedirect':
-            data['machineId'] = data['sourceId']
-            data['eventType'] = 'OnNetworkAdapterChanged'
-            data['networkAdapterSlot'] = eventDataObject.slot
-            data['dedupId'] = self.listenerId + '-OnNetworkAdapterChanged-' + str(data['networkAdapterSlot'])
-                
-        elif data['eventType'] == 'OnNetworkAdapterChanged':
-            data['machineId'] = data['sourceId']
-            data['networkAdapterSlot'] = eventDataObject.networkAdapter.slot
-            data['dedupId'] = data['dedupId'] +  '-' + str(data['networkAdapterSlot'])
-                
-        elif data['eventType'] == 'OnStorageControllerChanged':
-            data['machineId'] = eventDataObject.machineId
-            data['dedupId'] = data['dedupId'] +  '-' + data['machineId']
-                
-        elif data['eventType'] == 'OnMediumChanged':
-            data['machineId'] = data['sourceId']
-            data['controller'] = eventDataObject.mediumAttachment.controller
-            data['port'] = eventDataObject.mediumAttachment.port
-            data['device'] = eventDataObject.mediumAttachment.device
-            try:
-                data['medium'] = eventDataObject.mediumAttachment.medium.id
-            except:
-                data['medium'] = ''
-            data['dedupId'] = data['dedupId'] +  '-' + str(data['controller']) + '-' + str(data['port']) + '-' + str(data['device'])
-            
-        # Generic machine changes that should query IMachine
-        elif data['eventType'] in ['OnVRDEServerChanged','OnUSBControllerChanged','OnVRDEServerInfoChanged']:
-            data['machineId'] = data['sourceId']
-         
-        elif data['eventType'] == 'OnSharedFolderChanged':
-            data['machineId'] = data['sourceId']
-            data['scope'] = vboxEnumToString("Scope", eventDataObject.scope)
-
-        elif data['eventType'] == 'OnCPUExecutionCapChanged':
-            data['machineId'] = data['sourceId']
-            data['executionCap'] = eventDataObject.executionCap
-        
-
-        # Notification when a USB device is attached to or detached from the virtual USB controller
-        elif data['eventType'] == 'OnUSBDeviceStateChanged':
-            data['machineId'] = data['sourceId']
-            data['deviceId'] = eventDataObject.device.id
-            data['attached'] = eventDataObject.attached
-            data['dedupId'] = data['dedupId'] +  '-' + data['deviceId']
-            
-        # Machine execution error
-        elif data['eventType'] == 'OnRuntimeError':
-            data['machineId'] = eventDataObject.machineId
-            data['message'] = eventDataObject.message
-            
-        # Notification when a storage device is attached or removed
-        elif data['eventType'] == 'OnStorageDeviceChanged':
-            data['machineId'] = eventDataObject.machineId
-            data['storageDevice'] = eventDataObject.storageDevice
-            data['removed'] = eventDataObject.removed
-            data['dedupId'] = data['dedupId'] + str(eventDataObject.storageDevice)
-                        
-        
-        return data
+        return formatEvent(data, eventDataObject)
 
     
     def run(self):
 
-        print "vboxEventListener Run (%s)" %(threading.current_thread(),)
+        logger.debug("vboxEventListener %s starting" %(self.listenerId,))
         vboxMgr.initPerThread()
         
         try:
@@ -3944,13 +4025,13 @@ class vboxEventListener(threading.Thread):
                 event = self.eventSource.getEvent(self.listener, 200)
                 
                 if event is not None:
-                    print "Listener got event " + str(event)
-                    self.eventSource.eventProcessed(self.listener, event)
                     try:
                         eventList.append(self.getEventData(event))
-                    except:
-                        print "Error processing event"
-                        traceback.print_exc()
+                    except Exception as e:
+                        logger.error("Error processing event %s" %(str(e),))
+                        
+                    finally:
+                        self.eventSource.eventProcessed(self.listener, event)
                         
                     
                 elif len(eventList):
@@ -3960,16 +4041,16 @@ class vboxEventListener(threading.Thread):
                     eventList = []
                 
         except:
-            print "Event source went away"
-            #traceback.print_exc()
+            logger.debug("Event source %s went away" %(self.listenerId,))
             
     
-        print "vboxEventListener unregistering (%s)" %(threading.current_thread(),)
+        logger.debug("vboxEventListener unregistering %s" %(self.listenerId,))
 
         try:
             self.eventSource.unregisterListener(self.listener)
-        except:
-            print "Listener already unregistered"
+        except Exception as e:
+            logger.error("vboxEventListener %s already unregistered: %s" %(self.listenerId,str(e)))
+            pass
           
         if vboxMgr:      
             vboxMgr.deinitPerThread()     
@@ -4012,23 +4093,25 @@ class vboxEventListenerPool(threading.Thread):
                 l.start()
                 self.listeners[id] = l
             else:
-                print "Not adding existing listener with id %s" %(id,)
-        except:
-            traceback.print_exc()
+                logger.error("Not adding existing listener with id %s" %(id,))
+                
+        except Exception as e:
+            logger.exception(str(e))
         
         self.listenerLock.release()
         
     def shutdown(self):
         
-        print "vboxEventListenerPool shutting down (%s)" %(threading.current_thread(),)
+        logger.debug("vboxEventListenerPool shutting down (%s)" %(threading.current_thread(),))
         
         self.listenerLock.acquire(True)
         try:
             for id, l in self.listeners.iteritems():
                 l.shutdown()
                 l.join()
-        except:
-            traceback.print_exc()
+                
+        except Exception as e:
+            logger.exception(str(e))
             
         self.running = False
         self.listenerLock.release()
@@ -4036,7 +4119,7 @@ class vboxEventListenerPool(threading.Thread):
         
     def run(self):
         
-        print "vboxEventListenerPool Run (%s)" %(threading.current_thread(),)
+        logger.debug("vboxEventListenerPool run (%s)" %(threading.current_thread(),))
         
         vboxMgr.initPerThread()
         
@@ -4052,11 +4135,11 @@ class vboxEventListenerPool(threading.Thread):
                 listeners = self.listeners.values()
                 for l in listeners:
                     if not l.isAlive():
-                        print "Thread stopped ..."
+                        logger.debug("vboxEventListenerPool listener %s stopped" %(l.listenerId,))
                         l.join()
                         del self.listeners[l.listenerId]
-            except:
-                traceback.print_exc()
+            except Exception as e:
+                logger.exception(str(e))
             
             #print "Listener count is " + str(len(self.listeners))
             self.listenerLock.release()
@@ -4180,7 +4263,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                             errors = []
                             for e in serviceObj.errors:
                                 errors.append({
-                                    'error': '%s: %s'%(e[0].__class__.__name__, (e[0].msg if hasattr(e[0],'msg') else e[0].message)),
+                                    'error': '%s' %(str(e),),
                                     'details': e[1]
                                 })
                                 
@@ -4191,17 +4274,19 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                                 'success': True
                             }
                             
+                            logger.debug("%s_response: %s" %(method, methodResponse))
+                            
                         except Exception as ex:
+                            
+                            logger.exception(str(e))
                             
                             response = {
                                 '%s_response'%(method,) : False,
-                                'errors': [{'msgType':'rpc_exception','details': traceback.format_exc(), 'error': '%s: %s'%(ex.__class__.__name__,(ex.msg if hasattr(ex,'msg') else ex.message)) }],
+                                'errors': [{'msgType':'rpc_exception','details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
                                 'messages': serviceObj.messages,
                                 'success': False
                             }
                             
-                        finally:
-                            pprint.pprint(methodResponse)
 
                     
                     # Clients expect a stream from the service
@@ -4453,9 +4538,10 @@ def main(argv = sys.argv):
          
         try:
             if mach.state == vboxMgr.constants.MachineState_Running:
-                subscribe.append(mach.id)                
-        except:
-            traceback.print_exc()
+                subscribe.append(mach.id)
+                                
+        except Exception as e:
+            logger.exception(str(e))
     
     
     # Start listener pool
@@ -4471,8 +4557,10 @@ def main(argv = sys.argv):
             session = vboxMgr.mgr.getSessionObject(vbox)
             machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
             listenerPool.add(s, session.console.eventSource)
-        except:
-            traceback.print_exc()
+            
+        except Exception as e:
+            logger.exception(str(e))
+            
         finally:
             session.unlockMachine()
     
@@ -4519,14 +4607,14 @@ def main(argv = sys.argv):
         
         # We'll exit when the rpc server dies
         if not rpcServer_thread.isAlive():
-            print "RPC server died. Exiting .."
+            logger.critical("RPC server died. Exiting ..")
             running = False
             continue
                     
         # Create event listener - this must happen 
         # in the main thread
         if not listenerPool.isVboxAlive():
-            print "Listener pool died. Exiting..."
+            logger.critical("Listener pool died. Exiting...")
             running = False
             continue
             
@@ -4545,21 +4633,26 @@ def main(argv = sys.argv):
                 
                 # Subscribe to any machines that are running
                 if event['eventType'] == 'OnMachineStateChanged' and event['state'] == 'Running':
+                    
                     try:
                         machine = vbox.findMachine(event['machineId'])
                         session = vboxMgr.mgr.getSessionObject(vbox)
                         machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
                         listenerPool.add(event['machineId'], session.console.eventSource)
-                    except:
-                        traceback.print_exc()
+                        
+                    except Exception as e:
+                        logger.exception(str(e))
+                        
                     finally:
                         session.unlockMachine()
     
                 incomingQueue.task_done()
 
-        enrichEvents(eventList)
+        if len(eventList):
+            enrichEvents(eventList)
+            
         for e in eventList.values():
-            pprint.pprint(e)
+            eventlogger.debug("Got event %s" %(e,))
             outgoingQueue.put(e)
             
         # only sleep if we didn't have events

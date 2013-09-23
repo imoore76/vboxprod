@@ -23,6 +23,10 @@ class dispatcher(dispatcher_parent):
         for attr in ['name','location']:
             setattr(c, attr, kwargs.get(attr))
         c.save()
+        
+        # Tell application that a connector was added
+        vcube.getInstance().addConnector(dict(c._data.copy()))
+        
         return True
     addConnector.exposed = True
         
@@ -30,8 +34,14 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def deleteConnector(self, *args, **kwargs):
+        
         Connector(Connector.id == kwargs.get('id', 0)).delete()
+        
+        # Tell application that a connector was removed
+        vcube.getInstance().addConnector(kwargs.get('id',0))
+
         return True
+
     deleteConnector.exposed = True
     
     @jsonout
@@ -42,7 +52,12 @@ class dispatcher(dispatcher_parent):
             if kwargs.get(attr,None):
                 setattr(c, attr, kwargs.get(attr))
         c.save()
+        
+        # Tell application that a connector was removed
+        vcube.getInstance().updateConnector(dict(c._data.copy()))
+
         return True
+    
     updateConnector.exposed = True
     
     @jsonout

@@ -32,7 +32,7 @@ class FlashPolicyServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 server_thread = None
 server = None
 
-def start(ip="0.0.0.0",port=843):
+def start(ip="0.0.0.0",port=8433):
     
     global server_thread, server
     
@@ -53,5 +53,7 @@ def stop():
     if server_thread is None: return
 
     server.shutdown()
-    server_thread.join()
+    if server_thread is not None:
+        server_thread.join()
+        
     server_thread = None

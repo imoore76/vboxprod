@@ -1,5 +1,5 @@
 from vcube.dispatchers import dispatcher_parent, jsonout, require_admin
-import cherrypy, pprint
+import cherrypy
 import vcube
 
 class dispatcher(dispatcher_parent):
@@ -20,9 +20,6 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def updateGroup(self, *args, **kwargs):
-        print "here..."
-        pprint.pprint(kwargs)
-        pprint.pprint(args)
         return vcube.getInstance().accounts.updateGroup(kwargs)
     updateGroup.exposed = True
 

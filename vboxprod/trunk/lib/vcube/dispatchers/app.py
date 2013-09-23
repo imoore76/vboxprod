@@ -4,7 +4,6 @@ from vcube.dispatchers import dispatcher_parent, jsonout
 import vcube
 
 import cherrypy
-import pprint
 
 class dispatcher(dispatcher_parent):
 

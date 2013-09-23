@@ -3,8 +3,6 @@ import sys, os, signal
 import json
 import threading
 import ConfigParser
-import traceback
-from pprint import pprint
 
 # Our library modules
 basepath = os.path.abspath(os.path.dirname(__file__))
@@ -15,10 +13,9 @@ import cherrypy
 import vcube
 from vcube import flash_policy_server, install
 
-import logging
- 
-#logging.basicConfig(level=logging.DEBUG)
-
+import logging, logging.config
+logging.config.fileConfig("logging.conf")
+logger = logging.getLogger(__name__)
 
 
 
@@ -70,8 +67,8 @@ class WebServerThread(threading.Thread):
         # Load dispatchers
         import vcube.dispatchers
         
-        print "Getting dispatcherrs"
         
+        logger.debug("Loading dispatchers")
         for d in vcube.dispatchers.__all__:
             __import__('vcube.dispatchers.' + d)
             setattr(DispatchRoot, d, getattr(vcube.dispatchers, d).dispatcher())
@@ -119,6 +116,7 @@ def main(argv = sys.argv):
     def pumpEvent(event):
         cherrypy.engine.publish('websocket-broadcast', json.dumps(event))
 
+
     # Start application
     vcube.start()
     
@@ -134,11 +132,19 @@ def main(argv = sys.argv):
         vcube.stop()
         flash_policy_server.stop()
 
+
     cherrypy.engine.subscribe('stop', cleanup)
     
     # Start web thread
     webserver = WebServerThread()    
     webserver.start()
+    
+    import signal
+    def stop_sigint(signal, frame):
+        logger.debug("SIGINT received")
+        cleanup()
+    signal.signal(signal.SIGINT, stop_sigint)
+
 
 
 if __name__ == '__main__':

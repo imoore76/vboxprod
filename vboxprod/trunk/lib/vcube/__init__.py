@@ -1,12 +1,12 @@
 import sys
-import json, pprint
+import json
 import os, sys, ConfigParser, threading, time
 import MySQLdb
 
+import logging
+logger = logging.getLogger(__name__)
 
-from vboxconnectorclient import vboxRPCEventListenerClient
-
-print "Imported app"
+from vboxconnectorclient import vboxRPCEventListener
 
 global config, app
 
@@ -85,6 +85,11 @@ class Application(threading.Thread):
         an event
     """
     eventHandlers = []
+    
+    """
+        Heartbeat interval for event pump
+    """
+    heartbeatInterval = 20
     
     def __init__(self):
 
@@ -170,11 +175,6 @@ class Application(threading.Thread):
         c.status_text = message
         c.save()
         
-    def onConnectorMessage(self, message):
-        
-        if message.get('event', None):
-            self.pumpEvent(message['event'])
-        
     def addConnector(self, connector):
         """
         Connect to a vbox connector server and get events
@@ -182,8 +182,8 @@ class Application(threading.Thread):
         self.eventListenersLock.acquire(True)
         try:
             if self.running:
-                print "Adding connector %s" %(connector['name'],)
-                self.eventListeners[str(connector['id'])] = vboxRPCEventListener(connector, self.onConnectorMessage, self.onConnectorStateChange)
+                logger.info("Adding connector %s" %(connector['name'],))
+                self.eventListeners[str(connector['id'])] = vboxRPCEventListener(connector, self.pumpEvent, self.onConnectorStateChange)
                 self.eventListeners[str(connector['id'])].start()
         finally:
             self.eventListenersLock.release()
@@ -193,7 +193,7 @@ class Application(threading.Thread):
             Connector changed during runtime
         """
         cid = str(connector['id'])
-        if self.eventListeners.get(cid, None) and self.eventListeners['location'] != connector['location']:
+        if self.eventListeners.get(cid, None) and self.eventListeners[cid].server['location'] != connector['location']:
             self.removeConnector(cid)
             self.addConnector(connector)
             
@@ -216,21 +216,19 @@ class Application(threading.Thread):
         
         # Add connectors
         for c in list(Connector.select().dicts()):
-            pprint.pprint(c)
             self.addConnector(c)
 
         
-        eid = 0
-        
         while self.running:
-            self.pumpEvent({'asdf':'foo','id':eid, 'queues': len(self.eventQueues)})
-            eid = eid + 1
-            time.sleep(2)
+            for i in range(0, self.heartbeatInterval):
+                if not self.running: break
+                time.sleep(1)
+            self.pumpEvent({'eventType':'heartbeat'})
 
         self.eventListenersLock.acquire(True)
         try:
             for cid, c in self.eventListeners.iteritems():
-                print "Stopping connector client %s" %(cid,)
+                logger.info("Stopping connector client %s" %(cid,))
                 c.stop()
                 c.join()
         finally:

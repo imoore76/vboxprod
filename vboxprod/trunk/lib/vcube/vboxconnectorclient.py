@@ -1,5 +1,10 @@
-import threading, pprint, socket, sys, time
+import threading, socket, sys, time, json
 from urlparse import urlparse
+import traceback
+
+import logging
+logger = logging.getLogger(__name__)
+messageLogger = logging.getLogger(__name__ + '.messages')
 
 class vboxRPCAction(object):
     
@@ -15,7 +20,7 @@ class vboxRPCAction(object):
             url = urlparse(self.server['location'])
     
         except Exception as e:
-            pprint.pprint(e)
+            logger.exception(str(e))
             return
         
         self.sock.connect((url.hostname, url.port))
@@ -37,7 +42,7 @@ class vboxRPCAction(object):
             self.sock.sendall(json.dumps(call) + "\n")
 
         except Exception as e:
-            pprint.pprint(e)
+            logger.exception(str(e))
             return
         
         
@@ -46,8 +51,9 @@ class vboxRPCAction(object):
 class vboxRPCEventListener(threading.Thread):
     
     STATE_DISCONNECTED = 0
-    STATE_RUNNING = 5
     STATE_ERROR = 20
+    STATE_REGISTERING = 30
+    STATE_RUNNING = 100
     
     id = None
     server = None
@@ -71,14 +77,12 @@ class vboxRPCEventListener(threading.Thread):
         self.server = server
         
         self.id = server['id']
-        
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
+                
         self.onEvent = onEvent
         self.onStateChange = onStateChange
         
         # Initial state is disconnected
-        self.onStateChange(self.id, self.STATE_DISCONNECTED)
+        self.onStateChange(self.id, self.STATE_DISCONNECTED, '')
         
         threading.Thread.__init__(self)
         
@@ -98,8 +102,11 @@ class vboxRPCEventListener(threading.Thread):
             
             return
         
+
         try:
             
+            logger.debug("Trying to connect...")
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((url.hostname, url.port))
             
             self.file = self.sock.makefile()
@@ -114,19 +121,21 @@ class vboxRPCEventListener(threading.Thread):
                 
                 self.sock.sendall(json.dumps(call) + "\n")
     
+                self.onStateChange(self.id, self.STATE_REGISTERING, '')
+                
             except Exception as e:
-                pprint.pprint(e)
+                logger.exception(str(e))
                 self.disconnect()
                 return
 
-            
-            # RUnning state
-            self.onStateChange(self.id, self.STATE_RUNNING)
-            
+                        
         except Exception as e:
+
+            logger.exception(str(e))
 
             # Error state
             self.onStateChange(self.id, self.STATE_ERROR, str(e))
+            
 
             
     def disconnect(self):
@@ -134,15 +143,24 @@ class vboxRPCEventListener(threading.Thread):
         if self.sock:
             self.sock.close()
         
+        if self.file:
+            try:
+                self.file._sock.close()
+            except:
+                pass
+            self.file.close()
+        
         self.connected = False
         self.sock = None
+        self.file = None
         self.registered = False
     
     def stop(self):
+        logger.debug("Stop requested")
         self.running = False
         self.disconnect()
         
-        self.onStateChange(self.id, self.STATE_DISCONNECTED)
+        self.onStateChange(self.id, self.STATE_DISCONNECTED, '')
 
         
     def run(self):
@@ -158,33 +176,72 @@ class vboxRPCEventListener(threading.Thread):
                 if not self.running: break
                 
                 if not self.connected:
+                    
                     for i in range(0,self.connectionRetryInterval):
-                        if self.running: time.sleep(i)
+                        if self.running: time.sleep(1)
                         else: break
             
-            try:                
+            try:
+
+                # This will block            
+                logger.debug("Waiting for response")    
                 response = self.file.readline()
-                if response.strip() == '': continue
-            
+                
+                logger.debug("Got response %s" %(response,))
+                
+                # EOF
+                if len(response) == 0 or response[-1] != "\n":
+                    raise Exception('Connection closed')
+
             # assume disconnect by server
             except Exception as e:
                 
+                logger.exception(str(e))
+                
                 # Error state
                 if self.running:
-                    self.onStateChange(self.id, self.STATE_ERROR, 'Connection closed')
+                    self.onStateChange(self.id, self.STATE_ERROR, 'Connection closed - will attempt to reconnect')
 
                 self.disconnect()
                 
-                break
+                continue
                 
             try:
                 message = json.loads(response)
             except Exception as e:
-                print "Invalid json response: %s" %(response)
+                logger.exception(str(e))
+                continue
+            
+            messageLogger.debug("Got message: %s" %(message,))
+
+            if message.get('msgType', '') == 'rpc_heartbeat':
+                """ Discard heartbeats """
                 continue
 
-            """ Expect a registered response """
-            self.onEvent(message)
+            if message.get('msgType','') == 'rpc_exception':
+                """ Error... disconnect """
+                self.onStateChange(self.id, self.STATE_ERROR, message.get('error', 'Unknown RPC error'))
+                self.disconnect()
+                continue
+
+                
+            if self.registered and message.get('event',None):
+                """ When we're registered, we accept events """
+                # add our id
+                message['event']['connector'] = self.id     
+                self.onEvent(message['event'])
+                continue
+                
+            elif not self.registered and message.get('msgType','') == 'registerStream_response':
+                """ Register stream response """
+
+                self.registered = True
+                
+                # Running state
+                self.onStateChange(self.id, self.STATE_RUNNING, '')
+
+                continue
+            
             
             time.sleep(self.pollInterval)
         

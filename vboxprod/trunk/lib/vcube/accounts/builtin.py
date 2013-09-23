@@ -4,7 +4,6 @@ import os, sys
 from vcube.models import AuthUser, User, Group
 from vcube.utils import genhash
 
-import pprint
 
 CAPABILITIES = [
     'groups',

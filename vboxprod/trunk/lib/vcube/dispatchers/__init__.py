@@ -2,6 +2,9 @@
 
 import json, cherrypy, traceback
 
+import logging
+logger = logging.getLogger(__name__)
+
 __all__ = ['accounts', 'connectors', 'vbox', 'app', 'vmgroups']
 
 """"
@@ -22,9 +25,10 @@ def jsonout(func):
             responseData = func(*args, **kwargs)
             success = True
         except Exception as ex:
-            import sys, pprint
-            print(ex.message)
-            e = {'details': traceback.format_exc(), 'error': '%s: %s' %(ex.__class__.__name__,ex.msg) }
+            
+            logger.exception(str(ex))
+
+            e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
             errors.append(e)
         
         (errors.append(x) for x in args[0].errors)

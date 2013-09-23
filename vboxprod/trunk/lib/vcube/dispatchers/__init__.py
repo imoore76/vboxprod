@@ -2,7 +2,7 @@
 
 import json, cherrypy, traceback
 
-__all__ = ['accounts', 'connectors', 'vbox', 'appd', 'vmgroups']
+__all__ = ['accounts', 'connectors', 'vbox', 'app', 'vmgroups']
 
 """"
     Send data as JSON

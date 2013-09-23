@@ -4,7 +4,7 @@ import os, sys, ConfigParser, threading, time
 import MySQLdb
 
 
-from vboxconnectorclient import eventListener
+from vboxconnectorclient import vboxRPCEventListenerClient
 
 print "Imported app"
 
@@ -183,7 +183,7 @@ class Application(threading.Thread):
         try:
             if self.running:
                 print "Adding connector %s" %(connector['name'],)
-                self.eventListeners[str(connector['id'])] = eventListener(connector, self.onConnectorMessage, self.onConnectorStateChange)
+                self.eventListeners[str(connector['id'])] = vboxRPCEventListener(connector, self.onConnectorMessage, self.onConnectorStateChange)
                 self.eventListeners[str(connector['id'])].start()
         finally:
             self.eventListenersLock.release()

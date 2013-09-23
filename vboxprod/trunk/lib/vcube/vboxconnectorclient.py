@@ -1,10 +1,49 @@
 import threading, pprint, socket, sys, time
 from urlparse import urlparse
 
-class vboxAction():
-    pass
+class vboxRPCAction(object):
+    
+    location = None
+    
+    sock = None
+    
+    file = None
+    
+    def __init__(self, server):
+        
+        try:
+            url = urlparse(self.server['location'])
+    
+        except Exception as e:
+            pprint.pprint(e)
+            return
+        
+        self.sock.connect((url.hostname, url.port))
+            
+        self.file = self.sock.makefile()
+        self.connected = True
+        
+    def rpcCall(self, method, args):
+        
+        call = {
+            'msgType' : 'rpc',
+            'service' : 'vbox',
+            'method' : method,
+            'args' : args
+        }
+        
+        try:
+            
+            self.sock.sendall(json.dumps(call) + "\n")
 
-class eventListener(threading.Thread):
+        except Exception as e:
+            pprint.pprint(e)
+            return
+        
+        
+
+
+class vboxRPCEventListener(threading.Thread):
     
     STATE_DISCONNECTED = 0
     STATE_RUNNING = 5
@@ -23,6 +62,7 @@ class eventListener(threading.Thread):
     
     connected = False
     running = False
+    registered = False
     
     connectionRetryInterval = 10
         
@@ -65,6 +105,21 @@ class eventListener(threading.Thread):
             self.file = self.sock.makefile()
             self.connected = True
             
+            call = {
+                'msgType' : 'registerStream',
+                'service' : 'vboxEvents'
+            }
+            
+            try:
+                
+                self.sock.sendall(json.dumps(call) + "\n")
+    
+            except Exception as e:
+                pprint.pprint(e)
+                self.disconnect()
+                return
+
+            
             # RUnning state
             self.onStateChange(self.id, self.STATE_RUNNING)
             
@@ -81,6 +136,7 @@ class eventListener(threading.Thread):
         
         self.connected = False
         self.sock = None
+        self.registered = False
     
     def stop(self):
         self.running = False
@@ -108,6 +164,7 @@ class eventListener(threading.Thread):
             
             try:                
                 response = self.file.readline()
+                if response.strip() == '': continue
             
             # assume disconnect by server
             except Exception as e:
@@ -120,14 +177,13 @@ class eventListener(threading.Thread):
                 
                 break
                 
-            if response.strip() == '': continue
-            
             try:
                 message = json.loads(response)
             except Exception as e:
                 print "Invalid json response: %s" %(response)
                 continue
 
+            """ Expect a registered response """
             self.onEvent(message)
             
             time.sleep(self.pollInterval)

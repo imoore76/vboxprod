@@ -16,16 +16,41 @@ class dispatcher(dispatcher_parent):
             if f.startswith('remote_'):
                 fn = f[7:]
                 def callback(*args, **kwargs):
-                    return self.vboxAction(*args, **kwargs)
+                    return self.vboxAction(self, *args, **kwargs)
                 callback.exposed = True
                 setattr(self, fn, callback)
         
     @jsonout    
-    def vboxAction(*args, **kwargs):
+    def vboxAction(self, *args, **kwargs):
         
         fn = os.path.basename(cherrypy.url())
         
         location = Connector.get(Connector.id == kwargs.get('server')).location
         
-        return vboxRPCAction(location).rpcCall(fn, kwargs)
+        server = vboxRPCAction(location)
+        response = server.rpcCall(fn, kwargs)
+        server.close()
+        
+        self.errors = response.get('errors',[])
+        self.messages = response.get('messages',[])
+        
+        return response.get(fn+'_response')
+    
+    @jsonout
+    def vboxBulkRequest(self, *args, **kwargs):
+        
+        fn = os.path.basename(cherrypy.url())
+        
+        location = Connector.get(Connector.id == kwargs.get('server')).location
+        
+        server = vboxRPCAction(location)
+        response = server.rpcCall(fn, kwargs)
+        server.close()
+        
+        self.errors = response.get('errors',[])
+        self.messages = response.get('messages',[])
+        
+        return response.get(fn+'_response')
+
+    vboxBulkRequest.exposed = True
 

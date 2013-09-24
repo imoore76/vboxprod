@@ -32,6 +32,15 @@ class vboxRPCAction(object):
         self.file = self.sock.makefile()
         self.connected = True
         
+    def close(self):
+        self.sock.close()
+        self.file.close()
+        self.file = self.sock = None
+        
+    def __del__(self):
+        if self.sock: self.sock.close()
+        if self.file: self.file.close()
+        
     def rpcCall(self, method, args):
         
         call = {
@@ -47,22 +56,13 @@ class vboxRPCAction(object):
 
         except Exception as e:
             logger.exception(str(e))
-            self.error = str(e)
-            return
+            raise e
         
-        self.response = self.file.readline()
+        response = self.file.readline()
         
-        self.sock.close()
-        self.file.close()
         
-        self.message = json.loads(self.response)
+        return json.loads(response)
         
-        pprint.pprint(self.message)
-        
-        if self.message.get('msgType','') == '%s_response'%(method,):
-            return self.message
-        
-        return False
         
         
 

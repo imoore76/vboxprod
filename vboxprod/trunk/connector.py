@@ -94,9 +94,9 @@ def _machineGetBaseInfo(machine):
         'state' : vboxEnumToString("MachineState", machine.state),
         'group_id' : '',
         'OSTypeId' : machine.OSTypeId,
-        'lastStateChange' : str((machine.lastStateChange/1000)),
+        'lastStateChange' : long(machine.lastStateChange)/1000,
         'id' : machine.id,
-        'currentStateModified' : machine.currentStateModified,
+        'currentStateModified' : bool(machine.currentStateModified),
         'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
         'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
         'customIcon' : machine.getExtraData('phpvb/icon')
@@ -2664,7 +2664,8 @@ class vboxConnector(object):
                         'id' : machine.id,
                         'sessionState' : 'Inaccessible',
                         'lastStateChange' : 0,
-                        'currentSnapshot' : ''
+                        'currentSnapshot' : '',
+                        'error': str(e) + ': ' + traceback.format_exc()
                     })
 
                 else:
@@ -3689,7 +3690,7 @@ class vboxConnector(object):
             children.append(self._mediumGetDetails(c))
 
         for mid in vboxGetArray(m,'machineIds'):
-            sids = m.getSnapshotIds(mid)
+            sids = list(m.getSnapshotIds(mid))
             try:
                 """ @mid IMachine """
                 mid = self.vbox.findMachine(mid)
@@ -3725,14 +3726,14 @@ class vboxConnector(object):
                 'name' : m.name,
                 'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
                 'hostDrive' : m.hostDrive,
-                'size' : m.size, """ str( to support large disks. Bypass integer limit """
+                'size' : long(m.size),
                 'format' : m.format,
                 'type' : vboxEnumToString("MediumType",m.type),
                 'parent' : (m.parent.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.parent) else None),
                 'children' : children,
                 'base' : (m.base.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
                 'readOnly' : m.readOnly,
-                'logicalSize' : (m.logicalSize/1024)/1024,
+                'logicalSize' : (long(m.logicalSize)/1024)/1024,
                 'autoReset' : m.autoReset,
                 'hasSnapshots' : hasSnapshots,
                 'lastAccessError' : m.lastAccessError,
@@ -4053,7 +4054,6 @@ class vboxEventListener(threading.Thread):
             self.eventSource.unregisterListener(self.listener)
         except Exception as e:
             logger.error("vboxEventListener %s already unregistered: %s" %(self.listenerId,str(e)))
-            pass
           
         if vboxMgr:      
             vboxMgr.deinitPerThread()     
@@ -4277,7 +4277,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                                 'success': True
                             }
                             
-                            logger.debug("%s_response: %s" %(method, methodResponse))
+                            #logger.debug("%s_response: %s" %(method, methodResponse))
                             
                         except Exception as ex:
                             

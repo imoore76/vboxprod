@@ -1,6 +1,6 @@
 
 
-import json, cherrypy, traceback
+import json, cherrypy, traceback, pprint
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,7 +31,8 @@ def jsonout(func):
             e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
             errors.append(e)
         
-        (errors.append(x) for x in args[0].errors)
+        for x in args[0].errors:
+            errors.append(x)
             
         return json.dumps({'data':{'success':success,'errors':errors,'messages':args[0].messages,'responseData':responseData}})
     return decorated

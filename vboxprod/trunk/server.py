@@ -1,4 +1,4 @@
-import sys, os, signal
+import sys, os, signal, pprint
 
 import json
 import threading
@@ -72,8 +72,7 @@ class WebServerThread(threading.Thread):
         for d in vcube.dispatchers.__all__:
             __import__('vcube.dispatchers.' + d)
             setattr(DispatchRoot, d, getattr(vcube.dispatchers, d).dispatcher())
-    
-        
+            
         """
             WebSocket server
         """

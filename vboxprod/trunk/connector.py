@@ -4281,7 +4281,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                             
                         except Exception as ex:
                             
-                            logger.exception(str(e))
+                            logger.exception(str(ex))
                             
                             response = {
                                 '%s_response'%(method,) : False,

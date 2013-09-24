@@ -5,7 +5,7 @@ Ext.define('vcube.controller.NavTree', {
     extend: 'Ext.app.Controller',
     
     // VMs and Groups
-    stores: ['NavTreeGroups','NavTreeVMs', 'ServerList'],
+    stores: ['NavTreeGroups','NavTreeVMs'],
     
     // Hold nav tree ref so that we only have to get this once
     refs : [{
@@ -18,10 +18,6 @@ Ext.define('vcube.controller.NavTree', {
     	
     	/* Application level events */
         this.application.on({
-        	start: this.populateServers,
-            serverChanged: this.populateTree, 
-            scope: this
-        },{
         	launch: this.showWelcome,
         	scope: this
         });
@@ -30,43 +26,14 @@ Ext.define('vcube.controller.NavTree', {
         this.control({
         	'viewport > NavTree' : {
         		select: this.selectItem
-        	},
-        	'viewport > NavTree #serverlist' : {
-        		select: this.serverChange
         	}
         });
     },
     
-    /* Server selected from list */
-    serverChange: function(cbox, val) {
-    	console.log(val);
-    	this.application.setVboxServer(val[0].data.id);
-    },
     
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
     	//console.log(record);
-    },
-    
-    /* Populate server list */
-    populateServers: function() {
-    	
-    	this.getStore('ServerList').load(function(records) {
-
-    		var toolbar = Ext.ComponentQuery.query('viewport > NavTree > toolbar')[0];
-    		
-    		if(records.length == 0) {
-    			
-    			toolbar.hide();
-    			
-    		} else if(records.length == 1) {
-    			
-    			var sl = Ext.ComponentQuery.query('viewport > NavTree #serverlist')[0];
-    			sl.select(records[0]);
-    			sl.fireEvent('select', sl, records);
-    			//toolbar.hide();
-    		}
-    	});
     },
     
     /* Populate navigation tree with groups and VMs */

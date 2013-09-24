@@ -1,47 +1,31 @@
-
+import os
 from vcube.dispatchers import dispatcher_parent, jsonout
-import pprint
-
-vboxFunctionList = []
-
-from connector import vboxConnector
-for f in dir(vboxConnector):
-    if f.startswith('remote_'): vboxFunctionList.append(f[7:])
+from vcube.vboxconnectorclient import vboxRPCAction
+from vcube.models import Connector
+import pprint, cherrypy
 
 
 class dispatcher(dispatcher_parent):
     
     def __init__(self):
-        for fn in vboxFunctionList:
-            def callback(*args, **kwargs):
-                self.vboxAction(fn, **kwargs)
-            setattr(self, fn, callback)
-            setattr(self, fn + '.exposed', True)
-            
         
-    def __getattr__(self, name):
-        pprint.pprint(dir(self))
+        from connector import vboxConnector
         
-        print "attr: %s" %(name,)
-        if name in vboxFunctionList:
-            setattr(self, name + '.exposed', True)
-            print "Yep.... for %s" %(name,)
-            return self.vboxAction
-        raise AttributeError
-    
-    def vboxAction(self, action, **kwargs):
-        print "Performing vbox action %s.." %(action,)
+        for f in dir(vboxConnector):
         
-    @jsonout
-    def getStuff(self, *args, **kwargs):
-        return "asdf"    
-    getStuff.exposed = True
-    
+            if f.startswith('remote_'):
+                fn = f[7:]
+                def callback(*args, **kwargs):
+                    return self.vboxAction(*args, **kwargs)
+                callback.exposed = True
+                setattr(self, fn, callback)
+        
+    @jsonout    
+    def vboxAction(*args, **kwargs):
+        
+        fn = os.path.basename(cherrypy.url())
+        
+        location = Connector.get(Connector.id == kwargs.get('server')).location
+        
+        return vboxRPCAction(location).rpcCall(fn, kwargs)
 
-# Monkeypatch self
-"""
-from connector import vboxConnector
-for f in dir(vboxConnector):
-    if f.startswith('remote_'):
-        setattr(vcube.dispatchers.vbox.dispatcher, f[7:] + '.exposed', True)
-"""

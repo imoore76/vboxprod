@@ -1,4 +1,4 @@
-import threading, socket, sys, time, json
+import threading, socket, sys, time, json, pprint
 from urlparse import urlparse
 import traceback
 
@@ -14,15 +14,19 @@ class vboxRPCAction(object):
     
     file = None
     
-    def __init__(self, server):
+    error = None
+    
+    def __init__(self, url):
         
         try:
-            url = urlparse(self.server['location'])
+            url = urlparse(url)
     
         except Exception as e:
             logger.exception(str(e))
+            self.error = str(e)
             return
         
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)        
         self.sock.connect((url.hostname, url.port))
             
         self.file = self.sock.makefile()
@@ -43,7 +47,22 @@ class vboxRPCAction(object):
 
         except Exception as e:
             logger.exception(str(e))
+            self.error = str(e)
             return
+        
+        self.response = self.file.readline()
+        
+        self.sock.close()
+        self.file.close()
+        
+        self.message = json.loads(self.response)
+        
+        pprint.pprint(self.message)
+        
+        if self.message.get('msgType','') == '%s_response'%(method,):
+            return self.message
+        
+        return False
         
         
 

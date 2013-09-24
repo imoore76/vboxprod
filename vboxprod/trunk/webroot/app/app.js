@@ -31,9 +31,6 @@ Ext.application({
     
     views: ['Login'],
     
-    // Current vbox server id
-    vboxServerId: 0,
-    
     // Fatal error
     _fatalErrorOccurred: false,
     
@@ -80,9 +77,9 @@ Ext.application({
     	
     	Ext.Ajax.request({
     		
-    		url: 'ajax.php',
+    		url: service + '/' + fn,
     		method: 'POST',
-    		params: {'fn':fn,'service':service,'server':this.vboxServerId},
+    		params: {'fn':fn,'service':service},
     		jsonData: addparams,
     		
     		success: function(response){

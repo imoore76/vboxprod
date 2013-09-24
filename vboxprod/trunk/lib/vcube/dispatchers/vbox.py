@@ -1,6 +1,6 @@
 import os
+import vcube
 from vcube.dispatchers import dispatcher_parent, jsonout
-from vcube.vboxconnectorclient import vboxRPCAction
 from vcube.models import Connector
 import pprint, cherrypy
 
@@ -25,16 +25,7 @@ class dispatcher(dispatcher_parent):
         
         fn = os.path.basename(cherrypy.url())
         
-        location = Connector.get(Connector.id == kwargs.get('server')).location
-        
-        server = vboxRPCAction(location)
-        response = server.rpcCall(fn, kwargs)
-        server.close()
-        
-        self.errors = response.get('errors',[])
-        self.messages = response.get('messages',[])
-        
-        return response.get(fn+'_response')
+        return vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs.get('args'))
     
     @jsonout
     def vboxBulkRequest(self, *args, **kwargs):

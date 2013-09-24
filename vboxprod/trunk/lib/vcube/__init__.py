@@ -1,13 +1,13 @@
 import sys
 import json
-import os, sys, ConfigParser, threading, time
+import os, sys, ConfigParser, threading, time, Queue
 import MySQLdb
-import pprint
+import pprint, traceback
 
 import logging
 logger = logging.getLogger('vcube')
 
-from vboxconnectorclient import vboxRPCEventListener
+from vboxclient import vboxRPCClient, vboxRPCClientPool
 
 global config, app
 
@@ -76,11 +76,32 @@ class Application(threading.Thread):
     eventQueuesLock = threading.Lock()
     
     """
-        Connector server thread list
+        Connector event listener threads
     """
-    eventListeners = {}
-    eventListenersLock = threading.Lock()
+    connectorEventListeners = {}
     
+    """
+        dict of connectors by ID that vbox
+        actions will be sent to
+    """
+    connectorActionPool = {}
+
+    """
+        dict by connector id of actions waiting
+        to be performed
+    """
+    connectorActionQueues = {}
+    
+    """
+        Lock for manipulating connector list
+    """
+    connectorsLock = threading.Lock()
+    
+    """
+        Max threads per connector
+    """
+    connectorThreads = 5
+
     """
         Event handlers - callbacks to call when we emit
         an event
@@ -91,6 +112,8 @@ class Application(threading.Thread):
         Heartbeat interval for event pump
     """
     heartbeatInterval = 20
+    
+    
     
     def __init__(self):
 
@@ -157,6 +180,12 @@ class Application(threading.Thread):
     def stop(self):
         self.running = False
         
+    """
+        Place vboxConnectorAction in queue and wait
+    """
+    def vboxAction(self, connector_id, action, args):
+        return self.connectorActionPool[connector_id].vboxAction(action, args)
+        
     
     def onConnectorStateChange(self, cid, state, message=''):
         
@@ -187,14 +216,67 @@ class Application(threading.Thread):
         """
         Connect to a vbox connector server and get events
         """        
-        self.eventListenersLock.acquire(True)
+        self.connectorsLock.acquire(True)
+        cid = None
         try:
             if self.running:
+                
                 logger.info("Adding connector %s" %(connector['name'],))
-                self.eventListeners[str(connector['id'])] = vboxRPCEventListener(connector, self.pumpEvent, self.onConnectorStateChange)
-                self.eventListeners[str(connector['id'])].start()
+                
+                cid = str(connector['id'])
+                
+                """ Add event listener """
+                self.connectorEventListeners[cid] = vboxRPCClient(server=connector, service='vboxEvents',
+                          onStateChange=self.onConnectorStateChange, listener=True)
+                
+                # Start
+                self.connectorEventListeners[cid].start()
+                                
+                def sendEvent(message):
+                    self.pumpEvent(message.get('event'))
+                    
+                # Listen for vbox events
+                self.connectorEventListeners[cid].listen(['vboxEvent'], sendEvent)
+                
+                """ Add to action pool """
+                self.connectorActionPool[cid] = vboxRPCClientPool(connector, self.connectorThreads)
+                self.connectorActionPool[cid].start()
+
+        except Exception as e:
+            traceback.print_exc()
+            logger.exception(e)
+            print str(e)
+            if cid and self.connectorEventListeners.get(cid, None):
+                del self.connectorEventListeners[cid]
+        
         finally:
-            self.eventListenersLock.release()
+            self.connectorsLock.release()
+
+    def removeConnector(self, cid):
+        """
+            Remove connector
+        """
+        self.connectorsLock.acquire(True)
+        try:
+
+            if self.connectorEventListeners.get(cid, None):
+                
+                """ Remove event listener """
+                self.connectorEventListeners[cid].stop()
+                self.connectorEventListeners[cid].join()
+                del self.connectorEventListeners[cid]
+                
+            if self.connectorActionPool.get(cid, None):
+                
+                """ Remove from action pool """
+                self.connectorActionPool[cid].stop()
+                self.connectorActionPool[cid].join()
+                del self.connectorActionPool[cid]
+                
+                
+        finally:
+            self.connectorsLock.release()
+            
             
     def updateConnector(self, connector):
         """
@@ -202,34 +284,24 @@ class Application(threading.Thread):
         """
         cid = str(connector['id'])
         
-        if self.eventListeners.get(cid, None) and self.eventListeners[cid].server['location'] != connector['location']:
+        if self.connectorEventListeners.get(cid, None) and self.connectorEventListeners[cid].server['location'] != connector['location']:
             """ Updated location """
             self.removeConnector(cid)
             self.addConnector(connector)
             
-        elif int(connector['status']) == -1 and self.eventListeners.get(cid, None):
+        elif int(connector['status']) == -1 and self.connectorEventListeners.get(cid, None):
             """ disabled """
             self.removeConnector(cid)
         
-        elif int(connector['status']) == 0 and not self.eventListeners.get(cid, None):
+        elif int(connector['status']) == 0 and not self.connectorEventListeners.get(cid, None):
             """ enabled """
             self.addConnector(connector)
         
             
-    def removeConnector(self, cid):
-        """
-            Remove connector
-        """
-        self.eventListenersLock.acquire(True)
-        try:
-            if self.eventListeners.get(cid, None):
-                self.eventListeners[cid].stop()
-                self.eventListeners[cid].join()
-                del self.eventListeners[cid]
-        finally:
-            self.eventListenersLock.release()
-            
     def run(self):
+        """
+            Main thread loop
+        """
         
         self.running = True
         
@@ -244,14 +316,14 @@ class Application(threading.Thread):
                 time.sleep(1)
             self.pumpEvent({'eventType':'heartbeat'})
 
-        self.eventListenersLock.acquire(True)
+        self.connectorsLock.acquire(True)
         try:
-            for cid, c in self.eventListeners.iteritems():
+            for cid, c in self.connectorEventListeners.iteritems():
                 logger.info("Stopping connector client %s" %(cid,))
                 c.stop()
                 c.join()
         finally:
-            self.eventListenersLock.release()
+            self.connectorsLock.release()
     
 
         

@@ -25,7 +25,7 @@ class dispatcher(dispatcher_parent):
         
         fn = os.path.basename(cherrypy.url())
         
-        return vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs.get('args'))
+        return vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs.get('args', {}))
     
     @jsonout
     def vboxBulkRequest(self, *args, **kwargs):

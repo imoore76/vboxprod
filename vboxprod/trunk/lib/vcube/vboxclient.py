@@ -25,7 +25,7 @@ class vboxRPCClientPool(threading.Thread):
             
             self.clients.append(c)
             
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
     def stop(self):
         
@@ -37,8 +37,8 @@ class vboxRPCClientPool(threading.Thread):
         for i in range(0,20):
             if not self.running: break
             for c in self.clients:
-                #if c.available:
-                return c.rpcCall(action, args)
+                if c.available:
+                    return c.rpcCall(action, args)
             time.sleep(1)
             
         raise Exception("vboxRPCClientPool: no threads available to perform request")
@@ -99,7 +99,7 @@ class vboxRPCClient(threading.Thread):
         # Initial state is disconnected
         self.onStateChange(self.id, STATE_DISCONNECTED, '')
                 
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
         
     def connect(self):
@@ -133,7 +133,7 @@ class vboxRPCClient(threading.Thread):
                 
         except Exception as e:
 
-            logger.exception("%s %s" %(self.server['location'], str(e)))
+            logger.error("%s %s" %(self.server['location'], str(e)))
 
             # Error state
             self.onStateChange(self.id, STATE_ERROR, str(e))
@@ -144,27 +144,22 @@ class vboxRPCClient(threading.Thread):
         self.onStateChange(self.id, STATE_REGISTERING, '')
         
         """ Set service """
-        print "Setting Service"
-        
         self.sock.sendall(json.dumps(self.genRPCCallMsg('setService', {'service':self.service}))+"\n")
         
         response = self.waitResponse()
         if not response or not response.get('success', False):
             raise Exception("setService failed for vbox connector %s" %(self.server['name'],))
 
-        print "Service set"
-        
         if self.listener:
                         
-            print "Registering client"
             self.sock.sendall(json.dumps(self.genRPCCallMsg('registerClient',{}))+"\n")
             
             response = self.waitResponse()
             if not response or not response.get('success', False):
                 raise Exception("registerClient failed for vbox connector %s" %(self.server['name'],))
 
-
-            
+        self.registered = True
+        
     def disconnect(self):
         """ 
             Disconnect from server
@@ -190,7 +185,7 @@ class vboxRPCClient(threading.Thread):
         """
             Stop running and disconnect
         """
-        logger.debug("Stop requested")
+        logger.debug("Stop requested %s" %(id(self),))
         self.running = False
         self.disconnect()
         
@@ -218,6 +213,7 @@ class vboxRPCClient(threading.Thread):
         self.rpcLock.acquire(True)
         response = None
         
+        startTime = time.time()
         try:
             if self.rpcRequestId:
                 raise Exception("RPC request already in progress")
@@ -234,6 +230,7 @@ class vboxRPCClient(threading.Thread):
             self.sock.sendall(json.dumps(sendMsg) + "\n")
             try:
                 response = self.rpcResponse.get(True, timeout)
+                print "rpcCall %s took %s seconds" %(call, (time.time()-startTime))
                 self.rpcResponse.task_done()
             except:
                 raise Exception("Request timed out: %s", json.dumps(sendMsg))
@@ -254,7 +251,7 @@ class vboxRPCClient(threading.Thread):
     
     def waitResponse(self):
         
-        while True:
+        while self.running:
             
             try:
     
@@ -262,14 +259,12 @@ class vboxRPCClient(threading.Thread):
                 logger.debug("Waiting for response")    
                 response = self.file.readline()
                 
-                print response
-                
-                logger.debug("Got response %s" %(response,))
+                #logger.debug("Got response %s" %(response,))
                 
                 
                 # EOF
                 if len(response) == 0 or response[-1] != "\n":
-                    raise Exception('Connection closed')
+                    raise Exception('Connection closed by remote host')
     
             # assume disconnect by server
             except Exception as e:
@@ -318,6 +313,8 @@ class vboxRPCClient(threading.Thread):
                         if self.running: time.sleep(1)
                         else: break
             
+                if not self.connected: break
+                
                 if not self.registered:
                     try:
                         self.register()
@@ -333,7 +330,7 @@ class vboxRPCClient(threading.Thread):
             
             if not message: continue
             
-            messageLogger.debug("Got message: %s" %(message,))
+            #messageLogger.debug("Got message: %s" %(message,))
 
 
             if self.listening and message.get('msgType','') in self.listenFor:
@@ -392,7 +389,7 @@ class vboxRPCEventListener(threading.Thread):
         # Initial state is disconnected
         self.onStateChange(self.id, STATE_DISCONNECTED, '')
         
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
     def connect(self):
         
@@ -413,7 +410,6 @@ class vboxRPCEventListener(threading.Thread):
 
         try:
             
-            logger.debug("Trying to connect...")
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((url.hostname, url.port))
             
@@ -464,7 +460,6 @@ class vboxRPCEventListener(threading.Thread):
         self.registered = False
     
     def stop(self):
-        logger.debug("Stop requested")
         self.running = False
         self.disconnect()
         

@@ -94,6 +94,7 @@ def _machineGetBaseInfo(machine):
         'state' : vboxEnumToString("MachineState", machine.state),
         'group_id' : '',
         'OSTypeId' : machine.OSTypeId,
+        'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
         'lastStateChange' : long(machine.lastStateChange)/1000,
         'id' : machine.id,
         'currentStateModified' : bool(machine.currentStateModified),
@@ -467,6 +468,13 @@ class vboxConnector(object):
             vboxMgr.initPerThread()
             localData.vboxInit = True
         self.vbox = vboxMgr.vbox
+        
+    def finishRequest(self, client):
+        global vboxMgr
+        localData = threading.local()
+        if getattr(localData,'vboxInit',False) != True:
+            vboxMgr.deinitPerThread()
+        localData.vboxInit = False
         
     """
      * Get VirtualBox version
@@ -1378,7 +1386,7 @@ class vboxConnector(object):
             
             try:
                 p.enabled = int(args['serialPorts'][i]['enabled'])
-                p.IOBase = hexdec(args['serialPorts'][i]['IOBase'])
+                p.IOBase = int(args['serialPorts'][i]['IOBase'], 0)
                 p.IRQ = int(args['serialPorts'][i]['IRQ'])
                 if args['serialPorts'][i].get('path',None):
                     p.path = args['serialPorts'][i]['path']
@@ -1403,7 +1411,7 @@ class vboxConnector(object):
             if not (p.enabled or int(args['parallelPorts'][i]['enabled'])): continue
             lptChanged = True
             try:
-                p.IOBase = hexdec(args['parallelPorts'][i]['IOBase'])
+                p.IOBase = int(args['parallelPorts'][i]['IOBase'], 0)
                 p.IRQ = int(args['parallelPorts'][i]['IRQ'])
                 p.path = args['parallelPorts'][i]['path']
                 p.enabled = int(args['parallelPorts'][i]['enabled'])
@@ -1822,10 +1830,7 @@ class vboxConnector(object):
          * NICs
          """
         response = {'networkInterfaces' : []}
-        for d in vboxGetArray(self.vbox.host, 'networkInterfaces'):
-
-            if d.interfaceType != vboxMgr.constants.HostNetworkInterfaceType_HostOnly:
-                continue
+        for d in self.vbox.host.findHostNetworkInterfacesOfType(vboxMgr.constants.HostNetworkInterfaceType_HostOnly):
 
             # Get DHCP Info
             try:
@@ -1833,7 +1838,7 @@ class vboxConnector(object):
                 dhcp = self.vbox.findDHCPServerByNetworkName(d.networkName)
                 if dhcp:
                     dhcpserver = {
-                        'enabled' : dhcp.enabled,
+                        'enabled' : bool(dhcp.enabled),
                         'IPAddress' : dhcp.IPAddress,
                         'networkMask' : dhcp.networkMask,
                         'networkName' : dhcp.networkName,
@@ -1848,13 +1853,13 @@ class vboxConnector(object):
 
             response['networkInterfaces'].append({
                 'id' : d.id,
-                'IPV6Supported' : d.IPV6Supported,
+                'IPV6Supported' : bool(d.IPV6Supported),
                 'name' : d.name,
                 'IPAddress' : d.IPAddress,
                 'networkMask' : d.networkMask,
                 'IPV6Address' : d.IPV6Address,
                 'IPV6NetworkMaskPrefixLength' : d.IPV6NetworkMaskPrefixLength,
-                'DHCPEnabled' : d.DHCPEnabled,
+                'DHCPEnabled' : bool(d.DHCPEnabled),
                 'networkName' : d.networkName,
                 'dhcpServer' : dhcpserver
             })
@@ -1963,11 +1968,9 @@ class vboxConnector(object):
 
         ostypes = []
 
-        ts = self.vbox.getGuestOSTypes()
-
         supp64 = (self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_LongMode) and self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
 
-        for g in ts:
+        for g in vboxGetArray(self.vbox, 'guestOSTypes'):
 
             # Avoid multiple calls
             bit64 = g.is64Bit
@@ -1978,7 +1981,7 @@ class vboxConnector(object):
                 'description' : g.description,
                 'is64Bit' : bit64,
                 'recommendedRAM' : g.recommendedRAM,
-                'recommendedHDD' : (g.recommendedHDD/1024)/1024,
+                'recommendedHDD' : (long(g.recommendedHDD)/1024)/1024,
                 'supported' : bool((not bit64) or supp64)
             })
 
@@ -2825,7 +2828,7 @@ class vboxConnector(object):
                 ports.append({
                     'slot' : p.slot,
                     'enabled' : p.enabled,
-                    'IOBase' : str('0x' + '%3s' %(hex(p.IOBase),)).upper(),
+                    'IOBase' : str('0X%x'%(p.IOBase,)).upper(),
                     'IRQ' : p.IRQ,
                     'hostMode' : vboxEnumToString("PortMode", p.hostMode),
                     'server' : p.server,
@@ -2851,7 +2854,7 @@ class vboxConnector(object):
                 ports.append({
                     'slot' : p.slot,
                     'enabled' : int(p.enabled),
-                    'IOBase' : str('0x' + '%3s' %(hex(p.IOBase),)).upper(),
+                    'IOBase' : str('0X%x'%(p.IOBase,)).upper(),
                     'IRQ' : p.IRQ,
                     'path' : p.path
                 })
@@ -3684,7 +3687,6 @@ class vboxConnector(object):
 
         children = []
         attachedTo = []
-        hasSnapshots = 0
 
         for c in vboxGetArray(m,'children'):
             children.append(self._mediumGetDetails(c))
@@ -3698,7 +3700,6 @@ class vboxConnector(object):
                 continue
 
             c = len(sids)
-            hasSnapshots = max(hasSnapshots,c)
             for i in range(0,c):
                 if sids[i] == mid.id:
                     del sids[i]
@@ -3711,7 +3712,6 @@ class vboxConnector(object):
                     except:
                         pass
 
-            hasSnapshots = int(len(sids) > 1)
             attachedTo.append({'machine':mid.name,'snapshots':sids})
 
         # For fixed value
@@ -3725,21 +3725,20 @@ class vboxConnector(object):
                 'location' : m.location,
                 'name' : m.name,
                 'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
-                'hostDrive' : m.hostDrive,
+                'hostDrive' : bool(m.hostDrive),
                 'size' : long(m.size),
                 'format' : m.format,
                 'type' : vboxEnumToString("MediumType",m.type),
                 'parent' : (m.parent.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.parent) else None),
                 'children' : children,
                 'base' : (m.base.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
-                'readOnly' : m.readOnly,
+                'readOnly' : bool(m.readOnly),
                 'logicalSize' : (long(m.logicalSize)/1024)/1024,
-                'autoReset' : m.autoReset,
-                'hasSnapshots' : hasSnapshots,
+                'autoReset' : bool(m.autoReset),
                 'lastAccessError' : m.lastAccessError,
-                'variant' : variant,
-                'fixed' : bool((int(variant) & mv['Fixed']) > 0),
-                'split' : bool((int(variant) & mv['VmdkSplit2G']) > 0),
+                'variant' : long(variant),
+                'fixed' : bool((long(variant) & mv['Fixed']) > 0),
+                'split' : bool((long(variant) & mv['VmdkSplit2G']) > 0),
                 'machineIds' : [],
                 'attachedTo' : attachedTo
             }
@@ -3986,7 +3985,7 @@ class vboxEventListener(threading.Thread):
     
     def __init__(self, listenerId, eventSource, eventListQueue):
         
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,listenerId))
 
         self.listenerId = listenerId
         self.eventSource = eventSource
@@ -4073,7 +4072,7 @@ class vboxEventListenerPool(threading.Thread):
     
     def __init__(self, eventListQueue):
         self.eventListQueue = eventListQueue
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
     
     def isVboxAlive(self):
         return True if self.listeners.get('vbox',None) is not None else False
@@ -4163,6 +4162,15 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
     file = None
     heartbeatTimer = None
     
+    def close(self):
+        
+        try: self.request.close()
+        except: pass
+        try: self.file._sock.close()
+        except: pass
+        try: self.file.close()
+        except: pass
+        
     def send(self, message):
         
         try:
@@ -4184,6 +4192,9 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
         # we can just call readline
         self.file = self.request.makefile()
         
+        clientId = "%s:%s" %(self.client_address)
+        
+        self.server.addClient(clientId, self)
             
         class heartbeatrunner(threading.Thread):
             
@@ -4194,7 +4205,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
             
             def __init__(self, handler):
                 self.handler = handler
-                threading.Thread.__init__(self)
+                threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
                 
             def shutdown(self):
                 self.running = False
@@ -4208,7 +4219,11 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                 RPCHeartbeatMsg = {'msgType':'rpc_heartbeat','thread_id':str(threading.current_thread())}
                 
                 while self.running:
-                    self.handler.send(RPCHeartbeatMsg)
+                    try:
+                        self.handler.send(RPCHeartbeatMsg)
+                    except:
+                        return
+                    
                     for i in range(0, RPCHeartbeatInterval):
                         if self.running: time.sleep(1)
 
@@ -4233,8 +4248,6 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                         message = json.loads(request)
                     except:
                         raise Exception("Invalid json request: %s" %(request))
-                    
-                    pprint.pprint(message)
                     
                     """
                         Initial response dict
@@ -4364,8 +4377,6 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                     })
                     
 
-                print "here..."
-                print response
                 self.send(response)
                 
                 # Start heartbeat
@@ -4381,14 +4392,20 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
          
         finally:
             
-            # Unregister client?
-            if serviceObj and clientRegistered:
-                serviceObj.unregisterClient(self)
-                
             # Stop heartbeat
             if self.heartbeat:
                 self.heartbeat.shutdown()
                 self.heartbeat.join()
+            
+            # Unregister client?
+            if serviceObj:
+                serviceObj.finishRequest(self)
+                
+                
+        self.server.removeClient(clientId)
+
+                
+    
             
 """
     RPC server
@@ -4398,6 +4415,35 @@ class RPCServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
     
     services = {}
+    
+    clients = {}
+    clientLock = threading.Lock()
+    
+    def shutdown(self):
+            
+        SocketServer.TCPServer.shutdown(self)
+
+        self.clientLock.acquire(True)
+        try:
+            for k,c in self.clients.iteritems():
+                self.close_request(c)
+        finally:
+            self.clientLock.release()
+        
+    def addClient(self, clientId, client):
+        self.clientLock.acquire(True)
+        try:
+            self.clients[clientId] = client
+        finally:
+            self.clientLock.release()
+    
+    def removeClient(self, clientId):
+        self.clientLock.acquire(True)
+        try:
+            if self.clients.get(clientId, None):
+                del self.clients[clientId]
+        finally:
+            self.clientLock.release()
     
     def server_activate(self):
         self.services['server'] = self
@@ -4432,11 +4478,12 @@ class vboxEventService(threading.Thread):
     def __init__(self, eventQueue):
         
         self.eventQueue = eventQueue
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
 
     def shutdown(self):
-        self.running = False
+
+        self.running = False            
                 
     def run(self):
         
@@ -4457,24 +4504,33 @@ class vboxEventService(threading.Thread):
                 finally:
                     self.clientLock.release()
                     
-            time.sleep(1)
+            time.sleep(0.2)
         
-        # Not sure if this is needed
-        while not self.eventQueue.empty():
-            self.eventQueue.get()
-            self.eventQueue.task_done()
-        self.eventQueue.join()
+        self.clientLock.acquire(True)
+        try:
+            clientKeys = self.clients.keys()
+            for k in clientKeys:
+                try:
+                    self.clients[k].close()
+                    del self.clients[k]
+                except Exception as e:
+                    logger.exception(str(e))
+        finally:
+            self.clientLock.release()
     
                 
     def registerClient(self, client):
+
         self.clientLock.acquire(True)
+        if not self.running: return False
+        
         id = "%s:%s" %(client.client_address)
         try:
             self.clients[id] = client
         finally:
             self.clientLock.release()
         
-    def unregisterClient(self, client):
+    def finishRequest(self, client):
         self.clientLock.acquire(True)
         id = "%s:%s" %(client.client_address)
         try:    
@@ -4641,9 +4697,8 @@ def main(argv = sys.argv):
     # Start a thread with the server -- that thread will then start one
     # more thread for each request
     rpcServer_thread = threading.Thread(target=rpcServer.serve_forever)
-    # Exit the server thread when the main thread terminates
-    rpcServer_thread.daemon = True
     rpcServer_thread.start()
+    
     
     """
     
@@ -4717,7 +4772,7 @@ def main(argv = sys.argv):
                 enrichEvents(eventList)
                 
             for e in eventList.values():
-                eventlogger.debug("Event %s" %(e,))
+                #eventlogger.debug("Event %s" %(e,))
                 outgoingQueue.put(e)
                 
             # only sleep if we didn't have events
@@ -4734,12 +4789,6 @@ def main(argv = sys.argv):
         logger.exception(str(e))
         
     """
-        Shutdown the listener pool
-    """
-    listenerPool.shutdown()
-    listenerPool.join()
-
-    """
         Shutdown the vbox event server
     """
     eventServer.shutdown()
@@ -4749,15 +4798,15 @@ def main(argv = sys.argv):
         Shutdown the RPC server
     """
     rpcServer.shutdown()
+    rpcServer.server_close()
     rpcServer_thread.join()
     
     """
-        Join queues.. not sure if this is really needed
+        Shutdown the listener pool
     """
-    while not incomingQueue.empty(): incomingQueue.task_done()
-    incomingQueue.join()
-    while not outgoingQueue.empty(): outgoingQueue.task_done()
-    outgoingQueue.join()
+    listenerPool.shutdown()
+    listenerPool.join()
+    
     
 if __name__ == '__main__':
     main(sys.argv)

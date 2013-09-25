@@ -122,7 +122,7 @@ class Application(threading.Thread):
         __import__('vcube.accounts.' + self.getConfigItem('vcube','accountsModule') )
         self.accounts = getattr(accounts, self.getConfigItem('vcube','accountsModule')).interface()
                     
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
 
     """
@@ -316,12 +316,32 @@ class Application(threading.Thread):
                 time.sleep(1)
             self.pumpEvent({'eventType':'heartbeat'})
 
+ 
         self.connectorsLock.acquire(True)
         try:
+            
+            """ Stop event listener clients """
             for cid, c in self.connectorEventListeners.iteritems():
                 logger.info("Stopping connector client %s" %(cid,))
                 c.stop()
+                
+            """ Stop action pool clients """
+            for cid, c in self.connectorActionPool.iteritems():
+                logger.info("Stopping connector client %s" %(cid,))
+                c.stop()
+
+            """ Join event listeners """
+            for cid, c in self.connectorEventListeners.iteritems():
                 c.join()
+            
+            """ Join clients """
+            for cid, c in self.connectorActionPool.iteritems():
+                c.join()
+            
+            
+            self.connectorActionPool = {}
+            self.connectorEventListeners = {}
+
         finally:
             self.connectorsLock.release()
     

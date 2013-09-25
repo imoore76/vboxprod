@@ -1,6 +1,8 @@
 
 from vcube.dispatchers import dispatcher_parent, jsonout
 
+import pprint
+
 import vcube
 
 import cherrypy
@@ -19,9 +21,14 @@ class dispatcher(dispatcher_parent):
     @jsonout
     def login(self, *args, **kwargs):
         
+        
+        pprint.pprint(kwargs)
+        
+        
         user = vcube.getInstance().accounts.authenticate(kwargs.get('u',''), kwargs.get('p',''))
         if user != False:
             cherrypy.session['user'] = user
+            print "OK!!!!"
             return self.getSession(_raw=True)
         return False
     

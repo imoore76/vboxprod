@@ -85,9 +85,9 @@ Ext.application({
     		
     		success: function(response){
     			
-    			console.log({'url':ajaxURL,requestData:addparams});
+    			var data = Ext.JSON.decode(response.responseText).data;
     			
-    			var data = Ext.JSON.decode(response.responseText);
+    			
     			
     			//console.log(data);
     			// Append debug output to console
@@ -106,8 +106,11 @@ Ext.application({
 					} // </ foreach error >
 				
     			}
-    			if(callback) callback(data.data.responseData);
-    		}
+    			if(callback) callback(data.responseData);
+    		},
+    		failure: function(response, opts) {
+    		   self.alert("Request failed: with status code " + response.status);
+		   }
     	});       	
     },
     
@@ -146,7 +149,7 @@ Ext.application({
     	
 			self.session = d;
 			
-			if(self.session && self.session.id) self.fireEvent('start');
+			if(self.session && self.session.user) self.fireEvent('start');
 			else self.showLogin();
 
     	});

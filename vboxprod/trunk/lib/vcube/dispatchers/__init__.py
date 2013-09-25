@@ -7,12 +7,35 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['accounts', 'connectors', 'vbox', 'app', 'vmgroups']
 
+
+"""
+    Input data comes from json posted data
+
+"""
+def jsonin():
+
+    def decorated(*args, **kwargs):
+
+        try:
+            kwargs.update(json.loads(cherrypy.request.body.read(int(cherrypy.request.headers['Content-Length']))))
+        except:
+            pass
+        
+        return func(*args, **kwargs)
+
+    return decorated
+
 """"
     Send data as JSON
 """
 def jsonout(func):
     cherrypy.response.headers['Content-Type'] = 'application/json'
     def decorated(*args, **kwargs):
+
+        try:
+            kwargs.update(json.loads(cherrypy.request.body.read(int(cherrypy.request.headers['Content-Length']))))
+        except:
+            pass
         
         if kwargs.get('_raw') == True:
             return func(*args, **kwargs)
@@ -34,7 +57,11 @@ def jsonout(func):
         for x in args[0].errors:
             errors.append(x)
             
+        if kwargs.get('_pprint', None):
+            return pprint.pformat({'data':{'success':success,'errors':errors,'messages':args[0].messages,'responseData':responseData}})
+        
         return json.dumps({'data':{'success':success,'errors':errors,'messages':args[0].messages,'responseData':responseData}})
+    
     return decorated
 
 """

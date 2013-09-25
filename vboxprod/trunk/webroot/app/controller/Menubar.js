@@ -54,7 +54,7 @@ Ext.define('vcube.controller.Menubar', {
     
     /* Populate navigation tree with groups and VMs */
     updateLogout: function() {
-    	this.getLogoutItem().setText('Logout - ' + (this.application.session.name ? this.application.session.name : this.application.session.userid));
+    	this.getLogoutItem().setText('Logout - ' + (this.application.session.user.name ? this.application.session.user.name : this.application.session.user.userid));
     }
     	
 });

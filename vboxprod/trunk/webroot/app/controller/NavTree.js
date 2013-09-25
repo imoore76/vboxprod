@@ -17,11 +17,13 @@ Ext.define('vcube.controller.NavTree', {
     init: function(){
     	
     	/* Application level events */
+    	/*
         this.application.on({
         	launch: this.showWelcome,
         	scope: this
         });
-        
+        */
+    	
         /* Tree events */
         this.control({
         	'viewport > NavTree' : {
@@ -38,6 +40,8 @@ Ext.define('vcube.controller.NavTree', {
     
     /* Populate navigation tree with groups and VMs */
     populateTree: function() {
+    	
+    	return;
     	
     	var NavTreeView = this.getNavTreeView();    	
     	var NavTreeGroupsStore = this.getNavTreeGroupsStore();

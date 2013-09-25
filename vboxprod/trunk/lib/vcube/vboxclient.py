@@ -185,7 +185,8 @@ class vboxRPCClient(threading.Thread):
         """
             Stop running and disconnect
         """
-        logger.debug("Stop requested %s" %(id(self),))
+        logger.debug("Stop requested")
+        
         self.running = False
         self.disconnect()
         

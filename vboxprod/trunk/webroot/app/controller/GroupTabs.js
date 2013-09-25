@@ -15,7 +15,7 @@ Ext.define('vcube.controller.GroupTabs', {
     	
         /* Tree events */
         this.control({
-        	'NavTree' : {
+        	'NavTreeView' : {
         		select: this.selectItem
         	}
         });

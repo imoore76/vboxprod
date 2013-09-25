@@ -24,12 +24,18 @@ Ext.define('vcube.controller.Login', {
     	
     	var self = this;
     	
+    	
     	// only if submit buttin is enabled
     	if(this.getLoginButton().disabled) return;
     	
-    	this.application.ajaxRequest('app','login',{u:this.getUsernameField().getValue(),
+    	console.log("trying login...");
+
+    	this.application.ajaxRequest('app/Login',{u:this.getUsernameField().getValue(),
     		
     		p:this.getPasswordField().getValue()},function(data){
+    			
+    			console.log(data);
+    			
     			// This returns a session object wich must be valid
     			if(data && data.id && data.id > 0) {
     				self.getLoginWindow().hide();

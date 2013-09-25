@@ -36,6 +36,8 @@ Ext.define('vcube.controller.VMTabs', {
     	var tabPanel = this.getVMTabsView();
     	var summaryTab = tabPanel.getComponent('SummaryTab');
     	
+    	tabPanel.setLoading(true);
+    	
     	console.log('data...');
     	console.log(record.raw.data);
     	
@@ -57,6 +59,7 @@ Ext.define('vcube.controller.VMTabs', {
     			detailsTab.items.items[i].update(data);
     		}
     		
+    		tabPanel.setLoading(false);
     	})
 
     	// Summary tab items

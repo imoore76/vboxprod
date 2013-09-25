@@ -8,24 +8,19 @@ var vcubeActions = {
    }
 }
 
-/*
 Ext.Loader.setConfig({
-	enabled	: true,
-	paths	: {
-		vcube :"app"
-	}
+    enabled: true,
+    paths: {
+        'Ext.ux':'ext-4.0/ux'
+    }
 });
 
-Ext.require('vcube.view.Login');
-Ext.require('vcube.AppJsonReader');
-
- */
 Ext.application({
 	
     name: 'vcube',
     autoCreateViewport: true,
     
-    requires: ['vcube.AppJsonReader'],
+    requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred'],
     
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
     

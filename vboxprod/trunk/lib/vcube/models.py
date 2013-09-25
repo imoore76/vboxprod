@@ -10,6 +10,7 @@ dbname = ''
 for k,v in vcube.getConfig().items('storage'):
     if k == 'db': dbname = v
     else: dbconfig[k] = v
+dbconfig['threadlocals'] = True
 
 db = MySQLDatabase(dbname,**dbconfig)
 
@@ -42,9 +43,9 @@ class VMGroup(MySqlModel):
 
     id = PrimaryKeyField()
     name = CharField(unique = True, max_length=32, null = False)
-    description = CharField(max_length=256)
-    location = CharField(max_length=256)
-    parent = ForeignKeyField('self', related_name = 'children')
+    description = CharField(max_length=256, null = True)
+    parent_id = IntegerField(default = 0)
+    order = IntegerField(default = 0)
     
     
 class Connector(MySqlModel):

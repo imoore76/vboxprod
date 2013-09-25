@@ -20,12 +20,13 @@ class dispatcher(dispatcher_parent):
                 callback.exposed = True
                 setattr(self, fn, callback)
         
-    @jsonout    
+    @jsonout
     def vboxAction(self, *args, **kwargs):
         
         fn = os.path.basename(cherrypy.url())
         
         return vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs.get('args', {}))
+        
     
     @jsonout
     def vboxBulkRequest(self, *args, **kwargs):

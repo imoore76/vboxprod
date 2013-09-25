@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 
-
 """
        
     Web Server Thread starts cherrypy

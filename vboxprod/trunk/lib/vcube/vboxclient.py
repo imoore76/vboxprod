@@ -11,6 +11,14 @@ STATE_ERROR = 20
 STATE_REGISTERING = 30
 STATE_RUNNING = 100
 
+STATES_TO_TEXT = {
+    -1: "Disabled",
+    0 : "Disconnected",
+    20: "Errored",
+    30 : "Registering",
+    100: "Running"
+}
+
 class vboxRPCClientPool(threading.Thread):
     
     clients = []

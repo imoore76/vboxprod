@@ -34,6 +34,8 @@ server = None
 
 def start(ip="0.0.0.0",port=8433):
     
+    return
+
     global server_thread, server
     
     # Port 0 means to select an arbitrary unused port

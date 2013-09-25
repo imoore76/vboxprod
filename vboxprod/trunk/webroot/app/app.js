@@ -41,7 +41,7 @@ Ext.application({
     alert: function(msg, dialogStyle) {
     	
     	if( typeof(msg) == 'object' && msg['error'])
-    		msg = msg.error
+    		msg = msg.error + "<br />" + msg.details;
     		
     	
     	new Ext.window.MessageBox().show({

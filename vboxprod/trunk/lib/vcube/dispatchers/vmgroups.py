@@ -11,16 +11,8 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def addGroup(self, *args, **kwargs):
-        ex = None
-        try:
-            ex = VMGroup(VMGroup.name == kwargs.get('name')).get()
-        except:
-            pass
-        if ex:
-            raise Exception("A Group with that name exists")
-        
         c = VMGroup(VMGroup.name == kwargs.get('name'))
-        for attr in ['name','location']:
+        for attr in ['name','description', 'parent_id']:
             setattr(c, attr, kwargs.get(attr))
         c.save()
         return True
@@ -38,7 +30,7 @@ class dispatcher(dispatcher_parent):
     @require_admin
     def updateGroup(self, *args, **kwargs):
         c = VMGroup.get(VMGroup.id == kwargs.get('id',0))
-        for attr in ['name','location']:
+        for attr in ['name','description', 'parent_id']:
             if kwargs.get(attr,None):
                 setattr(c, attr, kwargs.get(attr))
         c.save()
@@ -48,6 +40,6 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def getGroups(self, *args, **kwargs):
-        return list(VMGroup.select().dicts())    
+        return list(VMGroup.select().order_by(VMGroup.parent_id, VMGroup.order).dicts())    
     getGroups.exposed = True
 

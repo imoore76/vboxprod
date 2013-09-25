@@ -17,12 +17,10 @@ Ext.define('vcube.controller.NavTree', {
     init: function(){
     	
     	/* Application level events */
-    	/*
         this.application.on({
-        	launch: this.showWelcome,
+        	start: this.populateTree,
         	scope: this
         });
-        */
     	
         /* Tree events */
         this.control({
@@ -35,13 +33,15 @@ Ext.define('vcube.controller.NavTree', {
     
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
-    	//console.log(record);
+    	console.log("Row");
+    	console.log(row);
+    	console.log("Record");
+    	console.log(record);
     },
     
-    /* Populate navigation tree with groups and VMs */
+
+    /* Populate navigation tree  */
     populateTree: function() {
-    	
-    	return;
     	
     	var NavTreeView = this.getNavTreeView();    	
     	var NavTreeGroupsStore = this.getNavTreeGroupsStore();
@@ -49,6 +49,120 @@ Ext.define('vcube.controller.NavTree', {
     	
     	// Show load mask
     	NavTreeView.setLoading();
+    	
+    	// Nav tree root reference
+    	navTreeRoot = NavTreeView.getRootNode()
+    	
+    	// Add servers folder
+    	serversFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Servers','id':'servers'})
+    	navTreeRoot.appendChild(serversFolder);
+
+    	// Add virtual machines
+    	vmsFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Virtual Machines','id':'vms'})
+    	navTreeRoot.appendChild(vmsFolder);
+
+    	// Add templates folder
+    	templatesFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Templates','id':'templates'})
+    	navTreeRoot.appendChild(templatesFolder);
+
+    	var self = this;
+    	
+    	var availableServers = [];
+    	
+    	// Add servers function
+    	function addServers() {
+    		
+    		self.application.ajaxRequest('connectors/getConnectors',{}, function(data) {
+    			
+    			for(var i = 0; i < data.length; i++) {
+    				serversFolder.appendChild(serversFolder.createNode({
+    					'iconCls':'navTreeIcon',
+    					'icon': 'images/vbox/OSE/VirtualBox_cube_42px.png',
+    					'leaf':true,
+    					'text':data[i].name + ' (<span class="navTreeServerStatus">' + data[i].status_name + '</span>)',
+    					'id' : 'server-' + data[i].id
+    				}))
+    				
+    				// Add to available servers list if server is available
+    				if(data[i].status == 100) {
+    					availableServers[availableServers.length] = data[i].id;
+    				}
+    			}
+    		})
+    		
+			// Expand folder
+			serversFolder.expand()
+			
+			// Add groups
+			addGroups()
+
+    	}
+    	
+    	// Add VM groups
+    	function addGroups() {
+    		
+    		self.application.ajaxRequest('vmgroups/getGroups',{}, function(data) {
+    			
+    			var nodeStore = NavTreeView.getStore();
+    			
+    			for(var i = 0; i < data.length; i++) {
+    				
+    				appendTarget = (data[i].parent_id ? nodeStore.getNodeById('vmgroup-' + data[i].parent_id) : vmsFolder);
+    				if(!appendTarget) appendTarget = vmsFolder;
+    				 
+    				appendTarget.appendChild(appendTarget.createNode({
+    					'iconCls':'navTreeIcon',
+    					'leaf':false,
+    					'text':data[i].name,
+    					'id' : 'vmgroup-' + data[i].id
+    				}))
+    			}
+    			
+    			// Expand folder
+    			vmsFolder.expand()
+    			
+    			// Add vms
+    			for(var i = 0; i < availableServers.length; i++) {
+    				console.log(i)
+    				addVMs(availableServers[i]);
+    			}
+    			
+    		})
+    		
+    	}
+    	
+    	// Get VMs
+    	function addVMs(connectorid) {
+    		
+    		self.application.ajaxRequest('vbox/vboxGetMachines',{'server':connectorid}, function(data) {
+    			
+    			var nodeStore = NavTreeView.getStore();
+    			
+    			//data = data.vboxGetMachines_response
+    			
+    			for(var i = 0; i < data.length; i++) {
+    				
+    				appendTarget = (data[i].group_id ? nodeStore.getNodeById('vmgroup-' + data[i].group_id) : vmsFolder);
+    				if(!appendTarget) appendTarget = vmsFolder;
+    				 
+    				appendTarget.appendChild(appendTarget.createNode({
+    					'cls' : 'navTreeVM vmState' + (data[i].state) + ' vmSessionState' + data[i].sessionState + ' vmOSType' + data[i].OSTypeId,
+            			'text' : '<span class="vmStateIcon"> </span>' + data[i].name,
+            			'leaf' : true,
+            			'icon' : 'images/vbox/' + vboxGuestOSTypeIcon(data[i].OSTypeId),
+            			'iconCls' : 'navTreeIcon'
+            		}))
+    			}
+    			
+    			
+    		})
+
+    		
+    	}
+    	
+    	addServers()
+    	
+    	NavTreeView.setLoading(false); return;
     	
     	// Function to sort records by order
     	var sortRecords = function(a,b) {
@@ -83,7 +197,7 @@ Ext.define('vcube.controller.NavTree', {
         		}
 
         		// expand tree
-        		NavTreeView.getRootNode().expand();
+        		navTreeRoot.expand();
         		
         		// Hide load mask
         		NavTreeView.setLoading(false);
@@ -120,8 +234,7 @@ Ext.define('vcube.controller.NavTree', {
     		}
 		
     		// Get top level
-    		var rootNode = NavTreeView.getRootNode();
-    		addChildren(0,rootNode);
+    		addChildren(0,navTreeRoot);
     		
     		// Now load VMs
     		loadVMs();

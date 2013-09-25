@@ -40,6 +40,10 @@ Ext.application({
     // Alert
     alert: function(msg, dialogStyle) {
     	
+    	if( typeof(msg) == 'object' && msg['error'])
+    		msg = msg.error
+    		
+    	
     	new Ext.window.MessageBox().show({
     		title: "<div style='display:inline-block;width:16px;height:16px;background:url(images/vbox/OSE/about_16px.png) no-repeat;padding-left:20px'>"+this.name+"</div>",
     		msg: msg,

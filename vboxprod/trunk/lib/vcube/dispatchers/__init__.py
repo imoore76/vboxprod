@@ -8,11 +8,13 @@ logger = logging.getLogger(__name__)
 __all__ = ['accounts', 'connectors', 'vbox', 'app', 'vmgroups']
 
 
+jsonResponseTemplate = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
+
 """
     Input data comes from json posted data
 
 """
-def jsonin():
+def jsonin(func):
 
     def decorated(*args, **kwargs):
 
@@ -29,8 +31,10 @@ def jsonin():
     Send data as JSON
 """
 def jsonout(func):
-    cherrypy.response.headers['Content-Type'] = 'application/json'
+    
     def decorated(*args, **kwargs):
+
+        cherrypy.response.headers['Content-Type'] = 'application/json'
 
         try:
             kwargs.update(json.loads(cherrypy.request.body.read(int(cherrypy.request.headers['Content-Length']))))
@@ -40,27 +44,25 @@ def jsonout(func):
         if kwargs.get('_raw') == True:
             return func(*args, **kwargs)
         
-        errors = []
-        messages = []
-        success = False
-        responseData = None
+        jsonResponse = jsonResponseTemplate
+        
         try:
-            responseData = func(*args, **kwargs)
-            success = True
+            
+            jsonResponse['data']['responseData'] = func(*args, **kwargs)
+            jsonResponse['data']['success'] = True
+            
+            
         except Exception as ex:
             
             logger.exception(str(ex))
 
             e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
-            errors.append(e)
+            jsonResponse['data']['errors'].append(e)
         
-        for x in args[0].errors:
-            errors.append(x)
-            
         if kwargs.get('_pprint', None):
-            return pprint.pformat({'data':{'success':success,'errors':errors,'messages':args[0].messages,'responseData':responseData}})
+            return pprint.pformat(jsonResponse)
         
-        return json.dumps({'data':{'success':success,'errors':errors,'messages':args[0].messages,'responseData':responseData}})
+        return json.dumps(jsonResponse)
     
     return decorated
 

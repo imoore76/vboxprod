@@ -80,7 +80,8 @@ Ext.define('vcube.controller.NavTree', {
     					'icon': 'images/vbox/OSE/VirtualBox_cube_42px.png',
     					'leaf':true,
     					'text':data[i].name + ' (<span class="navTreeServerStatus">' + data[i].status_name + '</span>)',
-    					'id' : 'server-' + data[i].id
+    					'id' : 'server-' + data[i].id,
+    					'data' : data[i]
     				}))
     				
     				// Add to available servers list if server is available
@@ -114,7 +115,8 @@ Ext.define('vcube.controller.NavTree', {
     					'iconCls':'navTreeIcon',
     					'leaf':false,
     					'text':data[i].name,
-    					'id' : 'vmgroup-' + data[i].id
+    					'id' : 'vmgroup-' + data[i].id,
+    					'data' : data[i]
     				}))
     			}
     			
@@ -142,6 +144,8 @@ Ext.define('vcube.controller.NavTree', {
     			
     			for(var i = 0; i < data.length; i++) {
     				
+    				data[i]._connectorid = connectorid
+    				
     				appendTarget = (data[i].group_id ? nodeStore.getNodeById('vmgroup-' + data[i].group_id) : vmsFolder);
     				if(!appendTarget) appendTarget = vmsFolder;
     				 
@@ -150,7 +154,8 @@ Ext.define('vcube.controller.NavTree', {
             			'text' : '<span class="vmStateIcon"> </span>' + data[i].name,
             			'leaf' : true,
             			'icon' : 'images/vbox/' + vboxGuestOSTypeIcon(data[i].OSTypeId),
-            			'iconCls' : 'navTreeIcon'
+            			'iconCls' : 'navTreeIcon',
+            			'data' : data[i]
             		}))
     			}
     			

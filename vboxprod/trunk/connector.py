@@ -4203,7 +4203,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                                 serviceObj = serviceInstance
                             
                             response.update({
-                                '%s_response'%(method,) : True,
+                                'responseData' : True,
                                 'errors': serviceObj.errors if hasattr(serviceObj, 'errors') else [],
                                 'messages': serviceObj.messages if hasattr(serviceObj, 'messages') else [],
                                 'success': True,
@@ -4220,7 +4220,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                             methodResponse = serviceObj.registerClient(self)
                             clientRegistered = True
                             response.update({
-                                '%s_response'%(method,) : methodResponse,
+                                'responseData' : methodResponse,
                                 'success': True
                             })
 
@@ -4250,7 +4250,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                                     })
                                     
                                 response.update({
-                                    '%s_response'%(method,) : methodResponse,
+                                    'responseData' : methodResponse,
                                     'errors': errors,
                                     'messages': serviceObj.messages,
                                     'success': True
@@ -4263,8 +4263,8 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                                 logger.exception(str(ex))
                                 
                                 response.update({
-                                    '%s_response'%(method,) : False,
-                                    'errors': [{'msgType':'rpc_exception','details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
+                                    'responseData' : False,
+                                    'errors': [{'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
                                     'messages': serviceObj.messages
                                 })
                             

@@ -34,27 +34,36 @@ Ext.define('vcube.controller.VMTabs', {
     		return;
     	
     	var tabPanel = this.getVMTabsView();
+    	var summaryTab = tabPanel.getComponent('SummaryTab');
     	
-    	// Set raw data
-    	tabPanel.rawData = record.raw;
+    	console.log('data...');
+    	console.log(record.raw.data);
+    	
+    	this.application.ajaxRequest('vbox/machineGetDetails',{'server':record.raw.data._connectorid,'vm':record.raw.data.id},function(data){
+    		
+    		tabPanel.rawData = data;
+    		
+    		// Draw preview and resize panel
+    		vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
+    		summaryTab.down('#PreviewPanel').doLayout();
+    		
+    		summaryTab.getForm().setValues(data);
+    		
+    		summaryTab.down('#baseinfo').update(data);
+    		//summaryTab.down('#state').update(record.raw);
+    		
+    		var detailsTab  = tabPanel.getComponent('DetailsTab');
+    		for(var i in detailsTab.items.items) {    		
+    			detailsTab.items.items[i].update(data);
+    		}
+    		
+    	})
 
     	// Summary tab items
-    	var summaryTab = tabPanel.getComponent('SummaryTab');
 
-    	// Draw preview and resize panel
-    	vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
-    	summaryTab.down('#PreviewPanel').doLayout();
 
     	
-    	summaryTab.getForm().reset().setValues(record.raw);
     	
-    	summaryTab.down('#baseinfo').update(record.raw);
-    	//summaryTab.down('#state').update(record.raw);
-    	
-    	var detailsTab  = tabPanel.getComponent('DetailsTab');
-    	for(var i in detailsTab.items.items) {    		
-    		detailsTab.items.items[i].update(record.raw);
-    	}
 
     }
     

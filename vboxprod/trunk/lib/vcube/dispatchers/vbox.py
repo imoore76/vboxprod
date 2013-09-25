@@ -1,6 +1,8 @@
 import os
 import vcube
-from vcube.dispatchers import dispatcher_parent, jsonout
+import json
+import traceback
+from vcube.dispatchers import dispatcher_parent, jsonin, jsonout, jsonResponseTemplate
 from vcube.models import Connector
 import pprint, cherrypy
 
@@ -20,29 +22,32 @@ class dispatcher(dispatcher_parent):
                 callback.exposed = True
                 setattr(self, fn, callback)
         
-    @jsonout
+    @jsonin
     def vboxAction(self, *args, **kwargs):
         
-        fn = os.path.basename(cherrypy.url())
-        
-        return vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs.get('args', {}))
-        
-    
-    @jsonout
-    def vboxBulkRequest(self, *args, **kwargs):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         
         fn = os.path.basename(cherrypy.url())
-        
-        location = Connector.get(Connector.id == kwargs.get('server')).location
-        
-        server = vboxRPCAction(location)
-        response = server.rpcCall(fn, kwargs)
-        server.close()
-        
-        self.errors = response.get('errors',[])
-        self.messages = response.get('messages',[])
-        
-        return response.get(fn+'_response')
 
-    vboxBulkRequest.exposed = True
+        jsonResponse = jsonResponseTemplate
+        
+        try:
+            
+            response = vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs)
+            
+            for k in jsonResponse['data'].keys():
+                jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k]) 
+                
+        except Exception as ex:
+            
+            e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
+            jsonResponse['data']['errors'].append(e)
+
+        if kwargs.get('_pprint', None):
+            return pprint.pformat(jsonResponse)
+        
+        return json.dumps(jsonResponse)
+    
+
+    vboxAction.exposed = True
 

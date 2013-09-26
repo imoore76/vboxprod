@@ -118,7 +118,7 @@ Ext.define('vmDataMediator', {
 			mList.reject();
 		});
 		
-		return mList.promise();
+		return mList;
 	},
 	
 	/**
@@ -200,7 +200,7 @@ Ext.define('vmDataMediator', {
 			}).fail(function(){
 				def.reject();
 			});
-			return def.promise();
+			return def;
 		}
 		
 		if(!vboxVMDataMediator.vmData[vmid]) return;
@@ -216,7 +216,7 @@ Ext.define('vmDataMediator', {
 		}).fail(function(){
 			def.reject();
 		});
-		return def.promise();
+		return def;
 		
 	},
 	
@@ -247,7 +247,7 @@ Ext.define('vmDataMediator', {
 			def.reject();
 		});
 		
-		return def.promise();
+		return def;
 	}
 
 });

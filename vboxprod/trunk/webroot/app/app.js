@@ -11,7 +11,7 @@ var vcubeActions = {
 Ext.Loader.setConfig({
     enabled: true,
     paths: {
-        'Ext.ux':'ext-4.0/ux'
+        'Ext.ux':'extjs/ux'
     }
 });
 
@@ -25,6 +25,8 @@ Ext.application({
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
     
     views: ['Login'],
+    
+    vboxServers: [],
     
     // Fatal error
     _fatalErrorOccurred: false,
@@ -140,15 +142,32 @@ Ext.application({
     	
     	self.session = sessionData;
     	
-    	self.fireEvent('start');
+    	console.log("apsoidjf 2");
+    	// Load servers
+    	Ext.ux.Deferred.when(self.loadServers()).then(function(){
+    		console.log("apsoidjf 1");
+    		self.fireEvent('start');    		
+    	});
     },
     
     /**
-     * 
+     * Load server list 
      */
-    setVboxServer: function(id) {
-    	console.log("CHanging server to " + id);
-    	this.vboxServerId = id;
+    loadServers: function() {
+    	
+    	var self = this;
+    	var promise = Ext.create('Ext.ux.Deferred');
+    	
+    	console.log('here...');
+    	Ext.ux.Deferred.when(self.application.ajaxRequest('connectors/getConnectors'))
+			.then(function(data) {
+				console.log('here2...');
+				self.vboxServers = data;
+				promise.resolve();
+			});
+    	
+		return promise;
+
     },
     
     launch: function() {

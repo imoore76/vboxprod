@@ -16,8 +16,12 @@ Ext.define('vmDataMediator', {
 	/* Promises for data */
 	promises : {
 		'getVMDetails':{},
-		'getVMRuntimeData':{}
+		'getVMRuntimeData':{},
+		'vboxServersData' : {}
 	},
+	
+	/* Holds vbox servers data */
+	vboxServersData: {},
 	
 	/* Holds Basic VM data */
 	vmData : {},

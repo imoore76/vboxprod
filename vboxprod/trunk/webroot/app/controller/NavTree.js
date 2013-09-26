@@ -33,8 +33,6 @@ Ext.define('vcube.controller.NavTree', {
     
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
-    	console.log("Row");
-    	console.log(row);
     	console.log("Record");
     	console.log(record);
     },
@@ -54,22 +52,20 @@ Ext.define('vcube.controller.NavTree', {
     	navTreeRoot = NavTreeView.getRootNode()
     	
     	// Add servers folder
-    	serversFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Servers','id':'servers'})
+    	serversFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Servers','id':'servers','data':{'_type':'serversFolder'}});
     	navTreeRoot.appendChild(serversFolder);
 
     	// Add virtual machines
-    	vmsFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Virtual Machines','id':'vms'})
+    	vmsFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Virtual Machines','id':'vms','data':{'_type':'vmsFolder'}});
     	navTreeRoot.appendChild(vmsFolder);
 
     	// Add templates folder
-    	templatesFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Templates','id':'templates'})
+    	templatesFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Templates','data':{'_type':'templatesFolder'}});
     	navTreeRoot.appendChild(templatesFolder);
 
     	var nodeStore = NavTreeView.getStore();
     	
     	var self = this;
-    	
-    	var availableServers = [];
     	
     	/*
     	 * Data loading functions
@@ -78,6 +74,9 @@ Ext.define('vcube.controller.NavTree', {
     	function loadServersData(data) {
     		
     		for(var i = 0; i < data.length; i++) {
+    			
+    			data[i]._type = 'server';
+    			
     			serversFolder.appendChild(serversFolder.createNode({
     				'iconCls':'navTreeIcon',
     				'icon': 'images/vbox/OSE/VirtualBox_cube_42px.png',
@@ -87,10 +86,6 @@ Ext.define('vcube.controller.NavTree', {
     				'data' : data[i]
     			}))
     			
-    			// Add to available servers list if server is available
-    			if(data[i].status == 100) {
-    				availableServers[availableServers.length] = data[i].id;
-    			}
     		}
     		
     		// Expand folder
@@ -104,6 +99,8 @@ Ext.define('vcube.controller.NavTree', {
 				
 				appendTarget = (data[i].parent_id ? nodeStore.getNodeById('vmgroup-' + data[i].parent_id) : vmsFolder);
 				if(!appendTarget) appendTarget = vmsFolder;
+				
+				data[i]._type = 'vmgroup';
 				
 				appendTarget.appendChild(appendTarget.createNode({
 					'iconCls':'navTreeIcon',
@@ -124,6 +121,7 @@ Ext.define('vcube.controller.NavTree', {
 			for(var i = 0; i < data.length; i++) {
 				
 				data[i]._connectorid = connectorid
+				data[i]._type = 'vm';
 				
 				appendTarget = (data[i].group_id ? nodeStore.getNodeById('vmgroup-' + data[i].group_id) : vmsFolder);
 				if(!appendTarget) appendTarget = vmsFolder;
@@ -146,29 +144,29 @@ Ext.define('vcube.controller.NavTree', {
     	 * 
     	 */
     	
-		Ext.ux.Deferred.when(self.application.ajaxRequest('connectors/getConnectors'))
+    	loadServersData(self.application.vboxServers);
+    	
+		Ext.ux.Deferred.when(self.application.ajaxRequest('vmgroups/getGroups'))
 				.then(function(data) {
 					
-					loadServersData(data);
+					loadGroupsData(data);
 					
-				}).then(function() {
-
-					Ext.ux.Deferred.when(self.application.ajaxRequest('vmgroups/getGroups'))
-							.then(function(data) {
-								
-								loadGroupsData(data);
-								
-								var vmLoaders = [];
-								for(var i = 0; i < availableServers.length; i++) {
-									console.log(availableServers[i]);
-									vmLoaders[vmLoaders.length] = addVMs(availableServers[i])
-								}
-								
-								Ext.ux.Deferred.when.apply(vmLoaders).then(function(){
-									console.log('here..1');
-									NavTreeView.setLoading(false);
-								});
-							});
+					var vmLoaders = [];
+					for(var i = 0; i < self.application.vboxServers.length; i++) {
+						console.log(self.application.vboxServers[i]);
+						if(self.application.vboxServers[i].state == 100) {
+							vmLoaders[vmLoaders.length] = addVMs(self.application.vboxServers[i].id)							
+						}
+					}
+					
+					if(vmLoaders.length > 0) {
+						Ext.ux.Deferred.when.apply(null, vmLoaders).then(function(){
+							console.log('here..1');
+							NavTreeView.setLoading(false);
+						});						
+					} else {
+						NavTreeView.setLoading(false);
+					}
 				});
     	
     	// Get VMs

@@ -23,8 +23,20 @@
 WEB_SOCKET_DEBUG = true
 WEB_SOCKET_SWF_LOCATION = "lib/web-socket-js/WebSocketMain.swf";
 
+function printOut() {
+	for(var i = 0; i < arguments.length; i++) {
+		console.log("args");
+		console.log(arguments[i]);
+	}
+	console.log(arguments);
+}
 function getEvents() {
 	
+	var stuff = ['I','Just','want','this'];
+	
+	 printOut.apply(null, stuff);
+	 
+	 return;
 	  // Write your code in the same way as for native WebSocket:
 	  var ws = new WebSocket("ws://" + location.host + "/eventStream");
 	  ws.onmessage = function(e) {

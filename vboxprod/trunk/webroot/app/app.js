@@ -64,7 +64,7 @@ Ext.application({
     },
     
     // Ajax request handlers
-    ajaxRequest: function(ajaxURL, addparams, callback) {
+    ajaxRequest: function(ajaxURL, addparams, success_callback, failure_callback) {
     	
     	// Halt if fatal error has occurred
     	if(this._fatalErrorOccurred) return;
@@ -74,6 +74,9 @@ Ext.application({
     	
     	// Add function to params
     	if(!addparams) addparams = {};
+    	
+    	// Deferred object will be returned
+    	var promise = Ext.create('Ext.ux.Deferred');
     	
     	Ext.Ajax.request({
     		
@@ -85,10 +88,7 @@ Ext.application({
     		success: function(response){
     			
     			var data = Ext.JSON.decode(response.responseText).data;
-    			
-    			
-    			
-    			//console.log(data);
+    			    			
     			// Append debug output to console
     			if(data && data.messages && window.console && window.console.log) {
     				for(var i = 0; i < data.messages.length; i++) {
@@ -105,12 +105,22 @@ Ext.application({
 					} // </ foreach error >
 				
     			}
-    			if(callback) callback(data.responseData);
+    			
+    			if(data && data.responseData !== null) {
+    				promise.resolve(data.responseData);
+    				if(success_callback) success_callback(data.responseData);    				
+    			} else {
+    				promise.reject();
+    			}
     		},
     		failure: function(response, opts) {
     		   self.alert("Request failed: with status code " + response.status);
+    		   promise.reject();
+    		   if(failure_callback) failure_callback()
 		   }
-    	});       	
+    	});
+    	
+    	return promise;
     },
     
     // Show login box
@@ -125,8 +135,12 @@ Ext.application({
     
     // Load session data and fire event
     loadSession: function(sessionData) {
-    	this.session = sessionData;
-    	this.fireEvent('start');
+    	
+    	var self = this;
+    	
+    	self.session = sessionData;
+    	
+    	self.fireEvent('start');
     },
     
     /**

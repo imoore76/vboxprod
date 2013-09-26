@@ -8,10 +8,10 @@
 /**
  * vboxVMDataMediator
  * 
- * @see jQuery.deferred
- * @namespace vboxVMDataMediator
  */
-var vboxVMDataMediator = {
+Ext.define('vmDataMediator', {
+
+	singleton: true,
 	
 	/* Promises for data */
 	promises : {
@@ -20,11 +20,7 @@ var vboxVMDataMediator = {
 	},
 	
 	/* Holds Basic VM data */
-	/*
-	vmData : Ext.create('Ext.data.Store', {
-		model:'vcube.data.vmdata'
-	}),
-	*/
+	vmData : {},
 	
 	/* Holds VM details */
 	vmDetailsData : {},
@@ -88,18 +84,14 @@ var vboxVMDataMediator = {
 		}
 		
 		
-		var mList = $.Deferred();
-		$.when(vboxAjaxRequest('vboxGetMachines')).done(function(d) {
+		var mList = Ext.create('Ext.ux.Deferred');
+		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMachines')).done(function(d) {
 			
 			var vmData = {};
 			var subscribeList = [];
 
 			for(var i = 0; i < d.responseData.length; i++) {
 				
-				// Enforce VM ownership
-			    if($('#vboxPane').data('vboxConfig').enforceVMOwnership && !$('#vboxPane').data('vboxSession').admin && d.vmlist[i].owner != $('#vboxPane').data('vboxSession').user) {
-			    	continue;
-			    }
 
 				vmData[d.responseData[i].id] = d.responseData[i];
 				
@@ -109,7 +101,7 @@ var vboxVMDataMediator = {
 			}
 			
 			// Start event listener
-			$.when(vboxEventListener.start(subscribeList)).done(function(){
+			Ext.ux.Deferred.when(vboxEventListener.start(subscribeList)).done(function(){
 				vboxVMDataMediator.vmData = vmData;
 				mList.resolve(d.responseData);		
 				
@@ -143,9 +135,9 @@ var vboxVMDataMediator = {
 		// Promise does not yet exist?
 		if(!vboxVMDataMediator.promises.getVMDetails[vmid]) {
 			
-			vboxVMDataMediator.promises.getVMDetails[vmid] = $.Deferred();
+			vboxVMDataMediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
 
-			$.when(vboxAjaxRequest('machineGetDetails',{vm:vmid})).done(function(d){
+			Ext.ux.Deferred.when(vboxAjaxRequest('machineGetDetails',{vm:vmid})).done(function(d){
 				vboxVMDataMediator.vmDetailsData[d.responseData.id] = d.responseData;
 				vboxVMDataMediator.promises.getVMDetails[vmid].resolve(d.responseData);
 			}).fail(function(){
@@ -174,9 +166,9 @@ var vboxVMDataMediator = {
 		// Promise does not yet exist?
 		if(!vboxVMDataMediator.promises.getVMRuntimeData[vmid]) {
 			
-			vboxVMDataMediator.promises.getVMRuntimeData[vmid] = $.Deferred();
+			vboxVMDataMediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
 
-			$.when(vboxAjaxRequest('machineGetRuntimeData',{vm:vmid})).done(function(d){
+			Ext.ux.Deferred.when(vboxAjaxRequest('machineGetRuntimeData',{vm:vmid})).done(function(d){
 				vboxVMDataMediator.vmRuntimeData[d.responseData.id] = d.responseData;
 				if(vboxVMDataMediator.promises.getVMRuntimeData[vmid])
 					vboxVMDataMediator.promises.getVMRuntimeData[vmid].resolve(d.responseData);
@@ -198,8 +190,8 @@ var vboxVMDataMediator = {
 		
 		// Special case for 'host'
 		if(vmid == 'host') {
-			var def = $.Deferred();
-			$.when(vboxVMDataMediator.getVMDetails(vmid)).done(function(d){
+			var def = Ext.create('Ext.ux.Deferred');
+			Ext.ux.Deferred.when(vboxVMDataMediator.getVMDetails(vmid)).done(function(d){
 				def.resolve(d);
 			}).fail(function(){
 				def.reject();
@@ -214,8 +206,8 @@ var vboxVMDataMediator = {
 			runtime = vboxVMDataMediator.getVMRuntimeData(vmid);
 		}
 		
-		var def = $.Deferred();
-		$.when(vboxVMDataMediator.getVMDetails(vmid), runtime, vboxVMDataMediator.getVMData(vmid)).done(function(d1,d2,d3){
+		var def = Ext.create('Ext.ux.Deferred');
+		Ext.ux.Deferred.when(vboxVMDataMediator.getVMDetails(vmid), runtime, vboxVMDataMediator.getVMData(vmid)).done(function(d1,d2,d3){
 			def.resolve($.extend(true,{},d1,d2,d3));
 		}).fail(function(){
 			def.reject();
@@ -240,8 +232,8 @@ var vboxVMDataMediator = {
 		
 		if(!vboxVMDataMediator.vmData[vmid]) return;
 		
-		var def = $.Deferred();
-		$.when(vboxAjaxRequest('vboxGetMachines',{'vm':vmid})).done(function(d) {
+		var def = Ext.create('Ext.ux.Deferred');
+		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMachines',{'vm':vmid})).done(function(d) {
 			vm = d.responseData[0];
 			vboxVMDataMediator.vmData[vm.id] = vm;
 			def.resolve();
@@ -254,7 +246,7 @@ var vboxVMDataMediator = {
 		return def.promise();
 	}
 
-};
+});
 
 /*
  * 
@@ -315,7 +307,7 @@ Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 		vboxVMDataMediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
 		
 		// Get media again
-		$.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d.responseData);});
+		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d.responseData);});
 		
 	}
 	if(vboxVMDataMediator.vmDetailsData[eventData.machineId])

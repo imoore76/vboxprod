@@ -65,188 +65,131 @@ Ext.define('vcube.controller.NavTree', {
     	templatesFolder = navTreeRoot.createNode({'cls':'navTreeFolder','leaf':false,'text':'Templates','id':'templates'})
     	navTreeRoot.appendChild(templatesFolder);
 
+    	var nodeStore = NavTreeView.getStore();
+    	
     	var self = this;
     	
     	var availableServers = [];
     	
-    	// Add servers function
-    	function addServers() {
+    	/*
+    	 * Data loading functions
+    	 * 
+    	 */
+    	function loadServersData(data) {
     		
-    		self.application.ajaxRequest('connectors/getConnectors',{}, function(data) {
+    		for(var i = 0; i < data.length; i++) {
+    			serversFolder.appendChild(serversFolder.createNode({
+    				'iconCls':'navTreeIcon',
+    				'icon': 'images/vbox/OSE/VirtualBox_cube_42px.png',
+    				'leaf':true,
+    				'text':data[i].name + ' (<span class="navTreeServerStatus">' + data[i].status_name + '</span>)',
+    				'id' : 'server-' + data[i].id,
+    				'data' : data[i]
+    			}))
     			
-    			for(var i = 0; i < data.length; i++) {
-    				serversFolder.appendChild(serversFolder.createNode({
-    					'iconCls':'navTreeIcon',
-    					'icon': 'images/vbox/OSE/VirtualBox_cube_42px.png',
-    					'leaf':true,
-    					'text':data[i].name + ' (<span class="navTreeServerStatus">' + data[i].status_name + '</span>)',
-    					'id' : 'server-' + data[i].id,
-    					'data' : data[i]
-    				}))
-    				
-    				// Add to available servers list if server is available
-    				if(data[i].status == 100) {
-    					availableServers[availableServers.length] = data[i].id;
-    				}
+    			// Add to available servers list if server is available
+    			if(data[i].status == 100) {
+    				availableServers[availableServers.length] = data[i].id;
     			}
-    		})
+    		}
     		
-			// Expand folder
-			serversFolder.expand()
+    		// Expand folder
+    		serversFolder.expand()
+
+    	}
+
+    	function loadGroupsData(data) {
+    		
+			for(var i = 0; i < data.length; i++) {
+				
+				appendTarget = (data[i].parent_id ? nodeStore.getNodeById('vmgroup-' + data[i].parent_id) : vmsFolder);
+				if(!appendTarget) appendTarget = vmsFolder;
+				
+				appendTarget.appendChild(appendTarget.createNode({
+					'iconCls':'navTreeIcon',
+					'leaf':false,
+					'text':data[i].name,
+					'id' : 'vmgroup-' + data[i].id,
+					'data' : data[i]
+				}))
+			}
 			
-			// Add groups
-			addGroups()
+			// Expand folder
+			vmsFolder.expand()
 
     	}
     	
-    	// Add VM groups
-    	function addGroups() {
+    	function loadVMsData(data, connectorid) {
     		
-    		self.application.ajaxRequest('vmgroups/getGroups',{}, function(data) {
-    			
-    			var nodeStore = NavTreeView.getStore();
-    			
-    			for(var i = 0; i < data.length; i++) {
-    				
-    				appendTarget = (data[i].parent_id ? nodeStore.getNodeById('vmgroup-' + data[i].parent_id) : vmsFolder);
-    				if(!appendTarget) appendTarget = vmsFolder;
-    				 
-    				appendTarget.appendChild(appendTarget.createNode({
-    					'iconCls':'navTreeIcon',
-    					'leaf':false,
-    					'text':data[i].name,
-    					'id' : 'vmgroup-' + data[i].id,
-    					'data' : data[i]
-    				}))
-    			}
-    			
-    			// Expand folder
-    			vmsFolder.expand()
-    			
-    			// Add vms
-    			for(var i = 0; i < availableServers.length; i++) {
-    				console.log(i)
-    				addVMs(availableServers[i]);
-    			}
-    			
-    		})
-    		
+			for(var i = 0; i < data.length; i++) {
+				
+				data[i]._connectorid = connectorid
+				
+				appendTarget = (data[i].group_id ? nodeStore.getNodeById('vmgroup-' + data[i].group_id) : vmsFolder);
+				if(!appendTarget) appendTarget = vmsFolder;
+				 
+				appendTarget.appendChild(appendTarget.createNode({
+					'cls' : 'navTreeVM vmState' + (data[i].state) + ' vmSessionState' + data[i].sessionState + ' vmOSType' + data[i].OSTypeId,
+        			'text' : '<span class="vmStateIcon"> </span>' + data[i].name,
+        			'leaf' : true,
+        			'icon' : 'images/vbox/' + vboxGuestOSTypeIcon(data[i].OSTypeId),
+        			'iconCls' : 'navTreeIcon',
+        			'data' : data[i]
+        		}))
+			}
+
     	}
+    	
+    	/*
+    	 *	
+    	 *	Load all tree data 
+    	 * 
+    	 */
+    	
+		Ext.ux.Deferred.when(self.application.ajaxRequest('connectors/getConnectors'))
+				.then(function(data) {
+					
+					loadServersData(data);
+					
+				}).then(function() {
+
+					Ext.ux.Deferred.when(self.application.ajaxRequest('vmgroups/getGroups'))
+							.then(function(data) {
+								
+								loadGroupsData(data);
+								
+								var vmLoaders = [];
+								for(var i = 0; i < availableServers.length; i++) {
+									console.log(availableServers[i]);
+									vmLoaders[vmLoaders.length] = addVMs(availableServers[i])
+								}
+								
+								Ext.ux.Deferred.when.apply(vmLoaders).then(function(){
+									console.log('here..1');
+									NavTreeView.setLoading(false);
+								});
+							});
+				});
     	
     	// Get VMs
     	function addVMs(connectorid) {
     		
+    		var def = Ext.create('Ext.ux.Deferred');
+    		
     		self.application.ajaxRequest('vbox/vboxGetMachines',{'server':connectorid}, function(data) {
-    			
-    			var nodeStore = NavTreeView.getStore();
-    			
-    			//data = data.vboxGetMachines_response
-    			
-    			for(var i = 0; i < data.length; i++) {
-    				
-    				data[i]._connectorid = connectorid
-    				
-    				appendTarget = (data[i].group_id ? nodeStore.getNodeById('vmgroup-' + data[i].group_id) : vmsFolder);
-    				if(!appendTarget) appendTarget = vmsFolder;
-    				 
-    				appendTarget.appendChild(appendTarget.createNode({
-    					'cls' : 'navTreeVM vmState' + (data[i].state) + ' vmSessionState' + data[i].sessionState + ' vmOSType' + data[i].OSTypeId,
-            			'text' : '<span class="vmStateIcon"> </span>' + data[i].name,
-            			'leaf' : true,
-            			'icon' : 'images/vbox/' + vboxGuestOSTypeIcon(data[i].OSTypeId),
-            			'iconCls' : 'navTreeIcon',
-            			'data' : data[i]
-            		}))
-    			}
-    			
-    			
-    		})
+    			loadVMsData(data, connectorid);
+    			console.log('here...');
+    			def.resolve();
 
+    		}, function(){
+    			def.reject();
+    		});
+    		
+
+    		return def;
     		
     	}
-    	
-    	addServers()
-    	
-    	NavTreeView.setLoading(false); return;
-    	
-    	// Function to sort records by order
-    	var sortRecords = function(a,b) {
-    		return (a.raw.order - b.raw.order);
-    	}
-    	
-    	/* Function to load VMs */
-    	var loadVMs = function() {
-    		
-    		
-        	/* Set text name when adding item */
-    		NavTreeVMsStore.on({
-        		append: function(thisNode,newNode,index,eOpts) {
-        			newNode.set('cls','navTreeVM vmState' + (newNode.raw.state) + ' vmSessionState' + newNode.raw.sessionState + ' vmOSType' + newNode.raw.OSTypeId);
-        			newNode.set('text','<span class="vmStateIcon"> </span>' + newNode.raw.name);
-        			newNode.set('leaf',true);
-        			newNode.set('icon','images/vbox/' + vboxGuestOSTypeIcon(newNode.raw.OSTypeId));
-        			newNode.set('iconCls', 'navTreeIcon');
-        		}
-        	}),
-
-    		NavTreeVMsStore.load({callback:function(records) {
-    			
-        		// Sort by order
-        		records.sort(sortRecords);
-
-        		// Step through each VM adding it to the correct group
-        		for(var i = 0; i < records.length; i++) {
-        			var group = (records[i].raw.group ? NavTreeView.getStore().getNodeById(records[i].raw.group) : NavTreeView.getRootNode());
-        			if(!group) group = NavTreeView.getRootNode();
-        			group.appendChild(group.createNode(records[i]));        			
-        		}
-
-        		// expand tree
-        		navTreeRoot.expand();
-        		
-        		// Hide load mask
-        		NavTreeView.setLoading(false);
-        		
-        	}});
-
-    	}
-    	
-    	
-    	/* Set text name when adding item */
-    	NavTreeGroupsStore.on({
-    		append: function(thisNode,newNode,index,eOpts) {
-    			newNode.set('text',newNode.raw.name);
-    		}
-    	}),
-
-    	
-    	NavTreeGroupsStore.load({callback:function(records) {
-    		
-    		// Sort by order
-    		records.sort(sortRecords);
-    		
-    		var addChildren = function(parent_id,parent_node) {
-    			var children = [];
-    			for(var i = 0; i < records.length; i++) {
-    				if(records[i].raw.parent_id == parent_id) {
-    					children[children.length] = parent_node.createNode(records[i]);
-    					parent_node.appendChild(children[(children.length-1)]);
-    				}
-    			}
-    			for(var i = 0; i < children.length; i++) {
-    				addChildren(children[i].raw.id, children[i]);
-    			}
-    		}
-		
-    		// Get top level
-    		addChildren(0,navTreeRoot);
-    		
-    		// Now load VMs
-    		loadVMs();
-    		
-    	}});
     	
     	
     }
-    	
 });

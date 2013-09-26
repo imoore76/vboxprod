@@ -54,7 +54,7 @@ var vboxEventListener = {
 		// Add a request to the queue
 		addReq : function(q) {
 			
-			var d = $.Deferred();
+			var d = Ext.create('Ext.ux.Deferred');
 			
 			vboxEventListener._requestQueue.requests.push({'request':q,'deferred':d});
 			vboxEventListener._requestQueue.run();
@@ -77,7 +77,7 @@ var vboxEventListener = {
 		runReq : function() {
 			var r = vboxEventListener._requestQueue.requests.shift();
 			if(r) {
-				$.when(r.request())
+				Ext.ux.Deferred.when(r.request())
 					.done(r.deferred.resolve)
 					.fail(r.deferred.reject)
 					.always(vboxEventListener._requestQueue.runReq);
@@ -99,12 +99,12 @@ var vboxEventListener = {
 		
 		vboxEventListener._running = true;
 		
-		var started = $.Deferred();
+		var started = Ext.create('Ext.ux.Deferred');
 		
 		// Subscribe to events and start main loop
-		$.when(vboxAjaxRequest('subscribeEvents',{vms:vmlist})).done(function(d) {
+		Ext.ux.Deferred.when(vboxAjaxRequest('subscribeEvents',{vms:vmlist})).done(function(d) {
 			vboxEventListener._persist = d.persist;
-			$.when(vboxEventListener._getEvents()).done(function(){
+			Ext.ux.Deferred.when(vboxEventListener._getEvents()).done(function(){
 				started.resolve();
 			});
 		});
@@ -131,8 +131,8 @@ var vboxEventListener = {
 			var vms = vboxEventListener._subscribeList.concat();
 			vboxEventListener._subscribeList = [];
 			
-			var vmEvents = $.Deferred();
-			$.when(vboxAjaxRequest('machineSubscribeEvents', {'vms':vms,'_persist':vboxEventListener._persist})).done(function(d){
+			var vmEvents = Ext.create('Ext.ux.Deferred');
+			Ext.ux.Deferred.when(vboxAjaxRequest('machineSubscribeEvents', {'vms':vms,'_persist':vboxEventListener._persist})).done(function(d){
 				// Always set persistent request data
 				vboxEventListener._persist = d.persist;
 			}).always(function(){
@@ -172,7 +172,7 @@ var vboxEventListener = {
 		// Add to queue
 		return vboxEventListener._requestQueue.addReq(function(){
 			
-			return $.when(new Date().getTime(), vboxAjaxRequest('getEvents',{'_persist':vboxEventListener._persist})).done(function(lastTime,d) {
+			return Ext.ux.Deferred.when(new Date().getTime(), vboxAjaxRequest('getEvents',{'_persist':vboxEventListener._persist})).done(function(lastTime,d) {
 				
 				// Don't do anything if this is not running
 				if(!vboxEventListener._running) return;

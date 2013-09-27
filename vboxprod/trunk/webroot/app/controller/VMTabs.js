@@ -62,13 +62,58 @@ Ext.define('vcube.controller.VMTabs', {
     			
     			if(typeof(i) != 'string') continue;
     			
+    			var tableItems = [];
+    			
+    			// shortcuts
     			var section = vcube.view.VMTabs.vboxVMDetailsSections[i];
+    			var rows = section.rows;
+
+    			// Is rows a function?
+    			if(typeof(rows) == 'function') rows = rows(data);
+
+
+    			for(var i = 0; i < rows.length; i++) {
+    				
+    				// Check if row has condition
+    				if(rows[i].condition && !rows[i].condition(data)) continue;
+    				
+    				// hold row data
+    				var rowData = '';
+    				
+    				// Check for row attribute
+    				if(rows[i].attrib) {
+    					
+    					if(!data[rows[i].attrib]) continue;
+    					rowData = data[rows[i].attrib];
+    				
+    				// Check for row callback
+    				} else if(rows[i].callback) {
+    					rowData = rows[i].callback(data);
+
+    				// Static data
+    				} else {
+    					rowData = rows[i].data;
+    				}
+
+    				tableItems.push({'html':rows[i].title});
+    				tableItems.push({'html':rowData});
+    				
+					//$(table).append(__vboxDetailRow(rows[i].title, rowData, 'vboxDetailName' + (rows[i].indented ? ' vboxDetailNameIndent' : ''), rows[i].html));
+    				
+    			}
+
+    			
     			
     			var sectionPanel = Ext.create('Ext.panel.Panel', {
     			    title: section.title,
     			    icon: 'images/vbox/' + section.icon,
-    			    renderTo: detailsTab
+    			    layout: {
+    			    	type: 'table',
+    			    	columns: 2
+    			    },
+    			    items: tableItems
     			});
+    			detailsTab.add(sectionPanel);
 
     		}
     		

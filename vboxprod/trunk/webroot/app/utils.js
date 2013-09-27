@@ -3,7 +3,87 @@ Ext.define('vcube.utils', {
 	
 	singleton: true,
 	
-	
+	/**
+	 * Return VRDE Host
+	 */
+	vboxGetVRDEHost : function(vm) {
+		var chost = (vm && vm.VRDEServer && vm.VRDEServer.netAddress ? vm.VRDEServer.netAddress : null);
+		if(!chost) {
+			// Set to host
+			//chost = $('#vboxPane').data('vboxConfig').host;
+			// Check for localhost / 127.0.0.1
+			if(!chost || chost == 'localhost' || chost == '127.0.0.1')
+				chost = location.hostname;
+		}
+		return chost;
+	},
+
+	/**
+	 * Serial port namespace
+	 * 
+	 * @namespace vboxSerialPorts
+	 */
+	vboxSerialPorts : {
+		
+		ports : [
+	      { 'name':"COM1", 'irq':4, 'port':'0x3F8' },
+	      { 'name':"COM2", 'irq':3, 'port':'0x2F8' },
+	      { 'name':"COM3", 'irq':4, 'port':'0x3E8' },
+	      { 'name':"COM4", 'irq':3, 'port':'0x2E8' },
+		],
+		
+		/**
+		 * Return port name based on irq and port
+		 * 
+		 * @param {Integer}
+		 *            irq - irq number
+		 * @param {String}
+		 *            port - IO port
+		 * @return {String} port name
+		 */
+		getPortName : function(irq,port) {
+			for(var i = 0; i < vboxSerialPorts.ports.length; i++) {
+				if(vboxSerialPorts.ports[i].irq == irq && vboxSerialPorts.ports[i].port.toUpperCase() == port.toUpperCase())
+					return vboxSerialPorts.ports[i].name;
+			}
+			return 'User-defined';
+		}
+		
+	},
+
+	/**
+	 * LPT port namespace
+	 * 
+	 * @namespace vboxParallelPorts
+	 */
+	vboxParallelPorts : {
+		
+		ports : [
+	      { 'name':"LPT1", 'irq':7, 'port':'0x3BC' },
+	      { 'name':"LPT2", 'irq':5, 'port':'0x378' },
+	      { 'name':"LPT3", 'irq':5, 'port':'0x278' }
+		],
+
+		/**
+		 * Return port name based on irq and port
+		 * 
+		 * @param {Integer}
+		 *            irq - irq number
+		 * @param {String}
+		 *            port - IO port
+		 * @return {String} port name
+		 */	
+		getPortName : function(irq,port) {
+			for(var i = 0; i < vboxParallelPorts.ports.length; i++) {
+				if(vboxParallelPorts.ports[i].irq == irq && vboxParallelPorts.ports[i].port.toUpperCase() == port.toUpperCase())
+					return vboxParallelPorts.ports[i].name;
+			}
+			return 'User-defined';
+		}
+		
+	},
+
+
 	/**
 	 * Storage Controller Types conversions
 	 * 
@@ -452,5 +532,5 @@ Ext.define('vcube.utils', {
 		}
 		return strIcon;
 	}
-	
+
 });

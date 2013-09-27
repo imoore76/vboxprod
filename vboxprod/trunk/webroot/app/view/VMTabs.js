@@ -38,19 +38,6 @@ Ext.define('vcube.view.VMTabs', {
 					   {
 						   title: vcube.utils.trans('Guest Additions Version'),
 						   attrib: 'guestAdditionsVersion'
-					   },
-					   {
-						   title: vcube.utils.trans('Groups','UIGDetails'),
-						   condition: function(d){
-							   return (d.groups.length > 1 || (d.groups.length == 1 && d.groups[0] != '/')); 
-						   },
-						   callback: function(d) {
-							   if(d.groups && d.groups.length > 0)
-								   return jQuery.map(d.groups,function(elm) {
-									   if(elm.length > 1) return elm.substring(1);
-									   return elm;
-								   }).join(', ');
-						   }
 					   }
 					   
 					]
@@ -86,7 +73,7 @@ Ext.define('vcube.view.VMTabs', {
 						   callback: function(d) {
 								var bo = new Array();
 								for(var i = 0; i < d['bootOrder'].length; i++) {
-									bo[i] = vcube.utils.trans(vboxDevice(d['bootOrder'][i]),'VBoxGlobal');
+									bo[i] = vcube.utils.trans(vcube.utils.vboxDevice(d['bootOrder'][i]),'VBoxGlobal');
 								}
 								return bo.join(', ');
 						   }
@@ -98,11 +85,11 @@ Ext.define('vcube.view.VMTabs', {
 							   if(d['HWVirtExProperties'].NestedPaging) acList[acList.length] = vcube.utils.trans('Nested Paging');
 							   if(d['CpuProperties']['PAE']) acList[acList.length] = vcube.utils.trans('PAE/NX');
 							   
-							   if($('#vboxPane').data('vboxConfig').enableAdvancedConfig) {
+							   //if($('#vboxPane').data('vboxConfig').enableAdvancedConfig) {
 								   if(d['HWVirtExProperties'].LargePages) acList[acList.length] = vcube.utils.trans('Large Pages');
 								   if(d['HWVirtExProperties'].Exclusive) acList[acList.length] = vcube.utils.trans('Exclusive use of the hardware virtualization extensions');
 								   if(d['HWVirtExProperties'].VPID) acList[acList.length] = vcube.utils.trans('VT-x VPID');
-							   }
+							   //}
 							   return acList.join(', ');
 						   },
 					   	   condition: function(d) { return (d['HWVirtExProperties'].Enabled || d['CpuProperties']['PAE']); }
@@ -128,7 +115,7 @@ Ext.define('vcube.view.VMTabs', {
 						   title: vcube.utils.trans('Remote Desktop Server Port'),
 						   callback: function(d) {
 							   
-							   var chost = vboxGetVRDEHost(d);
+							   var chost = vcube.utils.vboxGetVRDEHost(d);
 							
 							   // Get ports
 							   var rowStr = d['VRDEServer']['ports'];
@@ -168,7 +155,12 @@ Ext.define('vcube.view.VMTabs', {
 							   return vcube.utils.trans('Disabled','VBoxGlobal',null,'details report (VRDE Server)');
 						   },
 						   condition: function(d) {
-							   return !(vboxVMDetailsSections.display.rows[1].condition(d));
+
+							   // Running and paused states have real-time console info
+							   if(!d._isSnapshot && (d['state'] == 'Running' || d['state'] == 'Paused')) {
+								   return d.VRDEServer && (d.VRDEServer.enabled);
+							   }
+							   return (d['VRDEServer'] && (d._isSnapshot || d['VRDEServer']['VRDEExtPack']) && d['VRDEServer']['enabled'] && d['VRDEServer']['ports']);
 						   }
 					   }
 					]
@@ -182,24 +174,11 @@ Ext.define('vcube.view.VMTabs', {
 					title: vcube.utils.trans('Storage'),
 					settingsLink: 'Storage',
 					redrawMachineEvents: ['OnMediumChanged','OnMachineStateChanged'],
-					_refreshVMMedia : function(vmid, mid) {
-						
-						// See if medium is there
-						var mRefresh = true;
-						if(!vcube.utils.vboxMedia.getMediumById(mid)) {
-							mRefresh = vboxAjaxRequest('vboxGetMedia');
-						}
-						var l = new vboxLoader();
-						l.showLoading();
-						$.when(mRefresh, vboxVMDataMediator.refreshVMData(vmid)).done(function(d){
-							if(d && d.responseData) $('#vboxPane').data('vcube.utils.vboxMedia',d.responseData);
-						}).always(function(){
-							l.removeLoading();
-						});
-					},
 					rows: function(d) {
 						
 						var rows = new Array();
+						
+						return rows;
 						
 						for(var a = 0; a < d['storageControllers'].length; a++) {
 							
@@ -207,14 +186,14 @@ Ext.define('vcube.view.VMTabs', {
 							
 							// Controller name
 							rows[rows.length] = {
-									title: vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',$('<div />').text(con.name).html()),
+									title: vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',con.name),
 									callback: function(){return'';}
 							};
 									
 							// Each attachment.
 							for(var b = 0; b < d['storageControllers'][a]['mediumAttachments'].length; b++) {
 								
-								var portName = vboxStorage[d['storageControllers'][a].bus].slotName(d['storageControllers'][a]['mediumAttachments'][b].port, d['storageControllers'][a]['mediumAttachments'][b].device);
+								var portName = vcube.utils.vboxStorage[d['storageControllers'][a].bus].slotName(d['storageControllers'][a]['mediumAttachments'][b].port, d['storageControllers'][a]['mediumAttachments'][b].device);
 
 								// Medium / host device info
 								var medium = (d['storageControllers'][a]['mediumAttachments'][b].medium && d['storageControllers'][a]['mediumAttachments'][b].medium.id ? vcube.utils.vboxMedia.getMediumById(d['storageControllers'][a]['mediumAttachments'][b].medium.id) : null);
@@ -272,13 +251,13 @@ Ext.define('vcube.view.VMTabs', {
 					    },{
 					    	title: vcube.utils.trans("Host Driver",'UIDetailsBlock'),
 					    	callback: function(d) {
-					    		return vcube.utils.trans(vboxAudioDriver(d['audioAdapter']['audioDriver']),'VBoxGlobal');
+					    		return vcube.utils.trans(vcube.utils.vboxAudioDriver(d['audioAdapter']['audioDriver']),'VBoxGlobal');
 					    	},
 					    	condition: function(d) { return d['audioAdapter']['enabled']; }
 					    },{
 					    	title: vcube.utils.trans("Controller",'UIDetailsBlock'),
 					    	callback: function (d) {
-					    		return vcube.utils.trans(vboxAudioController(d['audioAdapter']['audioController']),'VBoxGlobal');
+					    		return vcube.utils.trans(vcube.utils.vboxAudioController(d['audioAdapter']['audioController']),'VBoxGlobal');
 					    	},
 					    	condition: function(d) { return d['audioAdapter']['enabled']; }
 					    }
@@ -323,26 +302,26 @@ Ext.define('vcube.view.VMTabs', {
 										adp = vcube.utils.trans('NAT','VBoxGlobal');
 										break;
 									case 'Internal':
-										adp = vcube.utils.trans('Internal network, \'%1\'','VBoxGlobal').replace('%1', $('<div />').text(nic.internalNetwork).html());
+										adp = vcube.utils.trans('Internal network, \'%1\'','VBoxGlobal').replace('%1', nic.internalNetwork);
 										break;
 									case 'Generic':
 										// Check for properties
 										if(nic.properties) {
-											adp = vcube.utils.trans('Generic driver, \'%1\' { %2 }','UIDetailsPagePrivate').replace('%1', $('<div />').text(nic.genericDriver).html());
+											adp = vcube.utils.trans('Generic driver, \'%1\' { %2 }','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
 											var np = nic.properties.split("\n");
 											adp = adp.replace('%2', np.join(" ,"));
 											break;
 										}
-										adp = vcube.utils.trans('Generic driver, \'%1\'','UIDetailsPagePrivate').replace('%1', $('<div />').text(nic.genericDriver).html());
+										adp = vcube.utils.trans('Generic driver, \'%1\'','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
 										break;					
 									case 'VDE':
-										adp = vcube.utils.trans('VDE network, \'%1\'','VBoxGlobal').replace('%1', $('<div />').text(nic.VDENetwork).html());
+										adp = vcube.utils.trans('VDE network, \'%1\'','VBoxGlobal').replace('%1', nic.VDENetwork);
 										break;
 								}
 
 								rows[rows.length] = {
 									title: vcube.utils.trans("Adapter %1",'VBoxGlobal').replace('%1',(i + 1)),
-									data: vcube.utils.trans(vboxNetworkAdapterType(nic.adapterType)).replace(/\(.*\)/,'') + ' (' + adp + ')'
+									data: vcube.utils.trans(vcube.utils.vboxNetworkAdapterType(nic.adapterType)).replace(/\(.*\)/,'') + ' (' + adp + ')'
 								};
 							}
 									
@@ -392,12 +371,12 @@ Ext.define('vcube.view.VMTabs', {
 							if(!p.enabled) continue;
 							
 							// compose extra info
-							var xtra = vboxSerialPorts.getPortName(p.IRQ,p.IOBase);
+							var xtra = vcube.utils.vboxSerialPorts.getPortName(p.IRQ,p.IOBase);
 							
 							var mode = p.hostMode;
 							xtra += ', ' + vcube.utils.trans(vboxSerialMode(mode),'VBoxGlobal');
 							if(mode != 'Disconnected') {
-								xtra += ' (' + $('<div />').text(p.path).html() + ')';
+								xtra += ' (' + p.path + ')';
 							}
 							
 							rows[rows.length] = {
@@ -430,7 +409,7 @@ Ext.define('vcube.view.VMTabs', {
 					icon: 'parallel_port_16px.png',
 					title: vcube.utils.trans('Parallel Ports','UIDetailsPagePrivate'),
 					settingsLink: 'ParallelPorts',
-					condition: function() { return $('#vboxPane').data('vboxConfig').enableLPTConfig; },
+					condition: function() { return false; },
 					rows: function(d) {
 						
 						var rows = [];
@@ -443,8 +422,8 @@ Ext.define('vcube.view.VMTabs', {
 							if(!p.enabled) continue;
 							
 							// compose extra info
-							var xtra = vcube.utils.trans(vboxParallelPorts.getPortName(p.IRQ,p.IOBase));
-							xtra += ' (' + $('<div />').text(p.path).html() + ')';
+							var xtra = vcube.utils.trans(vcube.utils.vboxParallelPorts.getPortName(p.IRQ,p.IOBase));
+							xtra += ' (' + p.path + ')';
 							
 							rows[rows.length] = {
 								title: vcube.utils.trans("Port %1",'VBoxGlobal',null,'details report (parallel ports)').replace('%1',(i + 1)),

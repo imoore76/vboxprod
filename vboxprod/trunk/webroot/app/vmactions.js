@@ -190,8 +190,8 @@ Ext.define('vcube.vmactions',{
 	
 							
 			},
-			enabled : function () {
-				return (vboxChooser.isSelectedInState('Paused') || vboxChooser.isSelectedInState('PoweredOff') || vboxChooser.isSelectedInState('Saved'));			
+			enabled : function (vms) {
+				return vcube.utils.vboxVMStates.isOne(['Paused','PoweredOff','Saved'], vms);
 			}	
 		},
 		
@@ -204,9 +204,8 @@ Ext.define('vcube.vmactions',{
 				
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
 			},
-			enabled : function () {
-				return vboxChooser && vboxChooser.selectionMode == vboxSelectionModeSingleVM && 
-					(vboxChooser.isSelectedInState('Running') || vboxChooser.isSelectedInState('Paused') || vboxChooser.isSelectedInState('Editable'));
+			enabled : function (vms) {
+				return vms.length == 1 && vcube.utils.vboxVMStates.isOne(['Running','PoweredOff','Editable'], vms);
 			}
 		},
 	
@@ -219,8 +218,8 @@ Ext.define('vcube.vmactions',{
 			click:function(){
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
-			enabled: function () {
-				return (vboxChooser.selectionMode == vboxSelectionModeSingleVM && vboxChooser.isSelectedInState('PoweredOff'));
+			enabled: function (vms) {
+				return vms.length == 1 && vcube.utils.vboxVMStates.isOne(['PoweredOff'], vms);
 			}
 		},
 	
@@ -240,7 +239,7 @@ Ext.define('vcube.vmactions',{
 				});
 				
 	    	},
-	    	enabled: function () {return(vboxChooser.selectedVMs.length ==1);}
+	    	enabled: function (vms) {return(vms.length == 1);}
 	    },
 	    
 	    /** Delete / Remove a VM */
@@ -347,32 +346,8 @@ Ext.define('vcube.vmactions',{
 				});
 	    	
 	    	},
-	    	enabled: function () {
-	    		if(!vboxChooser._editable) return false;
-	    		return (vboxChooser.isSelectedInState('PoweredOff'));
-	    	}
-	    },
-	    
-	    /** Create a group from VM * */
-	    group: {
-	    	label: vcube.utils.trans('Group','UIActionPool'),
-	    	icon: 'add_shared_folder',
-	    	icon_disabled: 'add_shared_folder_disabled',
-	    	click: function() {
-	    		vboxChooser.groupSelectedItems();
-	    	},
-	    	enabled: function() {
-	    		
-	    		if(!$('#vboxPane').data('vboxSession').admin)
-	    			return false;
-	    		
-	    		if (!vboxChooser || (vboxChooser.getSingleSelectedId() == 'host'))
-	    			return false;
-	    		
-	    		if(!vboxChooser._editable) return false;
-	    		
-	    		return vboxChooser.isSelectedInState('Editable');
-	    		
+	    	enabled: function (vms) {
+	    		return cube.utils.vboxVMStates.isOne('PoweredOff', vms);
 	    	}
 	    },
 	    
@@ -410,7 +385,7 @@ Ext.define('vcube.vmactions',{
 				}
 			},
 			enabled:function(){
-				return vboxChooser.isSelectedInState('Saved');
+				return vcube.utils.vboxVMStates.isOne('Saved', vms);
 			}
 	    },
 	    

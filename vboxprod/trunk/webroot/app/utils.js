@@ -224,11 +224,15 @@ Ext.define('vcube.utils', {
 		},
 		
 		/* True if one VM in list matches item */
-		isOne: function(test, vmlist) {
+		isOne: function(states, vmlist) {
+			
+			if(typeof(states) == 'string') states = [states];
 			
 			for(var i = 0; i < vmlist.length; i++) {
-				if(vboxVMStates['is'+test](vmlist[i]))
-					return true;
+				for(var a = 0; a < states.length; states++) {
+					if(vboxVMStates['is'+(states[a])](vmlist[i]))
+						return true;					
+				}
 			}
 			return false;
 		},

@@ -29,17 +29,19 @@ Ext.define('vcube.controller.VMTabs', {
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
 
+    	
     	// Only load if VM is selected
     	if(!record || !record.get('leaf'))
     		return;
     	
     	var tabPanel = this.getVMTabsView();
     	var summaryTab = tabPanel.getComponent('SummaryTab');
+    	var detailsTab  = tabPanel.getComponent('DetailsTab');
     	
     	tabPanel.setLoading(true);
     	
-    	console.log('data...');
-    	console.log(record.raw.data);
+    	//console.log('data...');
+    	//console.log(record.raw.data);
     	
     	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
     		
@@ -49,14 +51,25 @@ Ext.define('vcube.controller.VMTabs', {
     		vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
     		summaryTab.down('#PreviewPanel').doLayout();
     		
-    		summaryTab.getForm().setValues(data);
+    		//summaryTab.getForm().setValues(data);
     		
     		summaryTab.down('#baseinfo').update(data);
     		//summaryTab.down('#state').update(record.raw);
     		
-    		var detailsTab  = tabPanel.getComponent('DetailsTab');
-    		for(var i in detailsTab.items.items) {    		
-    			detailsTab.items.items[i].update(data);
+    		console.log("here...");
+    		console.log(vcube.view.VMTabs.vboxVMDetailsSections);
+    		for(var i in vcube.view.VMTabs.vboxVMDetailsSections) {
+    			
+    			if(typeof(i) != 'string') continue;
+    			
+    			var section = vcube.view.VMTabs.vboxVMDetailsSections[i];
+    			
+    			var sectionPanel = Ext.create('Ext.panel.Panel', {
+    			    title: section.title,
+    			    icon: 'images/vbox/' + section.icon,
+    			    renderTo: detailsTab
+    			});
+
     		}
     		
     		tabPanel.setLoading(false);

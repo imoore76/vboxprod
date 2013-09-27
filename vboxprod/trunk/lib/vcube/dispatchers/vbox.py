@@ -28,12 +28,17 @@ class dispatcher(dispatcher_parent):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         
         fn = os.path.basename(cherrypy.url())
+        
+            
 
         jsonResponse = jsonResponseTemplate
         
         try:
             
-            response = vcube.getInstance().vboxAction(str(kwargs.get('server','0')), fn, kwargs)
+            if not kwargs.get('server', None):
+                raise Exception("No VirtualBox server id specified")
+            
+            response = vcube.getInstance().vboxAction(str(kwargs['server']), fn, kwargs)
             
             for k in jsonResponse['data'].keys():
                 jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k]) 

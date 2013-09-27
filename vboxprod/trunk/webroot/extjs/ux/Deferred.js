@@ -27,12 +27,21 @@ Ext.define ('Ext.ux.Deferred', {
 				(function (i) {
 					var promise = promises[i];
 				
-					if (typeof promise === 'function') promise = promise ();
+					if (typeof promise === 'function') promise = promise();
 				
-					if (!(promise instanceof Ext.ux.Deferred)) Ext.Error.raise ('Ext.ux.Deferred expected: given ' + typeof promise);
+					var pdata = null;
+					
+					if(!(promise instanceof Ext.ux.Deferred)) {
+						var pdata = promise;
+						promise = Ext.create('Ext.ux.Deferred');
+						promise.resolve(pdata);
+					}
 			
 					promise
 						.done (function (data) {
+							if(pdata) {
+								console.log(data);
+							}
 							counter--;
 							results[i] = data;
 					
@@ -52,12 +61,17 @@ Ext.define ('Ext.ux.Deferred', {
 								if (results.length > 0) dfd.resolve.apply (dfd, results);
 							}
 						});
+					
 				})(i);
 			}
 		
 			return dfd;
 		}
 	} ,
+	
+	state : "inprogress",
+	stateData : null,
+	
 	/**
 	 * @property {Function} onDone Function called when the promise is done. Never use directly
 	 * @private
@@ -81,6 +95,10 @@ Ext.define ('Ext.ux.Deferred', {
 		
 		me.onDone = typeof onDone === 'function' ? onDone : function () {};
 		
+		if(me.state == 'resolved') {
+			me.onDone.apply(null, me.stateData);
+		}
+		
 		return me;
 	} ,
 	
@@ -94,6 +112,9 @@ Ext.define ('Ext.ux.Deferred', {
 		var me = this;
 		
 		me.onFail = typeof onFail === 'function' ? onFail : function () {};
+		
+		if(me.state == 'rejected')
+			me.onFail.apply(null, me.stateData);
 		
 		return me;
 	} ,
@@ -109,8 +130,8 @@ Ext.define ('Ext.ux.Deferred', {
 		
 		onAlways = typeof onAlways === 'function' ? onAlways : function () {};
 		
-		me.onDone = onAlways;
-		me.onFail = onAlways;
+		me.done(onAlways);
+		me.fail(onAlways);
 		
 		return me;
 	} ,
@@ -123,8 +144,13 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @return {Ext.ux.Deferred} this
 	 */
 	reject: function () {
+		
+		this.stateData = arguments;
+		this.state = 'rejected';
+		
 		var me = this ,
 			result = me.onFail.apply (me, arguments);
+		
 		
 		if (result instanceof Ext.ux.Deferred) {
 			result.then (me.lastDfd.onFail, me.lastDfd.onDone);
@@ -145,6 +171,10 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @return {Ext.ux.Deferred} this
 	 */
 	resolve: function () {
+		
+		this.stateData = arguments;
+		this.state = 'resolved';
+		
 		var me = this ,
 			result = me.onDone.apply (me, arguments);
 		

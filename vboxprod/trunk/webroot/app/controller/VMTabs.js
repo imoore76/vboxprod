@@ -41,7 +41,7 @@ Ext.define('vcube.controller.VMTabs', {
     	console.log('data...');
     	console.log(record.raw.data);
     	
-    	this.application.ajaxRequest('vbox/machineGetDetails',{'server':record.raw.data._connectorid,'vm':record.raw.data.id},function(data){
+    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
     		
     		tabPanel.rawData = data;
     		

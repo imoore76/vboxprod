@@ -66,12 +66,15 @@ Ext.define('vcube.controller.NavTree', {
     	var nodeStore = NavTreeView.getStore();
     	
     	var self = this;
+    	var vboxServers = []
     	
     	/*
     	 * Data loading functions
     	 * 
     	 */
     	function loadServersData(data) {
+    		
+    		vboxServers = data;
     		
     		for(var i = 0; i < data.length; i++) {
     			
@@ -116,11 +119,10 @@ Ext.define('vcube.controller.NavTree', {
 
     	}
     	
-    	function loadVMsData(data, connectorid) {
+    	function loadVMsData(data) {
     		
 			for(var i = 0; i < data.length; i++) {
 				
-				data[i]._connectorid = connectorid
 				data[i]._type = 'vm';
 				
 				appendTarget = (data[i].group_id ? nodeStore.getNodeById('vmgroup-' + data[i].group_id) : vmsFolder);
@@ -130,7 +132,7 @@ Ext.define('vcube.controller.NavTree', {
 					'cls' : 'navTreeVM vmState' + (data[i].state) + ' vmSessionState' + data[i].sessionState + ' vmOSType' + data[i].OSTypeId,
         			'text' : '<span class="vmStateIcon"> </span>' + data[i].name,
         			'leaf' : true,
-        			'icon' : 'images/vbox/' + vboxGuestOSTypeIcon(data[i].OSTypeId),
+        			'icon' : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data[i].OSTypeId),
         			'iconCls' : 'navTreeIcon',
         			'data' : data[i]
         		}))
@@ -144,39 +146,30 @@ Ext.define('vcube.controller.NavTree', {
     	 * 
     	 */
     	
-    	loadServersData(self.application.vboxServers);
-    	
-		Ext.ux.Deferred.when(self.application.ajaxRequest('vmgroups/getGroups'))
-				.then(function(data) {
-					
-					loadGroupsData(data);
-					
-					var vmLoaders = [];
-					for(var i = 0; i < self.application.vboxServers.length; i++) {
-						console.log(self.application.vboxServers[i]);
-						if(self.application.vboxServers[i].state == 100) {
-							vmLoaders[vmLoaders.length] = addVMs(self.application.vboxServers[i].id)							
-						}
-					}
-					
-					if(vmLoaders.length > 0) {
-						Ext.ux.Deferred.when.apply(null, vmLoaders).then(function(){
-							console.log('here..1');
-							NavTreeView.setLoading(false);
-						});						
-					} else {
-						NavTreeView.setLoading(false);
-					}
-				});
+    	Ext.ux.Deferred.when(vcube.app.ajaxRequest('connectors/getConnectors')).then(function(data){
+    		
+    		loadServersData(data);
+    		
+    		Ext.ux.Deferred.when(vcube.app.ajaxRequest('vmgroups/getGroups'))
+	    		.then(function(data) {
+	    			
+	    			loadGroupsData(data);
+
+
+	    			loadVMsData(vcube.vmdatamediator.getVMList());
+	    			
+    				NavTreeView.setLoading(false);
+
+	    		});
+    	});
     	
     	// Get VMs
     	function addVMs(connectorid) {
     		
     		var def = Ext.create('Ext.ux.Deferred');
     		
-    		self.application.ajaxRequest('vbox/vboxGetMachines',{'server':connectorid}, function(data) {
+    		vcube.app.ajaxRequest('vbox/vboxGetMachines',{'server':connectorid}, function(data) {
     			loadVMsData(data, connectorid);
-    			console.log('here...');
     			def.resolve();
 
     		}, function(){

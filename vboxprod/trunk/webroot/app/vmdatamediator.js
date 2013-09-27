@@ -6,22 +6,22 @@
  */
 
 /**
- * vboxVMDataMediator
+ * vcube.vmdatamediator
  * 
  */
-Ext.define('vmDataMediator', {
+Ext.define('vcube.vmdatamediator', {
 
 	singleton: true,
 	
+	running: false,
+	
 	/* Promises for data */
 	promises : {
+		'getVMList' : null,
 		'getVMDetails':{},
 		'getVMRuntimeData':{},
-		'vboxServersData' : {}
+		'getVMsFromServer': {}
 	},
-	
-	/* Holds vbox servers data */
-	vboxServersData: {},
 	
 	/* Holds Basic VM data */
 	vmData : {},
@@ -32,24 +32,29 @@ Ext.define('vmDataMediator', {
 	/* Holds VM runtime data */
 	vmRuntimeData : {},
 		
+	/* Holds server ids */
+	gotVMsFromServers : {},
+
 	/* Expire cached promise / data */
 	expireVMDetails: function(vmid) {
-		vboxVMDataMediator.promises.getVMDetails[vmid] = null;
-		vboxVMDataMediator.vmDetailsData[vmid] = null;
+		vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
+		vcube.vmdatamediator.vmDetailsData[vmid] = null;
 	},
 	expireVMRuntimeData: function(vmid) {
-		vboxVMDataMediator.promises.getVMRuntimeData[vmid] = null;
-		vboxVMDataMediator.vmRuntimeData[vmid] = null;
+		vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = null;
+		vcube.vmdatamediator.vmRuntimeData[vmid] = null;
 	},
 	expireAll: function() {
-		for(var i in vboxVMDataMediator.promises) {
+		for(var i in vcube.vmdatamediator.promises) {
 			if(typeof(i) != 'string') continue;
-			vboxVMDataMediator.promises[i] = {};
+			vcube.vmdatamediator.promises[i] = {};
 		}
-		vboxVMDataMediator.vmData = null;
-		vboxVMDataMediator.vmRuntimeData = {};
-		vboxVMDataMediator.vmDetailsData = {};
+		vcube.vmdatamediator.vmData = {};
+		vcube.vmdatamediator.vmRuntimeData = {};
+		vcube.vmdatamediator.vmDetailsData = {};
+		vcube.vmdatamediator.gotVMsFromServers = {};
 	},
+	
 	
 	/**
 	 * Get basic vm data
@@ -60,65 +65,83 @@ Ext.define('vmDataMediator', {
 	getVMData: function(vmid) {
 		
 		// VMList must exist
-		if(!vboxVMDataMediator.vmData) {
+		if(!vcube.vmdatamediator.vmData) {
+			vcube.app.alert('vmdatamediator: getVMData called before a VM list exists!');
 			return;
 		}
 		
-		return vboxVMDataMediator.vmData[vmid];
+		return vcube.vmdatamediator.vmData[vmid];
 		
 	},
 	
 	/**
-	 * Return list of machines, subscribe to running VM events
-	 * and start the event listener
+	 * Start data mediator
+	 */
+	start: function() {
+		
+		if(vcube.vmdatamediator.running) {
+			vcube.app.alert('vmdatamediator: start() called when already running');
+		}
+		
+		vcube.vmdatamediator.running = true;
+		
+		var started = Ext.create('Ext.ux.Deferred');
+		
+		// Get server list
+		Ext.ux.Deferred.when(vcube.app.ajaxRequest('connectors/getConnectors')).then(function(data){
+			
+			loadFromServers = [];
+			for(var i = 0; i < data.length; i++) {
+				
+				vcube.vmdatamediator.gotVMsFromServers[data[i].id] = Ext.create('Ext.ux.Deferred');
+				
+				if(data[i].status == 100) {
+					
+					loadFromServers.push(vcube.app.ajaxRequest('vbox/vboxGetMachines',{'server':data[i].id},function(vmlist, ajaxArgs) {
+						
+						vcube.vmdatamediator.gotVMsFromServers[ajaxArgs.server].resolve();
+						
+						
+						for(var i = 0; i < vmlist.length; i++) {
+							vmlist[i]._serverid = ajaxArgs.server;
+							vcube.vmdatamediator.vmData[vmlist[i].id] = vmlist[i];
+						}
+						console.log(vcube.vmdatamediator.vmData);
+						
+					}));
+				}
+			}
+			
+			if(loadFromServers.length) {					
+				
+				Ext.ux.Deferred.when.apply(null, loadFromServers).then(function() {					
+					started.resolve();
+				});
+				
+			} else {
+				started.resolve();
+			}
+		});
+
+		
+		return started; 
+		
+	},
+	
+	/**
+	 * Return list of machines
 	 * 
 	 * @returns {Object} promise
 	 */
 	getVMList: function() {
 	
-		// Return array from existing data
-		if(vboxVMDataMediator.vmData) {
-			var list = [];
-			for(var i in vboxVMDataMediator.vmData) {
-				if(typeof i != 'string') continue;
-				if(i == 'host') continue;
-				list.push(vboxVMDataMediator.vmData[i]);
-			}
-			return list;
+		var vmList = [];
+		for(var i in vcube.vmdatamediator.vmData) {
+			if(typeof(i) == 'string') vmList.push(vcube.vmdatamediator.vmData[i]);
 		}
+		return vmList;
 		
 		
-		var mList = Ext.create('Ext.ux.Deferred');
-		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMachines')).done(function(d) {
-			
-			var vmData = {};
-			var subscribeList = [];
-
-			for(var i = 0; i < d.responseData.length; i++) {
-				
-
-				vmData[d.responseData[i].id] = d.responseData[i];
-				
-				if(vboxVMStates.isRunning({'state':d.responseData[i].state}) || vboxVMStates.isPaused({'state':d.responseData[i].state}))
-					subscribeList[subscribeList.length] = d.responseData[i].id;
-				
-			}
-			
-			// Start event listener
-			Ext.ux.Deferred.when(vboxEventListener.start(subscribeList)).done(function(){
-				vboxVMDataMediator.vmData = vmData;
-				mList.resolve(d.responseData);		
-				
-			}).fail(function() {
-				mList.reject();
-			});
-			
-			
-		}).fail(function() {
-			mList.reject();
-		});
-		
-		return mList;
 	},
 	
 	/**
@@ -131,26 +154,32 @@ Ext.define('vmDataMediator', {
 	getVMDetails: function(vmid, forceRefresh) {
 		
 		// Data exists
-		if(vboxVMDataMediator.vmDetailsData[vmid] && !forceRefresh) {
-			vboxVMDataMediator.promises.getVMDetails[vmid] = null;
-			return vboxVMDataMediator.vmDetailsData[vmid];
+		if(vcube.vmdatamediator.vmDetailsData[vmid] && !forceRefresh) {
+			vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
+			return vcube.vmdatamediator.vmDetailsData[vmid];
 		}
 		
 		// Promise does not yet exist?
-		if(!vboxVMDataMediator.promises.getVMDetails[vmid]) {
+		if(!vcube.vmdatamediator.promises.getVMDetails[vmid]) {
 			
-			vboxVMDataMediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
+			vcube.vmdatamediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
+			
+			console.log(vcube.vmdatamediator.vmData[vmid]._serverid);
 
-			Ext.ux.Deferred.when(vboxAjaxRequest('machineGetDetails',{vm:vmid})).done(function(d){
-				vboxVMDataMediator.vmDetailsData[d.responseData.id] = d.responseData;
-				vboxVMDataMediator.promises.getVMDetails[vmid].resolve(d.responseData);
+			Ext.ux.Deferred.when(vcube.app.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'server':vcube.vmdatamediator.vmData[vmid]._serverid})).done(function(d){
+				
+				vcube.vmdatamediator.vmDetailsData[d.id] = d;
+				vcube.vmdatamediator.promises.getVMDetails[vmid].resolve(d);
+			
 			}).fail(function(){
-				vboxVMDataMediator.promises.getVMDetails[vmid].reject();
-				vboxVMDataMediator.promises.getVMDetails[vmid] = null;
+			
+				vcube.vmdatamediator.promises.getVMDetails[vmid].reject();
+				vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
+			
 			});
 
 		}		
-		return vboxVMDataMediator.promises.getVMDetails[vmid];
+		return vcube.vmdatamediator.promises.getVMDetails[vmid];
 	},
 	
 	/**
@@ -162,27 +191,27 @@ Ext.define('vmDataMediator', {
 	getVMRuntimeData: function(vmid) {
 
 		// Data exists
-		if(vboxVMDataMediator.vmRuntimeData[vmid]) {
-			vboxVMDataMediator.promises.getVMRuntimeData[vmid] = null;
-			return vboxVMDataMediator.vmRuntimeData[vmid];
+		if(vcube.vmdatamediator.vmRuntimeData[vmid]) {
+			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = null;
+			return vcube.vmdatamediator.vmRuntimeData[vmid];
 		}
 		
 		// Promise does not yet exist?
-		if(!vboxVMDataMediator.promises.getVMRuntimeData[vmid]) {
+		if(!vcube.vmdatamediator.promises.getVMRuntimeData[vmid]) {
 			
-			vboxVMDataMediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
+			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
 
 			Ext.ux.Deferred.when(vboxAjaxRequest('machineGetRuntimeData',{vm:vmid})).done(function(d){
-				vboxVMDataMediator.vmRuntimeData[d.responseData.id] = d.responseData;
-				if(vboxVMDataMediator.promises.getVMRuntimeData[vmid])
-					vboxVMDataMediator.promises.getVMRuntimeData[vmid].resolve(d.responseData);
+				vcube.vmdatamediator.vmRuntimeData[d.id] = d;
+				if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
+					vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolve(d);
 			}).fail(function(){
-				vboxVMDataMediator.promises.getVMRuntimeData[vmid].reject();
-				vboxVMDataMediator.promises.getVMRuntimeData[vmid] = null;
+				vcube.vmdatamediator.promises.getVMRuntimeData[vmid].reject();
+				vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = null;
 			});
 
 		}		
-		return vboxVMDataMediator.promises.getVMRuntimeData[vmid];
+		return vcube.vmdatamediator.promises.getVMRuntimeData[vmid];
 	},
 	
 	/**
@@ -195,7 +224,7 @@ Ext.define('vmDataMediator', {
 		// Special case for 'host'
 		if(vmid == 'host') {
 			var def = Ext.create('Ext.ux.Deferred');
-			Ext.ux.Deferred.when(vboxVMDataMediator.getVMDetails(vmid)).done(function(d){
+			Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid)).done(function(d){
 				def.resolve(d);
 			}).fail(function(){
 				def.reject();
@@ -203,15 +232,15 @@ Ext.define('vmDataMediator', {
 			return def;
 		}
 		
-		if(!vboxVMDataMediator.vmData[vmid]) return;
+		if(!vcube.vmdatamediator.vmData[vmid]) return;
 		
 		var runtime = function() { return {};};
-		if(vboxVMStates.isRunning({'state':vboxVMDataMediator.vmData[vmid].state}) || vboxVMStates.isPaused({'state':vboxVMDataMediator.vmData[vmid].state})) {
-			runtime = vboxVMDataMediator.getVMRuntimeData(vmid);
+		if(vboxVMStates.isRunning({'state':vcube.vmdatamediator.vmData[vmid].state}) || vboxVMStates.isPaused({'state':vcube.vmdatamediator.vmData[vmid].state})) {
+			runtime = vcube.vmdatamediator.getVMRuntimeData(vmid);
 		}
 		
 		var def = Ext.create('Ext.ux.Deferred');
-		Ext.ux.Deferred.when(vboxVMDataMediator.getVMDetails(vmid), runtime, vboxVMDataMediator.getVMData(vmid)).done(function(d1,d2,d3){
+		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
 			def.resolve($.extend(true,{},d1,d2,d3));
 		}).fail(function(){
 			def.reject();
@@ -234,12 +263,12 @@ Ext.define('vmDataMediator', {
 			return;
 		}
 		
-		if(!vboxVMDataMediator.vmData[vmid]) return;
+		if(!vcube.vmdatamediator.vmData[vmid]) return;
 		
 		var def = Ext.create('Ext.ux.Deferred');
 		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMachines',{'vm':vmid})).done(function(d) {
-			vm = d.responseData[0];
-			vboxVMDataMediator.vmData[vm.id] = vm;
+			vm = d[0];
+			vcube.vmdatamediator.vmData[vm.id] = vm;
 			def.resolve();
 			$('#vboxPane').trigger('vboxOnMachineDataChanged', [{machineId:vm.id,enrichmentData:vm}]);
 			$('#vboxPane').trigger('vboxEvents', [[{eventType:'OnMachineDataChanged',machineId:vm.id,enrichmentData:vm}]]);
@@ -261,69 +290,69 @@ Ext.define('vmDataMediator', {
 // Raw event to data handlers
 Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 	
-	vboxVMDataMediator.expireVMDetails(eventData.machineId);
-	vboxVMDataMediator.expireVMRuntimeData(eventData.machineId);
+	vcube.vmdatamediator.expireVMDetails(eventData.machineId);
+	vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
 	
-	if(vboxVMDataMediator.vmData[eventData.machineId] && eventData.enrichmentData) {
-		$.extend(true, vboxVMDataMediator.vmData[eventData.machineId], eventData.enrichmentData);
+	if(vcube.vmdatamediator.vmData[eventData.machineId] && eventData.enrichmentData) {
+		$.extend(true, vcube.vmdatamediator.vmData[eventData.machineId], eventData.enrichmentData);
 		// $.extend doesn't seem to handle this for some reason
-		vboxVMDataMediator.vmData[eventData.machineId].groups = eventData.enrichmentData.groups; 
+		vcube.vmdatamediator.vmData[eventData.machineId].groups = eventData.enrichmentData.groups; 
 	}
 
 // Machine state change
 }).on('vboxOnMachineStateChanged', function(e, eventData) {
 
 	// Only care about it if its in our list
-	if(vboxVMDataMediator.vmData[eventData.machineId]) {
+	if(vcube.vmdatamediator.vmData[eventData.machineId]) {
 		
-		vboxVMDataMediator.vmData[eventData.machineId].state = eventData.state;
-		vboxVMDataMediator.vmData[eventData.machineId].lastStateChange = eventData.enrichmentData.lastStateChange;
-		vboxVMDataMediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
+		vcube.vmdatamediator.vmData[eventData.machineId].state = eventData.state;
+		vcube.vmdatamediator.vmData[eventData.machineId].lastStateChange = eventData.enrichmentData.lastStateChange;
+		vcube.vmdatamediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
 		
 		// If it's running, subscribe to its events
 		if(vboxVMStates.isRunning({'state':eventData.state}) || vboxVMStates.isPaused({'state':eventData.state})) {
 			
 			// If we already have runtime data, assume we were already subscribed
-			if(!vboxVMDataMediator.vmRuntimeData[eventData.machineId]) {
+			if(!vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
 				
 				// Tell event listener to subscribe to this machine's events
 				vboxEventListener.subscribeVMEvents(eventData.machineId);
 			}
 			
 		} else {
-			vboxVMDataMediator.expireVMRuntimeData(eventData.machineId);
+			vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
 		}
 	}
 	
 // Session state change
 }).on('vboxOnSessionStateChanged', function(e, eventData) {
 	
-	if(vboxVMDataMediator.vmData[eventData.machineId])
-		vboxVMDataMediator.vmData[eventData.machineId].sessionState = eventData.state;
+	if(vcube.vmdatamediator.vmData[eventData.machineId])
+		vcube.vmdatamediator.vmData[eventData.machineId].sessionState = eventData.state;
 
 
 // Snapshot changed
 }).on('vboxOnSnapshotTaken vboxOnSnapshotDeleted vboxOnSnapshotChanged',function(e,eventData) {
 	
-	if(vboxVMDataMediator.vmData[eventData.machineId]) {
+	if(vcube.vmdatamediator.vmData[eventData.machineId]) {
 		
-		vboxVMDataMediator.vmData[eventData.machineId].currentSnapshotName = eventData.enrichmentData.currentSnapshotName;
-		vboxVMDataMediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
+		vcube.vmdatamediator.vmData[eventData.machineId].currentSnapshotName = eventData.enrichmentData.currentSnapshotName;
+		vcube.vmdatamediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
 		
 		// Get media again
-		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d.responseData);});
+		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d);});
 		
 	}
-	if(vboxVMDataMediator.vmDetailsData[eventData.machineId])
-		vboxVMDataMediator.vmDetailsData[eventData.machineId].snapshotCount = eventData.enrichmentData.snapshotCount;
+	if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
+		vcube.vmdatamediator.vmDetailsData[eventData.machineId].snapshotCount = eventData.enrichmentData.snapshotCount;
 	
 // Expire all data for a VM when machine is unregistered
 }).on('vboxOnMachineRegistered', function(e, eventData) {
 	
 	if(!eventData.registered) {
-		vboxVMDataMediator.expireVMDetails(eventData.machineId);
-		vboxVMDataMediator.expireVMRuntimeData(eventData.machineId);
-		vboxVMDataMediator.vmData[eventData.machineId] = null;
+		vcube.vmdatamediator.expireVMDetails(eventData.machineId);
+		vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
+		vcube.vmdatamediator.vmData[eventData.machineId] = null;
 		
 	} else if(eventData.enrichmentData) {
 	
@@ -332,7 +361,7 @@ Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 	    	return;
 	    }
 	    
-	    vboxVMDataMediator.vmData[eventData.enrichmentData.id] = eventData.enrichmentData;
+	    vcube.vmdatamediator.vmData[eventData.enrichmentData.id] = eventData.enrichmentData;
 
 	}
 
@@ -348,8 +377,8 @@ Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 
 }).on('vboxOnNetworkAdapterChanged', function(e, eventData) {
 	
-	if(vboxVMDataMediator.vmRuntimeData[eventData.machineId]) {
-		$.extend(vboxVMDataMediator.vmRuntimeData[eventData.machineId].networkAdapters[eventData.networkAdapterSlot], eventData.enrichmentData);
+	if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
+		$.extend(vcube.vmdatamediator.vmRuntimeData[eventData.machineId].networkAdapters[eventData.networkAdapterSlot], eventData.enrichmentData);
 	}
 	
 
@@ -365,14 +394,14 @@ Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 }).on('vboxOnMediumChanged', function(e, eventData) {
 	
 	/* Medium attachment changed */
-	if(vboxVMDataMediator.vmRuntimeData[eventData.machineId]) {
-		for(var a = 0; a < vboxVMDataMediator.vmRuntimeData[eventData.machineId].storageControllers.length; a++) {
-			if(vboxVMDataMediator.vmRuntimeData[eventData.machineId].storageControllers[a].name == eventData.controller) {
-				for(var b = 0; b < vboxVMDataMediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments.length; b++) {
-					if(vboxVMDataMediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments[b].port == eventData.port &&
-							vboxVMDataMediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments[b].device == eventData.device) {
+	if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
+		for(var a = 0; a < vcube.vmdatamediator.vmRuntimeData[eventData.machineId].storageControllers.length; a++) {
+			if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId].storageControllers[a].name == eventData.controller) {
+				for(var b = 0; b < vcube.vmdatamediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments.length; b++) {
+					if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments[b].port == eventData.port &&
+							vcube.vmdatamediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments[b].device == eventData.device) {
 						
-						vboxVMDataMediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments[b].medium = (eventData.medium ? {id:eventData.medium} : null);
+						vcube.vmdatamediator.vmRuntimeData[eventData.machineId].storageControllers[a].mediumAttachments[b].medium = (eventData.medium ? {id:eventData.medium} : null);
 						break;
 					}
 				}
@@ -387,67 +416,67 @@ Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 // VRDE runtime info
 }).on('vboxOnVRDEServerChanged', function(e, eventData) {
 
-	if(vboxVMDataMediator.vmRuntimeData[eventData.machineId]) {
-		$.extend(true,vboxVMDataMediator.vmRuntimeData[eventData.machineId].VRDEServer, eventData.enrichmentData);
+	if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
+		$.extend(true,vcube.vmdatamediator.vmRuntimeData[eventData.machineId].VRDEServer, eventData.enrichmentData);
 	}
 
 
 // This only fires when it is enabled
 }).on('vboxOnVRDEServerInfoChanged', function(e, eventData) {
 
-	if(vboxVMDataMediator.vmRuntimeData[eventData.machineId]) {
-		vboxVMDataMediator.vmRuntimeData[eventData.machineId].VRDEServerInfo.port = eventData.enrichmentData.port;
-		vboxVMDataMediator.vmRuntimeData[eventData.machineId].VRDEServer.enabled = eventData.enrichmentData.enabled;
+	if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
+		vcube.vmdatamediator.vmRuntimeData[eventData.machineId].VRDEServerInfo.port = eventData.enrichmentData.port;
+		vcube.vmdatamediator.vmRuntimeData[eventData.machineId].VRDEServer.enabled = eventData.enrichmentData.enabled;
 	}
 
 	
 // Execution cap
 }).on('vboxOnCPUExecutionCapChanged', function(e, eventData) {
 	
-	if(vboxVMDataMediator.vmRuntimeData[eventData.machineId]) {
-		vboxVMDataMediator.vmRuntimeData[eventData.machineId].CPUExecutionCap = eventData.executionCap;
+	if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
+		vcube.vmdatamediator.vmRuntimeData[eventData.machineId].CPUExecutionCap = eventData.executionCap;
 	}
 
 // Special cases for where phpvirtualbox keeps its extra data
 }).on('vboxOnExtraDataChanged', function(e, eventData) {
 	
 	// No vm id is a global change
-	if(!eventData.machineId || !vboxVMDataMediator.vmData[eventData.machineId]) return;
+	if(!eventData.machineId || !vcube.vmdatamediator.vmData[eventData.machineId]) return;
 	
 	switch(eventData.key) {
 
 		// Startup mode
 		case 'pvbx/startupMode':
-			if(vboxVMDataMediator.vmDetailsData[eventData.machineId])
-				vboxVMDataMediator.vmDetailsData[eventData.machineId].startupMode = eventData.value;
+			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
+				vcube.vmdatamediator.vmDetailsData[eventData.machineId].startupMode = eventData.value;
 			break;
 		
 		// Owner
 		case 'phpvb/sso/owner':
-			vboxVMDataMediator.vmData[eventData.machineId].owner = eventData.value;
+			vcube.vmdatamediator.vmData[eventData.machineId].owner = eventData.value;
 			break;
 		
 		// Custom icon
 		case 'phpvb/icon':
 			
-			vboxVMDataMediator.vmData[eventData.machineId].customIcon = eventData.value;
+			vcube.vmdatamediator.vmData[eventData.machineId].customIcon = eventData.value;
 			
-			if(vboxVMDataMediator.vmDetailsData[eventData.machineId])
-				vboxVMDataMediator.vmDetailsData[eventData.machineId].customIcon = eventData.value;
+			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
+				vcube.vmdatamediator.vmDetailsData[eventData.machineId].customIcon = eventData.value;
 			
 			
 			break;
 		
 		// Save mounted media changes at runtime
 		case 'GUI/SaveMountedAtRuntime':
-			if(vboxVMDataMediator.vmDetailsData[eventData.machineId])
-				vboxVMDataMediator.vmDetailsData[eventData.machineId].GUI.SaveMountedAtRuntime = eventData.value;
+			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
+				vcube.vmdatamediator.vmDetailsData[eventData.machineId].GUI.SaveMountedAtRuntime = eventData.value;
 			break;
 			
 		// First time run
 		case 'GUI/FirstRun':
-			if(vboxVMDataMediator.vmDetailsData[eventData.machineId])
-				vboxVMDataMediator.vmDetailsData[eventData.machineId].GUI.FirstRun = eventData.value;
+			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
+				vcube.vmdatamediator.vmDetailsData[eventData.machineId].GUI.FirstRun = eventData.value;
 			break;
 			
 	}
@@ -461,6 +490,6 @@ Ext.get(document).on('vboxOnMachineDataChanged',function(e, eventData) {
 	
 // Expire everything when host changes
 }).on('hostChange',function(){
-	vboxVMDataMediator.expireAll();
+	vcube.vmdatamediator.expireAll();
 
 });

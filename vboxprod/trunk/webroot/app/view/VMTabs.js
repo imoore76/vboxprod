@@ -74,7 +74,7 @@ Ext.define('vcube.view.VMTabs', {
         						'<tr valign="top">'+
         						'<td width=100%><h3 align="left" style="margin-left: 10px">{name}</h3><div>{description}</div></td>'+
         						'<td style="border: 0px solid #000; width: 120px;"><div align="center">'+
-        						'<img src="images/vbox/{[vboxGuestOSTypeIcon(values.OSTypeId)]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
+        						'<img src="images/vbox/{[vcube.utils.vboxGuestOSTypeIcon(values.OSTypeId)]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
         						'</td>'+
         				'</tr></table>')        			
         			},{
@@ -103,7 +103,7 @@ Ext.define('vcube.view.VMTabs', {
         						itemId: 'state',
         						name: 'state',
         						renderer: function(newValue) {
-    								return '<img src="images/vbox/'+vboxMachineStateIcon(newValue)+'" height=16 width=16 valign=top/>&nbsp;'+newValue;
+    								return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(newValue)+'" height=16 width=16 valign=top/>&nbsp;'+newValue;
         						}
         					},{
         						fieldLabel: 'OS Type',
@@ -210,8 +210,8 @@ Ext.define('vcube.view.VMTabs', {
     		title:'General',
     		margin: '0 0 0 0 ',
     		tpl: '<table class="vboxDetailsTable"><tbody>'+
-    			'<tr><th>{[trans("Name","VBoxGlobal")]}:</th><td>{[values.name]}</td></tr>'+
-    			'<tr><th>{[trans("OS Type","VBoxGlobal")]}:</th><td>{[values.OSTypeDesc]}</td></tr>'+
+    			'<tr><th>{[vcube.utils.trans("Name","VBoxGlobal")]}:</th><td>{[values.name]}</td></tr>'+
+    			'<tr><th>{[vcube.utils.trans("OS Type","VBoxGlobal")]}:</th><td>{[values.OSTypeDesc]}</td></tr>'+
     			'</tbody></table>'
         },{
         	icon:'images/vbox/chipset_16px.png',
@@ -219,24 +219,24 @@ Ext.define('vcube.view.VMTabs', {
     		tpl: ['<table class="vboxDetailsTable"><tbody>'+
     		
     			// Memory
-				'<tr><th>{[trans("Base Memory","VBoxGlobal")]}:</th><td>{[trans("<nobr>%1 MB</nobr>").replace("%1",values.memorySize)]}</td></tr>'+
+				'<tr><th>{[vcube.utils.trans("Base Memory","VBoxGlobal")]}:</th><td>{[vcube.utils.trans("<nobr>%1 MB</nobr>").replace("%1",values.memorySize)]}</td></tr>'+
 				
 				// Processors
-				'<tr><th>{[trans("Processor(s)","VBoxGlobal")]}:</th><td>{[values.CPUCount]}</td></tr>'+
+				'<tr><th>{[vcube.utils.trans("Processor(s)","VBoxGlobal")]}:</th><td>{[values.CPUCount]}</td></tr>'+
 				
 				// Execution cap
 				'<tpl if="values.CPUExecutionCap &lt; 100">'+
-					'<tr><th>{[trans("Execution Cap","VBoxGlobal")]}:</th><td>{[trans("<nobr>%1%</nobr>").replace("%1",parseInt(values.CPUExecutionCap))]}</td></tr>'+
+					'<tr><th>{[vcube.utils.trans("Execution Cap","VBoxGlobal")]}:</th><td>{[vcube.utils.trans("<nobr>%1%</nobr>").replace("%1",parseInt(values.CPUExecutionCap))]}</td></tr>'+
 				'</tpl>'+
 				
 				// Boot order
-				'<tr><th>{[trans("Boot Order","VBoxGlobal")]}:</th><td>'+
+				'<tr><th>{[vcube.utils.trans("Boot Order","VBoxGlobal")]}:</th><td>'+
 				'{[this.bootOrder(values.bootOrder)]}'+
 				'</td></tr>'+
 				
 				// Acceleration
 				'<tpl if="this.hasAcceleration(values)">' +
-					'<tr><th>{[trans("Acceleration","UIGDetails")]}:</th><td>'+
+					'<tr><th>{[vcube.utils.trans("Acceleration","UIGDetails")]}:</th><td>'+
 						'{[this.acceleration(values)]}' +
 					'</td></tr>'+
 				'</tpl>'+
@@ -247,7 +247,7 @@ Ext.define('vcube.view.VMTabs', {
     			 	
     				bootOrder : function(bootOrder) {
     					for(var i = i; i < bootOrder.length; i++) {
-    						bootOrder[i] = trans(vboxDevice(bootOrder[i]),'VBoxGlobal');
+    						bootOrder[i] = vcube.utils.trans(vcube.utils.vboxDevice(bootOrder[i]),'VBoxGlobal');
     					}
     					return bootOrder.join(', ');
     				},
@@ -259,14 +259,14 @@ Ext.define('vcube.view.VMTabs', {
     				
     				acceleration: function(d) {
 					   var acList = [];
-					   if(d['HWVirtExProperties'].Enabled) acList[acList.length] = trans('VT-x/AMD-V');
-					   if(d['HWVirtExProperties'].NestedPaging) acList[acList.length] = trans('Nested Paging');
-					   if(d['CpuProperties']['PAE']) acList[acList.length] = trans('PAE/NX');
+					   if(d['HWVirtExProperties'].Enabled) acList[acList.length] = vcube.utils.trans('VT-x/AMD-V');
+					   if(d['HWVirtExProperties'].NestedPaging) acList[acList.length] = vcube.utils.trans('Nested Paging');
+					   if(d['CpuProperties']['PAE']) acList[acList.length] = vcube.utils.trans('PAE/NX');
 					   /*
 					   if($('#vboxPane').data('vboxConfig').enableAdvancedConfig) {
-						   if(d['HWVirtExProperties'].LargePages) acList[acList.length] = trans('Large Pages');
-						   if(d['HWVirtExProperties'].Exclusive) acList[acList.length] = trans('Exclusive use of the hardware virtualization extensions');
-						   if(d['HWVirtExProperties'].VPID) acList[acList.length] = trans('VT-x VPID');
+						   if(d['HWVirtExProperties'].LargePages) acList[acList.length] = vcube.utils.trans('Large Pages');
+						   if(d['HWVirtExProperties'].Exclusive) acList[acList.length] = vcube.utils.trans('Exclusive use of the hardware virtualization extensions');
+						   if(d['HWVirtExProperties'].VPID) acList[acList.length] = vcube.utils.trans('VT-x VPID');
 					   }
 					   */
 					   return acList.join(', ');
@@ -276,25 +276,25 @@ Ext.define('vcube.view.VMTabs', {
 
         },{
     		icon: 'images/vbox/vrdp_16px.png',
-    		title: trans('Display'),
+    		title: vcube.utils.trans('Display'),
     		tpl: ['<table class="vboxDetailsTable"><tbody>'+
     		      
     		      // Video Memory
-    		      '<tr><th>{[trans("Video Memory")]}:</th><td>' +
-    		      '{[trans("<nobr>%1 MB</nobr>").replace("%1",values.VRAMSize)]}'+
+    		      '<tr><th>{[vcube.utils.trans("Video Memory")]}:</th><td>' +
+    		      '{[vcube.utils.trans("<nobr>%1 MB</nobr>").replace("%1",values.VRAMSize)]}'+
     		      '</td></tr>'+
     		      
     		      // VRDE port
     		      '<tpl if="this.vrdeEnabled(values)">'+
-	    		      '<tr><th>{[trans("Remote Desktop Server Port")]}:</th><td>' +
+	    		      '<tr><th>{[vcube.utils.trans("Remote Desktop Server Port")]}:</th><td>' +
 	    		      '{[this.vrdePorts(values)]}'+
 	    		      '</td></tr>'+
 	    		  '</tpl>'+
 	    		  
 	    		  // Disabled VRDE
 	    		  '<tpl if="!this.vrdeEnabled(values)">' +
-	    		      '<tr><th>{[trans("Remote Desktop Server")]}:</th><td>' +
-	    		      "{[trans('Disabled','VBoxGlobal',null,'details report (VRDE Server)')]}"+
+	    		      '<tr><th>{[vcube.utils.trans("Remote Desktop Server")]}:</th><td>' +
+	    		      "{[vcube.utils.trans('Disabled','VBoxGlobal',null,'details report (VRDE Server)')]}"+
 	    		      '</td></tr>'+
     		      '</tpl>'+
 	    		  
@@ -314,7 +314,7 @@ Ext.define('vcube.view.VMTabs', {
     				
     				vrdePorts: function(d) {
     					
-					   var chost = '127.0.0.1'; //vboxGetVRDEHost(d);
+					   var chost = '127.0.0.1'; //vcube.utils.vboxGetVRDEHost(d);
 						
 					   // Get ports
 					   var rowStr = d['VRDEServer']['ports'];
@@ -342,11 +342,11 @@ Ext.define('vcube.view.VMTabs', {
     		
         },{
         	
-        	title: trans('Storage'),
+        	title: vcube.utils.trans('Storage'),
 			icon:'images/vbox/hd_16px.png',
 			tpl: ['<table class="vboxDetailsTable"><tbody>'+
 			      '<tpl for="storageControllers">'+
-			      	'<tr><td>{[trans("Controller: %1","UIMachineSettingsStorage").replace("%1",values.name)]}</td><td></td></tr>'+
+			      	'<tr><td>{[vcube.utils.trans("Controller: %1","UIMachineSettingsStorage").replace("%1",values.name)]}</td><td></td></tr>'+
 			      	'<tpl for="mediumAttachments">'+
 			      		'<tr><td class="indented">{[this.mediumAttachmentPort(values, parent)]}:</td><td>'+
 			      			'{[this.mediumAttachmentMedium(values, parent)]}</td></tr>'+
@@ -357,7 +357,7 @@ Ext.define('vcube.view.VMTabs', {
 				disableFormats: true,
 				
 				mediumAttachmentPort: function(ma, con) {
-					return vboxStorage[con.bus].slotName(ma.port, ma.device);
+					return vcube.utils.vboxStorage[con.bus].slotName(ma.port, ma.device);
 				},
 				
 				mediumAttachmentMedium: function(ma, con) {
@@ -368,7 +368,7 @@ Ext.define('vcube.view.VMTabs', {
 					// Do we need to reload media?
 					if(ma.medium && ma.medium.id && medium === null) {
 						
-						portDesc = trans('Refresh','UIVMLogViewer');
+						portDesc = vcube.utils.trans('Refresh','UIVMLogViewer');
 
 					} else {
 						
@@ -383,9 +383,9 @@ Ext.define('vcube.view.VMTabs', {
 						portDesc = vboxMedia.mediumPrint(medium,false,it);
 						*/
 					}
-					portDesc = trans('Refresh','UIVMLogViewer');
+					portDesc = vcube.utils.trans('Refresh','UIVMLogViewer');
 
-					return (ma.type == 'DVD' ? trans('[CD/DVD]','UIGDetails') + ' ' : '') + portDesc;
+					return (ma.type == 'DVD' ? vcube.utils.trans('[CD/DVD]','UIGDetails') + ' ' : '') + portDesc;
 
 				}
 			}]
@@ -394,25 +394,25 @@ Ext.define('vcube.view.VMTabs', {
         	 * Audio
         	 */
     		icon:'images/vbox/sound_16px.png',
-    		title:trans('Audio'),
+    		title:vcube.utils.trans('Audio'),
     		settingsLink: 'Audio',
     		tpl : ['<table><tbody>' +
     		       
     		       '<tpl if="values.audioAdapter.enabled != 1">'+
     		          '<tr><td><span class="vboxDetailsNone">'+
-    		          		'{[trans("Disabled","VBoxGlobal",null,"details report (audio)")]}'+
+    		          		'{[vcube.utils.trans("Disabled","VBoxGlobal",null,"details report (audio)")]}'+
     		          	'</span></td></tr>'+
     		       '</tpl>'+
     		       
     		       '<tpl if="values.audioAdapter.enabled == 1">'+
     		       
     		       		// Host driver
-    		       		'<tr><th>{[trans("Host Driver","UIDetailsBlock")]}:</th>'+
-    		       		'<td>{[trans(vboxAudioDriver(values.audioDriver,"VBoxGlobal"))]}</td></tr>'+
+    		       		'<tr><th>{[vcube.utils.trans("Host Driver","UIDetailsBlock")]}:</th>'+
+    		       		'<td>{[vcube.utils.trans(vcube.utils.vboxAudioDriver(values.audioDriver,"VBoxGlobal"))]}</td></tr>'+
 
     		       		// Controller
-    		       		'<tr><th>{[trans("Controller","UIDetailsBlock")]}:</th>'+
-    		       		'<td>{[trans(vboxAudioController(values.audioAdapter.audioController,"VBoxGlobal"))]}</td></tr>'+
+    		       		'<tr><th>{[vcube.utils.trans("Controller","UIDetailsBlock")]}:</th>'+
+    		       		'<td>{[vcube.utils.trans(vcube.utils.vboxAudioController(values.audioAdapter.audioController,"VBoxGlobal"))]}</td></tr>'+
 
     		       		
     		       '</tpl>'+
@@ -427,13 +427,13 @@ Ext.define('vcube.view.VMTabs', {
         	/*
         	 * Network adapters
         	 */
-        	title: trans('Network'),
+        	title: vcube.utils.trans('Network'),
         	icon: 'images/vbox/nw_16px.png',
         	tpl: ['<table><tbody>'+
         	      
         	      // No nics enabled ? 
         	      '<tpl if="this.enabledNics(values.networkAdapters) == false">'+
-        	      		'<tr><td><span class="vboxDetailsNone">{[trans("Disabled","VBoxGlobal",null,"details report (network)")]}</span></td></tr>'+
+        	      		'<tr><td><span class="vboxDetailsNone">{[vcube.utils.trans("Disabled","VBoxGlobal",null,"details report (network)")]}</span></td></tr>'+
         	      '</tpl>'+
         	      
         	      // Nics enabled
@@ -442,7 +442,7 @@ Ext.define('vcube.view.VMTabs', {
         	      		// Each adapter
 	        	      '<tpl for="networkAdapters">'+
 	        	      		'<tpl if="values.enabled">'+
-		        	      		'<tr><th>{[trans("Adapter %1","VBoxGlobal").replace("%1", xindex)]}:</th><td>'+
+		        	      		'<tr><th>{[vcube.utils.trans("Adapter %1","VBoxGlobal").replace("%1", xindex)]}:</th><td>'+
 		        	      		'{[this.adapterDesc(values)]}'+
 		        	      		'</td></tr>'+
 		        	      	'</tpl>'+
@@ -451,7 +451,7 @@ Ext.define('vcube.view.VMTabs', {
 	        	      // Guest adapters info
 	        	      '<tpl if="values.state == &quot;running&quot;">'+
 	        	      		'<tr><th></th><td>'+
-	        	      		'<a href="javascript:vboxGuestNetworkAdaptersDialogInit(\'{values.id}\');">({[trans("Guest Network Adapters","VBoxGlobal")]})</a>'+
+	        	      		'<a href="javascript:vcube.utils.vboxGuestNetworkAdaptersDialogInit(\'{values.id}\');">({[vcube.utils.trans("Guest Network Adapters","VBoxGlobal")]})</a>'+
 	        	      		'</td></tr>'+
 	        	      '</tpl>'+
 	        	      
@@ -474,49 +474,49 @@ Ext.define('vcube.view.VMTabs', {
 
     				switch(nic.attachmentType) {
 						case 'Null':
-							adp = trans('Not attached','VBoxGlobal');
+							adp = vcube.utils.trans('Not attached','VBoxGlobal');
 							break;
 						case 'Bridged':
-							adp = trans('Bridged adapter, %1','VBoxGlobal').replace('%1', nic.bridgedInterface);
+							adp = vcube.utils.trans('Bridged adapter, %1','VBoxGlobal').replace('%1', nic.bridgedInterface);
 							break;
 						case 'HostOnly':
-							adp = trans('Host-only adapter, \'%1\'','VBoxGlobal').replace('%1', nic.hostOnlyInterface);
+							adp = vcube.utils.trans('Host-only adapter, \'%1\'','VBoxGlobal').replace('%1', nic.hostOnlyInterface);
 							break;
 						case 'NAT':
 							// 'NATNetwork' ?
-							adp = trans('NAT','VBoxGlobal');
+							adp = vcube.utils.trans('NAT','VBoxGlobal');
 							break;
 						case 'Internal':
-							adp = trans('Internal network, \'%1\'','VBoxGlobal').replace('%1', nic.internalNetwork);
+							adp = vcube.utils.trans('Internal network, \'%1\'','VBoxGlobal').replace('%1', nic.internalNetwork);
 							break;
 						case 'Generic':
 							// Check for properties
 							if(nic.properties) {
-								adp = trans('Generic driver, \'%1\' { %2 }','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
+								adp = vcube.utils.trans('Generic driver, \'%1\' { %2 }','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
 								var np = nic.properties.split("\n");
 								adp = adp.replace('%2', np.join(" ,"));
 								break;
 							}
-							adp = trans('Generic driver, \'%1\'','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
+							adp = vcube.utils.trans('Generic driver, \'%1\'','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
 							break;					
 						case 'VDE':
-							adp = trans('VDE network, \'%1\'','VBoxGlobal').replace('%1', nic.VDENetwork);
+							adp = vcube.utils.trans('VDE network, \'%1\'','VBoxGlobal').replace('%1', nic.VDENetwork);
 							break;
 					}
 					
-					return trans(vboxNetworkAdapterType(nic.adapterType)).replace(/\(.*\)/,'') + ' (' + adp + ')';
+					return vcube.utils.trans(vcube.utils.vboxNetworkAdapterType(nic.adapterType)).replace(/\(.*\)/,'') + ' (' + adp + ')';
 
     			}
         	}]
         },{
-        	title: trans('Serial Ports'),
+        	title: vcube.utils.trans('Serial Ports'),
         	icon: 'images/vbox/serial_port_16px.png',
         	tpl: ['<table><tbody>'+
         	      
         	      // No serial ports enabled
         	      '<tpl if="this.enabledPorts(values.serialPorts) == false">'+
         	      		'<tr><td><span class="vboxDetailsNone">'+
-        	      			"{[trans('Disabled','VBoxGlobal',null,'details report (serial ports)')]}"+
+        	      			"{[vcube.utils.trans('Disabled','VBoxGlobal',null,'details report (serial ports)')]}"+
         	      		'</span></td></tr>'+
         	      '</tpl>'+
         	      
@@ -524,7 +524,7 @@ Ext.define('vcube.view.VMTabs', {
         	      '<tpl if="this.enabledPorts(values.serialPorts) == true">'+
         	      		'<tpl for="values.serialPorts">'+
         	      			'<tpl if="values.enabled">'+
-	        	      			'<tr><th>{[trans("Port %1","VBoxGlobal",null,"details report (serial ports)").replace("%1",xindex)]}:</th><td>'+
+	        	      			'<tr><th>{[vcube.utils.trans("Port %1","VBoxGlobal",null,"details report (serial ports)").replace("%1",xindex)]}:</th><td>'+
 	        	      				'{[this.portDesc(values)]}'+
 	        	      			'</td></tr>'+
 	        	      		'</tpl>'+
@@ -544,10 +544,10 @@ Ext.define('vcube.view.VMTabs', {
         		portDesc: function(p) {
 
         			// compose extra info
-    				var xtra = vboxSerialPorts.getPortName(p.IRQ,p.IOBase);
+    				var xtra = vcube.utils.vboxSerialPorts.getPortName(p.IRQ,p.IOBase);
     				
     				var mode = p.hostMode;
-    				xtra += ', ' + trans(vboxSerialMode(mode),'VBoxGlobal');
+    				xtra += ', ' + vcube.utils.trans(vcube.utils.vboxSerialMode(mode),'VBoxGlobal');
     				if(mode != 'Disconnected') {
     					xtra += ' (' + $('<div />').text(p.path).html() + ')';
     				}
@@ -558,14 +558,14 @@ Ext.define('vcube.view.VMTabs', {
 
         	}]
         },{
-        	title: trans('Parallel Ports','UIDetailsPagePrivate'),
+        	title: vcube.utils.trans('Parallel Ports','UIDetailsPagePrivate'),
         	icon: 'images/vbox/parallel_port_16px.png',
         	tpl: ['<table><tbody>'+
         	      
         	      // No ports enabled
         	      '<tpl if="this.enabledPorts(values.serialPorts) == false">'+
         	      		'<tr><td><span class="vboxDetailsNone">'+
-        	      			"{[trans('Disabled','VBoxGlobal',null,'details report (parallel ports)')]}"+
+        	      			"{[vcube.utils.trans('Disabled','VBoxGlobal',null,'details report (parallel ports)')]}"+
         	      		'</span></td></tr>'+
         	      '</tpl>'+
         	      
@@ -573,8 +573,8 @@ Ext.define('vcube.view.VMTabs', {
         	      '<tpl if="this.enabledPorts(values.parallelPorts) == true">'+
         	      		'<tpl for="values.parallelPorts">'+
         	      			'<tpl if="values.enabled">'+
-	        	      			'<tr><th>{[trans("Port %1","VBoxGlobal",null,"details report (parallel ports)").replace("%1",xindex)]}:</th><td>'+
-	        	      				'{[trans(vboxParallelPorts.getPortName(values.IRQ,values.IOBase))]} {{values.path}}'+
+	        	      			'<tr><th>{[vcube.utils.trans("Port %1","VBoxGlobal",null,"details report (parallel ports)").replace("%1",xindex)]}:</th><td>'+
+	        	      				'{[vcube.utils.trans(vcube.utils.vboxParallelPorts.getPortName(values.IRQ,values.IOBase))]} {{values.path}}'+
 	        	      			'</td></tr>'+
 	        	      		'</tpl>'+
         	      		'</tpl>'+
@@ -593,7 +593,7 @@ Ext.define('vcube.view.VMTabs', {
         	}]
         },{
         	
-        	title: trans('USB'),
+        	title: vcube.utils.trans('USB'),
         	icon: 'images/vbox/usb_16px.png',
         	tpl: ['<table><tbody>'+
         	      '{[this.usbRow(values)]}'+
@@ -612,12 +612,12 @@ Ext.define('vcube.view.VMTabs', {
         					if(d['USBController'].deviceFilters[i].active) act++;
         				}
         				
-        				return '<tr><th>'+ trans("Device Filters") + ':</th><td>'+
-        					trans('%1 (%2 active)').replace('%1',tot).replace('%2',act) + '</td></tr>';
+        				return '<tr><th>'+ vcube.utils.trans("Device Filters") + ':</th><td>'+
+        					vcube.utils.trans('%1 (%2 active)').replace('%1',tot).replace('%2',act) + '</td></tr>';
         				
         			} else {
         				
-        				return '<span class="vboxDetailsNone">'+trans("Disabled",null,null,'details report (USB)')+'</span>';
+        				return '<span class="vboxDetailsNone">'+vcube.utils.trans("Disabled",null,null,'details report (USB)')+'</span>';
         			}
         			
 
@@ -625,15 +625,15 @@ Ext.define('vcube.view.VMTabs', {
         		}
         	}]
         },{
-        	title: trans('Shared Folders', 'UIDetailsPagePrivate'),
+        	title: vcube.utils.trans('Shared Folders', 'UIDetailsPagePrivate'),
         	icon: 'images/vbox/shared_folder_16px.png',
         	tpl: ['<table><tbody><tr>' +
         	      '<tpl if="values.sharedFolders.length &gt; 0">'+
-        	      		'<th>{[trans("Shared Folders", "UIDetailsPagePrivate")]}</th>'+
+        	      		'<th>{[vcube.utils.trans("Shared Folders", "UIDetailsPagePrivate")]}</th>'+
         	      		'<td>{[values.sharedFolders.length]}</td>'+
         	      '</tpl>'+
         	      '<tpl if="values.sharedFolders.length == 0">'+
-        	      		'<td><span class="vboxDetailsNone">{[trans("None",null,null,"details report (shared folders)")]}</span></td>'+
+        	      		'<td><span class="vboxDetailsNone">{[vcube.utils.trans("None",null,null,"details report (shared folders)")]}</span></td>'+
         	      '</tpl>'+
         	      
         	      '</tr></tbody></table>',{
@@ -641,13 +641,13 @@ Ext.define('vcube.view.VMTabs', {
         	}]
         },{
         	
-        	title: trans('Description','UIDetailsPagePrivate'),
+        	title: vcube.utils.trans('Description','UIDetailsPagePrivate'),
         	icon: 'images/vbox/description_16px.png',
         	tpl: ['<table><tbody><tr><td>'+
         	      '<tpl if="values.description">{values.description}</tpl>'+
 
         	      '<tpl if="values.description.length == 0">'+
-        	      		'<span class="vboxDetailsNone">{[trans("None",null,null,"details report (description)")]}</span>'+
+        	      		'<span class="vboxDetailsNone">{[vcube.utils.trans("None",null,null,"details report (description)")]}</span>'+
         	      '</tpl>'+
         	      '</td></tr></tbody></table>',{
         		disableFormats: true
@@ -670,14 +670,14 @@ Ext.define('vcube.view.VMTabs', {
     		xtype: 'treepanel',
     		itemId: 'snapshottree',
     		tbar: [
-    		   {xtype:'button',tooltip:trans('Take Snapshot...','UIActionPool').replace('...',''),icon:'images/vbox/take_snapshot_16px.png'},
+    		   {xtype:'button',tooltip:vcube.utils.trans('Take Snapshot...','UIActionPool').replace('...',''),icon:'images/vbox/take_snapshot_16px.png'},
     		   '-',
-    		   {xtype:'button',tooltip:trans('Restore Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/discard_cur_state_16px.png'},
-    		   {xtype:'button',tooltip:trans('Delete Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/delete_snapshot_16px.png'},
+    		   {xtype:'button',tooltip:vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/discard_cur_state_16px.png'},
+    		   {xtype:'button',tooltip:vcube.utils.trans('Delete Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/delete_snapshot_16px.png'},
     		   '-',
-    		   {xtype:'button',tooltip:trans('Clone...','UIActionPool').replace('...',''),icon:'images/vbox/vm_clone_16px.png'},
+    		   {xtype:'button',tooltip:vcube.utils.trans('Clone...','UIActionPool').replace('...',''),icon:'images/vbox/vm_clone_16px.png'},
     		   '-',
-    		   {xtype:'button',tooltip:trans('Show Details','VBoxSnapshotsWgt'),icon:'images/vbox/show_snapshot_details_16px.png'}
+    		   {xtype:'button',tooltip:vcube.utils.trans('Show Details','VBoxSnapshotsWgt'),icon:'images/vbox/show_snapshot_details_16px.png'}
     		],
     	    viewConfig:{
     	        markDirty:false

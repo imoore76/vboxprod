@@ -11,7 +11,7 @@ Ext.define('vcube.view.Login', {
     alias: 'widget.Login',
        
     layout:'fit',
-    title: trans('Log in'),
+    title: vcube.utils.trans('Log in'),
     icon: 'images/vbox/OSE/about_16px.png',
     width:300,
     height: 130,
@@ -45,7 +45,7 @@ Ext.define('vcube.view.Login', {
         }],
  
         buttons:[{ 
-            text: trans('Log in'),
+            text: vcube.utils.trans('Log in'),
             formBind: true
         }]
     }]

@@ -15,12 +15,13 @@ Ext.Loader.setConfig({
     }
 });
 
+
 Ext.application({
 	
     name: 'vcube',
     autoCreateViewport: true,
     
-    requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred'],
+    requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred', 'vcube.utils', 'vcube.vmdatamediator'],
     
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
     
@@ -46,7 +47,7 @@ Ext.application({
     		msg: msg,
     		icon: Ext.MessageBox.ERROR,
     		modal: true,
-    		buttonText: {ok:trans('OK')},
+    		buttonText: {ok:vcube.utils.trans('OK')},
     		closeAction: 'destroy'
     	})
     	
@@ -65,8 +66,8 @@ Ext.application({
     	this.fireEvent('stop');
     },
     
-    // Ajax request handlers
-    ajaxRequest: function(ajaxURL, addparams, success_callback, failure_callback) {
+    // Ajax request handler
+    ajaxRequest: function(ajaxURL, addparams, success_callback, failure_callback, context) {
     	
     	// Halt if fatal error has occurred
     	if(this._fatalErrorOccurred) return;
@@ -109,8 +110,12 @@ Ext.application({
     			}
     			
     			if(data && data.responseData !== null) {
-    				promise.resolve(data.responseData);
-    				if(success_callback) success_callback(data.responseData);    				
+    				
+    				promise.resolve(data.responseData, addparams, context);
+    				
+    				if(success_callback) {
+    					success_callback(data.responseData, addparams, context);    				
+    				}
     			} else {
     				promise.reject();
     			}
@@ -142,48 +147,27 @@ Ext.application({
     	
     	self.session = sessionData;
     	
-    	console.log("apsoidjf 2");
-    	// Load servers
-    	Ext.ux.Deferred.when(self.loadServers()).then(function(){
-    		console.log("apsoidjf 1");
-    		self.fireEvent('start');    		
-    	});
-    },
-    
-    /**
-     * Load server list 
-     */
-    loadServers: function() {
-    	
-    	var self = this;
-    	var promise = Ext.create('Ext.ux.Deferred');
-    	
-    	console.log('here...');
-    	Ext.ux.Deferred.when(self.application.ajaxRequest('connectors/getConnectors'))
-			.then(function(data) {
-				console.log('here2...');
-				self.vboxServers = data;
-				promise.resolve();
-			});
-    	
-		return promise;
+    	if(self.session && self.session.user) {
+    		Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
+    			self.fireEvent('start');    			
+    		})
+    	} else {
+    		self.showLogin();
+    	}
 
     },
+    
     
     launch: function() {
 
-    	//this.loadMask = new Ext.LoadMask(Ext.ComponentQuery.query('viewport')[0]).show();
+    	// Create some shortcuts
+    	vcube.app = this;
     	
     	// App ref
     	var self = this;
 
-    	self.ajaxRequest('app/getSession',{},function(d){
-    	
-			self.session = d;
-			
-			if(self.session && self.session.user) self.fireEvent('start');
-			else self.showLogin();
-
+    	self.ajaxRequest('app/getSession',{},function(data){
+    		self.loadSession(data);
     	});
     	
     }

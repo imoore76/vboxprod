@@ -9,8 +9,14 @@ Ext.define('vcube.view.VMTabs', {
     
 	alias: 'widget.VMTabs',
 	
+	
 	statics: {
 	
+		/*
+		 * List of actions that can be performed on this vm
+		 */
+		vmactions : ['start','powerdown','pause','savestate','clone','settings'],
+
 		/*
 		 * 
 		 * List of VM details sections and their content
@@ -374,7 +380,7 @@ Ext.define('vcube.view.VMTabs', {
 							var xtra = vcube.utils.vboxSerialPorts.getPortName(p.IRQ,p.IOBase);
 							
 							var mode = p.hostMode;
-							xtra += ', ' + vcube.utils.trans(vboxSerialMode(mode),'VBoxGlobal');
+							xtra += ', ' + vcube.utils.trans(vcube.utils.vboxSerialMode(mode),'VBoxGlobal');
 							if(mode != 'Disconnected') {
 								xtra += ' (' + p.path + ')';
 							}
@@ -390,11 +396,11 @@ Ext.define('vcube.view.VMTabs', {
 						}
 						
 						if(vboxDetailsTableSPorts == 0) {
-							rows[rows.length] = {
+							rows = [{
 								title: '<span class="vboxDetailsNone">'+vcube.utils.trans('Disabled','VBoxGlobal',null,'details report (serial ports)')+'</span>',
 								data: '',
 								html: true
-							};
+							}];
 						}
 						
 						return rows;
@@ -519,7 +525,6 @@ Ext.define('vcube.view.VMTabs', {
         itemId: 'SummaryTab',
         icon: 'images/vbox/machine_16px.png',
 		bodyStyle: 'background: url(images/vbox/vmw_first_run_bg.png) 700px 40px no-repeat',
-		xtype: 'form',
         autoScroll: true,
         defaults: {
         	bodyStyle: { background: 'transparent' }
@@ -527,6 +532,7 @@ Ext.define('vcube.view.VMTabs', {
         items: [{
         	// Summary container
         	xtype: 'panel',
+        	itemId: 'SummaryTabItems',
         	flex: 1,
         	border: false,
         	layout: {
@@ -575,7 +581,7 @@ Ext.define('vcube.view.VMTabs', {
         						'<tr valign="top">'+
         						'<td width=100%><h3 align="left" style="margin-left: 10px">{name}</h3><div>{description}</div></td>'+
         						'<td style="border: 0px solid #000; width: 120px;"><div align="center">'+
-        						'<img src="images/vbox/{[vcube.utils.vboxGuestOSTypeIcon(values.OSTypeId)]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
+        						'<img src="{[(values.customIcon ? values.customIcon : "images/vbox/blank.gif")]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
         						'</td>'+
         				'</tr></table>')        			
         			},{
@@ -591,39 +597,43 @@ Ext.define('vcube.view.VMTabs', {
         					}
         		        },
         				items: [{
-        					xtype: 'panel',
         					title: 'Info',
+        					itemId: 'infoTable',
         					icon: 'images/vbox/name_16px.png',
         					border: true,
         					width: 300,
-        					defaults: { xtype: 'displayfield'},
+        					defaults: { xtype: 'displayfield', labelStyle: 'margin-left: 4px;' },
         					bodyStyle: { background: '#fff' },
         					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
         					items: [{
         						fieldLabel: 'State',
-        						itemId: 'state',
         						name: 'state',
         						renderer: function(newValue) {
-    								return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(newValue)+'" height=16 width=16 valign=top/>&nbsp;'+newValue;
+        							return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(newValue) +'" height=16 width=16 valign=top />&nbsp;' + vcube.utils.vboxVMStates.convert(newValue);
         						}
         					},{
+        						/* Such a hack... */
         						fieldLabel: 'OS Type',
-        						name: 'OSTypeDesc'
+        						name: 'OSTypeId-OSTypeDesc',
+        						renderer: function(cdata) {
+        							cdata = cdata.split('-');
+        							return '<img src="images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(cdata[0]) +'" height=16 width=16 valign=top />&nbsp;' + cdata[1]
+        						}
         					},{
         						fieldLabel: 'Current Snapshot',
-        						name: 'currentSnapshot',
+        						name: 'currentSnapshotName',
         						renderer: function(s) {
         							return (s ? s : '<span style="font-style: italic">none</span>');
         						}
         					}]
         				},{
-        					xtype: 'panel',
         					title: 'Resources',
+        					itemId: 'resourcesTable',
         					icon: 'images/vbox/chipset_16px.png',
+        					defaults: { xtype: 'displayfield', labelStyle: 'margin-left: 4px;' },
         					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
         					border: true,
         					width: 300,
-        					defaults: { xtype: 'displayfield'},
         					bodyStyle: { background: '#fff' },
         					items: [{
         						fieldLabel: 'CPU(s)',
@@ -657,40 +667,39 @@ Ext.define('vcube.view.VMTabs', {
         		},{
         			title: 'Actions',
         			layout: 'vbox',
+        			itemid: 'vmactions',
         			bodyStyle: { background: '#fff' },
         			border: true,
         			width: 300,
-        			defaults: { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' },
-        			items: [{
-        				text: 'Start',
-        				icon: 'images/vbox/start_16px.png',
-        				disabled: true
-        			},{
-        				text: 'Power Off',
-        				icon: 'images/vbox/poweroff_16px.png'
-        			},{
-        				text: 'Pause',
-        				icon: 'images/vbox/pause_16px.png',
-        				disabled: true
-        			},{
-        				text: 'Save State',
-        				icon: 'images/vbox/save_state_16px.png'
-        			},{
-        				text: 'Take Snapshot',
-        				icon: 'images/vbox/take_snapshot_16px.png'
-        			},{
-        				text: 'Clone',
-        				icon: 'images/vbox/vm_clone_16px.png'
-        			},{
-        				text: 'Resume',
-        				icon: 'images/vbox/start_16px.png'
-        			},{
-        				text: 'Settings',
-        				icon: 'images/vbox/settings_16px.png'
-        			},{
-        				text: 'Export',
-        				icon: 'images/vbox/export_16px.png'
-        			}]
+        			listeners: {
+        				
+        				beforerender: function(vmactions) {
+        					
+        					defaults = { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' };
+
+        					console.log('here...');
+        					
+        					Ext.each(vcube.view.VMTabs.vmactions, function(action, i) {
+        						
+        						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
+        							
+        							itemId : action,
+        							
+        							text: vcube.vmactions[action].label.replace('...',''),
+        							
+        							icon: 'images/vbox/' + (vcube.vmactions[action].icon_16 ? vcube.vmactions[action].icon_16 : vcube.vmactions[action].icon) +
+        								'_16px.png',
+									
+    								listeners: {
+										click: vcube.vmactions[action].click
+									}
+        						
+        						}, defaults)));
+
+        					});
+ 
+        				}
+        			}
         		}]
         	}]
         }]
@@ -701,7 +710,6 @@ Ext.define('vcube.view.VMTabs', {
         title: 'Details',
         itemId: 'DetailsTab',
         icon: 'images/vbox/settings_16px.png',
-        xtype: 'form',
         autoScroll: true,
         layout: 'vbox',
         width: '100%',
@@ -716,7 +724,6 @@ Ext.define('vcube.view.VMTabs', {
     	layout: 'fit',
     	listeners: {
     		show: function(p) {
-    			//console.log('show here...');
     			p.getComponent('snapshottree').doLayout().getStore().getRootNode().expand();
     			
     		}

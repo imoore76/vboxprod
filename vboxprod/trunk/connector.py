@@ -100,7 +100,7 @@ def _machineGetBaseInfo(machine):
         'currentStateModified' : bool(machine.currentStateModified),
         'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
         'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
-        'customIcon' : machine.getExtraData('phpvb/icon')
+        'customIcon' : machine.getExtraData('vcube/icon')
     }
 
 
@@ -820,7 +820,7 @@ class vboxConnector(object):
         
         
         # Custom Icon
-        m.setExtraData('phpvb/icon', args['customIcon'])
+        m.setExtraData('vcube/icon', args['customIcon'])
         
         m.setExtraData('GUI/SaveMountedAtRuntime', args['GUI'].get('SaveMountedAtRuntime','yes'))
 
@@ -1168,7 +1168,7 @@ class vboxConnector(object):
         m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
 
         """ Custom Icon """
-        m.setExtraData('phpvb/icon', args['customIcon'])
+        m.setExtraData('vcube/icon', args['customIcon'])
 
         m.VRAMSize = args['VRAMSize']
         
@@ -2402,7 +2402,7 @@ class vboxConnector(object):
         """ @m IMachine """
         m = self.vbox.createMachine(None,args['name'],'',args['ostype'],None,None)
 
-        m.setExtraData(self.phpVboxGroupKey, args.get('group_id',0))
+        m.setExtraData(self.vcubeoxGroupKey, args.get('group_id',0))
 
         # Set memory
         m.memorySize = int(args['memory'])
@@ -2738,7 +2738,7 @@ class vboxConnector(object):
                 'SaveMountedAtRuntime' : m.getExtraData('GUI/SaveMountedAtRuntime'),
                 'FirstRun' : m.getExtraData('GUI/FirstRun')
             },
-            'customIcon' : m.getExtraData('phpvb/icon'),
+            'customIcon' : m.getExtraData('vcube/icon'),
             'disableHostTimeSync' : m.getExtraData("VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled"),
             'CPUExecutionCap' : m.CPUExecutionCap
         }
@@ -2755,7 +2755,7 @@ class vboxConnector(object):
         retval = []
         for i in range(0,self.vbox.systemProperties.maxBootPosition):
             b = vboxEnumToString("DeviceType", m.getBootOrder(i + 1))
-            if b == 'None': continue
+            if b == 'Null': continue
             retval.append(b)
         return retval
 

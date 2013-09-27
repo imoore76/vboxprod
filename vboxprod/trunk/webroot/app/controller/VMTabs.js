@@ -24,6 +24,14 @@ Ext.define('vcube.controller.VMTabs', {
         		select: this.selectItem
         	}
         });
+        
+    },
+    
+    /* Holds ref to action list component */
+    actionsList : null,
+    
+    actionListInit: function() {
+    	
     },
     
     /* An item is selected */
@@ -38,26 +46,36 @@ Ext.define('vcube.controller.VMTabs', {
     	var summaryTab = tabPanel.getComponent('SummaryTab');
     	var detailsTab  = tabPanel.getComponent('DetailsTab');
     	
+    	
     	tabPanel.setLoading(true);
     	
-    	//console.log('data...');
-    	//console.log(record.raw.data);
+    	detailsTab.removeAll(true);
     	
     	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
     		
+    		Ext.apply(data, record.raw.data);
     		tabPanel.rawData = data;
     		
     		// Draw preview and resize panel
     		vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
+
     		summaryTab.down('#PreviewPanel').doLayout();
     		
-    		//summaryTab.getForm().setValues(data);
-    		
     		summaryTab.down('#baseinfo').update(data);
-    		//summaryTab.down('#state').update(record.raw);
+
     		
-    		console.log("here...");
-    		console.log(vcube.view.VMTabs.vboxVMDetailsSections);
+    		Ext.each(['infoTable','resourcesTable'], function(tableName) {
+    			
+    			Ext.each(summaryTab.down('#' + tableName).items.items, function(item) {
+    				var dataNames = item.name.split('-');
+    				var dataValues = [];
+    				Ext.each(dataNames, function(dataName){
+    					dataValues.push(data[dataName]);
+    				});
+    				item.setValue(dataValues.join('-'));
+    			});
+    		});
+
     		for(var i in vcube.view.VMTabs.vboxVMDetailsSections) {
     			
     			if(typeof(i) != 'string') continue;
@@ -95,10 +113,15 @@ Ext.define('vcube.controller.VMTabs', {
     					rowData = rows[i].data;
     				}
 
-    				tableItems.push({'html':rows[i].title});
-    				tableItems.push({'html':rowData});
     				
-					//$(table).append(__vboxDetailRow(rows[i].title, rowData, 'vboxDetailName' + (rows[i].indented ? ' vboxDetailNameIndent' : ''), rows[i].html));
+    				if(rows[i].title && !rowData) {
+    					tableItems.push({'html':rows[i].title, 'cls': 'vboxDetailsTableData', colspan: 2 , 'width': '100%'});
+    				} else {
+    					
+    					tableItems.push({'html':rows[i].title + ':', 'cls': 'vboxDetailsTableHeader'});
+    					tableItems.push({'html':rowData, 'cls': 'vboxDetailsTableData' + (rows[i].indented ? ' vboxDetailsIndented' : ''), 'width': '100%'});
+    				}
+    				
     				
     			}
 
@@ -107,9 +130,13 @@ Ext.define('vcube.controller.VMTabs', {
     			var sectionPanel = Ext.create('Ext.panel.Panel', {
     			    title: section.title,
     			    icon: 'images/vbox/' + section.icon,
+    			    cls: 'vboxDetailsTablePanel',
     			    layout: {
     			    	type: 'table',
     			    	columns: 2
+    			    },
+    			    defaults: {
+    			    	bodyCls: 'vboxDetailsTable'
     			    },
     			    items: tableItems
     			});

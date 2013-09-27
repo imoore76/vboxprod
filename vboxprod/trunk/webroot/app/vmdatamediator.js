@@ -164,8 +164,6 @@ Ext.define('vcube.vmdatamediator', {
 			
 			vcube.vmdatamediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
 			
-			console.log(vcube.vmdatamediator.vmData[vmid]._serverid);
-
 			Ext.ux.Deferred.when(vcube.app.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'server':vcube.vmdatamediator.vmData[vmid]._serverid})).done(function(d){
 				
 				vcube.vmdatamediator.vmDetailsData[d.id] = d;

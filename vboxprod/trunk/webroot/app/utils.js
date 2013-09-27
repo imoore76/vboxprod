@@ -1,4 +1,6 @@
-
+/**
+ * Utilities used by vcube
+ */
 Ext.define('vcube.utils', {
 	
 	singleton: true,

@@ -33,8 +33,8 @@ Ext.define('vcube.controller.NavTree', {
     
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
-    	console.log("Record");
-    	console.log(record);
+    	//console.log("Record");
+    	//console.log(record);
     },
     
 
@@ -132,7 +132,7 @@ Ext.define('vcube.controller.NavTree', {
 					'cls' : 'navTreeVM vmState' + (data[i].state) + ' vmSessionState' + data[i].sessionState + ' vmOSType' + data[i].OSTypeId,
         			'text' : '<span class="vmStateIcon"> </span>' + data[i].name,
         			'leaf' : true,
-        			'icon' : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data[i].OSTypeId),
+        			'icon' : (data[i].customIcon ? data[i].customIcon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data[i].OSTypeId)),
         			'iconCls' : 'navTreeIcon',
         			'data' : data[i]
         		}))

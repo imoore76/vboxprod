@@ -21,7 +21,8 @@ Ext.application({
     name: 'vcube',
     autoCreateViewport: true,
     
-    requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred', 'vcube.utils', 'vcube.vmdatamediator'],
+    requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred',
+               'vcube.utils', 'vcube.vmdatamediator', 'vcube.vmactions'],
     
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
     

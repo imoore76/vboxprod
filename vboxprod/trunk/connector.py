@@ -92,7 +92,7 @@ def _machineGetBaseInfo(machine):
     return { 
         'name' :machine.name,
         'state' : vboxEnumToString("MachineState", machine.state),
-        'group_id' : '',
+        'group_id' : machine.getExtraData(vboxConnector.groupKey),
         'OSTypeId' : machine.OSTypeId,
         'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
         'lastStateChange' : long(machine.lastStateChange)/1000,
@@ -126,6 +126,11 @@ def formatEvent(data, eventDataObject):
         data['key'] = eventDataObject.key
         data['value'] = eventDataObject.value
         data['dedupId'] = data['dedupId'] +  '-' + data['machineId'] + '-' + data['key']
+        
+        # Create synthetic group changed event if it was the group key
+        if data['key'] == vboxConnector.groupKey:
+            data['eventType'] = 'OnMachineGroupChanged'
+            data['group'] = data['value']
             
     elif data['eventType'] == 'OnMediumRegistered':
         data['machineId'] = data['sourceId']
@@ -399,6 +404,9 @@ def enrichEvents(eventList):
                     pass
                 
             lastMachineId = event.get('machineId',None)
+            
+            # Remove "On"
+            eventList[ek]['eventType'] = eventList[ek]['eventType'][2:]
      
     # Don't leave open sessions to machines         
     finally:      
@@ -450,6 +458,11 @@ class vboxConnector(object):
     dsep = None
 
     """
+        Group key in vm extra data
+    """
+    groupKey = 'vcube/group_id'
+    
+    """
         Init vbox per thread
     """
     def __init__(self):
@@ -460,12 +473,18 @@ class vboxConnector(object):
             localData.vboxInit = True
         self.vbox = vboxMgr.vbox
         
-    def finishRequest(self, client):
+    def unregisterClient(self, client):
         global vboxMgr
         localData = threading.local()
         if getattr(localData,'vboxInit',False) != True:
             vboxMgr.deinitPerThread()
         localData.vboxInit = False
+        
+    """
+        Cleanup after request
+    """
+    def finishRequest(self):
+        self.errors = self.messages = []
         
     """
      * Get VirtualBox version
@@ -498,6 +517,14 @@ class vboxConnector(object):
         """ @m IMachine """
         return self.vbox.findMachine(args['vm']).enumerateGuestProperties(args.get('pattern',''))
 
+    """
+       Set machine group
+    """
+    def remote_machineSetGroup(self, args):
+        args['key'] = self.groupKey
+        args['value'] = args['group']
+        return self.remote_machineSetExtraData(args)
+    
     """
      * Set extra data of a vm
      *
@@ -4227,11 +4254,11 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
 
                             
                         else:
+                            
                             """
                                 Direct method call
                                 
                             """
-
                             if not serviceObj:
                                 raise Exception("A service has not been set for this connection")
                             
@@ -4267,7 +4294,9 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                                     'errors': [{'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
                                     'messages': serviceObj.messages
                                 })
-                            
+
+                            finally:
+                                serviceObj.finishRequest()
                     
                     else:
                         raise Exception("Invalid message type: %s" %(message.get('msgType',''),))
@@ -4297,7 +4326,7 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
             
             # Unregister client?
             if serviceObj:
-                serviceObj.finishRequest(self)
+                serviceObj.unregisterClient(self)
                 
                 
         self.server.removeClient(clientId)
@@ -4416,7 +4445,6 @@ class vboxEventService(threading.Thread):
         finally:
             self.clientLock.release()
     
-                
     def registerClient(self, client):
 
         self.clientLock.acquire(True)
@@ -4430,7 +4458,7 @@ class vboxEventService(threading.Thread):
         finally:
             self.clientLock.release()
         
-    def finishRequest(self, client):
+    def unregisterClient(self, client):
         self.clientLock.acquire(True)
         try:    
             id = "%s:%s" %(client.client_address)

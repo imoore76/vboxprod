@@ -193,6 +193,7 @@ class Application(threading.Thread):
             Pump event to clients first
         """
         self.pumpEvent({
+            'eventSource' : 'vcube',
             'eventType':'connectorStateChange',
             'connector' : cid,
             'status' : state,
@@ -233,7 +234,14 @@ class Application(threading.Thread):
                 self.connectorEventListeners[cid].start()
                                 
                 def sendEvent(message):
-                    self.pumpEvent(message.get('event'))
+                    
+                    try:
+                        message['event']['serverId'] = cid
+                        message['event']['eventSource'] = 'vbox'
+                        self.pumpEvent(message['event'])
+                    
+                    except Exception as e:
+                        logger.exception(e)
                     
                 # Listen for vbox events
                 self.connectorEventListeners[cid].listen(['vboxEvent'], sendEvent)
@@ -314,7 +322,7 @@ class Application(threading.Thread):
             for i in range(0, self.heartbeatInterval):
                 if not self.running: break
                 time.sleep(1)
-            self.pumpEvent({'eventType':'heartbeat'})
+            self.pumpEvent({'eventType':'heartbeat','eventSource':'vcube'})
 
  
         self.connectorsLock.acquire(True)

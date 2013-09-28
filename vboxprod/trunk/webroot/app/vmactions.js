@@ -1,15 +1,18 @@
+/**
+ * VM actions
+ */
 Ext.define('vcube.vmactions',{
 	
 	statics: {
 	
 		/** Invoke the new virtual machine wizard */
 		'new':{
-				label:vcube.utils.trans('New...','UIActionPool'),
-				icon:'vm_new',
-				icon_16:'new',
-				click: function(fromGroup){
-					new vboxWizardNewVMDialog((fromGroup ? $(vboxChooser.getSelectedGroupElements()[0]).data('vmGroupPath') : '')).run();
-				}
+			label:vcube.utils.trans('New...','UIActionPool'),
+			icon:'vm_new',
+			icon_16:'new',
+			click: function(fromGroup){
+				new vboxWizardNewVMDialog((fromGroup ? $(vboxChooser.getSelectedGroupElements()[0]).data('vmGroupPath') : '')).run();
+			}
 		},
 		
 		/** Add a virtual machine via its settings file */

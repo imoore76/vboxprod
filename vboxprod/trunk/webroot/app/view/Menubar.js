@@ -9,14 +9,7 @@ Ext.define('vcube.view.Menubar', {
 	    	   'xtype':'button',
 	    	   'text':'File',
 	    		'menu' : [
-	    		          vcubeActions.global.vmm,
-	    		          '-',
-	    		          vcubeActions.global.importappliance,
-	    		          vcubeActions.global.exportappliance,
-	    		          '-',
-	    		          vcubeActions.global.preferences,
-	    		          '-',
-	    		          {text:'Logout',itemId:'logout'}
+    		          {text:'Logout',itemId:'logout'}
 	    		]
 	       },
 	       {

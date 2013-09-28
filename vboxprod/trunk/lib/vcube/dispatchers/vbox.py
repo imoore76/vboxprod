@@ -31,7 +31,7 @@ class dispatcher(dispatcher_parent):
         
             
 
-        jsonResponse = jsonResponseTemplate
+        jsonResponse = jsonResponseTemplate.copy()
         
         try:
             

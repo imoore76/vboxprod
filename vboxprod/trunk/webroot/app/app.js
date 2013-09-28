@@ -1,42 +1,35 @@
-/* Define Actions */
-var vcubeActions = {
-   'global' : {
-      'vmm': {'text':'Virtual Media Manager...','icon':'images/vbox/diskimage_16px.png'},
-      'importappliance' : {'text':'Import Appliance...','icon':'images/vbox/import_16px.png'},
-      'exportappliance' : {'text':'Export Appliance...','icon':'images/vbox/export_16px.png'},
-      'preferences' : {'text':'Preferences...','icon':'images/vbox/global_settings_16px.png'}
-   }
-}
-
+/**
+ * Main vcube application
+ */
 Ext.Loader.setConfig({
     enabled: true,
     paths: {
-        'Ext.ux':'extjs/ux'
+        'Ext.ux':'extjs/ux',
+        'vcube':'app'
     }
 });
 
+Ext.require(['vcube.utils']);
 
 Ext.application({
 	
     name: 'vcube',
     autoCreateViewport: true,
     
+    /* Various utils and scripts */
     requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred',
-               'vcube.utils', 'vcube.vmdatamediator', 'vcube.vmactions'],
+               'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener'],
     
+    /* Controllers used by this app */
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
     
+    /* Login window */
     views: ['Login'],
-    
-    vboxServers: [],
-    
-    // Fatal error
-    _fatalErrorOccurred: false,
     
     // Load mask created on app init
     loadMask: null,
     
-    // Alert
+    /* Alert dialog */
     alert: function(msg, dialogStyle) {
     	
     	if( typeof(msg) == 'object' && msg['error'])
@@ -54,16 +47,10 @@ Ext.application({
     	
     },
     
-    // Listeners for application wide events
-    listeners: {
-    	login: function() {
-    		//this.loadMask.hide();
-    		console.log('ok');
-    	}
-    },
-    
-    // Stop the application - perform cleanup
+    /* Stop the application - perform cleanup */
     stop: function() {
+    	vcube.eventlistener.stop();
+    	vcube.vmdatamediator.stop();
     	this.fireEvent('stop');
     },
     
@@ -141,7 +128,9 @@ Ext.application({
     // User session data
     session: null,
     
-    // Load session data and fire event
+    /**
+     * Load session data
+     */
     loadSession: function(sessionData) {
     	
     	var self = this;
@@ -149,16 +138,22 @@ Ext.application({
     	self.session = sessionData;
     	
     	if(self.session && self.session.user) {
-    		Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
-    			self.fireEvent('start');    			
-    		})
+    		
+    		Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
+    			Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
+    				self.fireEvent('start');    
+    			});    			
+    		});
+    		
     	} else {
     		self.showLogin();
     	}
 
     },
     
-    
+    /**
+     * Main application launch
+     */
     launch: function() {
 
     	// Create some shortcuts

@@ -44,7 +44,7 @@ def jsonout(func):
         if kwargs.get('_raw') == True:
             return func(*args, **kwargs)
         
-        jsonResponse = jsonResponseTemplate
+        jsonResponse = jsonResponseTemplate.copy()
         
         try:
             

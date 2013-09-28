@@ -15,6 +15,8 @@ Ext.define('vcube.vmdatamediator', {
 	
 	running: false,
 	
+	requires: ['vcube.utils'],
+	
 	/* Promises for data */
 	promises : {
 		'getVMList' : null,
@@ -53,6 +55,10 @@ Ext.define('vcube.vmdatamediator', {
 		vcube.vmdatamediator.vmRuntimeData = {};
 		vcube.vmdatamediator.vmDetailsData = {};
 		vcube.vmdatamediator.gotVMsFromServers = {};
+	},
+	
+	stop: function() {
+		vcube.vmdatamediator.expireAll();
 	},
 	
 	

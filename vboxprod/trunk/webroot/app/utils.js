@@ -23,7 +23,7 @@ Ext.define('vcube.utils', {
 	/**
 	 * Serial port namespace
 	 * 
-	 * @namespace vboxSerialPorts
+	 * @namespace vcube.utils.vboxSerialPorts
 	 */
 	vboxSerialPorts : {
 		
@@ -44,9 +44,9 @@ Ext.define('vcube.utils', {
 		 * @return {String} port name
 		 */
 		getPortName : function(irq,port) {
-			for(var i = 0; i < vboxSerialPorts.ports.length; i++) {
-				if(vboxSerialPorts.ports[i].irq == irq && vboxSerialPorts.ports[i].port.toUpperCase() == port.toUpperCase())
-					return vboxSerialPorts.ports[i].name;
+			for(var i = 0; i < vcube.utils.vboxSerialPorts.ports.length; i++) {
+				if(vcube.utils.vboxSerialPorts.ports[i].irq == irq && vcube.utils.vboxSerialPorts.ports[i].port.toUpperCase() == port.toUpperCase())
+					return vcube.utils.vboxSerialPorts.ports[i].name;
 			}
 			return 'User-defined';
 		}

@@ -12,6 +12,16 @@ Ext.define('vcube.view.NavTree', {
     lines: false,
     useArrows: true,
     root: {
+		allowDrag: false,
+		allowDrop: false,
     	expanded: true
-    }
+    },
+    viewConfig: {
+    	plugins: {
+	    	ptype: 'treeviewdragdrop',
+	    	allowContainerDrop: false,
+	    	allowParentInsert: false,
+	    	ddGroup: 'navtreevms'
+    	}
+	}
 });

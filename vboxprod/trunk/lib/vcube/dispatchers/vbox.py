@@ -2,7 +2,7 @@ import os
 import vcube
 import json
 import traceback, time
-from vcube.dispatchers import dispatcher_parent, jsonin, jsonout, jsonResponseTemplate
+from vcube.dispatchers import dispatcher_parent, jsonin, jsonout
 from vcube.models import Connector
 import pprint, cherrypy
 
@@ -31,7 +31,7 @@ class dispatcher(dispatcher_parent):
         
             
 
-        jsonResponse = jsonResponseTemplate.copy()
+        jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
         
         try:
             

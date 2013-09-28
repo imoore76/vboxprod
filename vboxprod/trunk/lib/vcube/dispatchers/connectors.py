@@ -28,6 +28,13 @@ class dispatcher(dispatcher_parent):
         # Tell application that a connector was added
         vcube.getInstance().addConnector(dict(c._data.copy()))
         
+        vcube.getInstance().pumpEvent({
+            'eventSource' : 'vcube',
+            'eventType':'ConnectorAdded',
+            'connector' : dict(c._data.copy())
+        })
+
+        
         return True
     addConnector.exposed = True
         
@@ -39,7 +46,14 @@ class dispatcher(dispatcher_parent):
         Connector(Connector.id == kwargs.get('id', 0)).delete()
         
         # Tell application that a connector was removed
-        vcube.getInstance().addConnector(kwargs.get('id',0))
+        vcube.getInstance().removeConnector(kwargs.get('id',0))
+        
+        vcube.getInstance().pumpEvent({
+            'eventSource' : 'vcube',
+            'eventType':'ConnectorRemoved',
+            'connector_id' : kwargs.get('id', 0)
+        })
+
 
         return True
 
@@ -56,6 +70,12 @@ class dispatcher(dispatcher_parent):
         
         # Tell application that a connector was removed
         vcube.getInstance().updateConnector(dict(c._data.copy()))
+
+        vcube.getInstance().pumpEvent({
+            'eventSource' : 'vcube',
+            'eventType':'ConnectorUpdated',
+            'connector' : dict(c._data.copy())
+        })
 
         return True
     

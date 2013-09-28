@@ -43,11 +43,8 @@ def jsonout(func):
         if kwargs.get('_raw') == True:
             return func(*args, **kwargs)
         
-        jsonResponse = None
-        jsonResponse = dict(jsonResponseTemplate.copy())
-        
-        pprint.pprint(jsonResponseTemplate)
-        
+        jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
+
         try:
             
             jsonResponse['data']['responseData'] = func(*args, **kwargs)

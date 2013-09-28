@@ -43,6 +43,7 @@ Ext.define('vcube.eventlistener', {
 		vcube.eventlistener.ws = new WebSocket("ws://" + location.host + "/eventStream");
 		vcube.eventlistener.ws.onmessage = function(e) {
 			
+			console.log(JSON.parse(e.data));
 			vcube.eventlistener.pumpEvent(JSON.parse(e.data));
 		};
 			  

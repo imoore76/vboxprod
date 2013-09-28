@@ -21,6 +21,10 @@ Ext.define('vcube.controller.NavTree', {
 			
 			MachineGroupChanged: this.MachineGroupChanged,
 			
+			VMGroupAdded: this.VMGroupAdded,
+			VMGroupRemoved: this.VMGroupRemoved,
+			VMGroupUpdated: this.VMGroupUpdated,
+			
 			scope : this
 		
 		});
@@ -58,20 +62,23 @@ Ext.define('vcube.controller.NavTree', {
 		targetGroup.appendChild(targetVM);
 	},
 	
-	VMGroupAdded: function(newgroup) {
-		this.loadGroupsData([newgroup]);
+	VMGroupAdded: function(eventData) {
+		this.loadGroupsData([eventData.group]);
 	},
 	
 	VMGroupRemoved: function(eventData) {
-		var targetGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.id);
+		var targetGroup = this.navTreeStore.getById('vmgroup-' + eventData.group_id);
 		targetGroup.remove(true);
 	},
 	
 	VMGroupUpdated: function(eventData) {
-		var targetGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.id);
-		var props = ['name','description','parent_id','order'];
-		for(var i = 0; i < props.length; i++) {
-			
+
+		var oldGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.group.id);
+
+		var newData = this.createGroupNodeCfg(eventData.group);
+		for(var k in newData) {
+			if(typeof(k) == 'string')
+				oldGroup.set(k, newData[k]);
 		}
 	},
 	
@@ -79,29 +86,70 @@ Ext.define('vcube.controller.NavTree', {
 	 * Data loading functions
 	 * 
 	 */
+	createServerNodeCfg : function(server) {
+
+		data = Ext.apply({},server);
+		
+		data._type = 'server';
+		data.server_id = data.id;
+		data.id = 'server-' + data.id;
+
+		return {
+			iconCls : 'navTreeIcon',
+			icon : 'images/vbox/OSE/VirtualBox_cube_42px.png',
+			leaf : true,
+			allowDrag: false,
+			allowDrop: false,
+			text : data.name
+					+ ' (<span class="navTreeServerStatus">'
+					+ data.status_name
+					+ '</span>)',
+			data : data,
+			id : data.id
+		};
+		
+	},
+	createVMNodeCfg : function(vm) {
+
+		data = Ext.apply({},vm);
+		
+		data._type = 'vm';
+		data.vm_id = data.id;
+		data.id = 'vm-' + data.id;
+		
+		return {
+			cls : 'navTreeVM vmState'+ data.state+ ' vmSessionState' + data.sessionState
+					+ ' vmOSType' + data.OSTypeId,
+			text : '<span class="vmStateIcon"> </span>' + data.name,
+			leaf : true,
+			icon : (data.customIcon ? data.customIcon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data.OSTypeId)),
+			iconCls : 'navTreeIcon',
+			id : data.id,
+			data : data
+		};
+
+	},
+	createGroupNodeCfg: function(group) {
+
+		data = Ext.apply({},group);
+		
+		data._type = 'vmgroup';
+		data.group_id = data.id;
+		data.id = 'vmgroup-' + data.id;
+
+		return {
+			iconCls : 'navTreeIcon',
+			leaf : false,
+			text : data.name,
+			id : data.id,
+			data : data
+		};
+
+	},
 	loadServersData : function(data) {
 
-		vboxServers = data;
-
 		for ( var i = 0; i < data.length; i++) {
-
-			data[i]._type = 'server';
-			data[i].server_id = data[i].id;
-			data[i].id = 'server-' + data[i].id;
-
-			this.serversNode.appendChild(this.serversNode.createNode({
-				iconCls : 'navTreeIcon',
-				icon : 'images/vbox/OSE/VirtualBox_cube_42px.png',
-				leaf : true,
-				allowDrag: false,
-				allowDrop: false,
-				text : data[i].name
-						+ ' (<span class="navTreeServerStatus">'
-						+ data[i].status_name
-						+ '</span>)',
-				data : data[i]
-			}));
-
+			this.serversNode.appendChild(this.serversNode.createNode(this.createServerNodeCfg(data[i])));
 		}
 
 		// Expand folder
@@ -118,17 +166,7 @@ Ext.define('vcube.controller.NavTree', {
 			if (!appendTarget)
 				appendTarget = this.vmsNode;
 
-			data[i]._type = 'vmgroup';
-			data[i].group_id = data[i].id;
-			data[i].id = 'vmgroup-' + data[i].id;
-
-			appendTarget.appendChild(appendTarget.createNode({
-				'iconCls' : 'navTreeIcon',
-				'leaf' : false,
-				'text' : data[i].name,
-				'id' : 'vmgroup-' + data[i].id,
-				'data' : data[i]
-			}))
+			appendTarget.appendChild(appendTarget.createNode(this.createGroupNodeCfg(data[i])));
 		}
 
 		// Expand folder
@@ -140,24 +178,13 @@ Ext.define('vcube.controller.NavTree', {
 
 		for ( var i = 0; i < data.length; i++) {
 
-			data[i]._type = 'vm';
-
 			appendTarget = (data[i].group_id ? this.navTreeStore
 					.getNodeById('vmgroup-'
 							+ data[i].group_id) : this.vmsNode);
 			if (!appendTarget)
 				appendTarget = this.vmsNode;
 
-			appendTarget.appendChild(appendTarget.createNode({
-				cls : 'navTreeVM vmState'+ data[i].state+ ' vmSessionState' + data[i].sessionState
-						+ ' vmOSType' + data[i].OSTypeId,
-				text : '<span class="vmStateIcon"> </span>' + data[i].name,
-				leaf : true,
-				icon : (data[i].customIcon ? data[i].customIcon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data[i].OSTypeId)),
-				iconCls : 'navTreeIcon',
-				id : 'vm-' + data[i].id,
-				data : data[i]
-			}));
+			appendTarget.appendChild(appendTarget.createNode(this.createVMNodeCfg(data[i])));
 
 		}
 

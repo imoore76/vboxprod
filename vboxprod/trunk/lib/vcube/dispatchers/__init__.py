@@ -1,5 +1,4 @@
 
-
 import json, cherrypy, traceback, pprint
 
 import logging
@@ -44,7 +43,10 @@ def jsonout(func):
         if kwargs.get('_raw') == True:
             return func(*args, **kwargs)
         
-        jsonResponse = jsonResponseTemplate.copy()
+        jsonResponse = None
+        jsonResponse = dict(jsonResponseTemplate.copy())
+        
+        pprint.pprint(jsonResponseTemplate)
         
         try:
             

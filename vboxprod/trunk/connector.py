@@ -1,5 +1,5 @@
 
-import sys, os, time, traceback, threading, Queue
+import sys, os, time, traceback, threading, Queue, base64
 import signal
 import ConfigParser
 import math
@@ -716,6 +716,99 @@ class vboxConnector(object):
                 session = None
         
         return True
+
+    """
+     * Get screenshot of running or saved vm, or snapshot
+    """
+    def remote_machineGetScreenShot(self, args):
+
+        """
+                // Let the browser cache images for 3 seconds
+        $ctime = 0;
+        if(strpos($_SERVER['HTTP_IF_NONE_MATCH'],'_')) {
+            $ctime = preg_replace("/.*_/",str_replace('"','',$_SERVER['HTTP_IF_NONE_MATCH']));
+        } else if(strpos($_ENV['HTTP_IF_NONE_MATCH'],'_')) {
+            $ctime = preg_replace("/.*_/",str_replace('"','',$_ENV['HTTP_IF_NONE_MATCH']));
+        } else if(strpos($_SERVER['HTTP_IF_MODIFIED_SINCE'],'GMT')) {
+            $ctime = strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']);
+        } else if(strpos($_ENV['HTTP_IF_MODIFIED_SINCE'],'GMT')) {
+            $ctime = strtotime($_ENV['HTTP_IF_MODIFIED_SINCE']);
+        }
+        
+        if($ctime >= (time()-3)) {
+            if (strpos(strtolower(php_sapi_name()),'cgi') !== false) {
+                Header("Status: 304 Not Modified");
+            } else {
+                Header("HTTP/1.0 304 Not Modified");
+            }
+              exit;
+        }
+        
+
+        header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+        """
+        machine = self.vbox.findMachine(args.get('vm'))
+        
+        if args.get('snapshot', None):
+            
+            machine = machine.findSnapshot(args.get('snapshot')).machine
+            
+        else:
+    
+            # Get machine state
+            if not machine.state in [vboxMgr.constants.MachineState_Running, vboxMgr.constants.MachineState_Saved]:
+                return False
+
+        #  Date last modified
+        dlm = math.floor(long(machine.lastStateChange)/1000)
+        
+        # Take active screenshot if machine is running
+        if not args.get('snapshot', None) and machine.state == vboxMgr.constants.MachineState_Running:
+
+            try:
+                session = None
+                session = vboxMgr.mgr.getSessionObject(self.vbox)
+                machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+                    
+                screenWidth, screenHeight, bpp = session.console.display.getScreenResolution(0)
+        
+                # Force screenshot width while maintaining aspect ratio
+                if args.get('width', None):
+        
+                    factor  = float(args['width']) / float(screenWidth)
+        
+                    screenWidth = args['width']
+                    if factor > 0:
+                        screenHeight = factor * screenHeight
+                    else:
+                        screenHeight = (screenWidth * 3.0/4.0)
+        
+                try:
+                    
+                    imageraw = session.console.display.takeScreenShotPNGToArray(0,screenWidth, screenHeight)
+                    
+                except:
+                    
+                    # For some reason this is required or you get "Could not take a screenshot (VERR_TRY_AGAIN)" in some cases.
+                    # I think it's a bug in the Linux guest additions, but cannot prove it.
+                    session.console.display.invalidateAndUpdate()
+                    imageraw = session.console.display.takeScreenShotPNGToArray(0,screenWidth, screenHeight)
+            finally:
+                if session:
+                    session.unlockMachine()
+
+        # Snapshot or non-running vm
+        else:
+            if args.get('full', None):
+                imageraw = machine.readSavedScreenshotPNGToArray(0)[0]
+            else:
+                imageraw = machine.readSavedThumbnailPNGToArray(0)[0]
+                
+        return base64.b64encode(imageraw)
+            
+            
+            
+
 
     """
      * Detach USB device identified by args['id'] from a running VM

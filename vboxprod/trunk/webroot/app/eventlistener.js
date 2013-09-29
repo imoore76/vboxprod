@@ -43,7 +43,6 @@ Ext.define('vcube.eventlistener', {
 		vcube.eventlistener.ws = new WebSocket("ws://" + location.host + "/eventStream");
 		vcube.eventlistener.ws.onmessage = function(e) {
 			
-			console.log(JSON.parse(e.data));
 			vcube.eventlistener.pumpEvent(JSON.parse(e.data));
 		};
 			  
@@ -80,8 +79,6 @@ Ext.define('vcube.eventlistener', {
 		if(e['eventSource'] == 'vcube' && e['eventType'] == 'heartbeat')
 			return;
 		
-		console.log(e);
-
 		if(e['eventSource'] == 'vbox') {
 			vcube.app.fireEvent('vbox' + e.eventType, e);			
 		}

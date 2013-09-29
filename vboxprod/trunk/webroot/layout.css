@@ -6,10 +6,16 @@ Details table
 .vboxDetailsIndented { margin-left: 20px; }
 .vboxDetailsTableData { margin-left: 4px; }
 span.vboxDetailsNone { font-style: italic; font-weight: normal; }
-.navTreeIcon { height: 16px; width: 16px; background-size: 16px 16px; }
 span.navTreeServerStatus { font-style:italic; }
 /*.vmStateIcon { display: inline-block; position: relative; left: -10px; width: 16px; height: 16px; background-repeat: no-repeat;background-size:16px 16px;}
 .vmStateRunning .vmStateIcon { background-image:url(images/vbox/state_running_16px.png); }*/
+
+
+.navTreeIcon { height: 18px; width: 18px; background-size: 18px 18px; }
+.vcubeNavTree .x-tree-node-text {
+	font-size: 12px;
+}
+span.navTreeVMState { display: inline; }
 
 .vboxSnapshot, .vboxSnapshot.x-grid-tree-node-expanded { background-image:url(images/vbox/offline_snapshot_16px.png) }
 .vboxSnapshotOnline, .vboxSnapshotOnline.x-grid-tree-node-expanded { background-image:url(images/vbox/online_snapshot_16px.png) }

@@ -670,7 +670,7 @@ Ext.define('vcube.view.VMTabs', {
         			itemid: 'vmactions',
         			bodyStyle: { background: '#fff' },
         			border: true,
-        			width: 300,
+        			width: 200,
         			listeners: {
         				
         				beforerender: function(vmactions) {

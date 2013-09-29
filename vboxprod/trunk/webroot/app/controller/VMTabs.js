@@ -1,6 +1,11 @@
 /*
  * VM Tabs Controller
  */
+
+var previewWidth = 200;
+var previewAspectRatio = 1.6;
+var previewUpdateInterval = 3;
+
 Ext.define('vcube.controller.VMTabs', {
     extend: 'Ext.app.Controller',
     
@@ -27,12 +32,11 @@ Ext.define('vcube.controller.VMTabs', {
         
     },
     
-    /* Holds ref to action list component */
-    actionsList : null,
+    /* Holds preview dimension cache */
+    resolutionCache : {},
     
-    actionListInit: function() {
-    	
-    },
+    /* preview timeers */
+    previewTimers : {},
     
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
@@ -51,13 +55,100 @@ Ext.define('vcube.controller.VMTabs', {
     	
     	detailsTab.removeAll(true);
     	
+    	var self = this;
+    	
     	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
     		
     		Ext.apply(data, record.raw.data);
     		tabPanel.rawData = data;
     		
+			// Check for cached resolution
+			if(self.resolutionCache[vmid]) {				
+				height = self.resolutionCache[vmid].height;
+			} else {
+				height = parseInt(previewWidth / previewAspectRatio);
+			}
+
+    		
     		// Draw preview and resize panel
-    		vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, 200, 150);
+    		vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, previewWidth, height);
+    		
+    		var vmid = data.id;
+    		
+			// Get fresh VM data
+			var vm = vcube.vmdatamediator.getVMData(vmid);
+			
+			var __vboxDrawPreviewImg = new Image();			
+			__vboxDrawPreviewImg.onload = function() {
+
+				var width = previewWidth;
+				
+				// Set and cache dimensions
+				if(this.height > 0) {
+					
+					// If width != requested width, it is scaled
+					if(this.width != previewWidth) {
+						height = this.height * (previewWidth / this.width);
+					// Not scaled
+					} else {					
+						height = this.height;							
+					}
+
+					self.resolutionCache[vmid] = {
+						'height':height
+					};
+
+				// Height of image is 0
+				} else {
+					
+					// Check for cached resolution
+					if(self.resolutionCache[vmid]) {				
+						height = self.resolutionCache[vmid].height;
+					} else {
+						height = parseInt(width / previewAspectRatio);
+					}
+					
+					// Clear interval if set
+					var timer = self.previewTimers[vmid];
+					if(timer) window.clearInterval(timer);
+					
+				}
+				
+				// Get fresh VM data
+				var vm = vcube.vmdatamediator.getVMData(vmid);
+				
+				// Return if this is stale
+				if(!vm) {
+					var timer = self.previewTimers[vmid];
+					if(timer) window.clearInterval(timer);
+					self.previewTimers[vmid] = null;
+					return;
+				}
+				
+				// Canvas redraw
+				vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), (this.height <= 1 ? null : this), width, height);
+				
+				summaryTab.down('#PreviewPanel').doLayout();
+			
+			};
+
+			// Update disabled? State not Running or Saved
+			if(!previewUpdateInterval || (!vcube.utils.vboxVMStates.isRunning(vm) && !vcube.utils.vboxVMStates.isSaved(vm))) {
+				__vboxDrawPreviewImg.height = 0;
+				__vboxDrawPreviewImg.onload();
+			} else {
+				// Running VMs get random numbers.
+				// Saved are based on last state change to try to let the browser cache Saved screen shots
+				var randid = vm.lastStateChange;
+				if(vcube.utils.vboxVMStates.isRunning(vm)) {
+					var currentTime = new Date();
+					randid = Math.floor(currentTime.getTime() / 1000);
+				}
+				__vboxDrawPreviewImg.src = 'vbox/machineGetScreenShot?width='+previewWidth+'&vm='+vmid+'&randid='+randid+'&server='+vm._serverid;
+				
+			}
+			
+
 
     		summaryTab.down('#PreviewPanel').doLayout();
     		

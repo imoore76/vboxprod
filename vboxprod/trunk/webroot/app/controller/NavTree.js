@@ -91,8 +91,8 @@ Ext.define('vcube.controller.NavTree', {
 		data = Ext.apply({},server);
 		
 		data._type = 'server';
-		data.server_id = data.id;
-		data.id = 'server-' + data.id;
+		//data.server_id = data.id;
+		//data.id = 'server-' + data.id;
 
 		return {
 			iconCls : 'navTreeIcon',
@@ -105,7 +105,7 @@ Ext.define('vcube.controller.NavTree', {
 					+ data.status_name
 					+ '</span>)',
 			data : data,
-			id : data.id
+			id : 'server-' + data.id
 		};
 		
 	},
@@ -114,17 +114,20 @@ Ext.define('vcube.controller.NavTree', {
 		data = Ext.apply({},vm);
 		
 		data._type = 'vm';
-		data.vm_id = data.id;
-		data.id = 'vm-' + data.id;
+		//data.vm_id = data.id;
+		//data.id = 'vm-' + data.id;
 		
 		return {
 			cls : 'navTreeVM vmState'+ data.state+ ' vmSessionState' + data.sessionState
 					+ ' vmOSType' + data.OSTypeId,
-			text : '<span class="vmStateIcon"> </span>' + data.name,
+			text : data.name,
+			/*+ '<span class="navTreeVMState">'+
+				'<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state) +
+				'" height=16 width=16 valign=top style="margin-left: 24px"/></span>',*/
 			leaf : true,
 			icon : (data.customIcon ? data.customIcon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data.OSTypeId)),
 			iconCls : 'navTreeIcon',
-			id : data.id,
+			id : 'vm-' + data.id,
 			data : data
 		};
 
@@ -134,14 +137,16 @@ Ext.define('vcube.controller.NavTree', {
 		data = Ext.apply({},group);
 		
 		data._type = 'vmgroup';
+		/*
 		data.group_id = data.id;
 		data.id = 'vmgroup-' + data.id;
-
+		*/
+		
 		return {
 			iconCls : 'navTreeIcon',
 			leaf : false,
 			text : data.name,
-			id : data.id,
+			id : 'vmgroup-' + data.id,
 			data : data
 		};
 
@@ -178,9 +183,8 @@ Ext.define('vcube.controller.NavTree', {
 
 		for ( var i = 0; i < data.length; i++) {
 
-			appendTarget = (data[i].group_id ? this.navTreeStore
-					.getNodeById('vmgroup-'
-							+ data[i].group_id) : this.vmsNode);
+			appendTarget = (data[i].group_id ? this.navTreeStore.getNodeById('vmgroup-' + data[i].group_id) : this.vmsNode);
+
 			if (!appendTarget)
 				appendTarget = this.vmsNode;
 

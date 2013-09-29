@@ -104,6 +104,8 @@ function vboxDrawPreviewCanvas(can, imageObj, width, height) {
 		cachedCtx.shadowColor = "rgba(30, 30, 30, 0.2)";            
 		
 		
+		
+		
 		var grad = cachedCtx.createLinearGradient(0, margin, 0, height);
 		grad.addColorStop(0, "rgb(200,200,200)");
 		grad.addColorStop(0.4, "rgb(100,100,100)");

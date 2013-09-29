@@ -5,6 +5,7 @@ Ext.define('vcube.view.NavTree', {
     extend: 'Ext.tree.Panel',
     alias: 'widget.NavTree',
     width: 300,
+    cls: 'vcubeNavTree',
     viewConfig:{
         markDirty:false
     },

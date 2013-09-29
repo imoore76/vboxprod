@@ -195,7 +195,7 @@ Ext.define('vcube.utils', {
 			
 		/* Return whether or not vm is running */
 		isRunning: function(vm) {
-			return (vm && jQuery.inArray(vm.state, ['Running','LiveSnapshotting','Teleporting']) > -1);
+			return (vm && Ext.Array.contains(['Running','LiveSnapshotting','Teleporting'], vm.state));
 		},
 		
 		/* Return whether or not a vm is stuck */
@@ -205,12 +205,12 @@ Ext.define('vcube.utils', {
 		
 		/* Whether or not a vm is paused */
 		isPaused: function(vm) {
-			return (vm && jQuery.inArray(vm.state, ['Paused','TeleportingPausedVM']) > -1);
+			return (vm && Ext.Array.contains(['Paused','TeleportingPausedVM'], vm.state));
 		},
 		
 		/* True if vm is powered off */
 		isPoweredOff: function(vm) {
-			return (vm && jQuery.inArray(vm.state, ['PoweredOff','Saved','Teleported', 'Aborted']) > -1);
+			return (vm && Ext.Array.contains(['PoweredOff','Saved','Teleported', 'Aborted'], vm.state));
 		},
 		
 		/* True if vm is saved */

@@ -6,9 +6,6 @@ Ext.define('vcube.view.NavTree', {
     alias: 'widget.NavTree',
     width: 300,
     cls: 'vcubeNavTree',
-    viewConfig:{
-        markDirty:false
-    },
     rootVisible: false,
     lines: false,
     useArrows: true,
@@ -17,12 +14,15 @@ Ext.define('vcube.view.NavTree', {
 		allowDrop: false,
     	expanded: true
     },
+    folderSort: true,
     viewConfig: {
+    	markDirty:false,
     	plugins: {
 	    	ptype: 'treeviewdragdrop',
 	    	allowContainerDrop: false,
 	    	allowParentInsert: false,
-	    	ddGroup: 'navtreevms'
+	    	ddGroup: 'navtreevms',
+	    	appendOnly: true
     	}
 	}
 });

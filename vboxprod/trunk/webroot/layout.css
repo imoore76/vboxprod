@@ -11,7 +11,7 @@ span.navTreeServerStatus { font-style:italic; }
 .vmStateRunning .vmStateIcon { background-image:url(images/vbox/state_running_16px.png); }*/
 
 
-.navTreeIcon { height: 18px; width: 18px; background-size: 18px 18px; }
+.vcubeNavTree .x-tree-icon { height: 18px; width: 18px; background-size: 18px 18px; }
 .vcubeNavTree .x-tree-node-text {
 	font-size: 12px;
 }

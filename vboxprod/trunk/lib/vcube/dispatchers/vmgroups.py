@@ -46,7 +46,7 @@ class dispatcher(dispatcher_parent):
         c = VMGroup.get(VMGroup.id == kwargs.get('id',0))
         
         for attr in ['name','description', 'parent_id']:
-            if kwargs.get(attr,None):
+            if kwargs.get(attr,None) is not None:
                 setattr(c, attr, kwargs.get(attr))
         c.save()
 

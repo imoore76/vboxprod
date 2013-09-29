@@ -9,8 +9,6 @@ Ext.Loader.setConfig({
     }
 });
 
-Ext.require(['vcube.utils']);
-
 Ext.application({
 	
     name: 'vcube',
@@ -18,7 +16,8 @@ Ext.application({
     
     /* Various utils and scripts */
     requires: ['vcube.AppJsonReader', 'Ext.ux.Deferred',
-               'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener'],
+               'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener',
+               'vcube.previewbox'],
     
     /* Controllers used by this app */
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],

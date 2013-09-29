@@ -58,21 +58,47 @@ Ext.define('vcube.controller.NavTree', {
 
 		var targetGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.group);
 		
-		console.log(this.navTreeStore.getById('vmgroup-' + eventData.group));
+		if(!targetGroup || (eventData.group == targetGroup.raw.data.group_id)) return;
 		
-		if(!(targetVM && targetGroup)) return;
+		console.log(this.navTreeStore.getById('vmgroup-' + eventData.group));
 		
 		targetVM = targetVM.remove(false);
 		targetGroup.appendChild(targetVM);
+		
+		targetGroup.sort(this.sortCmp, false);
 	},
 	
 	VMGroupAdded: function(eventData) {
-		this.loadGroupsData([eventData.group]);
+		
+		appendTarget = (eventData.group.parent_id ? this.navTreeStore.getNodeById('vmgroup-'+ eventData.group.parent_id) : this.vmsNode);
+
+		if (!appendTarget)
+			appendTarget = this.vmsNode;
+
+		appendTarget.appendChild(appendTarget.createNode(this.createGroupNodeCfg(eventData.group)));
+		appendTarget.sort(this.sortCmp, false);
+
 	},
 	
 	VMGroupRemoved: function(eventData) {
-		var targetGroup = this.navTreeStore.getById('vmgroup-' + eventData.group_id);
-		targetGroup.remove(true);
+		
+		var targetNode = this.navTreeStore.getNodeById('vmgroup-' + eventData.group_id);
+		
+		if(!targetNode) return;
+
+		if(targetNode.childNodes.length) {
+			
+			var n = targetNode.getChildAt(0);
+			do {
+				targetNode.parentNode.appendChild(n.remove());
+				n = targetNode.getChildAt(0);				
+			} while(n);
+			
+			targetNode.parentNode.sort(this.sortCmp, false);
+		}
+		
+		
+		targetNode.remove(true);
 	},
 	
 	VMGroupUpdated: function(eventData) {
@@ -84,6 +110,7 @@ Ext.define('vcube.controller.NavTree', {
 			if(typeof(k) == 'string')
 				oldGroup.set(k, newData[k]);
 		}
+		oldGroup.parentNode.sort(this.sortCmp, false);
 	},
 	
 	/*

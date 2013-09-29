@@ -71,7 +71,7 @@ Ext.define('vcube.controller.VMTabs', {
 
     		
     		// Draw preview and resize panel
-    		vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), null, previewWidth, height);
+    		vcube.previewbox.drawPreview(document.getElementById('vboxPreviewBox'), null, previewWidth, height);
     		
     		var vmid = data.id;
     		
@@ -126,7 +126,7 @@ Ext.define('vcube.controller.VMTabs', {
 				}
 				
 				// Canvas redraw
-				vboxDrawPreviewCanvas(document.getElementById('vboxPreviewBox'), (this.height <= 1 ? null : this), width, height);
+				vcube.previewbox.drawPreview(document.getElementById('vboxPreviewBox'), (this.height <= 1 ? null : this), width, height);
 				
 				summaryTab.down('#PreviewPanel').doLayout();
 			

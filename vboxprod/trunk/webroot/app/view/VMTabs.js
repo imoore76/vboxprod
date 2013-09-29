@@ -556,7 +556,7 @@ Ext.define('vcube.view.VMTabs', {
         			bodyStyle: {
         			    background: '#fff'
         			},
-        			html: '<canvas id="vboxPreviewBox" />',
+        			html: '<div id="vboxPreviewBox" />',
         			border: true
         		},{
     				width: 20,

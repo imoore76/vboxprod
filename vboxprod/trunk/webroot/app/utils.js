@@ -194,33 +194,33 @@ Ext.define('vcube.utils', {
 	vboxVMStates : {
 			
 		/* Return whether or not vm is running */
-		isRunning: function(vm) {
-			return (vm && Ext.Array.contains(['Running','LiveSnapshotting','Teleporting'], vm.state));
+		isRunning: function(vmRecord) {
+			return (vmRecord && Ext.Array.contains(['Running','LiveSnapshotting','Teleporting'], vmRecord.state));
 		},
 		
 		/* Return whether or not a vm is stuck */
-		isStuck: function(vm) {
-			return (vm && vm.state == 'Stuck');
+		isStuck: function(vmRecord) {
+			return (vmRecord && vmRecord.state == 'Stuck');
 		},
 		
 		/* Whether or not a vm is paused */
-		isPaused: function(vm) {
-			return (vm && Ext.Array.contains(['Paused','TeleportingPausedVM'], vm.state));
+		isPaused: function(vmRecord) {
+			return (vmRecord && Ext.Array.contains(['Paused','TeleportingPausedVM'], vmRecord.state));
 		},
 		
 		/* True if vm is powered off */
-		isPoweredOff: function(vm) {
-			return (vm && Ext.Array.contains(['PoweredOff','Saved','Teleported', 'Aborted'], vm.state));
+		isPoweredOff: function(vmRecord) {
+			return (vmRecord && Ext.Array.contains(['PoweredOff','Saved','Teleported', 'Aborted'], vmRecord.state));
 		},
 		
 		/* True if vm is saved */
-		isSaved: function(vm) {
-			return (vm && vm.state == 'Saved');
+		isSaved: function(vmRecord) {
+			return (vmRecord && vmRecord.state == 'Saved');
 		},
 		
 		/* True if vm is editable */
-		isEditable: function(vm) {
-			return (vm && vm.sessionState == 'Unlocked');
+		isEditable: function(vmRecord) {
+			return (vmRecord && vmRecord.sessionState == 'Unlocked');
 		},
 		
 		/* True if one VM in list matches item */
@@ -230,7 +230,7 @@ Ext.define('vcube.utils', {
 			
 			for(var i = 0; i < vmlist.length; i++) {
 				for(var a = 0; a < states.length; states++) {
-					if(vboxVMStates['is'+(states[a])](vmlist[i]))
+					if(vcube.utils.vboxVMStates['is'+(states[a])](vmlist[i]))
 						return true;					
 				}
 			}

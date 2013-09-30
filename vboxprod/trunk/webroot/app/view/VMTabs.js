@@ -747,7 +747,7 @@ Ext.define('vcube.view.VMTabs', {
         		},{
         			title: 'Actions',
         			layout: 'vbox',
-        			itemid: 'vmactions',
+        			itemId: 'vmactions',
         			bodyStyle: { background: '#fff' },
         			border: true,
         			width: 200,
@@ -757,8 +757,6 @@ Ext.define('vcube.view.VMTabs', {
         					
         					defaults = { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' };
 
-        					console.log('here...');
-        					
         					Ext.each(vcube.view.VMTabs.vmactions, function(action, i) {
         						
         						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
@@ -767,8 +765,7 @@ Ext.define('vcube.view.VMTabs', {
         							
         							text: vcube.vmactions[action].label.replace('...',''),
         							
-        							icon: 'images/vbox/' + (vcube.vmactions[action].icon_16 ? vcube.vmactions[action].icon_16 : vcube.vmactions[action].icon) +
-        								'_16px.png',
+        							icon: 'images/vbox/' + (vcube.vmactions[action].icon_16 ? vcube.vmactions[action].icon_16 : vcube.vmactions[action].icon) + '_16px.png',
 									
     								listeners: {
 										click: vcube.vmactions[action].click

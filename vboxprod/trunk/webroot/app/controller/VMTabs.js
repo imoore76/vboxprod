@@ -153,6 +153,13 @@ Ext.define('vcube.controller.VMTabs', {
 			
 
 
+			// Update actions
+			var sm = self.getNavTreeView().getSelectionModel();
+			Ext.each(summaryTab.down('#vmactions').items.items, function(item) {
+				if(vcube.vmactions[item.itemId].enabled(sm)) item.enable();
+				else item.disable();
+			});
+			
     		summaryTab.down('#PreviewPanel').doLayout();
     		
     		summaryTab.down('#baseinfo').update(data);

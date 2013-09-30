@@ -193,8 +193,8 @@ Ext.define('vcube.vmactions',{
 	
 							
 			},
-			enabled : function (vms) {
-				return vcube.utils.vboxVMStates.isOne(['Paused','PoweredOff','Saved'], vms);
+			enabled : function (selectionModel) {
+				return vcube.utils.vboxVMStates.isOne(['Paused','PoweredOff','Saved'], selectionModel.getSelection());
 			}	
 		},
 		
@@ -207,8 +207,8 @@ Ext.define('vcube.vmactions',{
 				
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
 			},
-			enabled : function (vms) {
-				return vms.length == 1 && vcube.utils.vboxVMStates.isOne(['Running','PoweredOff','Editable'], vms);
+			enabled : function (selectionModel) {
+				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOne(['Running','PoweredOff','Editable'], selectionModel.getSelection());
 			}
 		},
 	
@@ -221,8 +221,8 @@ Ext.define('vcube.vmactions',{
 			click:function(){
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
-			enabled: function (vms) {
-				return vms.length == 1 && vcube.utils.vboxVMStates.isOne(['PoweredOff'], vms);
+			enabled: function (selectionModel) {
+				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOne(['PoweredOff'], selectionModel.getSelection());
 			}
 		},
 	
@@ -242,7 +242,7 @@ Ext.define('vcube.vmactions',{
 				});
 				
 	    	},
-	    	enabled: function (vms) {return(vms.length == 1);}
+	    	enabled: function (selectionModel) {return(selectionModel.selected.length == 1);}
 	    },
 	    
 	    /** Delete / Remove a VM */
@@ -349,8 +349,8 @@ Ext.define('vcube.vmactions',{
 				});
 	    	
 	    	},
-	    	enabled: function (vms) {
-	    		return cube.utils.vboxVMStates.isOne('PoweredOff', vms);
+	    	enabled: function (selectionModel) {
+	    		return cube.utils.vboxVMStates.isOne('PoweredOff', selectionModel.getSelection());
 	    	}
 	    },
 	    
@@ -387,8 +387,8 @@ Ext.define('vcube.vmactions',{
 					vboxConfirm(vcube.utils.trans('<p>Are you sure you want to discard the saved state of the following virtual machines?</p><p><b>%1</b></p><p>This operation is equivalent to resetting or powering off the machine without doing a proper shutdown of the guest OS.</p>','UIMessageCenter').replace('%1',vmNames),buttons);
 				}
 			},
-			enabled:function(){
-				return vcube.utils.vboxVMStates.isOne('Saved', vms);
+			enabled:function(selectionModel){
+				return vcube.utils.vboxVMStates.isOne('Saved', selectionModel.getSelection());
 			}
 	    },
 	    
@@ -473,8 +473,8 @@ Ext.define('vcube.vmactions',{
 			click:function(){
 	    		vboxShowLogsDialogInit(vboxChooser.getSingleSelected());
 			},
-			enabled:function(){
-				return (vboxChooser.getSingleSelectedId() && vboxChooser.getSingleSelectedId() != 'host');
+			enabled:function(selectionModel){
+				return (selectionModel.selected.length == 1);
 			}
 	    },
 	
@@ -483,8 +483,8 @@ Ext.define('vcube.vmactions',{
 			label: vcube.utils.trans('Save State', 'UIActionPool'),
 			icon: 'fd',
 			stop_action: true,
-			enabled: function(){
-				return (vboxChooser.isSelectedInState('Running') || vboxChooser.isSelectedInState('Paused'));
+			enabled: function(selectionModel){
+				return vcube.utils.vboxVMStates.isOne(['Running','Paused'], selectionModel.getSelection());
 			},
 			click: function() {
 	
@@ -501,8 +501,8 @@ Ext.define('vcube.vmactions',{
 			label: vcube.utils.trans('ACPI Shutdown','UIActionPool'),
 			icon: 'acpi',
 			stop_action: true,
-			enabled: function(){
-				return vboxChooser.isSelectedInState('Running');
+			enabled: function(selectionModel){
+				return vcube.utils.vboxVMStates.isOne(['Running'], selectionModel.getSelection());
 			},
 			click: function() {
 				var buttons = {};
@@ -537,8 +537,8 @@ Ext.define('vcube.vmactions',{
 			label: vcube.utils.trans('Pause','UIActionPool'),
 			icon: 'pause',
 			icon_disabled: 'pause_disabled',
-			enabled: function(){
-				return vboxChooser.isSelectedInState('Running');
+			enabled: function(selectionModel){
+				return vcube.utils.vboxVMStates.isOne(['Running'], selectionModel.getSelection());
 			},
 			click: function() {
 				var vms = vboxChooser.getSelectedVMsData();
@@ -554,8 +554,8 @@ Ext.define('vcube.vmactions',{
 			label: vcube.utils.trans('Power Off','UIActionPool'),
 			icon: 'poweroff',
 			stop_action: true,
-			enabled: function() {
-				return (vboxChooser.isSelectedInState('Running') || vboxChooser.isSelectedInState('Paused') || vboxChooser.isSelectedInState('Stuck'));
+			enabled: function(selectionModel) {
+				return vcube.utils.vboxVMStates.isOne(['Running','Paused','Stuck'], selectionModel.getSelection());
 			},
 			click: function() {
 				
@@ -595,8 +595,8 @@ Ext.define('vcube.vmactions',{
 			label: vcube.utils.trans('Reset','UIActionPool'),
 			icon: 'reset',
 			icon_disabled: 'reset_disabled',
-			enabled: function(){
-				return vboxChooser.isSelectedInState('Running');
+			enabled: function(selectionModel){
+				return vcube.utils.vboxVMStates.isOne(['Running','Paused'], selectionModel.getSelection());
 			},
 			click: function() {
 				var buttons = {};
@@ -639,8 +639,8 @@ Ext.define('vcube.vmactions',{
 			icon_disabled:'acpi_disabled',
 			menu: true,
 			click: function () { return true; /* handled by stop context menu */ },
-			enabled: function () {
-				return (vboxChooser.isSelectedInState('Running') || vboxChooser.isSelectedInState('Paused'));
+			enabled: function (selectionModel) {
+				return vcube.utils.vboxVMStates.isOne(['Running','Paused'], selectionModel.getSelection());
 			}
 		},
 		

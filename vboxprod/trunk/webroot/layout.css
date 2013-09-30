@@ -1,10 +1,12 @@
 /*
 Details table
 */
-.vboxDetailsTable { font-size: 90%; padding: 2px; border-width: 0px; }
-.vboxDetailsTableHeader { white-space: nowrap; font-weight: bold; }
+.vboxDetailsTable { padding: 2px; border-width: 0px; }
+.vmTabDetails .vboxDetailsTable { font-size: 90%; }
+.vmTabDetails .vboxDetailsTableHeader { white-space: nowrap; font-weight: bold; }
 .vboxDetailsIndented { margin-left: 20px; }
 .vboxDetailsTableData { margin-left: 4px; }
+
 span.vboxDetailsNone { font-style: italic; font-weight: normal; }
 span.navTreeServerStatus { font-style:italic; }
 /*.vmStateIcon { display: inline-block; position: relative; left: -10px; width: 16px; height: 16px; background-repeat: no-repeat;background-size:16px 16px;}

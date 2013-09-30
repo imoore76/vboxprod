@@ -16,13 +16,160 @@ Ext.define('vcube.view.VMTabs', {
 		 * List of actions that can be performed on this vm
 		 */
 		vmactions : ['start','powerdown','pause','savestate','clone','settings'],
+		
+		/*
+		 * Creates and returns a section table
+		 */
+		sectionTable: function(sectionCfg, data) {
+		
+			return Ext.create('Ext.panel.Panel', Ext.apply({
+			    title: sectionCfg.title,
+			    icon: 'images/vbox/' + sectionCfg.icon,
+			    cls: 'vboxDetailsTablePanel',
+			    layout: {
+			    	type: 'table',
+			    	columns: 2
+			    },
+			    defaults: {
+			    	bodyCls: 'vboxDetailsTable'
+			    },
+			    items: vcube.view.VMTabs.sectionTableRows(sectionCfg.rows, data)
+			}, (sectionCfg.tableCfg ? sectionCfg.tableCfg : {})));
 
+		},
+		
+		/*
+		 * Return section table items
+		 */
+		sectionTableRows: function(rows, data) {
+			
+			// Is rows a function?
+			if(typeof(rows) == 'function') rows = rows(data);
+			
+			var tableItems = [];
+			for(var i = 0; i < rows.length; i++) {
+				
+				// Check if row has condition
+				if(rows[i].condition && !rows[i].condition(data)) continue;
+				
+				// hold row data
+				var rowData = '';
+				
+				// Check for row attribute
+				if(rows[i].attrib) {
+					
+					if(!data[rows[i].attrib]) continue;
+					rowData = data[rows[i].attrib];
+				
+				// Check for row renderer
+				} else if(rows[i].renderer) {
+					rowData = rows[i].renderer(data);
+
+				// Static data
+				} else {
+					rowData = rows[i].data;
+				}
+
+				
+				if(rows[i].title && !rowData) {
+					tableItems.push({'html':rows[i].title, 'cls': 'vboxDetailsTableData', colspan: 2 , 'width': '100%'});
+				} else {
+					
+					tableItems.push({'html':rows[i].title + ':', 'cls': 'vboxDetailsTableHeader'});
+					tableItems.push({'html':rowData, 'cls': 'vboxDetailsTableData' + (rows[i].indented ? ' vboxDetailsIndented' : ''), 'width': '100%'});
+				}
+				
+				
+			}
+			return tableItems;
+
+		},
+
+		/*
+		 * 
+		 * Tables for summary tab
+		 * 
+		 */
+		vmSummarySections : {
+			
+			info: {
+				
+				tableCfg: {
+					title: vcube.utils.trans('Info'),
+					icon: 'images/vbox/name_16px.png',
+					border: true,
+					width: 400,
+					bodyStyle: { background: '#fff' },
+					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
+				},
+				rows: [{
+					title: 'State',
+					renderer: function(vm) {
+						return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state) +'" height=16 width=16 valign=top />&nbsp;' + vcube.utils.vboxVMStates.convert(vm.state);
+					}
+				},{
+					title: 'Since',
+					renderer: function(vm) {
+						return vcube.utils.dateTimeString(vm.lastStateChange)
+					}
+				},{
+					title: 'Session',
+					attrib: 'sessionState'
+				},{
+					/* Such a hack... */
+					title: 'OS Type',
+					renderer: function(vm) {
+						return '<img src="images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(vm.OSTypeId) +'" height=16 width=16 valign=top />&nbsp;' + vm.OSTypeDesc;
+					}
+				},{
+					title: 'Current Snapshot',
+					renderer: function(vm) {
+						return (vm.currentSnapshotName ? vm.currentSnapshotName : '<span style="font-style: italic">none</span>');
+					}
+				}]
+				
+			},
+			
+			resources: {
+				
+				tableCfg: {
+					title: vcube.utils.trans('Resources'),
+					itemId: 'resourcesTable',
+					icon: 'images/vbox/chipset_16px.png',
+					border: true,
+					width: 200,
+					bodyStyle: { background: '#fff' },
+					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
+				},
+				
+				rows: [{
+					title: 'CPU(s)',
+					attrib: 'CPUCount'
+				},{
+					title: 'Execution Cap',
+					condition : function(vm) {
+						return parseInt(vm.CPUExecutionCap) != 100;
+					},
+					renderer: function(vm) {
+						return vm.CPUExecutionCap + '%';
+					}
+				},{
+					title: 'Memory',
+					renderer: function(vm) {
+						return vm.memorySize + ' MB';
+					}
+				}]        			        					
+
+			}
+			
+		},
+		
 		/*
 		 * 
 		 * List of VM details sections and their content
 		 * 
 		 */
-		vboxVMDetailsSections : {
+		vmDetailsSections : {
 				
 				/*
 				 * General
@@ -61,7 +208,7 @@ Ext.define('vcube.view.VMTabs', {
 					rows : [
 					   {
 						   title: vcube.utils.trans('Base Memory','VBoxGlobal'),
-						   callback: function(d) {
+						   renderer: function(d) {
 							   return vcube.utils.trans('<nobr>%1 MB</nobr>').replace('%1',d['memorySize']);
 						   }
 					   },{
@@ -70,13 +217,13 @@ Ext.define('vcube.view.VMTabs', {
 						   condition: function(d) { return d.CPUCount > 1; }
 					   },{
 						   title: vcube.utils.trans("Execution Cap"),
-						   callback: function(d) {
+						   renderer: function(d) {
 							   return vcube.utils.trans('<nobr>%1%</nobr>').replace('%1',parseInt(d['CPUExecutionCap']));
 						   },
 						   condition: function(d) { return d.CPUExecutionCap < 100; }
 					   },{
 						   title: vcube.utils.trans("Boot Order"),
-						   callback: function(d) {
+						   renderer: function(d) {
 								var bo = new Array();
 								for(var i = 0; i < d['bootOrder'].length; i++) {
 									bo[i] = vcube.utils.trans(vcube.utils.vboxDevice(d['bootOrder'][i]),'VBoxGlobal');
@@ -85,7 +232,7 @@ Ext.define('vcube.view.VMTabs', {
 						   }
 					   },{
 						   title: vcube.utils.trans("Acceleration",'UIGDetails'),
-						   callback: function(d) {
+						   renderer: function(d) {
 							   var acList = [];
 							   if(d['HWVirtExProperties'].Enabled) acList[acList.length] = vcube.utils.trans('VT-x/AMD-V');
 							   if(d['HWVirtExProperties'].NestedPaging) acList[acList.length] = vcube.utils.trans('Nested Paging');
@@ -114,12 +261,12 @@ Ext.define('vcube.view.VMTabs', {
 					rows: [
 					   {
 						   title: vcube.utils.trans("Video Memory"),
-						   callback: function(d) {
+						   renderer: function(d) {
 							   return vcube.utils.trans('<nobr>%1 MB</nobr>').replace('%1',d['VRAMSize']);
 						   }
 					   },{
 						   title: vcube.utils.trans('Remote Desktop Server Port'),
-						   callback: function(d) {
+						   renderer: function(d) {
 							   
 							   var chost = vcube.utils.vboxGetVRDEHost(d);
 							
@@ -157,7 +304,7 @@ Ext.define('vcube.view.VMTabs', {
 						   }
 					   },{
 						   title: vcube.utils.trans("Remote Desktop Server"),
-						   callback: function(d) {
+						   renderer: function(d) {
 							   return vcube.utils.trans('Disabled','VBoxGlobal',null,'details report (VRDE Server)');
 						   },
 						   condition: function(d) {
@@ -193,7 +340,7 @@ Ext.define('vcube.view.VMTabs', {
 							// Controller name
 							rows[rows.length] = {
 									title: vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',con.name),
-									callback: function(){return'';}
+									renderer: function(){return'';}
 							};
 									
 							// Each attachment.
@@ -208,7 +355,7 @@ Ext.define('vcube.view.VMTabs', {
 								if(d['storageControllers'][a]['mediumAttachments'][b].medium && d['storageControllers'][a]['mediumAttachments'][b].medium.id && medium === null) {
 									
 									if(!d._isSnapshot) {
-										portDesc = '<a href="javascript:vboxVMDetailsSections.storage._refreshVMMedia(\''+
+										portDesc = '<a href="javascript:vmDetailsSections.storage._refreshVMMedia(\''+
 										d.id+"','"+d['storageControllers'][a]['mediumAttachments'][b].medium.id+"');\">"+vcube.utils.trans('Refresh','UIVMLogViewer')+"</a>";							
 
 									} else {
@@ -256,13 +403,13 @@ Ext.define('vcube.view.VMTabs', {
 						    data: ''
 					    },{
 					    	title: vcube.utils.trans("Host Driver",'UIDetailsBlock'),
-					    	callback: function(d) {
+					    	renderer: function(d) {
 					    		return vcube.utils.trans(vcube.utils.vboxAudioDriver(d['audioAdapter']['audioDriver']),'VBoxGlobal');
 					    	},
 					    	condition: function(d) { return d['audioAdapter']['enabled']; }
 					    },{
 					    	title: vcube.utils.trans("Controller",'UIDetailsBlock'),
-					    	callback: function (d) {
+					    	renderer: function (d) {
 					    		return vcube.utils.trans(vcube.utils.vboxAudioController(d['audioAdapter']['audioController']),'VBoxGlobal');
 					    	},
 					    	condition: function(d) { return d['audioAdapter']['enabled']; }
@@ -524,6 +671,7 @@ Ext.define('vcube.view.VMTabs', {
         title: 'Summary',
         itemId: 'SummaryTab',
         icon: 'images/vbox/machine_16px.png',
+        cls: 'vmTabSummary',
 		bodyStyle: 'background: url(images/vbox/vmw_first_run_bg.png) 700px 40px no-repeat',
         autoScroll: true,
         defaults: {
@@ -590,79 +738,7 @@ Ext.define('vcube.view.VMTabs', {
         				border: false
         			},{
         				xtype: 'panel',
-        				defaults: {
-        					style:{
-        						display:'inline-block',
-        						float: 'left'
-        					}
-        		        },
-        				items: [{
-        					title: 'Info',
-        					itemId: 'infoTable',
-        					icon: 'images/vbox/name_16px.png',
-        					border: true,
-        					width: 300,
-        					defaults: { xtype: 'displayfield', labelStyle: 'margin-left: 4px;' },
-        					bodyStyle: { background: '#fff' },
-        					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
-        					items: [{
-        						fieldLabel: 'State',
-        						name: 'state-lastStateChange-sessionState',
-        						renderer: function(cdata) {
-        							cdata = cdata.split('-');
-        							return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(cdata[0]) +'" height=16 width=16 valign=top />&nbsp;' + vcube.utils.vboxVMStates.convert(cdata[0]) +
-	        							'Since ' + vcube.utils.dateTimeString(cdata[1]) + ' - session ' +
-	        							vcube.utils.trans(cdata[2],'VBoxGlobal').toLowerCase();
-
-        						}
-        					},{
-        						/* Such a hack... */
-        						fieldLabel: 'OS Type',
-        						name: 'OSTypeId-OSTypeDesc',
-        						renderer: function(cdata) {
-        							cdata = cdata.split('-');
-        							return '<img src="images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(cdata[0]) +'" height=16 width=16 valign=top />&nbsp;' + cdata[1]
-        						}
-        					},{
-        						fieldLabel: 'Current Snapshot',
-        						name: 'currentSnapshotName',
-        						renderer: function(s) {
-        							return (s ? s : '<span style="font-style: italic">none</span>');
-        						}
-        					}]
-        				},{
-        					title: 'Resources',
-        					itemId: 'resourcesTable',
-        					icon: 'images/vbox/chipset_16px.png',
-        					defaults: { xtype: 'displayfield', labelStyle: 'margin-left: 4px;' },
-        					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
-        					border: true,
-        					width: 300,
-        					bodyStyle: { background: '#fff' },
-        					items: [{
-        						fieldLabel: 'CPU(s)',
-        						name: 'CPUCount'
-        					},{
-        						fieldLabel: 'Execution Cap',
-        						name: 'CPUExecutionCap',
-        						listeners: {
-        							change: function(f,v) {
-        								if(!v || parseInt(v) == 100) f.hide();
-        								else f.show();
-        							}
-        						},
-        						renderer: function(c) {
-        							return c + '%';
-        						}
-        					},{
-        						fieldLabel: 'Memory',
-        						name: 'memorySize',
-        						renderer: function(m) {
-        							return m + ' MB';
-        						}
-        					}]        			        					
-        				}]
-        				
+        				itemId: 'summaryTables'    				
         			}]
         		},{
     				width: 20,
@@ -713,6 +789,7 @@ Ext.define('vcube.view.VMTabs', {
     	/* Details */
         title: 'Details',
         itemId: 'DetailsTab',
+        cls: 'vmTabDetails',
         icon: 'images/vbox/settings_16px.png',
         autoScroll: true,
         layout: 'vbox',

@@ -23,12 +23,13 @@ Ext.define('vcube.view.VMTabs', {
 		/*
 		 * Creates and returns a section table
 		 */
-		sectionTable: function(sectionCfg, data) {
+		sectionTable: function(sectionCfg, data, name) {
 		
 			return Ext.create('Ext.panel.Panel', Ext.apply({
 			    title: sectionCfg.title,
 			    icon: 'images/vbox/' + sectionCfg.icon,
 			    cls: 'vboxDetailsTablePanel',
+			    itemId : name,
 			    layout: {
 			    	type: 'table',
 			    	columns: 2

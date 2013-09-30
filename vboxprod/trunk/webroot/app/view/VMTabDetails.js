@@ -60,7 +60,7 @@ Ext.define('vcube.view.VMTabDetails', {
 					icon:'chipset_16px.png',
 					title: vcube.utils.trans('System','VBoxGlobal'),
 					settingsLink: 'System',
-					redrawMachineEvents: ['OnCPUExecutionCapChanged'],
+					redrawOnEvents: ['CPUExecutionCapChanged'],
 					multiSelectDetailsTable: true,
 					rows : [
 					   {
@@ -114,7 +114,7 @@ Ext.define('vcube.view.VMTabDetails', {
 					icon: 'vrdp_16px.png',
 					title: vcube.utils.trans('Display'),
 					settingsLink: 'Display',
-					redrawMachineEvents: ['OnVRDEServerInfoChanged','OnVRDEServerChanged','OnMachineStateChanged'],
+					redrawOnEvents: ['VRDEServerInfoChanged','VRDEServerChanged','MachineStateChanged'],
 					rows: [
 					   {
 						   title: vcube.utils.trans("Video Memory"),
@@ -183,7 +183,7 @@ Ext.define('vcube.view.VMTabDetails', {
 					icon:'hd_16px.png',
 					title: vcube.utils.trans('Storage'),
 					settingsLink: 'Storage',
-					redrawMachineEvents: ['OnMediumChanged','OnMachineStateChanged'],
+					redrawOnEvents: ['MediumChanged','MachineStateChanged'],
 					rows: function(d) {
 						
 						var rows = new Array();
@@ -280,7 +280,7 @@ Ext.define('vcube.view.VMTabDetails', {
 				network : {
 					icon: 'nw_16px.png',
 					title: vcube.utils.trans('Network'),
-					redrawMachineEvents: ['OnNetworkAdapterChanged','OnMachineStateChanged'],
+					redrawOnEvents: ['NetworkAdapterChanged','MachineStateChanged'],
 					settingsLink: 'Network',
 					rows: function(d) {
 						

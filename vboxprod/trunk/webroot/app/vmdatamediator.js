@@ -119,21 +119,21 @@ Ext.define('vcube.vmdatamediator', {
 		vcube.app.on({
 			
 		
-			'vboxOnMachineDataChanged' : function(eventData) {
+			'vboxMachineDataChanged' : function(eventData) {
 		
 				
 				vcube.vmdatamediator.expireVMDetails(eventData.machineId);
 				vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
 				
 				if(vcube.vmdatamediator.vmData[eventData.machineId] && eventData.enrichmentData) {
-					$.extend(true, vcube.vmdatamediator.vmData[eventData.machineId], eventData.enrichmentData);
+					Ext.apply(vcube.vmdatamediator.vmData[eventData.machineId], eventData.enrichmentData);
 					// $.extend doesn't seem to handle this for some reason
 					vcube.vmdatamediator.vmData[eventData.machineId].groups = eventData.enrichmentData.groups; 
 				}
 
 			},
 			// Machine state change
-			'vboxOnMachineStateChanged' :function(eventData) {
+			'vboxMachineStateChanged' :function(eventData) {
 
 				// Only care about it if its in our list
 				if(vcube.vmdatamediator.vmData[eventData.machineId]) {
@@ -150,19 +150,19 @@ Ext.define('vcube.vmdatamediator', {
 			},
 
 			// Session state change
-			'vboxOnSessionStateChanged' : function(eventData) {
+			'vboxSessionStateChanged' : function(eventData) {
 			
 				if(vcube.vmdatamediator.vmData[eventData.machineId])
 					vcube.vmdatamediator.vmData[eventData.machineId].sessionState = eventData.state;
 			},
 
 			// Snapshot changed
-			'vboxOnSnapshotTaken' : snapshotEvent,
-			'vboxOnSnapshotDeleted' : snapshotEvent,
-			'vboxOnSnapshotChanged' : snapshotEvent,
+			'vboxSnapshotTaken' : snapshotEvent,
+			'vboxSnapshotDeleted' : snapshotEvent,
+			'vboxSnapshotChanged' : snapshotEvent,
 			
 			// Expire all data for a VM when machine is unregistered
-			'vboxOnMachineRegistered' : function(eventData) {
+			'vboxMachineRegistered' : function(eventData) {
 			
 				if(!eventData.registered) {
 					
@@ -178,7 +178,7 @@ Ext.define('vcube.vmdatamediator', {
 
 			},
 		
-			'vboxOnCPUChanged' : function(eventData) {
+			'vboxCPUChanged' : function(eventData) {
 
 				if(!vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) return;
 				
@@ -190,7 +190,7 @@ Ext.define('vcube.vmdatamediator', {
 
 			},
 			
-			'vboxOnNetworkAdapterChanged' : function(eventData) {
+			'vboxNetworkAdapterChanged' : function(eventData) {
 			
 				if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
 					Ext.apply(vcube.vmdatamediator.vmRuntimeData[eventData.machineId].networkAdapters[eventData.networkAdapterSlot], eventData.enrichmentData);
@@ -198,15 +198,15 @@ Ext.define('vcube.vmdatamediator', {
 			
 			},
 		/* Storage controller of VM changed */
-		//}).on('vboxOnStorageControllerChanged', function() {
+		//}).on('vboxStorageControllerChanged', function() {
 			/*
-		    case 'OnStorageControllerChanged':
+		    case 'StorageControllerChanged':
 		    	$data['machineId'] = $eventDataObject->machineId;
 		    	$data['dedupId'] .= '-'. $data['machineId'];
 		    	break;
 		    */
 			
-			'vboxOnMediumChanged' : function(eventData) {
+			'vboxMediumChanged' : function(eventData) {
 			
 				/* Medium attachment changed */
 				if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
@@ -226,10 +226,10 @@ Ext.define('vcube.vmdatamediator', {
 				}
 			},
 		/* Shared folders changed */
-		//}).on('vboxOnSharedFolderChanged', function() {
+		//}).on('vboxSharedFolderChanged', function() {
 
 		// VRDE runtime info
-			'vboxOnVRDEServerChanged' : function(eventData) {
+			'vboxVRDEServerChanged' : function(eventData) {
 
 				if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
 					Ext.apply(vcube.vmdatamediator.vmRuntimeData[eventData.machineId].VRDEServer, eventData.enrichmentData);
@@ -237,7 +237,7 @@ Ext.define('vcube.vmdatamediator', {
 				
 			},
 
-			'vboxOnVRDEServerInfoChanged' : function(eventData) {
+			'vboxVRDEServerInfoChanged' : function(eventData) {
 
 				if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
 					vcube.vmdatamediator.vmRuntimeData[eventData.machineId].VRDEServerInfo.port = eventData.enrichmentData.port;
@@ -246,7 +246,7 @@ Ext.define('vcube.vmdatamediator', {
 
 			},
 			// Execution cap
-			'vboxOnCPUExecutionCapChanged' : function(eventData) {
+			'vboxCPUExecutionCapChanged' : function(eventData) {
 			
 				if(vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) {
 					vcube.vmdatamediator.vmRuntimeData[eventData.machineId].CPUExecutionCap = eventData.executionCap;
@@ -254,19 +254,19 @@ Ext.define('vcube.vmdatamediator', {
 
 			},
 			
-			'OnMachineGroupChanged' : function(eventData) {
+			'vboxMachineGroupChanged' : function(eventData) {
 				if(!vcube.datamediator.vmData[eventData.machineId]) return
 				vcube.datamediator.vmData[eventData.machineId].group_id = int(eventData.group)
 				
 			},
 
-			'OnMachineIconChanged' : function(eventData) {
+			'vboxMachineIconChanged' : function(eventData) {
 				if(!vcube.datamediator.vmData[eventData.machineId]) return
 				vcube.datamediator.vmData[eventData.machineId].icon = eventData.icon
 			},
 
 			
-			'vboxOnExtraDataChanged' : function(eventData) {
+			'vboxExtraDataChanged' : function(eventData) {
 			
 				// No vm id is a global change
 				if(!eventData.machineId || !vcube.vmdatamediator.vmData[eventData.machineId]) return;
@@ -461,7 +461,7 @@ Ext.define('vcube.vmdatamediator', {
 		
 		// Special case for host
 		if(vmid == 'host') {
-			$('#vboxPane').trigger('vboxOnMachineDataChanged', [{machineId:'host'}]);
+			$('#vboxPane').trigger('vboxMachineDataChanged', [{machineId:'host'}]);
 			$('#vboxPane').trigger('vboxEvents', [[{eventType:'OnMachineDataChanged',machineId:'host'}]]);
 			return;
 		}
@@ -473,7 +473,7 @@ Ext.define('vcube.vmdatamediator', {
 			vm = d[0];
 			vcube.vmdatamediator.vmData[vm.id] = vm;
 			def.resolve();
-			$('#vboxPane').trigger('vboxOnMachineDataChanged', [{machineId:vm.id,enrichmentData:vm}]);
+			$('#vboxPane').trigger('vboxMachineDataChanged', [{machineId:vm.id,enrichmentData:vm}]);
 			$('#vboxPane').trigger('vboxEvents', [[{eventType:'OnMachineDataChanged',machineId:vm.id,enrichmentData:vm}]]);
 		}).fail(function(){
 			def.reject();

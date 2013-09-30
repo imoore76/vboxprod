@@ -146,12 +146,12 @@ Ext.define('vcube.controller.VMTabSummary', {
 			} else {
 				// Running VMs get random numbers.
 				// Saved are based on last state change to try to let the browser cache Saved screen shots
-				var randid = vm.lastStateChange;
+				var randid = data.lastStateChange;
 				if(vcube.utils.vboxVMStates.isRunning(data)) {
 					var currentTime = new Date();
 					randid = Math.floor(currentTime.getTime() / 1000);
 				}
-				__vboxDrawPreviewImg.src = 'vbox/machineGetScreenShot?width='+previewWidth+'&vm='+vmid+'&randid='+randid+'&server='+vm._serverid;
+				__vboxDrawPreviewImg.src = 'vbox/machineGetScreenShot?width='+previewWidth+'&vm='+vmid+'&randid='+randid+'&server='+data._serverid;
 				
 			}
 		}
@@ -176,11 +176,9 @@ Ext.define('vcube.controller.VMTabSummary', {
 
 			if(typeof(i) != 'string') continue;
 			
-			console.log(i);
-			
 			if(!vcube.view.VMTabSummary.vmSummarySections[i].condition(data)) continue;
 			
-			summaryTabTables.add(vcube.view.VMTabs.sectionTable(vcube.view.VMTabSummary.vmSummarySections[i], data));
+			summaryTabTables.add(vcube.view.VMTabs.sectionTable(vcube.view.VMTabSummary.vmSummarySections[i], data, i));
 		
 		}
 		

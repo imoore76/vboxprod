@@ -223,14 +223,14 @@ Ext.define('vcube.utils', {
 			return (vmRecord && vmRecord.sessionState == 'Unlocked');
 		},
 		
-		/* True if one VM in list matches item */
-		isOne: function(states, vmlist) {
+		/* True if one VM Record in list matches item */
+		isOneRecord: function(states, vmlist) {
 			
 			if(typeof(states) == 'string') states = [states];
 			
 			for(var i = 0; i < vmlist.length; i++) {
-				for(var a = 0; a < states.length; states++) {
-					if(vcube.utils.vboxVMStates['is'+(states[a])](vmlist[i]))
+				for(var a = 0; a < states.length; a++) {
+					if(vcube.utils.vboxVMStates['is'+(states[a])](vmlist[i].raw.data))
 						return true;					
 				}
 			}

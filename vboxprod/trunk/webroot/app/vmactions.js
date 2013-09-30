@@ -194,7 +194,7 @@ Ext.define('vcube.vmactions',{
 							
 			},
 			enabled : function (selectionModel) {
-				return vcube.utils.vboxVMStates.isOne(['Paused','PoweredOff','Saved'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Paused','PoweredOff'], selectionModel.getSelection());
 			}	
 		},
 		
@@ -208,7 +208,7 @@ Ext.define('vcube.vmactions',{
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
 			},
 			enabled : function (selectionModel) {
-				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOne(['Running','PoweredOff','Editable'], selectionModel.getSelection());
+				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['Running','PoweredOff','Editable'], selectionModel.getSelection());
 			}
 		},
 	
@@ -222,7 +222,7 @@ Ext.define('vcube.vmactions',{
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
 			enabled: function (selectionModel) {
-				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOne(['PoweredOff'], selectionModel.getSelection());
+				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['PoweredOff'], selectionModel.getSelection());
 			}
 		},
 	
@@ -350,7 +350,7 @@ Ext.define('vcube.vmactions',{
 	    	
 	    	},
 	    	enabled: function (selectionModel) {
-	    		return cube.utils.vboxVMStates.isOne('PoweredOff', selectionModel.getSelection());
+	    		return cube.utils.vboxVMStates.isOneRecord('PoweredOff', selectionModel.getSelection());
 	    	}
 	    },
 	    
@@ -388,7 +388,7 @@ Ext.define('vcube.vmactions',{
 				}
 			},
 			enabled:function(selectionModel){
-				return vcube.utils.vboxVMStates.isOne('Saved', selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord('Saved', selectionModel.getSelection());
 			}
 	    },
 	    
@@ -484,7 +484,7 @@ Ext.define('vcube.vmactions',{
 			icon: 'fd',
 			stop_action: true,
 			enabled: function(selectionModel){
-				return vcube.utils.vboxVMStates.isOne(['Running','Paused'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
 			click: function() {
 	
@@ -502,7 +502,7 @@ Ext.define('vcube.vmactions',{
 			icon: 'acpi',
 			stop_action: true,
 			enabled: function(selectionModel){
-				return vcube.utils.vboxVMStates.isOne(['Running'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
 			click: function() {
 				var buttons = {};
@@ -538,7 +538,7 @@ Ext.define('vcube.vmactions',{
 			icon: 'pause',
 			icon_disabled: 'pause_disabled',
 			enabled: function(selectionModel){
-				return vcube.utils.vboxVMStates.isOne(['Running'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
 			click: function() {
 				var vms = vboxChooser.getSelectedVMsData();
@@ -555,7 +555,7 @@ Ext.define('vcube.vmactions',{
 			icon: 'poweroff',
 			stop_action: true,
 			enabled: function(selectionModel) {
-				return vcube.utils.vboxVMStates.isOne(['Running','Paused','Stuck'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
 			},
 			click: function() {
 				
@@ -596,7 +596,7 @@ Ext.define('vcube.vmactions',{
 			icon: 'reset',
 			icon_disabled: 'reset_disabled',
 			enabled: function(selectionModel){
-				return vcube.utils.vboxVMStates.isOne(['Running','Paused'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
 			click: function() {
 				var buttons = {};
@@ -640,7 +640,7 @@ Ext.define('vcube.vmactions',{
 			menu: true,
 			click: function () { return true; /* handled by stop context menu */ },
 			enabled: function (selectionModel) {
-				return vcube.utils.vboxVMStates.isOne(['Running','Paused'], selectionModel.getSelection());
+				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			}
 		},
 		

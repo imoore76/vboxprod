@@ -7,6 +7,7 @@ var previewAspectRatio = 1.6;
 var previewUpdateInterval = 3;
 
 Ext.define('vcube.controller.VMTabs', {
+	
     extend: 'Ext.app.Controller',
     
     models: ['Snapshot'],
@@ -43,17 +44,16 @@ Ext.define('vcube.controller.VMTabs', {
 
     	
     	// Only load if VM is selected
-    	if(!record || !record.get('leaf'))
+    	if(!record || record.raw.data._type != 'vm')
     		return;
     	
     	var tabPanel = this.getVMTabsView();
-    	var summaryTab = tabPanel.getComponent('SummaryTab');
-    	var detailsTab  = tabPanel.getComponent('DetailsTab');
-    	
+    	if(record.raw.data.state == 'Inaccessible') {
+    		tabPanel.fireEvent('vmloaded', record.raw.data);
+    		return;
+    	}
     	
     	tabPanel.setLoading(true);
-    	
-    	detailsTab.removeAll(true);
     	
     	var self = this;
     	
@@ -61,8 +61,17 @@ Ext.define('vcube.controller.VMTabs', {
     		
     		// batch of updates
     		Ext.suspendLayouts();
-    		    
+    		
     		Ext.apply(data, record.raw.data);
+    		tabPanel.vmData = data;
+    		tabPanel.fireEvent('vmloaded', data);
+    		
+    		Ext.resumeLayouts(true);
+    		
+    		tabPanel.setLoading(false);
+
+    		return;
+    		
     		tabPanel.rawData = data;
     		
 			// Check for cached resolution

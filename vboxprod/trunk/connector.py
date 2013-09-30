@@ -89,20 +89,58 @@ Return base machine info
 """
 def _machineGetBaseInfo(machine):
     
-    return { 
-        'name' :machine.name,
-        'state' : vboxEnumToString("MachineState", machine.state),
-        'group_id' : machine.getExtraData(vboxConnector.groupKey),
-        'OSTypeId' : machine.OSTypeId,
-        'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
-        'lastStateChange' : long(machine.lastStateChange)/1000,
-        'id' : machine.id,
-        'currentStateModified' : bool(machine.currentStateModified),
-        'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
-        'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
-        'customIcon' : machine.getExtraData('vcube/icon')
-    }
-
+    if machine.accessible:
+        
+        return { 
+            'name' :machine.name,
+            'state' : vboxEnumToString("MachineState", machine.state),
+            'group_id' : machine.getExtraData(vboxConnector.groupKey),
+            'OSTypeId' : machine.OSTypeId,
+            'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
+            'lastStateChange' : long(machine.lastStateChange)/1000,
+            'id' : machine.id,
+            'currentStateModified' : bool(machine.currentStateModified),
+            'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
+            'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
+            'icon' : machine.getExtraData(vboxConnector.iconKey),
+            'accessible' : True
+        }
+        
+    else:
+        """
+        When the machine is inaccessible, only the following properties can be used on it:
+            parent
+            id
+            settingsFilePath
+            accessible
+            accessError
+        """
+        # Try to get name anyways
+        try:
+            name = machine.name
+        except:
+            name = machine.id
+            
+        return {
+            'name' : name,
+            'state' : 'Inaccessible',
+            'group_id' : 0,
+            'OSTypeId' : '',
+            'OSTypeDesc' : '',
+            'lastStateChange' : 0,
+            'id' : machine.id,
+            'currentStateModified' : False,
+            'sessionState' : 'Unknown',
+            'currentSnapshotName' : '',
+            'icon' : '',
+            'accessible' : False,
+            'accessError': {
+                'resultCode' : machine.accessError.resultCode,
+                'interfaceID' : machine.accessError.interfaceID,
+                'component' : machine.accessError.component,
+                'text' : vboxConnector._util_resultCodeText(machine.accessError.text) 
+            }#machine.accessError
+        }
 
 """
     Format vbox event
@@ -120,7 +158,7 @@ def formatEvent(data, eventDataObject):
         data['machineId'] = eventDataObject.machineId
         data['dedupId'] = data['dedupId'] + '-' + data['machineId']
 
-    elif data['eventType'] == 'OnExtraDataCanChange' or data['eventType'] == 'OnExtraDataChanged':
+    elif data['eventType'] == 'OnExtraDataChanged':
         
         data['machineId'] = eventDataObject.machineId
         data['key'] = eventDataObject.key
@@ -131,7 +169,11 @@ def formatEvent(data, eventDataObject):
         if data['key'] == vboxConnector.groupKey:
             data['eventType'] = 'OnMachineGroupChanged'
             data['group'] = data['value']
-            
+        # Create synthetic icon changed event if it was the icon key
+        elif data['key'] == vboxConnector.iconKey:
+            data['eventType'] = 'OnMachineIconChanged'
+            data['icon'] = data['value']
+         
     elif data['eventType'] == 'OnMediumRegistered':
         data['machineId'] = data['sourceId']
         data['mediumId'] = eventDataObject.mediumId
@@ -463,6 +505,11 @@ class vboxConnector(object):
     groupKey = 'vcube/group_id'
     
     """
+        Custom icon key in vm extra data
+    """
+    iconKey = 'vcube/icon'
+    
+    """
         Init vbox per thread
     """
     def __init__(self):
@@ -522,7 +569,15 @@ class vboxConnector(object):
     """
     def remote_machineSetGroup(self, args):
         args['key'] = self.groupKey
-        args['value'] = args['group']
+        args['value'] = str(args['group'])
+        return self.remote_machineSetExtraData(args)
+    
+    """
+        Set machine icon
+    """
+    def remote_machineSetIcon(self, args):
+        args['key'] = self.iconKey
+        args['value'] = str(args['icon'])
         return self.remote_machineSetExtraData(args)
     
     """
@@ -940,7 +995,7 @@ class vboxConnector(object):
         
         
         # Custom Icon
-        m.setExtraData('vcube/icon', args['customIcon'])
+        m.setExtraData(vboxConnector.iconKey, args['icon'])
         
         m.setExtraData('GUI/SaveMountedAtRuntime', args['GUI'].get('SaveMountedAtRuntime','yes'))
 
@@ -1288,7 +1343,7 @@ class vboxConnector(object):
         m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
 
         """ Custom Icon """
-        m.setExtraData('vcube/icon', args['customIcon'])
+        m.setExtraData(vboxConnector.iconKey, args['icon'])
 
         m.VRAMSize = args['VRAMSize']
         
@@ -2353,6 +2408,7 @@ class vboxConnector(object):
             # Check for accessibility
             if not machine.accessible:
 
+
                 return {
                     'name' : machine.name,
                     'state' : 'Inaccessible',
@@ -2368,6 +2424,8 @@ class vboxConnector(object):
 
         # Basic data
         data = self._machineGetDetails(machine)
+        
+        if not machine.accessible: return data
 
         # Network Adapters
         data['networkAdapters'] = self._machineGetNetworkAdapters(machine)
@@ -2726,10 +2784,12 @@ class vboxConnector(object):
                 
             except Exception as e:
 
+                pprint.pprint(e)
+                
                 if machine:
-
+                    """
                     vmlist.append({
-                        'name' : machine.id,
+                        'name' : machine.name,
                         'state' : 'Inaccessible',
                         'OSTypeId' : 'Other',
                         'id' : machine.id,
@@ -2738,7 +2798,7 @@ class vboxConnector(object):
                         'currentSnapshot' : '',
                         'error': str(e) + ': ' + traceback.format_exc()
                     })
-
+                    """
                 else:
                     self.errors.append((e,traceback.format_exc()))
 
@@ -2858,7 +2918,7 @@ class vboxConnector(object):
                 'SaveMountedAtRuntime' : m.getExtraData('GUI/SaveMountedAtRuntime'),
                 'FirstRun' : m.getExtraData('GUI/FirstRun')
             },
-            'customIcon' : m.getExtraData('vcube/icon'),
+            'icon' : m.getExtraData(vboxConnector.iconKey),
             'disableHostTimeSync' : m.getExtraData("VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled"),
             'CPUExecutionCap' : m.CPUExecutionCap
         }
@@ -3958,7 +4018,8 @@ class vboxConnector(object):
      * @param integer result code number
      * @return string result code text
      """
-    def _util_resultCodeText(self, c):
+    @staticmethod
+    def _util_resultCodeText(c):
         
         #rcodes = ReflectionClass('VirtualBox_COM_result_codes')
         #rcodes = array_flip(rcodes.getConstants())

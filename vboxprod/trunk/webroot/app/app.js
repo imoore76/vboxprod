@@ -20,7 +20,8 @@ Ext.application({
                'vcube.previewbox'],
     
     /* Controllers used by this app */
-    controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','VMTabs','Menubar'],
+    controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','Menubar',
+                  'VMTabs','VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabConsole'],
     
     /* Login window */
     views: ['Login'],

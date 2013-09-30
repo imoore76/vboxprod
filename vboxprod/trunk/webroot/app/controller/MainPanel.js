@@ -37,26 +37,30 @@ Ext.define('vcube.controller.MainPanel', {
     	var groupTabs = this.getGroupTabsView();
     	var vmTabs = this.getVMTabsView();
     	
-    	// Show welcome
-    	if(!record) {
-    		if(welcome.isVisible()) return;
-    		groupTabs.hide();
-    		vmTabs.hide();
-    		welcome.show();
     		
     	// VM selected
-    	} else if(record.get('leaf')) {
+    	if(record.raw.data._type == 'vm') {
+    		
     		if(vmTabs.isVisible()) return;
     		groupTabs.hide();
     		welcome.hide();
     		vmTabs.show();
     		
+    		
+    		
     	// Group Selected
-    	} else {
+    	} else if(record.raw.data._type == 'vmgroup'){
     		if(groupTabs.isVisible()) return;
     		welcome.hide();
     		vmTabs.hide();
     		groupTabs.show();
+    	}
+    	// Show welcome
+    	else {
+			if(welcome.isVisible()) return;
+			groupTabs.hide();
+			vmTabs.hide();
+			welcome.show();
     	}
     }
     

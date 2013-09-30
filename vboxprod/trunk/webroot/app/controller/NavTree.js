@@ -186,7 +186,7 @@ Ext.define('vcube.controller.NavTree', {
 				'<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state) +
 				'" height=16 width=16 valign=top style="margin-left: 24px"/></span>',*/
 			leaf : true,
-			icon : (data.customIcon ? data.customIcon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data.OSTypeId)),
+			icon : (data.icon ? data.icon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data.OSTypeId)),
 			iconCls : 'navTreeIcon',
 			id : 'vm-' + data.id,
 			data : data
@@ -202,6 +202,7 @@ Ext.define('vcube.controller.NavTree', {
 			iconCls : 'navTreeIcon',
 			leaf : false,
 			text : data.name,
+			expanded: true,
 			id : 'vmgroup-' + data.id,
 			data : data
 		};

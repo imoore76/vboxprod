@@ -79,6 +79,8 @@ Ext.define('vcube.eventlistener', {
 		if(e['eventSource'] == 'vcube' && e['eventType'] == 'heartbeat')
 			return;
 		
+		console.log(e);
+		
 		if(e['eventSource'] == 'vbox') {
 			vcube.app.fireEvent('vbox' + e.eventType, e);			
 		}

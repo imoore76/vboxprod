@@ -607,9 +607,13 @@ Ext.define('vcube.view.VMTabs', {
         					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' },
         					items: [{
         						fieldLabel: 'State',
-        						name: 'state',
-        						renderer: function(newValue) {
-        							return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(newValue) +'" height=16 width=16 valign=top />&nbsp;' + vcube.utils.vboxVMStates.convert(newValue);
+        						name: 'state-lastStateChange-sessionState',
+        						renderer: function(cdata) {
+        							cdata = cdata.split('-');
+        							return '<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(cdata[0]) +'" height=16 width=16 valign=top />&nbsp;' + vcube.utils.vboxVMStates.convert(cdata[0]) +
+	        							'Since ' + vcube.utils.dateTimeString(cdata[1]) + ' - session ' +
+	        							vcube.utils.trans(cdata[2],'VBoxGlobal').toLowerCase();
+
         						}
         					},{
         						/* Such a hack... */

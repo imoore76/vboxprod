@@ -39,9 +39,6 @@ Ext.define ('Ext.ux.Deferred', {
 			
 					promise
 						.done (function (data) {
-							if(pdata) {
-								console.log(data);
-							}
 							counter--;
 							results[i] = data;
 					

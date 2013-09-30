@@ -540,6 +540,24 @@ Ext.define('vcube.utils', {
 	},
 	
 	/**
+	 * Return a time or date+time string depending on
+	 * how much time has elapsed
+	 * @param {Integer} t - seconds since 1/1/1970 0:0:0
+	 * @param {String} replaceTime - optional string to return replacing time
+	 * @param {String} replaceDateTime - optional string to return replace date_time
+	 * @return {String} time or date+time string
+	 */
+	dateTimeString : function(t, replaceTime, replaceDateTime) {
+
+		var sdate = new Date(t*1000);
+		if((new Date().getTime() - sdate.getTime())/1000 > 86400
+				|| new Date().getDate() != sdate.getDate()) {
+				return (replaceDateTime ? replaceDateTime.replace('%1',sdate.toLocaleString()) : sdate.toLocaleString());
+			}
+		return (replaceTime ? replaceTime.replace('%1',sdate.toLocaleTimeString()) : sdate.toLocaleTimeString());
+	},
+	
+	/**
 	 * Returns the result of case-insensitive string comparison using 'natural' algorithm comparing str1 to str2
 	 * @param {String} str1 - 1st string
 	 * @param {String} str2 - 2nd string

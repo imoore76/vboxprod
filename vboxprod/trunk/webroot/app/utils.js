@@ -6,6 +6,382 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
+	 * Convert megabytes to human readable string
+	 * @param {Integer} mb - megabytes
+	 * @return {String} human readable size representation (e.g. 2 GB, 500 MB, etc..)
+	 */
+	mbytesConvert : function(mb) {
+		return vcube.utils.bytesConvert(parseFloat(mb) * 1024 * 1024);
+	},
+	
+	/**
+	 * Convert bytes to human readable string
+	 * @param {Integer} bytes - bytes
+	 * @return {String} human readable size representation (e.g. 2 GB, 500 MB, etc..)
+	 */
+	bytesConvert : function(bytes) {
+		var ext = new Array('B','KB','MB','GB','TB');
+		var unitCount;
+		for(unitCount=0; bytes >= 1024 && unitCount < ext.length; unitCount++) bytes = parseFloat(parseFloat(bytes)/1024);
+		
+		return Math.round(parseFloat(bytes)*Math.pow(10,2))/Math.pow(10,2) + " " + vcube.utils.trans(ext[unitCount], 'VBoxGlobal');
+	},
+	/**
+	 * Parse str param into megabytes
+	 * @param {String} str - size string (2 TB, 500 MB, etc..) to parse
+	 * @return {Integer} megabytes
+	 */
+	convertMbytes: function(str) {
+		str = str.replace('  ',' ');
+		str = str.split(' ',2);
+		if(!str[1]) str[1] = vcube.utils.trans('MB','VBoxGlobal');
+		var ext = new Array(vcube.utils.trans('B','VBoxGlobal'),vcube.utils.trans('KB','VBoxGlobal'),vcube.utils.trans('MB','VBoxGlobal'),vcube.utils.trans('GB','VBoxGlobal'),vcube.utils.trans('TB','VBoxGlobal'));
+		var index = Ext.Array.indexOf(str[1],ext);
+		if(index == -1) index = 2;
+		switch(index) {
+			case 0:
+				return ((str[0] / 1024) / 1024);
+				break;
+			case 1:
+				return (str[0] / 1024);
+				break;
+			case 3:
+				return (str[0] * 1024);
+				break;
+			case 4:
+				return (str[0] * 1024 * 1024);
+				break;
+			default:
+				return (str[0]); 
+		}
+		
+	},
+
+
+
+	/**
+	 * Common Media functions object
+	 * 
+	 * @namespace vboxMedia
+	 */
+	vboxMedia : {
+
+		/**
+		 * Return a printable string for medium m
+		 * 
+		 * @static
+		 */
+		mediumPrint : function(m,nosize,usehtml) {
+			var name = vcube.utils.vboxMedia.getName(m);
+			if(nosize || !m || m.hostDrive) return name;
+			return name + ' (' + (m.deviceType == 'HardDisk' ? (usehtml ? '<i>' : '') + vcube.utils.trans(m.type,'VBoxGlobal') + (usehtml ? '</i>' : '') + ', ' : '') + vcube.utils.mbytesConvert(m.logicalSize) + ')';
+		},
+
+		/**
+		 * Return printable medium name
+		 * 
+		 * @static
+		 */
+		getName : function(m) {
+			if(!m) return vcube.utils.trans('Empty','VBoxGlobal');
+			if(m.hostDrive) {
+				if (m.description && m.name) {
+					return vcube.utils.trans('Host Drive %1 (%2)','VBoxGlobal').replace('%1',m.description).replace('%2',m.name);
+				} else if (m.location) {
+					return vcube.utils.trans('Host Drive \'%1\'','VBoxGlobal').replace('%1',m.location);
+				} else {
+					return vcube.utils.trans('Host Drive','VBoxGlobal');
+				}
+			}
+			return m.name;
+		},
+
+		/**
+		 * Return printable medium type
+		 * 
+		 * @static
+		 */
+		getType : function(m) {
+			if(!m || !m.type) return vcube.utils.trans('Normal','VBoxGlobal');
+			if(m.type == 'Normal' && m.base && m.base != m.id) return vcube.utils.trans('Differencing','VBoxGlobal');
+			return vcube.utils.trans(m.type,'VBoxGlobal');
+		},
+		
+		/**
+		 * Return printable medium format
+		 * 
+		 * @static
+		 */
+		getFormat : function (m) {
+			if(!m) return '';
+			switch(m.format.toLowerCase()) {
+				case 'vdi':
+					return vcube.utils.trans('VDI (VirtualBox Disk Image)','UIWizardNewVD');
+				case 'vmdk':
+					return vcube.utils.trans('VMDK (Virtual Machine Disk)','UIWizardNewVD');
+				case 'vhd':
+					return vcube.utils.trans('VHD (Virtual Hard Disk)','UIWizardNewVD');
+				case 'parallels':
+				case 'hdd':
+					return vcube.utils.trans('HDD (Parallels Hard Disk)','UIWizardNewVD');
+				case 'qed':
+					return vcube.utils.trans('QED (QEMU enhanced disk)','UIWizardNewVD');
+				case 'qcow':
+					return vcube.utils.trans('QCOW (QEMU Copy-On-Write)','UIWizardNewVD');
+			}	
+			return m.format;
+		},
+		
+		/**
+		 * Return printable virtual hard disk variant
+		 * 
+		 * @static
+		 */
+		getHardDiskVariant : function(m) {
+			
+			var variants = $('#vboxPane').data('vboxMediumVariants');
+			
+			
+	/*
+	 * [Standard] => 0 [VmdkSplit2G] => 1 [VmdkRawDisk] => 2 [VmdkStreamOptimized] =>
+	 * 4 [VmdkESX] => 8 [Fixed] => 65536 [Diff] => 131072 [NoCreateDir] =>
+	 * 1073741824
+	 */
+			
+			switch(m.variant) {
+
+				case variants.Standard:
+		            return vcube.utils.trans("Dynamically allocated storage", "VBoxGlobal");
+		        case (variants.Standard | variants.Diff):
+		            return vcube.utils.trans("Dynamically allocated differencing storage", "VBoxGlobal");
+		        case (variants.Standard | variants.Fixed):
+		            return vcube.utils.trans("Fixed size storage", "VBoxGlobal");
+		        case (variants.Standard | variants.VmdkSplit2G):
+		            return vcube.utils.trans("Dynamically allocated storage split into files of less than 2GB", "VBoxGlobal");
+		        case (variants.Standard | variants.VmdkSplit2G | variants.Diff):
+		            return vcube.utils.trans("Dynamically allocated differencing storage split into files of less than 2GB", "VBoxGlobal");
+		        case (variants.Standard | variants.Fixed | variants.VmdkSplit2G):
+		            return vcube.utils.trans("Fixed size storage split into files of less than 2GB", "VBoxGlobal");
+		        case (variants.Standard | variants.VmdkStreamOptimized):
+		            return vcube.utils.trans("Dynamically allocated compressed storage", "VBoxGlobal");
+		        case (variants.Standard | variants.VmdkStreamOptimized | variants.Diff):
+		            return vcube.utils.trans("Dynamically allocated differencing compressed storage", "VBoxGlobal");
+		        case (variants.Standard | variants.Fixed | variants.VmdkESX):
+		            return vcube.utils.trans("Fixed size ESX storage", "VBoxGlobal");
+		        case (variants.Standard | variants.Fixed | variants.VmdkRawDisk):
+		            return vcube.utils.trans("Fixed size storage on raw disk", "VBoxGlobal");
+		        default:
+		        	return vcube.utils.trans("Dynamically allocated storage", "VBoxGlobal");
+		    }
+
+		},
+
+		/**
+		 * Return media and drives available for attachment type
+		 * 
+		 * @static
+		 */
+		mediaForAttachmentType : function(t,children) {
+		
+			var media = new Array();
+			
+			// DVD Drives
+			if(t == 'DVD') { media = media.concat($('#vboxPane').data('vboxHostDetails').DVDDrives);
+			// Floppy Drives
+			} else if(t == 'Floppy') { 
+				media = media.concat($('#vboxPane').data('vboxHostDetails').floppyDrives);
+			}
+			
+			// media
+			return media.concat(vboxTraverse($('#vboxPane').data('vboxMedia'),'deviceType',t,true,(children ? 'children' : '')));
+		},
+
+		/**
+		 * Return a medium by its location
+		 * 
+		 * @static
+		 */
+		getMediumByLocation : function(p) {
+			// Fix this in windows version
+			if($('#vboxPane').data('vboxConfig').DSEP == '\\')
+				p = p.replace('\\.','/.');
+			return vboxTraverse($('#vboxPane').data('vboxMedia'),'location',p,false,'children');
+		},
+
+		/**
+		 * Return a medium by its name, ignoring case and 
+		 * extension
+		 * 
+		 * @static
+		 */
+		getMediumByName : function(n) {
+			var meds = $('#vboxPane').data('vboxMedia');
+			for(var i = 0; i < meds.length; i++) {
+				if(n.toLowerCase() == meds[i].name.replace(/\.[^\.]+$/, "").toLowerCase())
+					return meds[i];
+			}
+			return null;
+		},
+		
+		/**
+		 * Elect a new hard disk name
+		 */
+		electHardDiskName : function(rootName, start) {
+			
+			/* Go through list of media and pick new hd name */
+			var number = (start ? start : 1);
+			var HDname = (rootName ? rootName : 'NewVirtualDisk');
+			var RetName = '';
+			var found = false;
+			do {
+				RetName = HDname + (number++);
+				found = vcube.utils.vboxMedia.getMediumByName(RetName);		
+			} while(found);
+			
+			return RetName;
+		},
+
+		/**
+		 * Return a medium by its ID
+		 * 
+		 * @static
+		 */
+		getMediumById : function(id) {
+			return vboxTraverse($('#vboxPane').data('vboxMedia').concat($('#vboxPane').data('vboxHostDetails').DVDDrives.concat($('#vboxPane').data('vboxHostDetails').floppyDrives)),'id',id,false,'children');
+		},
+
+		/**
+		 * Return a printable list of machines and snapshots this a medium is
+		 * attached to
+		 * 
+		 * @static
+		 */
+		attachedTo: function(m,nullOnNone) {
+			var s = new Array();
+			if(!m.attachedTo || !m.attachedTo.length) return (nullOnNone ? null : '<i>'+vcube.utils.trans('Not Attached')+'</i>');
+			for(var i = 0; i < m.attachedTo.length; i++) {
+				s[s.length] = m.attachedTo[i].machine + (m.attachedTo[i].snapshots.length ? ' (' + m.attachedTo[i].snapshots.join(', ') + ')' : '');
+			}
+			return s.join(', ');
+		},
+
+		/**
+		 * Update recent media menu and global recent media list
+		 * 
+		 * @static
+		 */
+		updateRecent : function(m, skipPathAdd) {
+			
+			// Only valid media that is not a host drive or iSCSI
+			if(!m || !m.location || m.hostDrive || m.format == 'iSCSI') return false;
+			
+		    // Update recent path
+			if(!skipPathAdd) {
+				vboxAjaxRequest('vboxRecentMediaPathSave',{'type':m.deviceType,'folder':vboxDirname(m.location)});
+				$('#vboxPane').data('vboxRecentMediaPaths')[m.deviceType] = vboxDirname(m.location);
+			}
+			
+			// Update recent media
+			// ///////////////////////
+			
+			// find position (if any) in current list
+			var pos = jQuery.inArray(m.location,$('#vboxPane').data('vboxRecentMedia')[m.deviceType]);		
+			
+			// Medium is already at first position, return
+			if(pos == 0) return false;
+			
+			// Exists and not in position 0, remove from list
+			if(pos > 0) {
+				$('#vboxPane').data('vboxRecentMedia')[m.deviceType].splice(pos,1);
+			}
+			
+			// Add to list
+			$('#vboxPane').data('vboxRecentMedia')[m.deviceType].splice(0,0,m.location);
+			
+			// Pop() until list only contains 5 items
+			while($('#vboxPane').data('vboxRecentMedia')[m.deviceType].length > 5) {
+				$('#vboxPane').data('vboxRecentMedia')[m.deviceType].pop();
+			}
+
+			// Update Recent Media in background
+			vboxAjaxRequest('vboxRecentMediaSave',{'type':m.deviceType,'list':$('#vboxPane').data('vboxRecentMedia')[m.deviceType]});
+			
+			return true;
+
+		},
+		
+		/**
+		 * List of actions performed on Media in phpVirtualBox
+		 * 
+		 * @static
+		 * @namespace
+		 */
+		actions : {
+			
+			/**
+			 * Choose existing medium file
+			 * 
+			 * @static
+			 */
+			choose : function(path,type,callback) {
+			
+				if(!path) path = $('#vboxPane').data('vboxRecentMediaPaths')[type];
+
+				title = null;
+				icon = null;
+				switch(type) {
+					case 'HardDisk':
+						title = vcube.utils.trans('Choose a virtual hard disk file...','UIMachineSettingsStorage');
+						icon = 'images/vbox/hd_16px.png';
+						break;
+					case 'Floppy':
+						title = vcube.utils.trans('Choose a virtual floppy disk file...','UIMachineSettingsStorage');
+						icon = 'images/vbox/fd_16px.png';
+						break;
+					case 'DVD':
+						title = vcube.utils.trans('Choose a virtual CD/DVD disk file...','UIMachineSettingsStorage');
+						icon = 'images/vbox/cd_16px.png';
+						break;					
+				}
+				vboxFileBrowser(path,function(f){
+					if(!f) return;
+					var med = vcube.utils.vboxMedia.getMediumByLocation(f);
+					if(med && med.deviceType == type) {
+						callback(med);
+						return;
+					} else if(med) {
+						return;
+					}
+					var ml = new vboxLoader();
+					ml.add('mediumAdd',function(ret){
+						var l = new vboxLoader();
+						if(ret && ret.responseData.id) {
+							var med = vboxMedia.getMediumById(ret.responseData.id);
+							// Not registered yet. Refresh media.
+							if(!med)
+								l.add('vboxGetMedia',function(dret){$('#vboxPane').data('vboxMedia',dret.responseData);});
+						}
+						l.onLoad = function() {
+							if(ret && ret.responseData.id) {
+								var med = vboxMedia.getMediumById(ret.responseData.id);
+								if(med && med.deviceType == type) {
+									vboxMedia.updateRecent(med);
+									callback(med);
+									return;
+								}
+							}
+						};
+						l.run();
+					},{'path':f,'type':type});
+					ml.run();
+				},false,title,icon);
+			} // </ choose >
+		
+		} // </ actions >
+	},
+	
+	
+	/**
 	 * Return VRDE Host
 	 */
 	vboxGetVRDEHost : function(vm) {

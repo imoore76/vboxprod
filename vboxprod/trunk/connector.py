@@ -2784,8 +2784,6 @@ class vboxConnector(object):
                 
             except Exception as e:
 
-                pprint.pprint(e)
-                
                 if machine:
                     """
                     vmlist.append({
@@ -3084,7 +3082,7 @@ class vboxConnector(object):
 
         for ma in mas:
             attachments.append({
-                'medium' : {'id':ma.medium.id} if ma.medium else None,
+                'medium' : self._mediumGetDetails(ma.medium, True),
                 'controller' : ma.controller,
                 'port' : ma.port,
                 'device' : ma.device,
@@ -3761,13 +3759,44 @@ class vboxConnector(object):
      * @param IMedium m medium instance
      * @return array medium details
      """
-    def _mediumGetDetails(self, m):
+    def _mediumGetDetails(self, m, baseInfo=False):
+
+        # No medium
+        if m is None: return None
+        
+        # For fixed value
+        mv = vboxEnumList("MediumVariant")
+        variant = m.variant
+
+        # Base medium
+        if baseInfo and m.deviceType == vboxMgr.constants.DeviceType_HardDisk and (m.base and m.base.id != m.id):
+            baseMedium = self._mediumGetDetails(m.base, True)            
+        else:
+            baseMedium = ({'id':m.base.id} if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None)
+            
+        if baseInfo:
+            
+            return {
+                'id' : m.id,
+                'description' : m.description,
+                'name' : m.name,
+                'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
+                'hostDrive' : bool(m.hostDrive),
+                'size' : long(m.size),
+                'format' : m.format,
+                'type' : vboxEnumToString("MediumType",m.type),
+                'base' : baseMedium,
+                'readOnly' : bool(m.readOnly),
+                'logicalSize' : (long(m.logicalSize)/1024)/1024
+            }
+
 
         children = []
         attachedTo = []
 
-        for c in vboxGetArray(m,'children'):
-            children.append(self._mediumGetDetails(c))
+        if getChildren:
+            for c in vboxGetArray(m,'children'):
+                children.append(self._mediumGetDetails(c))
 
         for mid in vboxGetArray(m,'machineIds'):
             sids = list(m.getSnapshotIds(mid))
@@ -3792,10 +3821,6 @@ class vboxConnector(object):
 
             attachedTo.append({'machine':mid.name,'snapshots':sids})
 
-        # For fixed value
-        mv = vboxEnumList("MediumVariant")
-        variant = m.variant
-
         return {
                 'id' : m.id,
                 'description' : m.description,
@@ -3809,7 +3834,7 @@ class vboxConnector(object):
                 'type' : vboxEnumToString("MediumType",m.type),
                 'parent' : (m.parent.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.parent) else None),
                 'children' : children,
-                'base' : (m.base.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
+                'base' : baseMedium,
                 'readOnly' : bool(m.readOnly),
                 'logicalSize' : (long(m.logicalSize)/1024)/1024,
                 'autoReset' : bool(m.autoReset),

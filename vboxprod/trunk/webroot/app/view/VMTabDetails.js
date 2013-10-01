@@ -186,8 +186,6 @@ Ext.define('vcube.view.VMTabDetails', {
 						
 						var rows = new Array();
 						
-						return rows;
-						
 						for(var a = 0; a < d['storageControllers'].length; a++) {
 							
 							var con = d['storageControllers'][a];
@@ -204,30 +202,16 @@ Ext.define('vcube.view.VMTabDetails', {
 								var portName = vcube.utils.vboxStorage[d['storageControllers'][a].bus].slotName(d['storageControllers'][a]['mediumAttachments'][b].port, d['storageControllers'][a]['mediumAttachments'][b].device);
 
 								// Medium / host device info
-								var medium = (d['storageControllers'][a]['mediumAttachments'][b].medium && d['storageControllers'][a]['mediumAttachments'][b].medium.id ? vcube.utils.vboxMedia.getMediumById(d['storageControllers'][a]['mediumAttachments'][b].medium.id) : null);
+								var medium = d['storageControllers'][a]['mediumAttachments'][b].medium;
 								
-								// Do we need to reload media?
-								if(d['storageControllers'][a]['mediumAttachments'][b].medium && d['storageControllers'][a]['mediumAttachments'][b].medium.id && medium === null) {
-									
-									if(!d._isSnapshot) {
-										portDesc = '<a href="javascript:vmDetailsSections.storage._refreshVMMedia(\''+
-										d.id+"','"+d['storageControllers'][a]['mediumAttachments'][b].medium.id+"');\">"+vcube.utils.trans('Refresh','UIVMLogViewer')+"</a>";							
-
-									} else {
-										portDesc = vcube.utils.trans('Refresh','UIVMLogViewer');
-									}
-
-								} else {
-									
-									// Get base medium (snapshot -> virtual disk file)
-									var it = false;
-									if(medium && medium.base && (medium.base != medium.id)) {
-										it = true;
-										medium = vcube.utils.vboxMedia.getMediumById(medium.base);
-									}
-
-									portDesc = vcube.utils.vboxMedia.mediumPrint(medium,false,it);
+								// Get base medium (snapshot -> virtual disk file)
+								var it = false;
+								if(medium && medium.base && (medium.base != medium.id)) {
+									it = true;
+									medium = medium.base;
 								}
+
+								portDesc = vcube.utils.vboxMedia.mediumPrint(medium,false,it);
 
 								rows[rows.length] = {
 									title: portName,

@@ -2,6 +2,7 @@
 Details table
 */
 .vboxDetailsTable { padding: 2px; border-width: 0px; }
+.vmTabDetails .x-table-layout-cell { padding: 1px 2px 1px 2px; }
 .vmTabDetails .vboxDetailsTable { font-size: 90%; }
 .vmTabDetails .vboxDetailsTableHeader { white-space: nowrap; }
 .vboxDetailsIndented { margin-left: 20px; }

@@ -49,7 +49,7 @@ Ext.define('vcube.controller.VMTabConsole', {
     		this.getVMTabConsoleView().enable();
     	}
     	
-    	if(!this.getVMTabDetailsView().isVisible()) return;
+    	if(!this.getVMTabConsoleView().isVisible()) return;
     	
     }
 });

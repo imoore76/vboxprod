@@ -17,8 +17,9 @@ Ext.define('vcube.view.VMTabDetails', {
     autoScroll: true,
     layout: 'vbox',
     width: '100%',
-    defaults: { xtype: 'panel', width: '100%', margin: '10 0 0 0', defaults: { xtype: 'displayfield' } },
-
+    defaults: { xtype: 'panel', width: '100%', margin: '0 10 10 10' },
+    style : { background: '#f9f9f9' },
+    bodyStyle : { background: '#f9f9f9' },
 	statics: {
 		
 		/*

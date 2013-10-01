@@ -25,8 +25,6 @@ Ext.define('vcube.controller.VMTabDetails', {
 			
 			if(typeof(i) != 'string') continue;
 			
-			console.log("This is.");
-			console.log(this);
 			
 			if(vcube.view.VMTabDetails.vmDetailsSections[i].redrawOnEvents) {
 				Ext.each(vcube.view.VMTabDetails.vmDetailsSections[i].redrawOnEvents,function(event){

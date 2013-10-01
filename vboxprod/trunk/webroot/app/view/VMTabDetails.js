@@ -192,7 +192,7 @@ Ext.define('vcube.view.VMTabDetails', {
 							
 							// Controller name
 							rows[rows.length] = {
-									title: vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',con.name),
+									title: Ext.String.htmlEncode(vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',con.name)),
 									renderer: function(){return'';}
 							};
 									
@@ -294,7 +294,7 @@ Ext.define('vcube.view.VMTabDetails', {
 										adp = vcube.utils.trans('NAT','VBoxGlobal');
 										break;
 									case 'Internal':
-										adp = vcube.utils.trans('Internal network, \'%1\'','VBoxGlobal').replace('%1', nic.internalNetwork);
+										adp = vcube.utils.trans('Internal network, \'%1\'','VBoxGlobal').replace('%1', Ext.String.htmlEncode(nic.internalNetwork));
 										break;
 									case 'Generic':
 										// Check for properties

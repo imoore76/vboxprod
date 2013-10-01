@@ -7,7 +7,7 @@ import pprint, traceback
 import logging
 logger = logging.getLogger('vcube')
 
-from vboxclient import vboxRPCClient, vboxRPCClientPool
+from vboxclient import vboxRPCClient, vboxRPCClientPool, STATES_TO_TEXT
 
 global config, app
 
@@ -143,6 +143,8 @@ class Application(threading.Thread):
         
     def pumpEvent(self, event):
 
+        pprint.pprint(event)
+        
         for eh in self.eventHandlers:
             eh(event)
             
@@ -194,9 +196,10 @@ class Application(threading.Thread):
         """
         self.pumpEvent({
             'eventSource' : 'vcube',
-            'eventType':'connectorStateChange',
+            'eventType':'connectorStateChanged',
             'connector' : cid,
             'status' : state,
+            'status_name' : STATES_TO_TEXT.get(state, 'Unknown'),
             'message' : message
         })
         

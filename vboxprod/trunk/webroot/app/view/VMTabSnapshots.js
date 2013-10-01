@@ -66,7 +66,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 				type: 'ajax',
 				url: 'data/operasnapshots.json',
 				reader: {
-					type: 'AppJsonReader',
+					type: 'vcubeJsonReader',
 					initialRoot: 'snapshot',
 					asChildren: true
 				}

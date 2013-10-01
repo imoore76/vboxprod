@@ -6,6 +6,105 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
+	 * Send ajax request
+	 */
+    ajaxRequest: function(ajaxURL, addparams, success_callback, failure_callback, context) {
+    	
+    	// Halt if fatal error has occurred
+    	if(vcube.app.died) return;
+    	
+    	// Hold ref to this object
+    	var self = this;
+    	
+    	// Add function to params
+    	if(!addparams) addparams = {};
+    	
+    	// Deferred object will be returned
+    	var promise = Ext.create('Ext.ux.Deferred');
+    	
+    	Ext.Ajax.request({
+    		
+    		url: ajaxURL,
+    		method: 'POST',
+    		params: {},
+    		jsonData: addparams,
+    		
+    		success: function(response){
+    			
+    			var data = Ext.JSON.decode(response.responseText).data;
+
+    			// parse meta data
+    			vcube.utils.handleResponseMetaData(data);
+    			
+    			
+    			// Resolve or reject
+    			if(data && data.responseData !== null) {
+    				
+    				promise.resolve(data.responseData, addparams, context);
+    				
+    				if(success_callback) {
+    					success_callback(data.responseData, addparams, context);    				
+    				}
+    			} else {
+    				promise.reject();
+    			}
+    		},
+    		failure: function(response, opts) {
+    		   vcube.utils.alert("Request failed: with status code " + response.status);
+    		   promise.reject();
+    		   if(failure_callback) failure_callback()
+		   }
+    	});
+    	
+    	return promise;
+    },
+
+	/**
+	 * Trim messages and errors out of ajax response.
+	 * Alert on errors and send console messages for messages
+	 */
+	handleResponseMetaData : function(data) {
+		
+		// Append debug output to console
+		if(data && data.messages && window.console && window.console.log) {
+			for(var i = 0; i < data.messages.length; i++) {
+				window.console.log(data.messages[i]);
+			}
+		}
+
+		// Errors
+		if(data.errors && data.errors.length) {
+			
+			for(var i = 0; i < data.errors.length; i++) {
+				vcube.utils.alert(data.errors[i],{'width':'400px'});
+			}
+		
+		}
+	},
+	
+    /**
+     * Alert dialog
+     */
+    alert: function(msg, dialogStyle) {
+    	
+    	if( typeof(msg) == 'object' && msg['error'])
+    		msg = msg.error + "<div class='alertDetails'>Details:<br /><textarea class='alertDetails'>" + Ext.String.htmlEncode(msg.details) + "</textarea></div>";
+    		
+    	
+    	new Ext.window.MessageBox().show({
+    		title: "<div style='display:inline-block;width:16px;height:16px;background:url(images/vbox/OSE/about_16px.png) no-repeat;padding-left:20px'>"+vcube.app.name+"</div>",
+    		msg: msg,
+    		resizable: true,
+    		icon: Ext.MessageBox.ERROR,
+    		modal: true,
+    		buttonText: {ok:vcube.utils.trans('OK')},
+    		closeAction: 'destroy'
+    	})
+    	
+    },
+
+	
+	/**
 	 * Convert megabytes to human readable string
 	 * @param {Integer} mb - megabytes
 	 * @return {String} human readable size representation (e.g. 2 GB, 500 MB, etc..)

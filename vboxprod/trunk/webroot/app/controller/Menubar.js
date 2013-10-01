@@ -40,7 +40,7 @@ Ext.define('vcube.controller.Menubar', {
     	
     		case 'logout':
     			this.application.stop();
-    			this.application.ajaxRequest('app/Logout',{},function(){
+    			vcube.utils.ajaxRequest('app/Logout',{},function(){
     				location.reload(true);
     			});
     			break;

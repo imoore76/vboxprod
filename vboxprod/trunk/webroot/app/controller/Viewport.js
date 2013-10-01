@@ -6,16 +6,21 @@ Ext.define('vcube.controller.Viewport', {
     
     laodMask: null,
     
+    showMask: function() {
+    	this.loadMask.show();
+    },
+    hideMask: function() {
+    	this.loadMask.hide();
+    },
     /* Watch for events */
     init: function(){
-    	
-    	var loadMask = null;
     	
         this.control({
         	'viewport' : {
     		   afterrender: function(v) {
-    			   loadMask = new Ext.LoadMask({target:v,useMsg:false});
-    			   loadMask.show();
+    			   console.log(this);
+    			   this.loadMask = new Ext.LoadMask({target:v,useMsg:false});
+    			   this.loadMask.show();
     		   }
         	}
         	
@@ -23,13 +28,10 @@ Ext.define('vcube.controller.Viewport', {
                 
     	/* Application level events */
         this.application.on({
-            start: function() {
-            	loadMask.hide();
-            },
-			stop: function() {
-				loadMask.show();
-			}
+            start: this.hideMask,
+			stop: this.showMask,
+			scope: this
         });
 
-    } 	
+    }
 });

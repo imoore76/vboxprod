@@ -48,8 +48,8 @@ Ext.define('vcube.eventlistener', {
 			  
 		vcube.eventlistener.ws.onclose = function() {
 			if(vcube.eventlistener.running) {
+				vcube.app.fatalError("eventlistener lost connection to vcube server.");
 				vcube.eventlistener.running = false;
-				vcube.app.fireEvent('vcubeEventListenerConnectionLost');
 			}
 		};
 		  

@@ -6,6 +6,7 @@ from vcube.dispatchers import dispatcher_parent, jsonin, jsonout
 from vcube.models import Connector
 import pprint, cherrypy
 
+TAG_SERVER_METHODS = ['vboxGetMachines']
 
 class dispatcher(dispatcher_parent):
     
@@ -70,7 +71,6 @@ class dispatcher(dispatcher_parent):
         
         fn = os.path.basename(cherrypy.url())
         
-            
 
         jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
         
@@ -82,7 +82,13 @@ class dispatcher(dispatcher_parent):
             response = vcube.getInstance().vboxAction(str(kwargs['server']), fn, kwargs)
             
             for k in jsonResponse['data'].keys():
-                jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k]) 
+                jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k])
+                
+            """ Some items are tagged with connector id """
+            if fn in TAG_SERVER_METHODS and jsonResponse['data']['responseData']:
+                for idx, item in enumerate(jsonResponse['data']['responseData']):
+                    item.connector_id = kwargs['server']
+                    jsonResponse['data']['responseData'][idx] = item
                 
         except Exception as ex:
             

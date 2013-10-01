@@ -1,25 +1,19 @@
-Ext.define('vcube.AppJsonReader', {
+Ext.define('vcube.JsonReader', {
     extend: 'Ext.data.reader.Json',
-    alias: 'reader.AppJsonReader',
-    responseData: null,
-    /*
-    read: function (object) {
-    	//console.log(this);
-        //return {};
-        //object.Results = Ext.decode(object.responseText);
-        console.log(object.responseText);
-        //console.log(this.getResponseData(object));
-        var d =  this.callParent(object);
-        console.log(d);
-        return d;
-    },*/
-    
+    alias: 'reader.vcubeJsonReader',
+
     getResponseData: function(response) {
         var data, error;
- 
+         
         try {
-            data = Ext.decode(response.responseText).data.responseData;
-            this.responseData = data;
+            data = Ext.decode(response.responseText).data;
+            
+            // Handle errors and messages
+            vcube.utils.handleResponseMetaData(data);
+            
+            // Root will be responseData
+            data = data.responseData;
+            
             if(this.initialRoot) {
             	data = data[this.initialRoot];
             }

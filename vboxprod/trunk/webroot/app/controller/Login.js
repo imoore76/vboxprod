@@ -28,7 +28,7 @@ Ext.define('vcube.controller.Login', {
     	// only if submit buttin is enabled
     	if(this.getLoginButton().disabled) return;
     	
-    	this.application.ajaxRequest('app/login',{u:this.getUsernameField().getValue(),
+    	vcube.utils.ajaxRequest('app/login',{u:this.getUsernameField().getValue(),
     		
     		p:this.getPasswordField().getValue()},function(data){
     			

@@ -1,0 +1,17 @@
+NavTree
+	- already has stores and records
+	
+Data mediator
+	- don't try to track serverid, let app do this
+	
+App keeps VM list
+
+	yes - the app should be presented as a unified server. don't try to
+	do things in extjs.. it makes hard things easy and easy things impossible
+	
+	vmlist or just id -> server mapping?
+	
+	when server comes online - get list of vms
+	when server goes offline - remove list of vms
+	
+	vbox events must update internal list..

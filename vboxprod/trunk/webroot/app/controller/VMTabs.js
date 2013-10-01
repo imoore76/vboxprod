@@ -42,6 +42,7 @@ Ext.define('vcube.controller.VMTabs', {
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
 
+    	return;
     	
     	// Only load if VM is selected
     	if(!record || record.raw.data._type != 'vm')

@@ -4,6 +4,9 @@ Ext.define('vcube.controller.VMTabConsole', {
     	selector: 'viewport > MainPanel > VMTabs',
     	ref: 'VMTabsView'
     },{
+    	selector: 'viewport > NavTree',
+    	ref: 'NavTreeView'
+    },{
     	selector: 'viewport > MainPanel > VMTabs > VMTabConsole',
     	ref: 'VMTabConsoleView'
     }],
@@ -14,46 +17,39 @@ Ext.define('vcube.controller.VMTabConsole', {
     /* Watch for events */
     init: function(){
     	
-        /* Tree events */
         this.control({
-        	'viewport > MainPanel > VMTabs' : {
-        		vmloaded: this.vmloaded
-        	},
-        	'viewport > MainPanel > VMTabs > VMTabConsole' : {
-        		show: this.loadVMData
+	        'viewport > MainPanel > VMTabs > VMTabConsole' : {
+	        	show: this.onTabShow,
+	        	render: function() {
+	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();	        		
+	        	}
+	        },
+        	'viewport > NavTree' : {
+        		select: this.onSelectItem
         	}
         });
         
     },
 
-    /* Load cached data */
-    loadVMData: function() {
+    navTreeSelectionModel: null,
+    
+    onTabShow: function() {
     	
-    	/* data already loaded */
-    	if(!this.dirty) return;
-    	
-		// batch of updates
-		Ext.suspendLayouts();
-		this.vmloaded(this.getVMTabsView().vmData);
-		Ext.resumeLayouts(true);
-
     },
-   
-    /* VM data is loaded */
-    vmloaded: function(data) {
-
-    	var self = this;
-    	var consoleTab  = self.getVMTabConsoleView();
+    
+    onSelectItem: function(row, record) {
     	
-    	// If vm is inaccessible, disable this tab
-    	if(!data.accessible) {
-    		consoleTab.disable();
+    	// Only load if VM is selected
+    	if(!record || record.raw.data._type != 'vm')
     		return;
+
+    	if(!vcube.utils.vboxVMStates.isRunning(record.raw.data)) {
+    		this.getVMTabConsoleView().disable();
     	} else {
-    		consoleTab.enable();
+    		this.getVMTabConsoleView().enable();
     	}
     	
-    	return;
+    	if(!this.getVMTabDetailsView().isVisible()) return;
+    	
     }
-
 });

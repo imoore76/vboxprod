@@ -6,6 +6,9 @@ Ext.define('vcube.controller.VMTabDetails', {
     	selector: 'viewport > MainPanel > VMTabs',
     	ref: 'VMTabsView'
     },{
+    	selector: 'viewport > NavTree',
+    	ref: 'NavTreeView'
+    },{
     	selector: 'viewport > MainPanel > VMTabs > VMTabDetails',
     	ref: 'VMTabDetailsView'
     }],
@@ -27,30 +30,57 @@ Ext.define('vcube.controller.VMTabDetails', {
 			
 			if(vcube.view.VMTabDetails.vmDetailsSections[i].redrawOnEvents) {
 				Ext.each(vcube.view.VMTabDetails.vmDetailsSections[i].redrawOnEvents,function(event){
-					redrawEvents[event] = this.redrawEvent;
+					redrawEvents[event] = this.onRedrawEvent;
 				});
 			}
 
 		}
 		
-		console.log(redrawEvents);
-		this.application.on(Ext.apply(redrawEvents,{scope:this}));
-
-    	
-        /* Tree events */
+		
         this.control({
-        	'viewport > MainPanel > VMTabs' : {
-        		vmloaded: this.vmloaded
-        	},
-        	'viewport > MainPanel > VMTabs > VMTabDetails' : {
-        		show: this.loadVMData
+	        'viewport > MainPanel > VMTabs > VMTabDetails' : {
+	        	show: this.onTabShow,
+	        	render: function() {
+	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();	        		
+	        	}
+	        },
+        	'viewport > NavTree' : {
+        		select: this.onSelectItem
         	}
         });
         
+        
     },
     
+    /* Nav tree selection model cache */
+    navTreeSelectionModel : null,
+    
+    /* True if VM data displayed is not current */
+    dirty: true,
+    
+    /* When tab is shown */
+    onTabShow: function() {
+    	
+    	if(!this.dirty) return;
+    	
+    	this.showVMDetails(this.navTreeSelectionModel.getSelection()[0]);
+    	
+    },
+    
+    /* When item is selected */
+    onSelectItem: function(row, record) {
+    	
+    	this.dirty = true;
+    	
+    	// Only load if VM is selected
+    	if(!record || record.raw.data._type != 'vm')
+    		return;
+
+    	this.showVMDetails(record);
+    },
+        
     /* Redraw events */
-    redrawEvent : function(eventData) {
+    onRedrawEvent : function(eventData) {
     	
     	
     	console.log("here1");
@@ -97,21 +127,10 @@ Ext.define('vcube.controller.VMTabDetails', {
     },
 
     /* Load cached data */
-    loadVMData: function() {
+    showVMDetails: function(record) {
     	
-    	/* data already loaded */
-    	if(!this.dirty) return;
+    	var data = record.raw.data;
     	
-		// batch of updates
-		Ext.suspendLayouts();
-		this.vmloaded(this.getVMTabsView().vmData);
-		Ext.resumeLayouts(true);
-
-    },
-   
-    /* VM data is loaded */
-    vmloaded: function(data) {
-
     	var self = this;
     	var detailsTab  = self.getVMTabDetailsView();
     	
@@ -131,17 +150,33 @@ Ext.define('vcube.controller.VMTabDetails', {
     	}
     	self.dirty = false;
     	
-    	detailsTab.removeAll(true);
-    
-		// Details tab tables
-		for(var i in vcube.view.VMTabDetails.vmDetailsSections) {
-			
-			if(typeof(i) != 'string') continue;
-			
-			detailsTab.add(vcube.view.VMTabs.sectionTable(vcube.view.VMTabDetails.vmDetailsSections[i], data, i));
+    	    	
+    	detailsTab.setLoading(true);
+    	
+    	var self = this;
+    	
+    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
+    		
+    		detailsTab.setLoading(false);
+    		
+    		if(!detailsTab.isVisible()) return;
+    		if(self.navTreeSelectionModel.selected.length != 1 || self.navTreeSelectionModel.getSelection()[0].raw.data.id != data.id) return
+    		
+    		// batch of updates
+    		Ext.suspendLayouts();
+    	
+    		detailsTab.removeAll(true);
 
-		}
+			// Details tab tables
+			for(var i in vcube.view.VMTabDetails.vmDetailsSections) {
+				
+				if(typeof(i) != 'string') continue;
+				
+				detailsTab.add(vcube.view.VMTabs.sectionTable(vcube.view.VMTabDetails.vmDetailsSections[i], data, i));
+	
+			}
 
-
+			Ext.resumeLayouts(true);
+    	})
     }
 });

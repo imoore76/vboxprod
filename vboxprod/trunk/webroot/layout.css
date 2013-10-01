@@ -3,7 +3,7 @@ Details table
 */
 .vboxDetailsTable { padding: 2px; border-width: 0px; }
 .vmTabDetails .vboxDetailsTable { font-size: 90%; }
-.vmTabDetails .vboxDetailsTableHeader { white-space: nowrap; font-weight: bold; }
+.vmTabDetails .vboxDetailsTableHeader { white-space: nowrap; }
 .vboxDetailsIndented { margin-left: 20px; }
 .vboxDetailsTableData { margin-left: 4px; }
 

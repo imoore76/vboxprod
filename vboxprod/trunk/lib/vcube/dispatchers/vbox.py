@@ -6,8 +6,6 @@ from vcube.dispatchers import dispatcher_parent, jsonin, jsonout
 from vcube.models import Connector
 import pprint, cherrypy
 
-TAG_SERVER_METHODS = ['vboxGetMachines']
-
 class dispatcher(dispatcher_parent):
     
     def __init__(self):
@@ -52,7 +50,7 @@ class dispatcher(dispatcher_parent):
         """
         try:
             
-            response = vcube.getInstance().vboxAction(str(kwargs['server']), 'machineGetScreenShot', kwargs)
+            response = vcube.getInstance().vboxAction(kwargs['connector'], 'machineGetScreenShot', kwargs)
             
             cherrypy.response.headers['Content-Type'] = 'image/png'
 
@@ -76,19 +74,14 @@ class dispatcher(dispatcher_parent):
         
         try:
             
-            if not kwargs.get('server', None):
-                raise Exception("No VirtualBox server id specified")
+            if not kwargs.get('connector', None):
+                raise Exception("No VirtualBox connector id specified")
             
-            response = vcube.getInstance().vboxAction(str(kwargs['server']), fn, kwargs)
+            response = vcube.getInstance().vboxAction(kwargs['connector'], fn, kwargs)
             
             for k in jsonResponse['data'].keys():
                 jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k])
                 
-            """ Some items are tagged with connector id """
-            if fn in TAG_SERVER_METHODS and jsonResponse['data']['responseData']:
-                for idx, item in enumerate(jsonResponse['data']['responseData']):
-                    item.connector_id = kwargs['server']
-                    jsonResponse['data']['responseData'][idx] = item
                 
         except Exception as ex:
             

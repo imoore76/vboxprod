@@ -20,6 +20,8 @@ Ext.define('vcube.controller.NavTree', {
 			start : this.populateTree,
 			
 			MachineGroupChanged: this.onMachineGroupChanged,
+			MachineIconChanged: this.onMachineIconChanged,
+			MachineDataChanged: this.onMachineDataChanged,
 			
 			VMGroupAdded: this.onVMGroupAdded,
 			VMGroupRemoved: this.onVMGroupRemoved,
@@ -57,6 +59,8 @@ Ext.define('vcube.controller.NavTree', {
 	onMachineGroupChanged: function(eventData) {
 		
 		var targetVM = this.navTreeStore.getNodeById('vm-'+ eventData.machineId);
+		
+		if(!eventData.group) eventData.group = "0";
 
 		var targetGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.group);
 		
@@ -69,7 +73,25 @@ Ext.define('vcube.controller.NavTree', {
 		
 		targetGroup.sort(this.sortCmp, false);
 	},
+
+	onMachineDataChanged: function(eventData) {
+
+		var oldVM = this.navTreeStore.getNodeById('vm-' + eventData.machineId);
+		var newData = this.createVMNodeCfg(eventData.enrichmentData);
+		
+		for(var k in newData) {
+			if(typeof(k) == 'string')
+				oldVM.set(k, newData[k]);
+		}
+		oldVM.parentNode.sort(this.sortCmp, false);
+		
+	},
 	
+	onMachineIconChanged: function(eventData) {
+		var vmData = vcube.vmdatamediator.getVMData(eventData.machineId);
+		this.navTreeStore.getNodeById('vm-'+ eventData.machineId).set('icon', this.vmNodeIcon(vmData));
+	},
+
 	onVMGroupAdded: function(eventData) {
 		
 		appendTarget = (eventData.group.parent_id ? this.navTreeStore.getNodeById('vmgroup-'+ eventData.group.parent_id) : this.vmsNode);
@@ -153,8 +175,7 @@ Ext.define('vcube.controller.NavTree', {
 		Ext.each(droppedItems.records, function(item){
 			var itemid = item.raw.data.id;
 			if(item.raw.data._type == 'vm') {
-				var serverid = item.raw.data._serverid;
-				vcube.utils.ajaxRequest('vbox/machineSetGroup',{'group':targetId,'vm':itemid,'server':serverid});
+				vcube.utils.ajaxRequest('vbox/machineSetGroup',{'group':targetId,'vm':itemid,'connector':item.raw.data.connector_id});
 			} else {
 				vcube.utils.ajaxRequest('vmgroups/updateGroup',{'id':itemid,'parent_id':targetId});
 			}
@@ -189,6 +210,11 @@ Ext.define('vcube.controller.NavTree', {
 		};
 		
 	},
+	
+	vmNodeIcon : function(vmData) {
+		return (vmData.icon ? vmData.icon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(vmData.OSTypeId));
+	},
+	
 	createVMNodeCfg : function(vm) {
 
 		data = Ext.apply({},vm);
@@ -203,7 +229,7 @@ Ext.define('vcube.controller.NavTree', {
 				'<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state) +
 				'" height=16 width=16 valign=top style="margin-left: 24px"/></span>',*/
 			leaf : true,
-			icon : (data.icon ? data.icon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(data.OSTypeId)),
+			icon : this.vmNodeIcon(data),
 			iconCls : 'navTreeIcon',
 			id : 'vm-' + data.id,
 			data : data
@@ -308,7 +334,7 @@ Ext.define('vcube.controller.NavTree', {
 			cls : 'navTreeFolder',
 			leaf : false,
 			text : 'Virtual Machines',
-			id : 'vms',
+			id : 'vmgroup-0',
 			allowDrag: false,
 			data : { _type : 'vmsFolder'}
 		});

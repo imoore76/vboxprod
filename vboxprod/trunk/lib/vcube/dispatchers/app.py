@@ -10,6 +10,12 @@ import cherrypy
 class dispatcher(dispatcher_parent):
 
     @jsonout
+    def getVirtualMachines(self, *args, **kwargs):
+        return vcube.getInstance().getVirtualMachines()
+    
+    getVirtualMachines.exposed = True
+    
+    @jsonout
     def getSession(self, *args, **kwargs):
         data = {}
         for k,v in cherrypy.session.items():

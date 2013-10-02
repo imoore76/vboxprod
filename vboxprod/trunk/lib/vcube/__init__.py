@@ -113,16 +113,21 @@ class Application(threading.Thread):
     """
     heartbeatInterval = 20
     
+    """
+        VirtualMachines list
+    """
+    virtualMachines = {}
+    virtualMachinesLock = threading.Lock()
     
     
     def __init__(self):
 
         # Setup accounts interface
         import accounts
-        __import__('vcube.accounts.' + self.getConfigItem('vcube','accountsModule') )
-        self.accounts = getattr(accounts, self.getConfigItem('vcube','accountsModule')).interface()
+        __import__('vcube.accounts.' + self.getConfigItem('vcube', 'accountsModule'))
+        self.accounts = getattr(accounts, self.getConfigItem('vcube', 'accountsModule')).interface()
                     
-        threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
+        threading.Thread.__init__(self, name="%s-%s" % (self.__class__.__name__, id(self)))
         
 
     """
@@ -138,12 +143,12 @@ class Application(threading.Thread):
     """
         Run callbacks when an event is recieved
     """
-    def onEvent(self, handler):
+    def addEventHandler(self, handler):
         self.eventHandlers.append(handler)
         
     def pumpEvent(self, event):
 
-        pprint.pprint(event)
+        self.onEvent(event)
         
         for eh in self.eventHandlers:
             eh(event)
@@ -161,7 +166,7 @@ class Application(threading.Thread):
 
     def registerEventQueue(self, queue):
         
-        eqid = 'eventQueue-%s'%(id(queue),)
+        eqid = 'eventQueue-%s' % (id(queue),)
         
         self.eventQueuesLock.acquire(True)
         try:
@@ -186,9 +191,154 @@ class Application(threading.Thread):
         Place vboxConnectorAction in queue and wait
     """
     def vboxAction(self, connector_id, action, args):
-        return self.connectorActionPool[connector_id].vboxAction(action, args)
-        
+        return self.connectorActionPool[str(connector_id)].vboxAction(action, args)
     
+    """
+        Return internal list of virtual machines
+    """
+    def getVirtualMachines(self):
+        
+        vmList = []
+        self.virtualMachinesLock.acquire(True)
+        try:
+            vmList = list(self.virtualMachines.values())
+        finally:
+            self.virtualMachinesLock.release()
+
+        return vmList
+    
+    def onEvent(self, event):
+        
+
+        if event['eventType'] == 'connectorStateChanged':
+            """
+                Connector state change
+            """
+            
+            if event['status'] == 100:
+                """ Running """
+                
+                vmListAdded = []
+                
+                rpcVMList = self.vboxAction(event['connector_id'], 'vboxGetMachines', {})
+                
+                self.virtualMachinesLock.acquire(True)
+                try:
+                    
+                    for vm in rpcVMList['responseData']:
+                        
+                        vm['connector_id'] = event['connector_id']
+                        self.virtualMachines[vm['id']] = vm
+                        vmListAdded.append(vm)
+                    
+                    if len(vmListAdded):
+                        
+                        self.pumpEvent({
+                            'eventSource' : 'vcube',
+                            'eventType' : 'vcubeMachinesAdded',
+                            'connector_id' : event['connector_id'],
+                            'machines' : vmListAdded
+                        })
+
+                finally:
+                    self.virtualMachinesLock.release()
+            
+            else:
+                """ Not running """
+                
+                self.virtualMachinesLock.acquire(True)
+                vmListRemoved = []
+                try:
+                    vmIds = self.virtualMachines.keys()
+                    for id in vmIds:
+                        
+                        if self.virtualMachines[id]['connector_id'] == event['connector_id']:
+                            del self.virtualMachines[id]      
+                            vmListRemoved.append(id)      
+
+                    if len(vmListRemoved):
+                        
+                        self.pumpEvent({
+                            'eventSource' : 'vcube',
+                            'eventType':'vcubeMachinesRemoved',
+                            'connector' : event['connector_id'],
+                            'machines' : vmListRemoved
+                        })
+                                            
+                finally:
+                    self.virtualMachinesLock.release()
+            
+        elif event['eventType'] == 'MachineRegistered':
+            """
+                Machine added or removed from virtualbox server
+            """
+            
+            self.virtualMachinesLock.acquire(True)
+            try:
+                if event['registered']:
+                    vm = event['enrichmentData']
+                    vm['connector_id'] = 0
+                    self.virtualMachines[vm['id']] = vm
+                else:
+                    del self.virtualMachines[event['machineId']]
+            finally:
+                self.virtualMachinesLock.release()
+        
+        
+        elif event['eventType'] == 'SessionStateChanged':
+            """
+                Machine session state change
+            """
+            self.virtualMachinesLock.acquire(True)
+            try:
+                self.virtualMachines[event['machineId']]['sessionState']  = event['state']
+            finally:
+                self.virtualMachinesLock.release()
+                
+        elif event['eventType'] == 'MachineStateChanged':
+            """
+                Machine state changed
+            """
+            self.virtualMachinesLock.acquire(True)
+            try:
+                self.virtualMachines[event['machineId']]['state']  = event['state']
+                self.virtualMachines[event['machineId']]['lastStateChange'] = event['enrichmentData']['lastStateChange']
+            finally:
+                self.virtualMachinesLock.release()
+        
+        elif event['eventType'] == 'MachineDataChanged':
+            """
+                Any type of machine data changed
+            """
+            try:
+                self.virtualMachinesLock.acquire(True)
+                try:
+                    self.virtualMachines[event['machineId']].update(event['enrichmentData'])
+                finally:
+                    self.virtualMachinesLock.release()
+            finally:
+                pass
+        
+        elif event['eventType'] == 'MachineGroupChanged':
+            """
+                Group Changed
+            """
+            self.virtualMachinesLock.acquire(True)
+            try:
+                self.virtualMachines[event['machineId']]['group_id']  = event['group']
+            finally:
+                self.virtualMachinesLock.release()
+
+        elif event['eventType'] == 'MachineIconChanged':
+            """
+                Icon changed
+            """
+            self.virtualMachinesLock.acquire(True)
+            try:
+                self.virtualMachines[event['machineId']]['icon']  = event['icon']
+            finally:
+                self.virtualMachinesLock.release()
+            
     def onConnectorStateChange(self, cid, state, message=''):
         
         """
@@ -197,7 +347,7 @@ class Application(threading.Thread):
         self.pumpEvent({
             'eventSource' : 'vcube',
             'eventType':'connectorStateChanged',
-            'connector' : cid,
+            'connector_id' : cid,
             'status' : state,
             'status_name' : STATES_TO_TEXT.get(state, 'Unknown'),
             'message' : message
@@ -225,7 +375,7 @@ class Application(threading.Thread):
         try:
             if self.running:
                 
-                logger.info("Adding connector %s" %(connector['name'],))
+                logger.info("Adding connector %s" % (connector['name'],))
                 
                 cid = str(connector['id'])
                 
@@ -239,7 +389,7 @@ class Application(threading.Thread):
                 def sendEvent(message):
                     
                     try:
-                        message['event']['serverId'] = cid
+                        message['event']['connector_id'] = cid
                         message['event']['eventSource'] = 'vbox'
                         self.pumpEvent(message['event'])
                     
@@ -325,7 +475,7 @@ class Application(threading.Thread):
             for i in range(0, self.heartbeatInterval):
                 if not self.running: break
                 time.sleep(1)
-            self.pumpEvent({'eventType':'heartbeat','eventSource':'vcube'})
+            self.pumpEvent({'eventType':'heartbeat', 'eventSource':'vcube'})
 
  
         self.connectorsLock.acquire(True)
@@ -333,12 +483,12 @@ class Application(threading.Thread):
             
             """ Stop event listener clients """
             for cid, c in self.connectorEventListeners.iteritems():
-                logger.info("Stopping connector client %s" %(cid,))
+                logger.info("Stopping connector client %s" % (cid,))
                 c.stop()
                 
             """ Stop action pool clients """
             for cid, c in self.connectorActionPool.iteritems():
-                logger.info("Stopping connector client %s" %(cid,))
+                logger.info("Stopping connector client %s" % (cid,))
                 c.stop()
 
             """ Join event listeners """

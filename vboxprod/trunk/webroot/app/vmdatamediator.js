@@ -23,8 +23,7 @@ Ext.define('vcube.vmdatamediator', {
 	promises : {
 		'getVMList' : null,
 		'getVMDetails':{},
-		'getVMRuntimeData':{},
-		'getVMsFromServer': {}
+		'getVMRuntimeData':{}
 	},
 	
 	/* Holds Basic VM data */
@@ -36,9 +35,6 @@ Ext.define('vcube.vmdatamediator', {
 	/* Holds VM runtime data */
 	vmRuntimeData : {},
 		
-	/* Holds server ids */
-	gotVMsFromServers : {},
-
 	/* Expire cached promise / data */
 	expireVMDetails: function(vmid) {
 		vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
@@ -56,22 +52,12 @@ Ext.define('vcube.vmdatamediator', {
 		vcube.vmdatamediator.vmData = {};
 		vcube.vmdatamediator.vmRuntimeData = {};
 		vcube.vmdatamediator.vmDetailsData = {};
-		vcube.vmdatamediator.gotVMsFromServers = {};
 	},
 	
 	stop: function() {
+		vcube.vmdatamediator.running = false;
 		vcube.vmdatamediator.expireAll();
 	},
-	
-	/*
-	 * Data Stores
-	 */
-	stores: {
-		'VirtualMachines': null,
-		'Servers':null,
-		'VMGroups':null
-	},
-	
 	
 	/**
 	 * Get basic vm data
@@ -91,69 +77,10 @@ Ext.define('vcube.vmdatamediator', {
 		
 	},
 	
-	
 	/**
-	 * Start data mediator
+	 * Watch for events and update data
 	 */
-	start: function() {
-		
-		vcube.vmdatamediator.running = true;
-		
-		vcube.vmdatamediator.started = Ext.create('Ext.ux.Deferred');
-		
-		/*
-		 * Create stores 
-		 */
-		vcube.vmdatamediator.stores.VMGroups = Ext.create('Ext.data.Store', {
-		    model: 'vcube.model.VMGroup',
-		    proxy: {
-		        type: 'vcubeAjax',
-		        url : 'vmgroups/getGroups'
-		    },
-		    autoLoad: false,
-		    listeners: {
-		    	load: function(store,records,successful) {
-		    		if(!successful) {
-		    			vcube.app.fatalError("Failed to load groups.");
-		    			return;
-		    		}
-		    		console.log(successful);
-		    		console.log("adding");
-		    		console.log(records);
-		    	}
-		    }
-
-		});
-		
-		vcube.vmdatamediator.stores.Servers = Ext.create('Ext.data.Store', {
-		    model: 'vcube.model.Connector',
-		    proxy: {
-		        type: 'vcubeAjax',
-		        url : 'connectors/getConnectors'
-		    },
-		    autoLoad: false,
-		    listeners: {
-		    	load: function(store,records,successful) {
-		    		if(!successful) {
-		    			vcube.app.fatalError("Failed to load connectors.");
-		    			return;
-		    		}
-		    		console.log(successful);
-		    		console.log("adding");
-		    		console.log(records);
-		    	}
-		    }
-		});
-		
-		vcube.vmdatamediator.stores.VirtualMachines = Ext.create('Ext.data.Store', {
-		    model: 'vcube.model.VirtualMachine',
-		    proxy: {
-		        type: 'vcubeAjax',
-		        url : 'vbox/vboxGetMachines'
-		    },
-		    autoLoad: false
-		});
-
+	watchEvents: function() {
 		
 		/*
 		 * 
@@ -316,14 +243,13 @@ Ext.define('vcube.vmdatamediator', {
 			},
 			
 			'vboxMachineGroupChanged' : function(eventData) {
-				if(!vcube.datamediator.vmData[eventData.machineId]) return
-				vcube.datamediator.vmData[eventData.machineId].group_id = int(eventData.group)
-				
+				if(!vcube.vmdatamediator.vmData[eventData.machineId]) return
+				vcube.vmdatamediator.vmData[eventData.machineId].group_id = eventData.group				
 			},
 
 			'vboxMachineIconChanged' : function(eventData) {
-				if(!vcube.datamediator.vmData[eventData.machineId]) return
-				vcube.datamediator.vmData[eventData.machineId].icon = eventData.icon
+				if(!vcube.vmdatamediator.vmData[eventData.machineId]) return
+				vcube.vmdatamediator.vmData[eventData.machineId].icon = eventData.icon
 			},
 
 			
@@ -351,27 +277,25 @@ Ext.define('vcube.vmdatamediator', {
 
 		});
 
+	},
+	
+	/**
+	 * Start data mediator
+	 */
+	start: function() {
 		
+		vcube.vmdatamediator.running = true;
 		
-		vcube.vmdatamediator.stores.Servers.on('load',function(){
-			
-			vcube.vmdatamediator.stores.VMGroups.on('load',function(){
-				vcube.vmdatamediator.started.resolve();
-			});
-			vcube.vmdatamediator.stores.VMGroups.load();
-			
-			var validServers = vcube.vmdatamediator.stores.Servers.queryBy(function(record){
-				return (record.get('status') == 100); 
-			});
-			Ext.each(validServers, function(serverRec) {
-				vcube.utils.ajaxRequest('vbox/vboxGetMachines',{'server':serverRec.get('id')},function(vmlist){
-					vcube.vmdatamediator.stores.VirtualMachines.loadData(vmlist);
-				});
-			});
-			
+		vcube.vmdatamediator.watchEvents();
+		
+		vcube.vmdatamediator.started = Ext.create('Ext.ux.Deferred');
+		
+		vcube.utils.ajaxRequest('app/getVirtualMachines',{},function(vmlist){
+			for(var i = 0; i < vmlist.length; i++) {
+				vcube.vmdatamediator.vmData[vmlist[i].id] = vmlist[i]				
+			}
+			vcube.vmdatamediator.started.resolve();
 		});
-		vcube.vmdatamediator.stores.Servers.load();
-
 		
 		return vcube.vmdatamediator.started;
 		
@@ -405,7 +329,7 @@ Ext.define('vcube.vmdatamediator', {
 		// Data exists
 		if(vcube.vmdatamediator.vmDetailsData[vmid] && !forceRefresh) {
 			vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
-			return vcube.vmdatamediator.vmDetailsData[vmid];
+			return Ext.apply({},vcube.vmdatamediator.vmDetailsData[vmid], vcube.vmdatamediator.vmData[vmid]);
 		}
 		
 		// Promise does not yet exist?
@@ -413,7 +337,7 @@ Ext.define('vcube.vmdatamediator', {
 			
 			vcube.vmdatamediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
 
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'server':vcube.vmdatamediator.vmData[vmid]._serverid})).done(function(d){
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'connector':vcube.vmdatamediator.vmData[vmid].connector_id})).done(function(d){
 				
 				vcube.vmdatamediator.vmDetailsData[d.id] = d;
 				vcube.vmdatamediator.promises.getVMDetails[vmid].resolve(d);
@@ -467,18 +391,7 @@ Ext.define('vcube.vmdatamediator', {
 	 * @returns promise
 	 */
 	getVMDataCombined : function(vmid) {
-		
-		// Special case for 'host'
-		if(vmid == 'host') {
-			var def = Ext.create('Ext.ux.Deferred');
-			Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid)).done(function(d){
-				def.resolve(d);
-			}).fail(function(){
-				def.reject();
-			});
-			return def;
-		}
-		
+				
 		if(!vcube.vmdatamediator.vmData[vmid]) return;
 		
 		var runtime = function() { return {};};
@@ -502,13 +415,6 @@ Ext.define('vcube.vmdatamediator', {
 	 * @returns {Object} promise
 	 */
 	refreshVMData : function(vmid) {
-		
-		// Special case for host
-		if(vmid == 'host') {
-			$('#vboxPane').trigger('vboxMachineDataChanged', [{machineId:'host'}]);
-			$('#vboxPane').trigger('vboxEvents', [[{eventType:'OnMachineDataChanged',machineId:'host'}]]);
-			return;
-		}
 		
 		if(!vcube.vmdatamediator.vmData[vmid]) return;
 		

@@ -23,9 +23,6 @@ Ext.application({
     controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','Menubar',
                   'VMTabs','VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabConsole'],
     
-    /* Models */
-    models: ['Connector','VMGroup','VirtualMachine'],
-    
     /* Login window */
     views: ['Login'],
     

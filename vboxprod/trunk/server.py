@@ -117,7 +117,7 @@ def main(argv = sys.argv):
     vcube.start()
     
     # Emit
-    vcube.getInstance().onEvent(pumpEvent)
+    vcube.getInstance().addEventHandler(pumpEvent)
 
 
     # Flash policy server to allow flash

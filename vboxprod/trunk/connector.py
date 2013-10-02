@@ -55,7 +55,6 @@ vboxSubscribeEventList = [ vboxMgr.constants.VBoxEventType_OnMachineStateChanged
     vboxMgr.constants.VBoxEventType_OnHostPCIDevicePlug,
     vboxMgr.constants.VBoxEventType_OnVBoxSVCAvailabilityChanged,
     vboxMgr.constants.VBoxEventType_OnBandwidthGroupChanged,
-    vboxMgr.constants.VBoxEventType_OnGuestMonitorChanged,
     vboxMgr.constants.VBoxEventType_OnStorageDeviceChanged
  ]
 
@@ -92,16 +91,14 @@ def _machineGetBaseInfo(machine):
     if machine.accessible:
         
         return { 
+            'id' : machine.id,
             'name' :machine.name,
             'state' : vboxEnumToString("MachineState", machine.state),
             'group_id' : machine.getExtraData(vboxConnector.groupKey),
             'OSTypeId' : machine.OSTypeId,
             'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
             'lastStateChange' : long(machine.lastStateChange)/1000,
-            'id' : machine.id,
-            'currentStateModified' : bool(machine.currentStateModified),
             'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
-            'currentSnapshotName' : (machine.currentSnapshot.name if machine.currentSnapshot else None),
             'icon' : machine.getExtraData(vboxConnector.iconKey),
             'accessible' : True
         }
@@ -122,16 +119,14 @@ def _machineGetBaseInfo(machine):
             name = machine.id
             
         return {
+            'id' : machine.id,
             'name' : name,
             'state' : 'Inaccessible',
             'group_id' : 0,
             'OSTypeId' : '',
             'OSTypeDesc' : '',
             'lastStateChange' : 0,
-            'id' : machine.id,
-            'currentStateModified' : False,
             'sessionState' : 'Unknown',
-            'currentSnapshotName' : '',
             'icon' : '',
             'accessible' : False,
             'accessError': {

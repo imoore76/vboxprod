@@ -372,7 +372,9 @@ Ext.define('vcube.vmdatamediator', {
 			
 			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
 
-			Ext.ux.Deferred.when(vboxAjaxRequest('machineGetRuntimeData',{vm:vmid})).done(function(d){
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',{
+				vm:vmid,
+				connector:vcube.vmdatamediator.vmData[vmid].connector_id})).done(function(d){
 				vcube.vmdatamediator.vmRuntimeData[d.id] = d;
 				if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
 					vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolve(d);
@@ -395,13 +397,13 @@ Ext.define('vcube.vmdatamediator', {
 		if(!vcube.vmdatamediator.vmData[vmid]) return;
 		
 		var runtime = function() { return {};};
-		if(vboxVMStates.isRunning({'state':vcube.vmdatamediator.vmData[vmid].state}) || vboxVMStates.isPaused({'state':vcube.vmdatamediator.vmData[vmid].state})) {
+		if(vcube.utils.vboxVMStates.isRunning({'state':vcube.vmdatamediator.vmData[vmid].state}) || vcube.utils.vboxVMStates.isPaused({'state':vcube.vmdatamediator.vmData[vmid].state})) {
 			runtime = vcube.vmdatamediator.getVMRuntimeData(vmid);
 		}
 		
 		var def = Ext.create('Ext.ux.Deferred');
 		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
-			def.resolve($.extend(true,{},d1,d2,d3));
+			def.resolve(Ext.Object.merge({},d1,d2,d3));
 		}).fail(function(){
 			def.reject();
 		});

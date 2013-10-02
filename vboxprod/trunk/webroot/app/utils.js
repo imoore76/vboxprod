@@ -6,6 +6,13 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
+	 * Determine if this is the only VM selected
+	 */
+	isThisVMSelected: function(vmid, selectionModel) {
+		return (vmid && selectionModel.selected.length == 1 && selectionModel.getSelection()[0].raw.data.id == vmid);
+	},
+	
+	/**
 	 * Send ajax request
 	 */
     ajaxRequest: function(ajaxURL, addparams, success_callback, failure_callback, context) {

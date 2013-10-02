@@ -210,9 +210,9 @@ Ext.define('vcube.view.VMTabSummary', {
     				width: '100%',
     				tpl: new Ext.XTemplate('<table style="border:0px;border-spacing:0px;width:100%;">'+
     						'<tr valign="top">'+
-    						'<td width=100%><h3 align="left" style="margin-left: 10px">{name}</h3><div>{[Ext.String.htmlEncode(description)]}</div></td>'+
+    						'<td width=100%><h3 align="left" style="margin-left: 10px">{name}</h3><div>{[Ext.String.htmlEncode(values.description)]}</div></td>'+
     						'<td style="border: 0px solid #000; width: 120px;"><div align="center">'+
-    						'<img src="{[Ext.String.htmlEncode((values.icon ? values.icon : "images/vbox/blank.gif"))]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
+    						'<img src="{[(values.icon ? values.icon : "images/vbox/blank.gif")]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
     						'</td>'+
     				'</tr></table>')        			
     			},{

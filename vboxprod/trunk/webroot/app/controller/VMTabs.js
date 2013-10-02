@@ -21,6 +21,7 @@ Ext.define('vcube.controller.VMTabs', {
     	ref: 'VMTabsView'
     }],
     
+    
     /* Watch for events */
     init: function(){
     	

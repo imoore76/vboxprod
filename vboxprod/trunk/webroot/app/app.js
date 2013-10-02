@@ -15,7 +15,7 @@ Ext.application({
     autoCreateViewport: true,
     
     /* Various utils and scripts */
-    requires: ['vcube.JsonReader', 'vcube.AjaxProxy', 'Ext.ux.Deferred',
+    requires: ['vcube.jquery','vcube.JsonReader', 'vcube.AjaxProxy', 'Ext.ux.Deferred',
                'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener',
                'vcube.previewbox'],
     
@@ -67,8 +67,8 @@ Ext.application({
     	
     	if(self.session && self.session.user) {
     		
-    		Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
-    			Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
+    		vcube.jquery.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
+    			vcube.jquery.when(vcube.vmdatamediator.start()).done(function(){
     				if(!self.died)
     					self.fireEvent('start');    
     			});    			

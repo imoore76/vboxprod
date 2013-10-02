@@ -3,6 +3,7 @@ import sys, os, time, traceback, threading, Queue, base64
 import signal
 import ConfigParser
 import math
+import inspect
 
 import socket
 import SocketServer
@@ -518,9 +519,13 @@ class vboxConnector(object):
     def unregisterClient(self, client):
         global vboxMgr
         localData = threading.local()
-        if getattr(localData,'vboxInit',False) != True:
-            vboxMgr.deinitPerThread()
-        localData.vboxInit = False
+        if not getattr(localData,'vboxInit',False):
+            try:
+                vboxMgr.deinitPerThread()
+            except Exception as e:
+                logger.exception(e)
+            finally:
+                localData.vboxInit = False
         
     """
         Cleanup after request
@@ -2395,33 +2400,16 @@ class vboxConnector(object):
 
             """ @machine IMachine """
             machine = self.vbox.findMachine(args['vm'])
-
-
+            
+            # just return blank data if machine is not accessible
+            if not machine.accessible: return {}
+            
             # For correct caching, always use id even if a name was passed
             args['vm'] = machine.id
 
-            # Check for accessibility
-            if not machine.accessible:
-
-
-                return {
-                    'name' : machine.name,
-                    'state' : 'Inaccessible',
-                    'OSTypeId' : 'Other',
-                    'id' : machine.id,
-                    'sessionState' : 'Inaccessible',
-                    'accessible' : 0,
-                    'accessError' : {
-                        'resultCode' : self._util_resultCodeText(machine.accessError.resultCode),
-                        'component' : machine.accessError.component,
-                        'text' : machine.accessError.text}
-                }
-
         # Basic data
         data = self._machineGetDetails(machine)
-        
-        if not machine.accessible: return data
-
+                
         # Network Adapters
         data['networkAdapters'] = self._machineGetNetworkAdapters(machine)
 
@@ -4243,6 +4231,9 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
     file = None
     heartbeatTimer = None
     
+    service = None
+    serviceObj = None
+
     
     def close(self):
         """ 
@@ -4261,19 +4252,38 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
             Send a message to the connected client
         """
         
-        try:
-            response = json.dumps(message)
-        except:
-            traceback.format_exc()
-            return
+        # RPC calls yield a response
+        if inspect.isgeneratorfunction(message):
 
-        self.sendLock.acquire(True)
-
-        try:
-            self.request.sendall(response+"\n")
-        finally:
-            self.sendLock.release()
+            self.sendLock.acquire(True)
             
+            try:
+                for msg in message():
+                    try:
+                        response = json.dumps(msg)
+                    except Exception as e:
+                        traceback.format_exc()
+                        continue
+                    self.request.sendall(response+"\n")
+            finally:
+                self.sendLock.release()
+
+        # Non generator
+        else:
+                        
+            try:
+                response = json.dumps(message)
+            except:
+                traceback.format_exc()
+                return
+    
+            self.sendLock.acquire(True)
+    
+            try:
+                self.request.sendall(response+"\n")
+            finally:
+                self.sendLock.release()
+    
     def handle(self):
         """
             Handle requests. Main loop
@@ -4322,10 +4332,6 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
 
         try:
             
-            serviceObj = None
-            service = ''
-            clientRegistered = False
-            
             # Start heartbeat
             if self.heartbeat is None:
                 self.heartbeat = heartbeatrunner(self)
@@ -4336,161 +4342,172 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                 RPC requests from the connected client
             """
             while True:
-                
-                request = self.file.readline()
-                response = {}
-                
+
                 try:
                     
+                    self.requestStr = self.file.readline()
+                    
+                    
                     # EOF - client disconnected
-                    if len(request) == 0 or request[-1] != "\n":
+                    if len(self.requestStr) == 0 or self.requestStr[-1] != "\n":
                         break
                     
                     # Empty line?
-                    if request.strip() == '': continue
+                    if self.requestStr.strip() == '': continue
                     
                     try:
-                        message = json.loads(request)
+                        self.message = json.loads(self.requestStr)
                     except:
-                        raise Exception("Invalid json request: %s" %(request))
+                        raise Exception("Invalid json request: %s" %(self.requestStr))
                     
+    
                     """
-                        Initial response dict
+                        A generator function ensures that no other
+                        messages will be sent while a request is in progress
                     """
-                    response = {
-                        'requestId' : message.get('requestId',''),
-                        'errors': [],
-                        'messages' : [],
-                        'success' : False
-                    }
-
-                                        
-                    """
-                        RPC messages are a simple call / response
-                    """
-                    if message.get('msgType', '') == 'rpc':
+                    def handleResponse():
+                        
+                        """
+                            Initial response dict
+                        """
+                        response = {
+                            'requestId' : self.message.get('requestId',''),
+                            'errors': [],
+                            'messages' : [],
+                            'success' : False
+                        }
                         
                         
-                        method = message.get('method', None)
-                        if not method:
-                            raise Exception("No method specified in rpc call: %s" %(request,))
-                        
-                        """ Set msg type """
-                        response.update({'msgType' : '%s_response'%(method,)})
-                        
-                        
-                        if method == 'setService':
+                        try:      
                             """
-                                Set a service for this connection
-                            
+                                RPC messages are a simple call / response
                             """
-                            
-                            if serviceObj is not None:
-                                raise Exception("Service has already been set for this connection")
-                            
-                            service = message.get('args',{}).get('service', None)
-                            if not service:
-                                raise Exception('No service specified') 
-
-                        
-                            """ Create or get instance of service"""
-                            serviceInstance = self.server.getService(service)
-                            if not serviceInstance:
-                                raise Exception("Unknown service: %s" %(service,))
-                            
-                            if isinstance(serviceInstance, type):
-                                serviceObj = serviceInstance()
-                            else:
-                                serviceObj = serviceInstance
-                            
-                            response.update({
-                                'responseData' : True,
-                                'errors': serviceObj.errors if hasattr(serviceObj, 'errors') else [],
-                                'messages': serviceObj.messages if hasattr(serviceObj, 'messages') else [],
-                                'success': True,
-                            })
-                        
-                        
-                        elif method == 'registerClient':
-                            """
-                            
-                                Register client with service
+                            if self.message.get('msgType', '') == 'rpc':
                                 
-                            """
-                            
-                            methodResponse = serviceObj.registerClient(self)
-                            clientRegistered = True
-                            response.update({
-                                'responseData' : methodResponse,
-                                'success': True
-                            })
-
-
-                            
-                        else:
-                            
-                            """
-                                Direct method call
                                 
-                            """
-                            if not serviceObj:
-                                raise Exception("A service has not been set for this connection")
-                            
-                            if not getattr(serviceObj, 'remote_%s' %(method,), None):
-                                raise Exception("Service '%s' has no method named '%s'" %(service, method))
-                            
-                            try:
-                                methodResponse = getattr(serviceObj, 'remote_%s' %(method,))(message.get('args',{}))
+                                method = self.message.get('method', None)
+                                if not method:
+                                    raise Exception("No method specified in rpc call: %s" %(self.requestStr,))
                                 
-                                # Format exceptions
-                                errors = []
-                                for e in serviceObj.errors:
-                                    errors.append({
-                                        'error': '%s' %(str(e),),
-                                        'details': e[1]
-                                    })
+                                """ Set msg type """
+                                response.update({'msgType' : '%s_response'%(method,)})
+                                
+                                
+                                if method == 'setService':
+                                    """
+                                        Set a service for this connection
                                     
-                                response.update({
-                                    'responseData' : methodResponse,
-                                    'errors': errors,
-                                    'messages': serviceObj.messages,
-                                    'success': True
-                                })
+                                    """
+                                    
+                                    if self.serviceObj is not None:
+                                        raise Exception("Service has already been set for this connection")
+                                    
+                                    self.service = self.message.get('args',{}).get('service', None)
+                                    if not self.service:
+                                        raise Exception('No service specified') 
+        
                                 
-                                #logger.debug("%s_response: %s" %(method, methodResponse))
+                                    """ Create or get instance of service"""
+                                    serviceInstance = self.server.getService(self.service)
+                                    if not serviceInstance:
+                                        raise Exception("Unknown service: %s" %(self.service,))
+                                    
+                                    if isinstance(serviceInstance, type):
+                                        self.serviceObj = serviceInstance()
+                                    else:
+                                        self.serviceObj = serviceInstance
+                                    
+                                    response.update({
+                                        'responseData' : True,
+                                        'errors': self.serviceObj.errors if hasattr(self.serviceObj, 'errors') else [],
+                                        'messages': self.serviceObj.messages if hasattr(self.serviceObj, 'messages') else [],
+                                        'success': True,
+                                    })
                                 
-                            except Exception as ex:
                                 
-                                logger.exception(str(ex))
-                                
-                                response.update({
-                                    'responseData' : False,
-                                    'errors': [{'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
-                                    'messages': serviceObj.messages
-                                })
+                                elif method == 'registerClient':
+                                    """
+                                    
+                                        Register client with service
+                                        
+                                    """
+                                    
+                                    methodResponse = self.serviceObj.registerClient(self)
+                                    response.update({
+                                        'responseData' : methodResponse,
+                                        'success': True
+                                    })
+        
+        
+                                    
+                                else:
+                                    
+                                    """
+                                        Direct method call
+                                        
+                                    """
+                                    if not self.serviceObj:
+                                        raise Exception("A service has not been set for this connection")
+                                    
+                                    if not getattr(self.serviceObj, 'remote_%s' %(method,), None):
+                                        raise Exception("Service '%s' has no method named '%s'" %(self.service, method))
+                                    
+                                    try:
+                                        methodResponse = getattr(self.serviceObj, 'remote_%s' %(method,))(self.message.get('args',{}))
+                                        
+                                        # Format exceptions
+                                        errors = []
+                                        for e in self.serviceObj.errors:
+                                            errors.append({
+                                                'error': '%s' %(str(e),),
+                                                'details': e[1]
+                                            })
+                                            
+                                        response.update({
+                                            'responseData' : methodResponse,
+                                            'errors': errors,
+                                            'messages': self.serviceObj.messages,
+                                            'success': True
+                                        })
+                                        
+                                        #logger.debug("%s_response: %s" %(method, methodResponse))
+                                        
+                                    except Exception as ex:
+                                        
+                                        logger.exception(str(ex))
+                                        
+                                        response.update({
+                                            'responseData' : False,
+                                            'errors': [{'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
+                                            'messages': self.serviceObj.messages
+                                        })
+        
+                                    finally:
+                                        self.serviceObj.finishRequest()
+                            
+                            else:
+                                raise Exception("Invalid message type: %s" %(self.message.get('msgType',''),))
+                            
+                            
+                        except Exception as ex:
+                            response.update({
+                                'msgType':'rpc_exception',
+                                'details': traceback.format_exc(),
+                                'error': str(ex)
+                            })
+                            
+                        finally:
+                            yield response
+    
+                        
+                    self.send(handleResponse)
 
-                            finally:
-                                serviceObj.finishRequest()
-                    
-                    else:
-                        raise Exception("Invalid message type: %s" %(message.get('msgType',''),))
-                    
-                    
-                except Exception as ex:
-                    response.update({
-                        'msgType':'rpc_exception',
-                        'details': traceback.format_exc(),
-                        'error': str(ex)
-                    })
-                    
-
-                self.send(response)
                 
-                
-        except:
-            # assume connection closed
-            pass
-         
+                except Exception as e:
+                    # assume connection closed
+                    #logger.exception(e)
+                    break
+    
         finally:
             
             # Stop heartbeat
@@ -4499,14 +4516,12 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                 self.heartbeat.join()
             
             # Unregister client?
-            if serviceObj:
-                serviceObj.unregisterClient(self)
-                
-                
-        self.server.removeClient(clientId)
+            if self.serviceObj:
+                self.serviceObj.unregisterClient(self)
+                    
+                    
+            self.server.removeClient(clientId)
 
-                
-    
             
 """
     RPC server
@@ -4628,7 +4643,10 @@ class vboxEventService(threading.Thread):
             return False
         try:
             id = "%s:%s" %(client.client_address)
+            if self.clients.get(id, None):
+                raise Exception("Client already registered")
             self.clients[id] = client
+            return True
         finally:
             self.clientLock.release()
         

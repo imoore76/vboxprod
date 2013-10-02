@@ -41,6 +41,7 @@ Ext.define('vcube.view.VMTabSummary', {
 				condition: function(vm) {
 					return vm.accessible;
 				},
+				redrawOnEvents: ['SessionStateChanged','MachineStateChanged','SnapshotTaken','SnapshotChanged','SnapshotDeleted'],
 				rows: [{
 					title: 'State',
 					renderer: function(vm) {
@@ -80,14 +81,15 @@ Ext.define('vcube.view.VMTabSummary', {
 					bodyStyle: { background: '#fff' },
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
+				redrawOnEvents: ['CPUChanged','CPUExecutionCapChanged'],
 				condition: function(vm) {
 					return vm.accessible;
 				},
 				rows: [{
-					title: 'CPU(s)',
+					title: vcube.utils.trans('CPU(s)'),
 					attrib: 'CPUCount'
 				},{
-					title: 'Execution Cap',
+					title: vcube.utils.trans('Execution Cap'),
 					condition : function(vm) {
 						return parseInt(vm.CPUExecutionCap) != 100;
 					},
@@ -95,7 +97,7 @@ Ext.define('vcube.view.VMTabSummary', {
 						return vm.CPUExecutionCap + '%';
 					}
 				},{
-					title: 'Memory',
+					title: vcube.utils.trans('Memory'),
 					renderer: function(vm) {
 						return vm.memorySize + ' MB';
 					}

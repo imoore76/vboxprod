@@ -34,46 +34,17 @@ Ext.define('vcube.controller.VMTabs', {
         
     },
     
-    /* Holds preview dimension cache */
-    resolutionCache : {},
-    
-    /* preview timeers */
-    previewTimers : {},
-    
     /* An item is selected */
     selectItem: function(row,record,index,eOpts) {
 
-    	return;
-    	
     	// Only load if VM is selected
     	if(!record || record.raw.data._type != 'vm')
     		return;
-    	
-    	var tabPanel = this.getVMTabsView();
-    	if(record.raw.data.state == 'Inaccessible') {
-    		tabPanel.fireEvent('vmloaded', record.raw.data);
-    		return;
+
+    	// Only show summary tab if this is not accessible
+    	if(vcube.vmdatamediator.getVMData(record.raw.data.id).state == 'Inaccessible') {
+    		this.getVMTabsView().setActiveTab(0);
     	}
-    	
-    	tabPanel.setLoading(true);
-    	
-    	var self = this;
-    	
-    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
-    		
-    		// batch of updates
-    		Ext.suspendLayouts();
-    		
-    		Ext.apply(data, record.raw.data);
-    		tabPanel.vmData = data;
-    		tabPanel.fireEvent('vmloaded', data);
-    		
-    		Ext.resumeLayouts(true);
-    		
-    		tabPanel.setLoading(false);
-
-    	});
-
 
     }
     

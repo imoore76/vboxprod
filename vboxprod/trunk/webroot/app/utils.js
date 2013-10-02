@@ -27,7 +27,7 @@ Ext.define('vcube.utils', {
     	if(!addparams) addparams = {};
     	
     	// Deferred object will be returned
-    	var promise = Ext.create('Ext.ux.Deferred');
+    	var promise = vcube.jquery.Deferred();
     	
     	Ext.Ajax.request({
     		
@@ -47,7 +47,7 @@ Ext.define('vcube.utils', {
     			// Resolve or reject
     			if(data && data.responseData !== null) {
     				
-    				promise.resolve(data.responseData, addparams, context);
+    				promise.resolveWith(this, data.responseData, addparams, context);
     				
     				if(success_callback) {
     					success_callback(data.responseData, addparams, context);    				
@@ -63,7 +63,7 @@ Ext.define('vcube.utils', {
 		   }
     	});
     	
-    	return promise;
+    	return promise.promise();
     },
 
 	/**
@@ -712,7 +712,7 @@ Ext.define('vcube.utils', {
 			
 			for(var i = 0; i < vmlist.length; i++) {
 				for(var a = 0; a < states.length; a++) {
-					if(vcube.utils.vboxVMStates['is'+(states[a])](vmlist[i].raw.data))
+					if(vcube.utils.vboxVMStates['is'+(states[a])](vcube.vmdatamediator.getVMData(vmlist[i].raw.data.id)))
 						return true;					
 				}
 			}

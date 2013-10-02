@@ -96,7 +96,7 @@ Ext.define('vcube.vmdatamediator', {
 				vcube.vmdatamediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
 				
 				// Get media again
-				Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d);});
+				vcube.jquery.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d);});
 				
 			}
 			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
@@ -288,16 +288,18 @@ Ext.define('vcube.vmdatamediator', {
 		
 		vcube.vmdatamediator.watchEvents();
 		
-		vcube.vmdatamediator.started = Ext.create('Ext.ux.Deferred');
+		vcube.vmdatamediator.started = vcube.jquery.Deferred();
 		
-		vcube.utils.ajaxRequest('app/getVirtualMachines',{},function(vmlist){
+		vcube.jquery.when(vcube.utils.ajaxRequest('app/getVirtualMachines',{})).done(function(vmlist){
+			console.log("Got");
+			console.log(vmlist);
 			for(var i = 0; i < vmlist.length; i++) {
 				vcube.vmdatamediator.vmData[vmlist[i].id] = vmlist[i]				
 			}
 			vcube.vmdatamediator.started.resolve();
 		});
 		
-		return vcube.vmdatamediator.started;
+		return vcube.vmdatamediator.started.promise();
 		
 	},
 	
@@ -335,12 +337,12 @@ Ext.define('vcube.vmdatamediator', {
 		// Promise does not yet exist?
 		if(!vcube.vmdatamediator.promises.getVMDetails[vmid]) {
 			
-			vcube.vmdatamediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
+			vcube.vmdatamediator.promises.getVMDetails[vmid] = vcube.jquery.Deferred();
 
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'connector':vcube.vmdatamediator.vmData[vmid].connector_id})).done(function(d){
+			vcube.jquery.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'connector':vcube.vmdatamediator.vmData[vmid].connector_id})).done(function(d){
 				
 				vcube.vmdatamediator.vmDetailsData[d.id] = d;
-				vcube.vmdatamediator.promises.getVMDetails[vmid].resolve(d);
+				vcube.vmdatamediator.promises.getVMDetails[vmid].resolveWith(d);
 			
 			}).fail(function(){
 			
@@ -350,7 +352,7 @@ Ext.define('vcube.vmdatamediator', {
 			});
 
 		}		
-		return vcube.vmdatamediator.promises.getVMDetails[vmid];
+		return vcube.vmdatamediator.promises.getVMDetails[vmid].promise();
 	},
 	
 	/**
@@ -370,21 +372,21 @@ Ext.define('vcube.vmdatamediator', {
 		// Promise does not yet exist?
 		if(!vcube.vmdatamediator.promises.getVMRuntimeData[vmid]) {
 			
-			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
+			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = vcube.jquery.Deferred();
 
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',{
+			vcube.jquery.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',{
 				vm:vmid,
 				connector:vcube.vmdatamediator.vmData[vmid].connector_id})).done(function(d){
 				vcube.vmdatamediator.vmRuntimeData[d.id] = d;
 				if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
-					vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolve(d);
+					vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolveWith(d);
 			}).fail(function(){
 				vcube.vmdatamediator.promises.getVMRuntimeData[vmid].reject();
 				vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = null;
 			});
 
 		}		
-		return vcube.vmdatamediator.promises.getVMRuntimeData[vmid];
+		return vcube.vmdatamediator.promises.getVMRuntimeData[vmid].promise();
 	},
 	
 	/**
@@ -401,13 +403,13 @@ Ext.define('vcube.vmdatamediator', {
 			runtime = vcube.vmdatamediator.getVMRuntimeData(vmid);
 		}
 		
-		var def = Ext.create('Ext.ux.Deferred');
-		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
-			def.resolve(Ext.Object.merge({},d1,d2,d3));
+		var def = vcube.jquery.Deferred();
+		vcube.jquery.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
+			def.resolveWith(Ext.Object.merge({},d1,d2,d3));
 		}).fail(function(){
 			def.reject();
 		});
-		return def;
+		return def.promise();
 		
 	},
 	
@@ -420,8 +422,8 @@ Ext.define('vcube.vmdatamediator', {
 		
 		if(!vcube.vmdatamediator.vmData[vmid]) return;
 		
-		var def = Ext.create('Ext.ux.Deferred');
-		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMachines',{'vm':vmid})).done(function(d) {
+		var def = vcube.jquery.Deferred();
+		vcube.jquery.when(vboxAjaxRequest('vboxGetMachines',{'vm':vmid})).done(function(d) {
 			vm = d[0];
 			vcube.vmdatamediator.vmData[vm.id] = vm;
 			def.resolve();
@@ -431,7 +433,7 @@ Ext.define('vcube.vmdatamediator', {
 			def.reject();
 		});
 		
-		return def;
+		return def.promise();
 	}
 
 });

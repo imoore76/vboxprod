@@ -18,7 +18,6 @@ Ext.define('vcube.controller.Viewport', {
         this.control({
         	'viewport' : {
     		   afterrender: function(v) {
-    			   console.log(this);
     			   this.loadMask = new Ext.LoadMask({target:v,useMsg:false});
     			   this.loadMask.show();
     		   }

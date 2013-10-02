@@ -55,7 +55,7 @@ Ext.define('vcube.vmactions',{
 						// Not first run?
 						if(d.GUI.FirstRun != 'yes') {
 							// Just resolve, nothing to do
-							frDef.resolve(d);
+							frDef.resolveWith(d);
 							return;
 						}
 	
@@ -74,13 +74,13 @@ Ext.define('vcube.vmactions',{
 						// No CD/DVD attachment
 						if(!cdFound) {
 							// Just resolve, nothing to do
-							frDef.resolve(d);
+							frDef.resolveWith(d);
 							return;	
 						}
 						
 						// First time run
 						$.when(d, new vboxWizardFirstRunDialog(d).run()).done(function(vm2start){
-							frDef.resolve(vm2start);
+							frDef.resolveWith(vm2start);
 						});
 						
 						

@@ -40,7 +40,7 @@ Ext.define('vcube.controller.VMTabDetails', {
 	        'viewport > MainPanel > VMTabs > VMTabDetails' : {
 	        	show: this.onTabShow,
 	        	render: function() {
-	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();	        		
+	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();
 	        	}
 	        },
         	'viewport > NavTree' : {
@@ -83,12 +83,16 @@ Ext.define('vcube.controller.VMTabDetails', {
     	
     	var self = this;
 
+    	// is this tab still visible?
+    	if(!this.getVMTabDetailsView().isVisible()) {
+    		this.dirty = true;
+    		return;
+    	}
+
     	// Is this VM still selected
     	if(!vcube.utils.isThisVMSelected(eventData.machineId, this.navTreeSelectionModel))
     		return;
     	
-    	// is this tab still visible?
-    	if(!this.getVMTabDetailsView().isVisible()) return;
     	
     	// Compose a list of sections that want to redraw
     	// on this type of event
@@ -101,7 +105,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     	}
     	
     	// Get fresh VM data
-		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(eventData.machineId)).done(function(data) {
+		vcube.jquery.when(vcube.vmdatamediator.getVMDataCombined(eventData.machineId)).done(function(data) {
 			
 			// Is this VM still selected?
 			if(!vcube.utils.isThisVMSelected(data.id, self.navTreeSelectionModel))
@@ -135,7 +139,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     /* Load cached data */
     showVMDetails: function(record) {
     	
-    	var data = record.raw.data;
+    	var data = vcube.vmdatamediator.getVMData(record.raw.data.id);
     	
     	var self = this;
     	var detailsTab  = self.getVMTabDetailsView();
@@ -161,7 +165,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     	
     	var self = this;
     	
-    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
+    	vcube.jquery.when(vcube.vmdatamediator.getVMDataCombined(record.raw.data.id)).done(function(data) {
     		
     		detailsTab.setLoading(false);
     		

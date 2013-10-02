@@ -18,11 +18,41 @@ Ext.define('vcube.controller.VMTabSummary', {
     /* Watch for events */
     init: function(){
     	
+    	// Get redraw events from details sections
+		var redrawEvents = {};
+		for(var i in vcube.view.VMTabSummary.vmSummarySections) {
+			
+			if(typeof(i) != 'string') continue;
+			
+			var self = this;
+			if(vcube.view.VMTabSummary.vmSummarySections[i].redrawOnEvents) {
+				Ext.each(vcube.view.VMTabSummary.vmSummarySections[i].redrawOnEvents,function(event){
+					redrawEvents[event] = self.onRedrawEvent;
+				});
+			}
+			redrawEvents['scope'] = this;
+		}		
+		this.application.on(redrawEvents);
+		
+		// Special case for VM actions
+		this.application.on({
+			'SessionStateChanged': this.updateVMActions,
+			'MachineStateChanged': this.updateVMActions,
+			scope: this
+		});
+		
+		
+		// Redraw entire tab on machine data change
+		this.application.on({
+			'MachineDataChanged': this.onMachineDataChanged,
+			scope: this
+		})
+
         this.control({
 	        'viewport > MainPanel > VMTabs > VMTabSummary' : {
 	        	show: this.onTabShow,
 	        	render: function() {
-	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();	        		
+	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();
 	        	}
 	        },
         	'viewport > NavTree' : {
@@ -42,7 +72,7 @@ Ext.define('vcube.controller.VMTabSummary', {
     /* Holds preview dimension cache */
     resolutionCache : {},
     
-    /* preview timeers */
+    /* preview timers */
     previewTimers : {},
 
     /* When tab is shown */
@@ -50,10 +80,88 @@ Ext.define('vcube.controller.VMTabSummary', {
     	
     	if(!this.dirty) return;
     	
-    	this.showVMSummary(this.navTreeSelectionModel.getSelection()[0]);
+    	this.showVMSummary(this.navTreeSelectionModel.getSelection()[0].raw.data.id);
     	
     },
+
+    /* Machine data changed, redraw */
+    onMachineDataChanged: function(eventData) {
+    	
+    	// is this tab still visible?
+    	if(!this.getVMTabSummaryView().isVisible()) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	// Is this VM still selected
+    	if(!vcube.utils.isThisVMSelected(eventData.machineId, this.navTreeSelectionModel))
+    		return;
+    	
+    	this.showVMSummary(eventData.machineId);
+
+    },
     
+    /* Redraw events */
+    onRedrawEvent : function(eventData) {
+    	
+    	var self = this;
+
+    	// is this tab still visible?
+    	if(!this.getVMTabSummaryView().isVisible()) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	// Is this VM still selected
+    	if(!vcube.utils.isThisVMSelected(eventData.machineId, this.navTreeSelectionModel))
+    		return;
+    	
+    	// Special case for action menu
+    	this.updateVMActions();
+    	
+    	// Compose a list of sections that want to redraw
+    	// on this type of event
+    	var sections = [];
+    	for(var i in vcube.view.VMTabSummary.vmSummarySections) {
+    		if(typeof(i) != 'string') continue;
+			if(vcube.view.VMTabSummary.vmSummarySections[i].redrawOnEvents && Ext.Array.contains(vcube.view.VMTabSummary.vmSummarySections[i].redrawOnEvents, eventData.eventType)) {
+				sections.push(i);
+			}
+    	}
+    	
+    	// Get fresh VM data
+		vcube.jquery.when(vcube.vmdatamediator.getVMDataCombined(eventData.machineId)).done(function(data) {
+			
+			// Is this VM still selected?
+			if(!vcube.utils.isThisVMSelected(data.id, self.navTreeSelectionModel))
+	    		return;
+	    	
+	    	// Is this tab still visible
+	    	if(!self.getVMTabSummaryView().isVisible()) {
+	    		self.dirty = true;
+	    		return;
+	    	}
+
+	    	// Redraw each section that wants to be redrawn
+	    	var target = self.getVMTabSummaryView().down('#summaryTables');
+	    	Ext.each(target.items.items, function(section, idx) {
+	    		
+	    		if(!Ext.Array.contains(sections, section.itemId)) {
+	    			return;
+	    		}
+	    		
+	    		target.remove(section, true);
+	    		
+	    		target.insert(idx, vcube.view.VMTabs.sectionTable(vcube.view.VMTabSummary.vmSummarySections[section.itemId], data, section.itemId));
+	    		
+	    	});
+	    	
+	    	self.getVMTabSummaryView().doLayout();
+			
+		});
+    	
+    },
+
     /* When item is selected */
     onSelectItem: function(row, record) {
     	
@@ -63,11 +171,33 @@ Ext.define('vcube.controller.VMTabSummary', {
     	if(!record || record.raw.data._type != 'vm')
     		return;
 
-    	this.showVMSummary(record);
+    	this.showVMSummary(record.raw.data.id);
     },
     
-    /* An item is selected */
-    showVMSummary: function(record,index) {
+    /* Update VM actions */
+	updateVMActions: function(eventData) {
+		
+    	// is this tab still visible?
+    	if(eventData && !this.getVMTabSummaryView().isVisible()) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	// Is this VM still selected
+    	if(eventData && !vcube.utils.isThisVMSelected(eventData.machineId, this.navTreeSelectionModel))
+    		return;
+
+		var self = this;
+		
+		Ext.each(this.getVMTabSummaryView().down('#vmactions').items.items, function(item) {
+			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
+			else item.disable();
+		});		
+	},
+
+    
+    /* Get vm data and show summary */
+    showVMSummary: function(vmid) {
 
     	
     	var summaryTab = this.getVMTabSummaryView();
@@ -76,25 +206,27 @@ Ext.define('vcube.controller.VMTabSummary', {
     		return;
     	}
     	
-    	console.log("Drawing summary");
-
     	this.dirty = false;
     	
     	summaryTab.setLoading(true);
     	
     	var self = this;
     	
-    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(record.raw.data.id)).done(function(data) {
-    		
+    	console.log("Getting fresh");
+
+    	vcube.jquery.when(vcube.vmdatamediator.getVMDataCombined(vmid)).done(function(data) {
+
+    		console.log("Got freshy");
     		summaryTab.setLoading(false);
     		
     		if(!summaryTab.isVisible()) return;
-    		if(self.navTreeSelectionModel.selected.length != 1 || self.navTreeSelectionModel.getSelection()[0].raw.data.id != data.id) return
+
+    		// Is this VM still selected
+        	if(!vcube.utils.isThisVMSelected(data.id, self.navTreeSelectionModel))
+        		return;
     		
     		// batch of updates
     		Ext.suspendLayouts();
-    		
-    		Ext.apply(data, record.raw.data);
     		
     		var vmid = data.id;
     		
@@ -184,11 +316,8 @@ Ext.define('vcube.controller.VMTabSummary', {
     		}
     		
 
-
-    		Ext.each(summaryTab.down('#vmactions').items.items, function(item) {
-    			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
-    			else item.disable();
-    		});
+    		/* Update action menu */
+    		self.updateVMActions();
     		
     		summaryTab.down('#PreviewPanel').doLayout();
     		

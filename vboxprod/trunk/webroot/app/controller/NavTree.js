@@ -350,11 +350,11 @@ Ext.define('vcube.controller.NavTree', {
 		 * 
 		 */
 
-		vcube.jquery.when(vcube.utils.ajaxRequest('connectors/getConnectors')).then(function(data) {
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/getConnectors')).then(function(data) {
 
 			self.loadServersData(data);
 
-			vcube.jquery.when(vcube.utils.ajaxRequest('vmgroups/getGroups')).then(function(data) {
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vmgroups/getGroups')).then(function(data) {
 
 				self.loadGroupsData(data);
 

@@ -35,7 +35,7 @@ Ext.define('vcube.eventlistener', {
 		
 		vcube.eventlistener.running = true;
 		
-		var started = vcube.jquery.Deferred();
+		var started = Ext.create('Ext.ux.Deferred');
 		
 		window.WEB_SOCKET_DEBUG = true
 		window.WEB_SOCKET_SWF_LOCATION = "lib/web-socket-js/WebSocketMain.swf";
@@ -58,7 +58,7 @@ Ext.define('vcube.eventlistener', {
 			started.resolve();
 		};
 		
-		return started.promise();
+		return started;
 	},
 	
 	/**

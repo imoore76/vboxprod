@@ -105,7 +105,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     	}
     	
     	// Get fresh VM data
-		vcube.jquery.when(vcube.vmdatamediator.getVMDataCombined(eventData.machineId)).done(function(data) {
+		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(eventData.machineId)).done(function(data) {
 			
 			// Is this VM still selected?
 			if(!vcube.utils.isThisVMSelected(data.id, self.navTreeSelectionModel))
@@ -165,7 +165,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     	
     	var self = this;
     	
-    	vcube.jquery.when(vcube.vmdatamediator.getVMDataCombined(record.raw.data.id)).done(function(data) {
+    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(record.raw.data.id)).done(function(data) {
     		
     		detailsTab.setLoading(false);
     		

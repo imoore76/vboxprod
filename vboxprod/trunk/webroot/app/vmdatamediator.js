@@ -26,7 +26,7 @@ Ext.define('vcube.vmdatamediator', {
 	},
 	
 	/* Holds Basic VM data */
-	vmData : {},
+	vmData : null,
 	
 	/* Holds VM details */
 	vmDetailsData : {},
@@ -48,7 +48,7 @@ Ext.define('vcube.vmdatamediator', {
 			if(typeof(i) != 'string') continue;
 			vcube.vmdatamediator.promises[i] = {};
 		}
-		vcube.vmdatamediator.vmData = {};
+		vcube.vmdatamediator.vmData = null;
 		vcube.vmdatamediator.vmRuntimeData = {};
 		vcube.vmdatamediator.vmDetailsData = {};
 	},
@@ -290,6 +290,7 @@ Ext.define('vcube.vmdatamediator', {
 		vcube.vmdatamediator.started = Ext.create('Ext.ux.Deferred');
 		
 		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getVirtualMachines',{})).done(function(vmlist){
+			vcube.vmdatamediator.vmData = {};
 			for(var i = 0; i < vmlist.length; i++) {
 				vcube.vmdatamediator.vmData[vmlist[i].id] = vmlist[i]				
 			}

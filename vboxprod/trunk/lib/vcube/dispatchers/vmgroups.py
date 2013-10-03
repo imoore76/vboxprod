@@ -64,6 +64,6 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def getGroups(self, *args, **kwargs):
-        return list(VMGroup.select().order_by(VMGroup.parent_id, VMGroup.order).dicts())    
+        return list(VMGroup.select().dicts())    
     getGroups.exposed = True
 

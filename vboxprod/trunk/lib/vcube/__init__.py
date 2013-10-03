@@ -1,6 +1,8 @@
 import sys
 import json
-import os, sys, ConfigParser, threading, time, Queue
+from datetime import datetime
+import time
+import os, sys, ConfigParser, threading, Queue
 import MySQLdb
 import pprint, traceback
 
@@ -32,7 +34,7 @@ def stop():
     app.join()
 
 # Imported after these are defined
-from models import Connector
+from models import Connector, EventLog
 
 """
 
@@ -141,11 +143,14 @@ class Application(threading.Thread):
             
     
     """
-        Run callbacks when an event is recieved
+        Run callbacks when an event is received
     """
     def addEventHandler(self, handler):
         self.eventHandlers.append(handler)
         
+    """
+        Send event to all listeners
+    """
     def pumpEvent(self, event):
 
         self.onEvent(event)
@@ -164,6 +169,35 @@ class Application(threading.Thread):
         finally:
             self.eventQueuesLock.release()
 
+    """
+       Log an event
+    """
+    def logEvent(self, event, completed=False):
+
+        try:
+            el = EventLog()
+            el.started = int(time.time())
+            el.severity = event.get('severity', 0)
+            el.time = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            
+            for attr in ['name','machine','details','connector']:
+                setattr(el, attr, event.get(attr,''))
+
+            if completed:
+                el.completed = el.started
+            
+            el.save()
+            
+            self.pumpEvent({
+                'source' : 'vcube',
+                'eventType' : 'eventLogEntry',
+                'eventData' : dict(el._data.copy())
+            })
+            return el.id
+        
+        except Exception as e:
+            logger.exception(e)
+            
     def registerEventQueue(self, queue):
         
         eqid = 'eventQueue-%s' % (id(queue),)
@@ -353,17 +387,33 @@ class Application(threading.Thread):
             'message' : message
         })
         
+        logEvent = False
+        
         try:
             c = Connector.get(Connector.id == int(cid) and Connector.status > -1)
+            if int(c.status) != int(state):
+                logEvent = True
             c.status = state
             c.status_text = message
             c.save()
             
         except Connector.DoesNotExist:
-            pass
+            return
         
         except Exception as e:
             logger.exception(e)
+            
+        if logEvent:
+            try:
+                self.logEvent({
+                    'name' : 'Server status changed to ' + STATES_TO_TEXT.get(state, 'Unknown'),
+                    'details' : message,
+                    'connector' : cid,
+                    'severity' : (5 if state < 100 else 0)
+                }, True)
+                
+            except Exception as e:
+                logger.exception(e)
             
         
     def addConnector(self, connector):

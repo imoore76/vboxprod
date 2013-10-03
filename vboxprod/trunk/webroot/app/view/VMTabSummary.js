@@ -204,19 +204,37 @@ Ext.define('vcube.view.VMTabSummary', {
     			flex: 1,
     			border: false,
     			bodyStyle: { background: 'transparent' },
-    			defaults: { border: false, bodyStyle: { background: 'transparent' } },
+    			defaults : { border: false, bodyStyle: { background: 'transparent' } },
     			items: [{
     				itemId: 'baseinfo',
-    				flex: 1,
-    				xtype: 'panel',
+    				padding: 0,
+    				bodyStyle: { background: 'transparent' },
     				width: '100%',
-    				tpl: new Ext.XTemplate('<table style="border:0px;border-spacing:0px;width:100%;">'+
-    						'<tr valign="top">'+
-    						'<td width=100%><h3 align="left" style="margin-left: 10px">{name}</h3><div>{[Ext.String.htmlEncode(values.description)]}</div></td>'+
-    						'<td style="border: 0px solid #000; width: 120px;"><div align="center">'+
-    						'<img src="{[(values.icon ? values.icon : "images/vbox/blank.gif")]}" style="width:64px;height:64px;display:block;margin-bottom:10px;"/>'+
-    						'</td>'+
-    				'</tr></table>')        			
+    				layout: {
+    					type: 'hbox',
+    					align: 'stretch',
+    					pack: 'start'
+    				},
+    				defaults: { border: false, padding: 0, margin: 0},
+    				items: [{
+    					layout: {
+    						type: 'vbox',
+    						pack: 'start',
+    						align: 'stretch'
+    					},
+    					flex: 1,
+    					defaults: { border: false, padding: 0, margin: 0},
+    					items: [{
+    						itemId: 'vmname',
+    						tpl: new Ext.XTemplate('<h3 align="left" style="margin-left: 10px">{name}</h3><div>')
+    					},{
+    						itemId: 'vmdesc',
+    						tpl: new Ext.XTemplate('{description}')
+    					}]
+    				},{
+    					itemId: 'vmicon',
+    					tpl: new Ext.XTemplate('<div align="center">{[(values.icon ? \'<img src="{values.icon}" style="width:64px;height:64px;display:block;"/>Change Icon\' : \'Set Icon\')]}</div>'),
+    				}]
     			},{
     				height: 20,
     				html: '',

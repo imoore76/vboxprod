@@ -140,6 +140,8 @@ Ext.define('vcube.controller.NavTree', {
 	onConnectorStateChanged: function(eventData) {
 
 		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector);
+		if(!serverNode) return;
+		
 		var newServerData = Ext.Object.merge(serverNode.raw.data, {status:eventData.status, status_name:eventData.status_name, message: eventData.message});
 		
 		var newData = this.createServerNodeCfg(newServerData);

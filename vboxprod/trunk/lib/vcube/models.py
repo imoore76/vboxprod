@@ -3,7 +3,7 @@ from peewee import *
 
 import vcube
 
-INSTALLMODELS = ['AuthUser', 'Group', 'VMGroup', 'Connector', 'AppConfig']
+INSTALLMODELS = ['AuthUser', 'Group', 'VMGroup', 'Connector', 'AppConfig', 'EventLog']
 
 dbconfig = {}
 dbname = ''
@@ -45,7 +45,6 @@ class VMGroup(MySqlModel):
     name = CharField(unique = True, max_length=32, null = False)
     description = CharField(max_length=256, null = True)
     parent_id = IntegerField(default = 0)
-    order = IntegerField(default = 0)
     
     
 class Connector(MySqlModel):
@@ -57,7 +56,29 @@ class Connector(MySqlModel):
     status = IntegerField(default = 0)
     status_text = CharField(max_length=256, null = True, default='')
     
+
+class TaskLog(MySqlModel):
+    id = PrimaryKeyField()
+    name = CharField(max_length=256, null = False)
+    icon = CharField(max_length=32, null = True)
+    machine = CharField(max_length=48, null = False)
+    status = IntegerField(default = 0)
+    details = CharField(max_length=256, null = True)
+    user = CharField(max_length=256, null = False)
+    connector = IntegerField(null = False)
+    started = DateTimeField(null = False)
+    completed = DateTimeField(null = True)
     
+class EventLog(MySqlModel):
+    id = PrimaryKeyField()
+    severity = IntegerField(default = 0, null = False)
+    name = CharField(max_length=256, null = False)
+    details = CharField(max_length=256, null = True)
+    machine = CharField(max_length=48, null = False)
+    connector = IntegerField(null = False)
+    time = DateTimeField(null = False)
+    
+     
 class AppConfig(MySqlModel):
     
     id = PrimaryKeyField()

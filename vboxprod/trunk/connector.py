@@ -554,6 +554,40 @@ class vboxConnector(object):
         return self.version
 
     """
+        Set a VM description. Only a shared lock is required
+    """
+    def remote_machineSetDescription(self, args):
+        
+        machine = self.vbox.findMachine(args['vm'])
+        session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
+        
+        try:
+            machine.description = args.get('description', '')
+        finally:
+            session.unlockMachine()
+            
+        return True
+
+    """
+        Set a VM name
+    """
+    def remote_machineSetName(self, args):
+        
+        if not args.get('name',None): return False
+        
+        machine = self.vbox.findMachine(args['vm'])
+        session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(session, vboxMgr.constants.LockType_Write)
+        
+        try:
+            machine.name = args.get('name')
+        finally:
+            session.unlockMachine()
+            
+        return True
+        
+    """
      * Enumerate guest properties of a vm
      * 
      * @param array args array of arguments. See def body for details.
@@ -4788,7 +4822,7 @@ def main(argv = sys.argv):
     for mach in vboxGetArray(vbox,'machines'):
          
         try:
-            if mach.state == vboxMgr.constants.MachineState_Running:
+            if mach.accessible and mach.state == vboxMgr.constants.MachineState_Running:
                 subscribe.append(mach.id)
                                 
         except Exception as e:

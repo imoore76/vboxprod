@@ -3,6 +3,9 @@
  * @author Vincenzo Ferrari <wilk3ert@gmail.com>
  *
  * Deferred (promises) for ExtJS and Sencha Touch
+ * 
+ * Heavily modified by Ian Moore <imoore76@yahoo.com> for
+ * vcube to behave more like jQuery's $.Deferred() and $.when()
  *
  */
 Ext.define ('Ext.ux.Deferred', {
@@ -18,19 +21,21 @@ Ext.define ('Ext.ux.Deferred', {
 		 */
 		when: function () {
 			var promises = arguments ,
-				dfd = Ext.create ('Ext.ux.Deferred') ,
+				dfd = Ext.create ('Ext.ux.Deferred') , // Master deferred object
 				counter = promises.length ,
 				results = [] ,
 				errors = [];
-		
+
 			for (var i = 0; i < promises.length; i++) {
 				(function (i) {
 					var promise = promises[i];
-				
-					if (typeof promise === 'function') promise = promise();
-				
-					var pdata = null;
 					
+					if (typeof promise === 'function') {
+						promise = promise();
+					}
+				
+					// If promise is not a deferred object, create one
+					// and resolve it
 					if(!(promise instanceof Ext.ux.Deferred)) {
 						var pdata = promise;
 						promise = Ext.create('Ext.ux.Deferred');
@@ -38,24 +43,22 @@ Ext.define ('Ext.ux.Deferred', {
 					}
 			
 					promise
-						.done (function (data) {
+						.done.call(promise, function (data) {
 							counter--;
 							results[i] = data;
 					
 							if (counter == 0) {
-								dfd.resolve.apply (dfd, results);
 						
-								if (errors.length > 0) dfd.reject.apply (dfd, errors);
+								if (errors.length > 0) dfd.reject.apply(dfd, errors);
+								else dfd.resolve.apply(dfd, results);
 							}
 						})
-						.fail (function (data) {
+						.fail.call(promise, function (data) {
 							counter--;
 							errors[i] = data;
-					
+							
 							if (counter == 0) {
 								dfd.reject.apply (dfd, errors);
-						
-								if (results.length > 0) dfd.resolve.apply (dfd, results);
 							}
 						});
 					
@@ -73,13 +76,13 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @property {Function} onDone Function called when the promise is done. Never use directly
 	 * @private
 	 */
-	onDone: function () {} ,
+	onDone: [],
 	
 	/**
 	 * @property {Function} onFail Function called when the promise is failed. Never use directly
 	 * @private
 	 */
-	onFail: function () {} ,
+	onFail: [],
 	
 	/**
 	 * @method done
@@ -88,15 +91,16 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @return {Ext.ux.Deferred} this
 	 */
 	done: function (onDone) {
-		var me = this;
-		
-		me.onDone = typeof onDone === 'function' ? onDone : function () {};
-		
-		if(me.state == 'resolved') {
-			me.onDone.apply(null, me.stateData);
+
+		if(typeof(onDone) != 'function') return this;
+
+		if(this.state == 'resolved') {
+			onDone.apply(this, this.stateData);
+		} else {
+			this.onDone.push(onDone);
 		}
 		
-		return me;
+		return this;
 	} ,
 	
 	/**
@@ -106,14 +110,15 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @return {Ext.ux.Deferred} this
 	 */
 	fail: function (onFail) {
-		var me = this;
+
+		if(typeof(onDone) != 'function') return this;
 		
-		me.onFail = typeof onFail === 'function' ? onFail : function () {};
-		
-		if(me.state == 'rejected')
-			me.onFail.apply(null, me.stateData);
-		
-		return me;
+		if(this.state == 'rejected') {
+			onFail.apply(this, this.stateData);
+		} else {
+			this.onFail.push(onFail);
+		}
+		return this;
 	} ,
 	
 	/**
@@ -123,14 +128,7 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @return {Ext.ux.Deferred} this
 	 */
 	always: function (onAlways) {
-		var me = this;
-		
-		onAlways = typeof onAlways === 'function' ? onAlways : function () {};
-		
-		me.done(onAlways);
-		me.fail(onAlways);
-		
-		return me;
+		return this.done(onAlways).fail(onAlways);
 	} ,
 	
 	/**
@@ -142,22 +140,15 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	reject: function () {
 		
+		var me = this;
 		this.stateData = arguments;
 		this.state = 'rejected';
-		
-		var me = this ,
-			result = me.onFail.apply (me, arguments);
-		
-		
-		if (result instanceof Ext.ux.Deferred) {
-			result.then (me.lastDfd.onFail, me.lastDfd.onDone);
-			result.lastDfd = me.lastDfd.lastDfd;
-		}
-		else {
-			if (typeof me.lastDfd !== 'undefined') me.lastDfd.reject (result);
-		}
-		
+
+		Ext.each(this.onFail, function(fn) {
+			fn.apply(null, me.stateData);
+		})
 		return me;
+		
 	} ,
 	
 	/**
@@ -172,19 +163,22 @@ Ext.define ('Ext.ux.Deferred', {
 		this.stateData = arguments;
 		this.state = 'resolved';
 		
-		var me = this ,
-			result = me.onDone.apply (me, arguments);
+		var me = this;
 		
-		if (result instanceof Ext.ux.Deferred) {
-			result.then (me.lastDfd.onDone, me.lastDfd.onFail);
-			result.lastDfd = me.lastDfd.lastDfd;
-		}
-		else {
-			if (typeof me.lastDfd !== 'undefined') me.lastDfd.resolve (result);
-		}
-		
+		Ext.each(this.onDone, function(fn) {
+			fn.apply(me, me.stateData);
+		})
 		return me;
-	} ,
+	},
+	
+	/**
+	 * ExtJS should take care of this on each object
+	 * instance creation, but it doesn't. Bad EXTJS!!!!
+	 */
+	constructor: function() {
+		this.onDone = this.onFail = [];
+		this.state = this.stateData = null;
+	},
 	
 	/**
 	 * @method then
@@ -195,14 +189,7 @@ Ext.define ('Ext.ux.Deferred', {
 	 * @return {Ext.ux.Deferred} The new promise
 	 */
 	then: function (onDone, onFail) {
-		var me = this ,
-			dfd = Ext.create ('Ext.ux.Deferred');
 		
-		me.done (onDone)
-		  .fail (onFail);
-		
-		me.lastDfd = dfd;
-		
-		return dfd;
+		return this.done(onDone).fail(onFail);
 	}
 })

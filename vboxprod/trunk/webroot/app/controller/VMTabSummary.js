@@ -317,8 +317,9 @@ Ext.define('vcube.controller.VMTabSummary', {
     		self.updateVMActions();
     		
     		summaryTab.down('#PreviewPanel').doLayout();
-    		
-    		summaryTab.down('#baseinfo').update(data);
+    		Ext.each(['#vmname','#vmicon','#vmdesc'], function(item){
+    			summaryTab.down(item).update(data);
+    		});
 
     		// Summary tab tables
     		var summaryTabTables = summaryTab.down('#summaryTables');

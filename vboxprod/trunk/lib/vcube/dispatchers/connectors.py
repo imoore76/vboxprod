@@ -20,7 +20,7 @@ class dispatcher(dispatcher_parent):
         if ex:
             raise Exception("A connector with that name exists")
         
-        c = Connector(Connector.name == kwargs.get('name'))
+        c = Connector()
         for attr in ['name','location']:
             setattr(c, attr, kwargs.get(attr))
         c.save()

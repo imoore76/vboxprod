@@ -17,7 +17,6 @@ import logging, logging.config
 logging.config.fileConfig("logging.conf")
 logger = logging.getLogger(__name__)
 
-
 """
        
     Web Server Thread starts cherrypy

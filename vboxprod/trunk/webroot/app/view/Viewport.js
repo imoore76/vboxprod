@@ -5,7 +5,7 @@ Ext.define('vcube.view.Viewport', {
     extend: 'Ext.container.Viewport',
     
     requires: [
-           'vcube.view.ProgressOps',
+           'vcube.view.EventsAndTasks',
            'vcube.view.MainPanel',
            'vcube.view.NavTree',
            'vcube.view.Menubar',
@@ -16,9 +16,8 @@ Ext.define('vcube.view.Viewport', {
    items : [{
 	   region: 'south',
 	   height: 100,
-	   xtype: 'ProgressOps',
-	   split: true,
-	   html: 'ProgressOps'
+	   xtype: 'EventsAndTasks',
+	   split: true
    },{
 	   region: 'west',
 	   split: true,

@@ -34,7 +34,12 @@ Ext.define('vcube.controller.VMTabDetails', {
 			redrawEvents['scope'] = this;
 		}		
 		this.application.on(redrawEvents);
-
+		
+		// Redraw entire tab on machine data change
+		this.application.on({
+			'MachineDataChanged': this.onMachineDataChanged,
+			scope: this
+		});
 		
         this.control({
 	        'viewport > MainPanel > VMTabs > VMTabDetails' : {
@@ -62,7 +67,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     	
     	if(!this.dirty) return;
     	
-    	this.showVMDetails(this.navTreeSelectionModel.getSelection()[0]);
+    	this.showVMDetails(this.navTreeSelectionModel.getSelection()[0].raw.data.id);
     	
     },
     
@@ -75,9 +80,26 @@ Ext.define('vcube.controller.VMTabDetails', {
     	if(!record || record.raw.data._type != 'vm')
     		return;
 
-    	this.showVMDetails(record);
+    	this.showVMDetails(record.raw.data.id);
     },
-        
+    
+    /* Machine data changed, redraw */
+    onMachineDataChanged: function(eventData) {
+    	
+    	// is this tab still visible?
+    	if(!this.getVMTabDetailsView().isVisible()) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	// Is this VM still selected
+    	if(!vcube.utils.isThisVMSelected(eventData.machineId, this.navTreeSelectionModel))
+    		return;
+    	
+    	this.showVMDetails(eventData.machineId);
+
+    },
+  
     /* Redraw events */
     onRedrawEvent : function(eventData) {
     	
@@ -137,9 +159,9 @@ Ext.define('vcube.controller.VMTabDetails', {
     },
 
     /* Load cached data */
-    showVMDetails: function(record) {
+    showVMDetails: function(vmid) {
     	
-    	var data = vcube.vmdatamediator.getVMData(record.raw.data.id);
+    	var data = vcube.vmdatamediator.getVMData(vmid);
     	
     	var self = this;
     	var detailsTab  = self.getVMTabDetailsView();
@@ -165,7 +187,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     	
     	var self = this;
     	
-    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(record.raw.data.id)).done(function(data) {
+    	Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(vmid)).done(function(data) {
     		
     		detailsTab.setLoading(false);
     		

@@ -23,6 +23,16 @@ span.navTreeVMState { display: inline; }
 div.alertDetails { margin-top: 10px; }
 textarea.alertDetails { width: 100%; height: 200px; }
 
+div.gridColumnIcon { height: 16px; width: 16px; display: inline-block; float: left; margin-right: 4px; background-repeat: no-repeat; background-size: 16px 16px; }
+div.eventColumnMachine { background-image: url(images/vbox/machine_16px.png); }
+div.eventColumnServer { background-image: url(images/vbox/OSE/VirtualBox_cube_42px.png); }
+div.eventColumnGeneral { background-image: url(images/vbox/VirtualBox_16px.png); }
+div.severityColuumn { width: 12px; height: 12px; display: inline-block; float: left; margin-right: 4px; }
+div.severityColuumnCritical { background: #ff3333; }
+div.severityColuumnError { background: #FF8000; }
+div.severityColuumnWarning { background: #FFFF66 }
+div.severityColuumnInfo { background: #00f; }
+
 .vboxSnapshot, .vboxSnapshot.x-grid-tree-node-expanded { background-image:url(images/vbox/offline_snapshot_16px.png) }
 .vboxSnapshotOnline, .vboxSnapshotOnline.x-grid-tree-node-expanded { background-image:url(images/vbox/online_snapshot_16px.png) }
 .x-mask, .x-mask.x-mask-gray

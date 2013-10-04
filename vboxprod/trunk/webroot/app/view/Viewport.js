@@ -15,7 +15,7 @@ Ext.define('vcube.view.Viewport', {
    
    items : [{
 	   region: 'south',
-	   height: 100,
+	   height: 200,
 	   xtype: 'EventsAndTasks',
 	   split: true
    },{

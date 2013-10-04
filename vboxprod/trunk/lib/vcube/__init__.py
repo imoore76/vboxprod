@@ -36,6 +36,52 @@ def stop():
 # Imported after these are defined
 from models import Connector, EventLog
 
+class vboxActionsToTaskLog:
+    actions = []
+    
+class vboxEventsToEventLog:
+    events = [
+        'MachineStateChanged',
+        'SnapshotTaken',
+        'MachineRegistered',
+        'MachineDataChanged'
+    ]
+    
+    @staticmethod
+    def MachineDataChanged(eventData):
+        return {'name':'Machine settings changed',
+                'machine':eventData['machineId'],
+                'connector': eventData['connector_id']
+        }
+        
+    @staticmethod
+    def SnapshotTaken(eventData):
+        return {'name':'Snapshot taken',
+                'machine':eventData['machineId'],
+                'details':'Snapshot `%s` taken' %(eventData['enrichmentData'].get('currentSnapshotName'),),
+                'connector': eventData['connector_id']
+        }
+
+    @staticmethod
+    def MachineRegistered(eventData):
+        if eventData.registered:
+            name = 'Machine registered'
+        else:
+            name = 'Machine unregistered'
+        return {'name':name,
+                'machine':eventData['machineId'],
+                'connector': eventData['connector_id']
+        }
+
+    @staticmethod
+    def MachineStateChanged(eventData):
+        return {'name':'Machine state changed',
+                'machine':eventData['machineId'],
+                'details':'State chnaged to %s' %(eventData['state'],),
+                'connector': eventData['connector_id']
+        }
+
+
 """
 
     Application
@@ -172,7 +218,7 @@ class Application(threading.Thread):
     """
        Log an event
     """
-    def logEvent(self, event, completed=False):
+    def logEvent(self, event):
 
         try:
             el = EventLog()
@@ -183,9 +229,6 @@ class Application(threading.Thread):
             for attr in ['name','machine','details','connector']:
                 setattr(el, attr, event.get(attr,''))
 
-            if completed:
-                el.completed = el.started
-            
             el.save()
             
             self.pumpEvent({
@@ -243,7 +286,6 @@ class Application(threading.Thread):
     
     def onEvent(self, event):
         
-
         if event['eventType'] == 'connectorStateChanged':
             """
                 Connector state change
@@ -373,6 +415,10 @@ class Application(threading.Thread):
             finally:
                 self.virtualMachinesLock.release()
             
+        """ Add to event log """
+        if event['eventType'] in vboxEventsToEventLog.events:
+            self.logEvent(getattr(vboxEventsToEventLog, event['eventType'])(event))
+                          
     def onConnectorStateChange(self, cid, state, message=''):
         
         """
@@ -410,7 +456,7 @@ class Application(threading.Thread):
                     'details' : message,
                     'connector' : cid,
                     'severity' : (5 if state < 100 else 0)
-                }, True)
+                })
                 
             except Exception as e:
                 logger.exception(e)
@@ -456,7 +502,6 @@ class Application(threading.Thread):
         except Exception as e:
             traceback.print_exc()
             logger.exception(e)
-            print str(e)
             if cid and self.connectorEventListeners.get(cid, None):
                 del self.connectorEventListeners[cid]
         

@@ -56,6 +56,9 @@ Ext.application({
     // User session data
     session: null,
     
+    // Global server store
+    serverStore: null,
+	
     /**
      * Load session data
      */
@@ -67,12 +70,21 @@ Ext.application({
     	
     	if(self.session && self.session.user) {
     		
-    		Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
-    			Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
-    				if(!self.died)
-    					self.fireEvent('start');    
-    			});    			
-    		});
+    		this.serverStore.load({
+    			scope: this,
+    			callback: function(r,o,success) {
+    				console.log(r);
+    				if(!success) return;
+					Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
+						Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
+							if(!self.died) {
+								self.serverStore.load();
+								self.fireEvent('start');
+							}
+						});    			
+					});
+    			}
+    		})
     		
     	} else {
     		self.showLogin();
@@ -90,6 +102,26 @@ Ext.application({
     	
     	// App ref
     	var self = this;
+    	
+    	// Create server store
+    	this.serverStore = Ext.create('Ext.data.Store',{
+    		autoload: false,
+    		fields : [
+    		   {name: 'id', type: 'int'},
+    		   {name: 'name', type: 'string'},
+    		   {name: 'description', type: 'string'},
+    		   {name: 'location', type: 'string'},
+    		   {name: 'status_text', type: 'string'},
+    		   {name: 'status', type: 'int'}
+    		],
+    		proxy: {
+    			type: 'vcubeAjax',
+    			url: 'connectors/getConnectors',
+    	    	reader: {
+    	    		type: 'vcubeJsonReader'
+    	    	}
+    		}
+    	})
 
     	vcube.utils.ajaxRequest('app/getSession',{},function(data){
     		self.loadSession(data);

@@ -29,13 +29,14 @@ Ext.define('vcube.controller.EventsAndTasks', {
     	});
     },
     
+    
     /* These will be filled later */
     eventLogGrid : null,
     taskLogGrid: null,
     
     onEventLogEntry: function(event) {
-    	console.log("here....");
-    	this.getEventsAndTasks().down('#events').getStore().loadData(event.eventData);
+    	
+    	this.getEventsAndTasks().down('#events').getStore().add(event.eventData);
     }
     
 });

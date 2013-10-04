@@ -936,10 +936,12 @@ class vboxConnector(object):
 
         """ @src IMachine """
         src = self.vbox.findMachine(args['src'])
-
+        snapshotName = ''
+        
         if args.get('snapshot', None) and args['snapshot'].get('id', None):
             """ @nsrc ISnapshot """
             nsrc = src.findSnapshot(args['snapshot']['id'])
+            snapshotName = nsrc.name
             src = None
             src = nsrc.machine
 
@@ -963,8 +965,19 @@ class vboxConnector(object):
 
         return {
                 'progress' : progressid,
-                'settingsFilePath' : sfpath}
+                'settingsFilePath' : sfpath,
+                'snapshotName': snapshotName}
 
+    remote_machineClone.progress = True
+    remote_machineClone.log = True
+    
+    @staticmethod
+    def remote_machineClone_log(args, results):
+        return {
+            name : "Clone virtual machine",
+            details: ('from snapshot ' + results['snapshotName'] if (results and results.get('snapshotName', '')) else '') + ('to %s' %(args.get('name'))),
+            machine : args.get('src','')
+        }
 
     """
      * Turn VRDE on / off on a running VM
@@ -1702,6 +1715,14 @@ class vboxConnector(object):
 
         return True
 
+    remote_machineSave.log = True
+    
+    @staticmethod
+    def remote_machineSave_log(args, response):
+        return {
+            name: 'Save machine settings',
+            machine: args['vm']
+        }
 
     """
      * Add a virtual machine via its settings file.
@@ -1715,6 +1736,13 @@ class vboxConnector(object):
         m = self.vbox.openMachine(args['file'])
         self.vbox.registerMachine(m)
         return True
+    
+    remote_machineAdd.log = True
+    
+    @staticmethod
+    def remote_machineAdd_log(args, results):
+        return { name: "Add virtual machine" }
+
 
     """
      * Get progress operation status. On completion, destory progress operation.
@@ -1812,7 +1840,17 @@ class vboxConnector(object):
 
         return {'progress' : progressid}
 
-
+    remote_applianceImport.progress = True
+    remote_applianceImport.log = True
+    
+    @staticmethod
+    def remote_applianceImport_log(args, results):
+        return {
+                name : "Import appliance",
+                details: ""
+                """ TODO """
+        }
+    
     """
      * Get a list of VMs that are available for export.
      *
@@ -1959,7 +1997,16 @@ class vboxConnector(object):
 
         return {'progress' : progressid}
 
-
+    remote_applianceExport.progress = True
+    remote_applianceExport.log = True
+    
+    @staticmethod
+    def remote_applianceExport_log(args, results):
+        return {
+            'name': "Export appliance",
+            'details': "Exported %s vms" %(args['vms'].length)
+        }
+    
     """
      * Get host networking info
      *
@@ -2078,7 +2125,13 @@ class vboxConnector(object):
                 dhcp.setConfiguration(nics[i]['dhcpServer']['IPAddress'],nics[i]['dhcpServer']['networkMask'],nics[i]['dhcpServer']['lowerIP'],nics[i]['dhcpServer']['upperIP'])
 
         return True
+    
+    remote_hostOnlyInterfacesSave.log = True
 
+    @staticmethod
+    def remote_hostOnlyInterfacesSave_log(args, results):
+        return {'name':"Save host-only interfaces"}
+    
     """
      * Add Host-only interface
      * 
@@ -2096,6 +2149,13 @@ class vboxConnector(object):
 
         return {'progress' : progressid}
 
+    remote_hostOnlyInterfaceCreate.progress = True
+    remote_hostOnlyInterfaceCreate.log = True
+    
+    @staticmethod
+    def remote_hostOnlyInterfaceCreate_log(args, results):
+        return { name : "Create host-only interface" }
+    
 
     """
      * Remove a host-only interface
@@ -2105,6 +2165,9 @@ class vboxConnector(object):
      """
     def remote_hostOnlyInterfaceRemove(args):
 
+        """ Get name for log """
+        nicName = self.vbox.host.findHostNetworkInterfaceById(args['id']).name
+        
         """ @progress IProgress """
         progress = self.vbox.host.removeHostOnlyNetworkInterface(args['id'])
 
@@ -2112,8 +2175,16 @@ class vboxConnector(object):
         global progressOpPool
         progressid = progressOpPool.store(progress)
 
-        return {'progress' : progressid}
+        return {'progress' : progressid, 'interface': nicName}
 
+    remote_hostOnlyInterfaceRemove.progress = True
+    remote_hostOnlyInterfaceRemove.log = True
+    
+    @staticmethod
+    def remote_hostOnlyInterfaceRemove_log(args, results):
+        return {
+            name: "Remove host-only interface `%s`" %(results['interface'],)
+        }
 
     """
      * Get a list of Guest OS Types supported by this VirtualBox installation
@@ -2552,6 +2623,7 @@ class vboxConnector(object):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
+        machineName = machine.name
 
         # Only unregister or delete?
         if not args.get('delete', False):
@@ -2571,9 +2643,20 @@ class vboxConnector(object):
             global progressOpPool
             progressid = progressOpPool.store(progress)
 
-            return {'progress' : progressid}
+            return {'progress' : progressid, 'machine': machineName}
 
-        return True
+        return {'machine': machineName}
+    
+    remote_machineRemove.progress = True
+    remote_machineRemove.log = True
+    
+    @staticmethod
+    def remote_machineRemove_log(args, results):
+        return {
+            name: 'Remove machine',
+            details: 'Remove machine `%s`' %(results.get('machineName', '')),
+            machine: args.get('vm','')
+        }
 
 
     """
@@ -2709,7 +2792,17 @@ class vboxConnector(object):
                     session.unlockMachine()
                     session = None
 
-        return True
+        return {'vm':vm}
+
+    remote_machineCreate.log = True
+    
+    @staticmethod
+    def remote_machineCreate_log(args, results):
+        return {
+            name: 'Create virtual machine',
+            details: 'Create virtual machine `%s`' %(args.get('name',''),),
+            machine: results.get('vm','')
+        }
 
 
     """

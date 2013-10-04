@@ -2353,7 +2353,28 @@ class vboxConnector(object):
 
         return True
 
+    remote_machineSetState.progress = True
+    remote_machineSetState.log = True
     
+    @staticmethod
+    def remote_machineSetState_log(args, results):
+        """
+            states = {
+            'powerDown' : {'result':vboxMgr.constants.MachineState_PoweredOff,'progress':2},
+            'reset' : {},
+            'saveState' : {'result':vboxMgr.constants.MachineState_Saved,'progress':2},
+            'powerButton' : {'acpi':True},
+            'sleepButton' : {'acpi':True},
+            'pause' : {'result':vboxMgr.constants.MachineState_Paused,'progress':False},
+            'resume' : {'result':vboxMgr.constants.MachineState_Running,'progress':False},
+            'powerUp' : {'result':vboxMgr.constants.MachineState_Running},
+            'discardSavedState' : {'result':vboxMgr.constants.MachineState_PoweredOff,'lock':vboxMgr.constants.LockType_Shared,'force':True}
+        """
+
+        event = {
+            machine: args.get('vm')
+         }
+        
     """
      * Get VirtualBox host memory usage information
      *

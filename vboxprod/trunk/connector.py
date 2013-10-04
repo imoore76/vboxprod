@@ -974,9 +974,9 @@ class vboxConnector(object):
     @staticmethod
     def remote_machineClone_log(args, results):
         return {
-            name : "Clone virtual machine",
-            details: ('from snapshot ' + results['snapshotName'] if (results and results.get('snapshotName', '')) else '') + ('to %s' %(args.get('name'))),
-            machine : args.get('src','')
+            'name' : "Clone virtual machine",
+            'details': ('from snapshot ' + results['snapshotName'] if (results and results.get('snapshotName', '')) else '') + ('to %s' %(args.get('name'))),
+            'machine' : args.get('src','')
         }
 
     """
@@ -1720,8 +1720,8 @@ class vboxConnector(object):
     @staticmethod
     def remote_machineSave_log(args, response):
         return {
-            name: 'Save machine settings',
-            machine: args['vm']
+            'name': 'Save machine settings',
+            'machine': args['vm']
         }
 
     """
@@ -1735,13 +1735,16 @@ class vboxConnector(object):
         """ @m IMachine """
         m = self.vbox.openMachine(args['file'])
         self.vbox.registerMachine(m)
-        return True
+        return {'machine': m.id}
     
     remote_machineAdd.log = True
     
     @staticmethod
     def remote_machineAdd_log(args, results):
-        return { name: "Add virtual machine" }
+        return {
+            'name': "Add virtual machine",
+            'machine': results.get('machine','')
+        }
 
 
     """
@@ -1799,6 +1802,12 @@ class vboxConnector(object):
 
         return True
 
+    remote_vboxSystemPropertiesSave.log = True
+    
+    @staticmethod
+    def remote_vboxSystemPropertiesSave_log(args, results):
+        return {'name' : "Create host-only interface" }
+
     """
      * Import a virtual appliance
      *
@@ -1846,8 +1855,8 @@ class vboxConnector(object):
     @staticmethod
     def remote_applianceImport_log(args, results):
         return {
-                name : "Import appliance",
-                details: ""
+                'name' : "Import appliance",
+                'details': ""
                 """ TODO """
         }
     
@@ -2154,7 +2163,7 @@ class vboxConnector(object):
     
     @staticmethod
     def remote_hostOnlyInterfaceCreate_log(args, results):
-        return { name : "Create host-only interface" }
+        return { 'name' : "Create host-only interface" }
     
 
     """
@@ -2183,7 +2192,7 @@ class vboxConnector(object):
     @staticmethod
     def remote_hostOnlyInterfaceRemove_log(args, results):
         return {
-            name: "Remove host-only interface `%s`" %(results['interface'],)
+            'name': "Remove host-only interface `%s`" %(results.get('interface',''),)
         }
 
     """
@@ -2264,36 +2273,19 @@ class vboxConnector(object):
             
             
             # Try opening session for VM
-            try:
-            
-                # create session
-                session = vboxMgr.mgr.getSessionObject(self.vbox)
+            session = vboxMgr.mgr.getSessionObject(self.vbox)
 
-                # set first run
-                if machine.getExtraData('GUI/FirstRun') == 'yes':
-                    machine.setExtraData('GUI/FirstRun', 'no')
-                
-                """ @progress IProgress """
-                progress = machine.launchVMProcess(session, 'headless', '')
+            # set first run
+            if machine.getExtraData('GUI/FirstRun') == 'yes':
+                machine.setExtraData('GUI/FirstRun', 'no')
             
-            except Exception as e:
-                # Error opening session
-                self.errors.append((str(e),traceback.format_exc()))
-                return False
-            
-            # Does an exception exist?
-            try:
-                if progress.errorInfo:
-                    ##self.errors.append(new Exception(progress.errorInfo.text)
-                    return False
-                
-            except:
-                pass
+            """ @progress IProgress """
+            progress = machine.launchVMProcess(session, 'headless', '')
             
             progressid = progressOpPool.store(progress, session)
 
             
-            return {'progress' : progressid}
+            return {'progress' : progressid, 'requestedState':state}
             
 
         # Open session to machine
@@ -2308,30 +2300,9 @@ class vboxConnector(object):
 
             """ @progress IProgress """
             progress = self.session.console.state()
-
-            if not progress:
-
-                # should never get here
-                try:
-                    session.unlockMachine()
-                    session = None
-                except:
-                    pass
-
-                raise Exception('Unknown error settings machine to requested state.')
-            
-
-            # Does an exception exist?
-            try:
-                if progress.errorInfo:
-                    #self.errors.append(new Exception(progress.errorInfo.text)
-                    return False
-                
-            except: pass
-
             progressid = progressOpPool.store(progress, session)
 
-            return {'progress' : progressid}
+            return {'progress' : progressid, 'requestedState':state}
 
         # Operation does not return a progress object
         # Just call the function
@@ -2344,35 +2315,36 @@ class vboxConnector(object):
         if states[state].get('acpi',False) and not self.session.console.getPowerButtonHandled():
             self.session.unlockMachine()
             self.session = None
-            return False
+            return {'requestedState':state}
 
 
         if not progress:
             self.session.unlockMachine()
             self.session = None
 
-        return True
+        return {'requestedState':state}
 
     remote_machineSetState.progress = True
     remote_machineSetState.log = True
     
     @staticmethod
     def remote_machineSetState_log(args, results):
-        """
-            states = {
-            'powerDown' : {'result':vboxMgr.constants.MachineState_PoweredOff,'progress':2},
-            'reset' : {},
-            'saveState' : {'result':vboxMgr.constants.MachineState_Saved,'progress':2},
-            'powerButton' : {'acpi':True},
-            'sleepButton' : {'acpi':True},
-            'pause' : {'result':vboxMgr.constants.MachineState_Paused,'progress':False},
-            'resume' : {'result':vboxMgr.constants.MachineState_Running,'progress':False},
-            'powerUp' : {'result':vboxMgr.constants.MachineState_Running},
-            'discardSavedState' : {'result':vboxMgr.constants.MachineState_PoweredOff,'lock':vboxMgr.constants.LockType_Shared,'force':True}
-        """
 
-        event = {
-            machine: args.get('vm')
+        states = {
+            'powerDown' : 'Power off the virtual machine',
+            'reset' : 'Reset the virtual machine',
+            'saveState' : 'Save the state of the virtual machine',
+            'powerButton' : 'Send the ACPI power button event to the virtual machine',
+            'sleepButton' : 'Send the ACPI sleep button event to the virtual machine',
+            'pause' : 'Pause the virtual machine',
+            'resume' : 'Resume exection of the virtual machine',
+            'powerUp' : 'Start the virtual machine',
+            'discardSavedState' : 'Discard the saved state of the virtual machine'
+        }
+
+        return {
+            'machine': args.get('vm'),
+            'name': states.get(results.get('state', args.get('state')))
          }
         
     """
@@ -2674,9 +2646,9 @@ class vboxConnector(object):
     @staticmethod
     def remote_machineRemove_log(args, results):
         return {
-            name: 'Remove machine',
-            details: 'Remove machine `%s`' %(results.get('machineName', '')),
-            machine: args.get('vm','')
+            'name': 'Remove machine',
+            'details': 'Remove machine `%s`' %(results.get('machineName', '')),
+            'machine': args.get('vm','')
         }
 
 
@@ -2820,9 +2792,9 @@ class vboxConnector(object):
     @staticmethod
     def remote_machineCreate_log(args, results):
         return {
-            name: 'Create virtual machine',
-            details: 'Create virtual machine `%s`' %(args.get('name',''),),
-            machine: results.get('vm','')
+            'name': 'Create virtual machine',
+            'details': 'Create virtual machine `%s`' %(args.get('name',''),),
+            'machine': results.get('vm','')
         }
 
 
@@ -3274,7 +3246,8 @@ class vboxConnector(object):
     def remote_snapshotRestore(self, args):
 
         progressid = progress = session = None
-
+        snapshotName = None
+        
         try:
 
             # Open session to machine
@@ -3286,7 +3259,8 @@ class vboxConnector(object):
 
             """ @snapshot ISnapshot """
             snapshot = session.machine.findSnapshot(args['snapshot'])
-
+            snapshotName = snapshot.name
+            
             """ @progress IProgress """
             progress = session.console.restoreSnapshot(snapshot)
 
@@ -3305,7 +3279,18 @@ class vboxConnector(object):
             
             raise e
         
-        return {'progress' : progressid}
+        return {'progress' : progressid, 'snapshotName':snapshotName}
+
+    remote_snapshotRestore.progress = True
+    remote_snapshotRestore.log = True
+    
+    @staticmethod
+    def remote_snapshotRestore_log(args, results):
+        return {
+            'name' : "Restore snapshot %s" %(results.get('snapshotName', args.get('snapshot')),),
+            'machine': args.get('vm')
+        }
+
 
     """
      * Delete a snapshot
@@ -3316,7 +3301,8 @@ class vboxConnector(object):
     def remote_snapshotDelete(self, args):
 
         progressid, progress = session = None
-
+        snapshotName = ''
+        
         try:
 
             # Open session to machine
@@ -3326,6 +3312,8 @@ class vboxConnector(object):
             machine = self.vbox.findMachine(args['vm'])
             machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
 
+            snapshotName = machine.findSnapshot(args['snapshot']).name
+            
             """ @progress IProgress """
             progress = session.console.deleteSnapshot(args['snapshot'])
 
@@ -3344,7 +3332,17 @@ class vboxConnector(object):
 
             raise e
 
-        return {'progress' : progressid}
+        return {'progress' : progressid, 'snapshotName': snapshotName}
+
+    remote_snapshotDelete.progress = True
+    remote_snapshotDelete.log = True
+    
+    @staticmethod
+    def remote_snapshotDelete_log(args, results):
+        return {
+            'name' : "Delete snapshot %s" %(results.get('snapshotName', args.get('snapshot')),),
+            'machine': args.get('vm')
+        }
 
     """
      * Take a snapshot
@@ -3382,6 +3380,18 @@ class vboxConnector(object):
             raise e
                 
         return {'progress' : progressid}
+    
+    remote_snapshotTake.progress = True
+    remote_snapshotTake.log = True
+    
+    @staticmethod
+    def remote_snapshotTake_log(args, results):
+        return {
+            'name' : "Take snapshot `%s`" %(args['name'],),
+            'details': "Snapshot description: %s" %(args.get('description'),) if args.get('description','') else '',
+            'machine': args.get('vm')
+        }
+
 
     """
      * Get a list of snapshots for a machine
@@ -3502,7 +3512,8 @@ class vboxConnector(object):
 
 
         m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk, None, None)
-
+        mediumName = m.name
+        
         """ @progress IProgress """
         progress = m.resize(args['bytes'])
         
@@ -3510,7 +3521,18 @@ class vboxConnector(object):
         progressid = progressOpPool.store(progress)
 
         
-        return {'progress' : progressid}
+        return {'progress' : progressid, 'mediumName': mediumName}
+    
+    remote_mediumResize.progress = True
+    remote_mediumResize.log = True
+    
+    @staticmethod
+    def remote_mediumResize_log(args, results):
+        return {
+            'name' : "Resize medium %s" %(results.get('mediumName', args.get('medium')),),
+            'details': "Requested size %d MB" %(long(args['bytes']) / 1024 / 1024)
+        }
+
         
     """
      * Clone a medium
@@ -3542,6 +3564,13 @@ class vboxConnector(object):
         progressid = progressOpPool.store(progress)
 
         return {'progress' : progressid, 'id' : mid}
+
+    remote_mediumCloneTo.progress = True
+    remote_mediumCloneTo.log = True
+    
+    @staticmethod
+    def remote_mediumCloneTo_log(args, results):
+        return { 'name' : "Clone medium %s to %s" %(args.get('src','Unknown'),args.get('location','Unknown'))}
 
 
     """
@@ -3620,6 +3649,12 @@ class vboxConnector(object):
         
         return {'id':mid}
 
+    remote_mediumAdd.log = True
+    
+    @staticmethod
+    def remote_mediumAdd_log(args, results):
+        return { 'name' : "Add medium %s" %(args.get(['path'])) }
+
 
     """
      * Get VirtualBox generated machine configuration file name
@@ -3656,6 +3691,14 @@ class vboxConnector(object):
         progressid = progressOpPool.store(progress)
 
         return {'progress' : progressid}
+    
+    remote_mediumCreateBaseStorage.progress = True
+    remote_mediumCreateBaseStorage.log = True
+    
+    @staticmethod
+    def remote_mediumCreateBaseStorage_log(args, results):
+        return { 'name' : "Create hard disk %s" %(args.get('file'),)}
+
 
     """
      * Release medium from all attachments
@@ -3668,59 +3711,84 @@ class vboxConnector(object):
         """ @m IMedium """
         m = self.vbox.openMedium(args['medium'],vboxStringToEnum("DeviceType", args['type']), None, None)
         mediumid = m.id
+        mediumName = m.name
 
+        # Machine name list that this medium will be released from
+        machineNames = []
+        
+        # Current session
+        session = None
+        
         # connected to...
         machines = m.machineIds
         released = []
         for uuid in machines:
 
-            # Find medium attachment
+            # Wrap in try / finally to make sure
+            # session is unlocked
             try:
-                """ @mach IMachine """
-                mach = self.vbox.findMachine(uuid)
-            except Exception as e:
-                self.errors.append((e,traceback.format_exc()))
-                continue
-            
-            remove = []
-            for a in mach.mediumAttachments:
-
-                if a.medium and a.medium.id == mediumid:
-                    remove.append({
-                        'controller' : a.controller,
-                        'port' : a.port,
-                        'device' : a.device
-                    })
-
-            # save state
-            state = mach.sessionState
-
-            if not len(remove): continue
-
-            released.append(uuid)
-
-            # create session
-            self.session = vboxMgr.mgr.getSessionObject(self.vbox)
-
-            # Hard disk requires machine to be stopped
-            if args['type'] == 'HardDisk' or state == vboxMgr.constants.SessionState_Unlocked:
-                mach.lockMachine(self.session, vboxMgr.constants.LockType_Write)
-            else:
-                mach.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
-
-
-            for r in remove:
+                # Find medium attachment
+                try:
+                    """ @mach IMachine """
+                    mach = self.vbox.findMachine(uuid)
+                except Exception as e:
+                    self.errors.append((e,traceback.format_exc()))
+                    continue
                 
-                if args['type'] == 'HardDisk':
-                    self.session.machine.detachDevice(r['controller'],r['port'],r['device'])
+                remove = []
+                for a in mach.mediumAttachments:
+    
+                    if a.medium and a.medium.id == mediumid:
+                        remove.append({
+                            'controller' : a.controller,
+                            'port' : a.port,
+                            'device' : a.device
+                        })
+    
+                # save state
+                state = mach.sessionState
+    
+                if not len(remove): continue
+    
+                released.append(uuid)
+    
+                # create session
+                ssession = vboxMgr.mgr.getSessionObject(self.vbox)
+    
+                # Hard disk requires machine to be stopped
+                if args['type'] == 'HardDisk' or state == vboxMgr.constants.SessionState_Unlocked:
+                    mach.lockMachine(session, vboxMgr.constants.LockType_Write)
                 else:
-                    self.session.machine.mountMedium(r['controller'],r['port'],r['device'],None,True)
+                    mach.lockMachine(session, vboxMgr.constants.LockType_Shared)
+    
+    
+                for r in remove:
+                    
+                    if args['type'] == 'HardDisk':
+                        session.machine.detachDevice(r['controller'],r['port'],r['device'])
+                    else:
+                        session.machine.mountMedium(r['controller'],r['port'],r['device'],None,True)
+    
+                session.machine.saveSettings()
+                session.unlockMachine()
+                session = None
+                
+                machineNames.append(mach.name)
+            
+            finally:
+                if session:
+                    session.unlockMachine()
+                    
+        return {'machineNames': machineNames, 'mediumName': mediumName}
 
-            self.session.machine.saveSettings()
-            self.session.unlockMachine()
-            self.session = None
-
-        return True
+    remote_mediumRelease.log = True
+    
+    @staticmethod
+    def remote_mediumRelease_log(args, results):
+        return {
+            'name' : "Release medium %s" %(results.get('mediumName', args.get('medium')),),
+            'details': "Released from %s" %(', '.join(results.get('machineNames'),)) if results.get('machineNames') else ''
+        }
 
 
     """
@@ -3733,7 +3801,8 @@ class vboxConnector(object):
 
         """ @m IMedium """
         m = self.vbox.openMedium(args['medium'],vboxStringToEnum('DeviceType', args.get('type', 'HardDisk')), None, None)
-
+        mediumName = m.name
+        
         if args.get('delete',None) and m.deviceType == vboxMgr.constants.DeviceType_HardDisk:
 
             """ @progress IProgress """
@@ -3747,7 +3816,15 @@ class vboxConnector(object):
         else:
             m.close()
 
-        return True
+        return {'mediumName':mediumName}
+
+    remote_mediumRemove.log = True
+    
+    @staticmethod
+    def remote_mediumRemove_log(args, results):
+        return {
+            'name' : "Remove medium %s" %(results.get('mediumName', args.get('medium')),)
+        }
 
 
     """
@@ -4379,10 +4456,6 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
     file = None
     heartbeatTimer = None
     
-    service = None
-    serviceObj = None
-
-    
     def close(self):
         """ 
             Close all open handles. This also forces
@@ -4398,39 +4471,19 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
     def send(self, message):
         """
             Send a message to the connected client
-        """
-        
-        # RPC calls yield a response
-        if inspect.isgeneratorfunction(message):
+        """        
+        try:
+            response = json.dumps(message)
+        except:
+            traceback.format_exc()
+            return
 
-            self.sendLock.acquire(True)
-            
-            try:
-                for msg in message():
-                    try:
-                        response = json.dumps(msg)
-                    except Exception as e:
-                        traceback.format_exc()
-                        continue
-                    self.request.sendall(response+"\n")
-            finally:
-                self.sendLock.release()
+        self.sendLock.acquire(True)
 
-        # Non generator
-        else:
-                        
-            try:
-                response = json.dumps(message)
-            except:
-                traceback.format_exc()
-                return
-    
-            self.sendLock.acquire(True)
-    
-            try:
-                self.request.sendall(response+"\n")
-            finally:
-                self.sendLock.release()
+        try:
+            self.request.sendall(response+"\n")
+        finally:
+            self.sendLock.release()
     
     def handle(self):
         """
@@ -4444,6 +4497,12 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
         clientId = "%s:%s" %(self.client_address)
         
         self.server.addClient(clientId, self)
+        
+        service = None
+        serviceObj = None
+
+    
+
             
         class heartbeatrunner(threading.Thread):
             """
@@ -4480,6 +4539,10 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
 
         try:
             
+            serviceObj = None
+            service = ''
+            clientRegistered = False
+            
             # Start heartbeat
             if self.heartbeat is None:
                 self.heartbeat = heartbeatrunner(self)
@@ -4490,172 +4553,164 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                 RPC requests from the connected client
             """
             while True:
-
+                
+                request = self.file.readline()
+                response = {}
+                
                 try:
                     
-                    self.requestStr = self.file.readline()
-                    
-                    
                     # EOF - client disconnected
-                    if len(self.requestStr) == 0 or self.requestStr[-1] != "\n":
+                    if len(request) == 0 or request[-1] != "\n":
                         break
                     
                     # Empty line?
-                    if self.requestStr.strip() == '': continue
+                    if request.strip() == '': continue
                     
                     try:
-                        self.message = json.loads(self.requestStr)
+                        message = json.loads(request)
                     except:
-                        raise Exception("Invalid json request: %s" %(self.requestStr))
+                        raise Exception("Invalid json request: %s" %(request))
                     
-    
+                    self.ready = False
+                    
                     """
-                        A generator function ensures that no other
-                        messages will be sent while a request is in progress
+                        Initial response dict
                     """
-                    def handleResponse():
-                        
-                        """
-                            Initial response dict
-                        """
-                        response = {
-                            'requestId' : self.message.get('requestId',''),
-                            'errors': [],
-                            'messages' : [],
-                            'success' : False
-                        }
-                        
-                        
-                        try:      
-                            """
-                                RPC messages are a simple call / response
-                            """
-                            if self.message.get('msgType', '') == 'rpc':
-                                
-                                
-                                method = self.message.get('method', None)
-                                if not method:
-                                    raise Exception("No method specified in rpc call: %s" %(self.requestStr,))
-                                
-                                """ Set msg type """
-                                response.update({'msgType' : '%s_response'%(method,)})
-                                
-                                
-                                if method == 'setService':
-                                    """
-                                        Set a service for this connection
-                                    
-                                    """
-                                    
-                                    if self.serviceObj is not None:
-                                        raise Exception("Service has already been set for this connection")
-                                    
-                                    self.service = self.message.get('args',{}).get('service', None)
-                                    if not self.service:
-                                        raise Exception('No service specified') 
-        
-                                
-                                    """ Create or get instance of service"""
-                                    serviceInstance = self.server.getService(self.service)
-                                    if not serviceInstance:
-                                        raise Exception("Unknown service: %s" %(self.service,))
-                                    
-                                    if isinstance(serviceInstance, type):
-                                        self.serviceObj = serviceInstance()
-                                    else:
-                                        self.serviceObj = serviceInstance
-                                    
-                                    response.update({
-                                        'responseData' : True,
-                                        'errors': self.serviceObj.errors if hasattr(self.serviceObj, 'errors') else [],
-                                        'messages': self.serviceObj.messages if hasattr(self.serviceObj, 'messages') else [],
-                                        'success': True,
-                                    })
-                                
-                                
-                                elif method == 'registerClient':
-                                    """
-                                    
-                                        Register client with service
-                                        
-                                    """
-                                    
-                                    methodResponse = self.serviceObj.registerClient(self)
-                                    response.update({
-                                        'responseData' : methodResponse,
-                                        'success': True
-                                    })
-        
-        
-                                    
-                                else:
-                                    
-                                    """
-                                        Direct method call
-                                        
-                                    """
-                                    if not self.serviceObj:
-                                        raise Exception("A service has not been set for this connection")
-                                    
-                                    if not getattr(self.serviceObj, 'remote_%s' %(method,), None):
-                                        raise Exception("Service '%s' has no method named '%s'" %(self.service, method))
-                                    
-                                    try:
-                                        methodResponse = getattr(self.serviceObj, 'remote_%s' %(method,))(self.message.get('args',{}))
-                                        
-                                        # Format exceptions
-                                        errors = []
-                                        for e in self.serviceObj.errors:
-                                            errors.append({
-                                                'error': '%s' %(str(e),),
-                                                'details': e[1]
-                                            })
-                                            
-                                        response.update({
-                                            'responseData' : methodResponse,
-                                            'errors': errors,
-                                            'messages': self.serviceObj.messages,
-                                            'success': True
-                                        })
-                                        
-                                        #logger.debug("%s_response: %s" %(method, methodResponse))
-                                        
-                                    except Exception as ex:
-                                        
-                                        logger.exception(str(ex))
-                                        
-                                        response.update({
-                                            'responseData' : False,
-                                            'errors': [{'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
-                                            'messages': self.serviceObj.messages
-                                        })
-        
-                                    finally:
-                                        self.serviceObj.finishRequest()
-                            
-                            else:
-                                raise Exception("Invalid message type: %s" %(self.message.get('msgType',''),))
-                            
-                            
-                        except Exception as ex:
-                            response.update({
-                                'msgType':'rpc_exception',
-                                'details': traceback.format_exc(),
-                                'error': str(ex)
-                            })
-                            
-                        finally:
-                            yield response
-    
-                        
-                    self.send(handleResponse)
+                    response = {
+                        'requestId' : message.get('requestId',''),
+                        'errors': [],
+                        'messages' : [],
+                        'success' : False
+                    }
 
+                                        
+                    """
+                        RPC messages are a simple call / response
+                    """
+                    if message.get('msgType', '') == 'rpc':
+                        
+                        
+                        method = message.get('method', None)
+                        if not method:
+                            raise Exception("No method specified in rpc call: %s" %(request,))
+                        
+                        """ Set msg type """
+                        response.update({'msgType' : '%s_response'%(method,)})
+                        
+                        
+                        if method == 'setService':
+                            """
+                                Set a service for this connection
+                            
+                            """
+                            
+                            if serviceObj is not None:
+                                raise Exception("Service has already been set for this connection")
+                            
+                            service = message.get('args',{}).get('service', None)
+                            if not service:
+                                raise Exception('No service specified') 
+
+                        
+                            """ Create or get instance of service"""
+                            serviceInstance = self.server.getService(service)
+                            if not serviceInstance:
+                                raise Exception("Unknown service: %s" %(service,))
+                            
+                            if isinstance(serviceInstance, type):
+                                serviceObj = serviceInstance()
+                            else:
+                                serviceObj = serviceInstance
+                            
+                            response.update({
+                                'responseData' : True,
+                                'errors': serviceObj.errors if hasattr(serviceObj, 'errors') else [],
+                                'messages': serviceObj.messages if hasattr(serviceObj, 'messages') else [],
+                                'success': True,
+                            })
+                        
+                        
+                        elif method == 'registerClient':
+                            """
+                            
+                                Register client with service
+                                
+                            """
+                            
+                            methodResponse = serviceObj.registerClient(self)
+                            clientRegistered = True
+                            response.update({
+                                'responseData' : methodResponse,
+                                'success': True
+                            })
+
+
+                            
+                        else:
+                            
+                            """
+                                Direct method call
+                                
+                            """
+                            if not serviceObj:
+                                raise Exception("A service has not been set for this connection")
+                            
+                            if not getattr(serviceObj, 'remote_%s' %(method,), None):
+                                raise Exception("Service '%s' has no method named '%s'" %(service, method))
+                            
+                            try:
+                                methodResponse = getattr(serviceObj, 'remote_%s' %(method,))(message.get('args',{}))
+                                
+                                # Format exceptions
+                                errors = []
+                                for e in serviceObj.errors:
+                                    errors.append({
+                                        'error': '%s' %(str(e),),
+                                        'details': e[1]
+                                    })
+                                    
+                                response.update({
+                                    'responseData' : methodResponse,
+                                    'errors': errors,
+                                    'messages': serviceObj.messages,
+                                    'success': True
+                                })
+                                
+                                #logger.debug("%s_response: %s" %(method, methodResponse))
+                                
+                            except Exception as ex:
+                                
+                                logger.exception(str(ex))
+                                
+                                response.update({
+                                    'responseData' : False,
+                                    'errors': [{'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }],
+                                    'messages': serviceObj.messages
+                                })
+
+                            finally:
+                                serviceObj.finishRequest()
+                    
+                    else:
+                        raise Exception("Invalid message type: %s" %(message.get('msgType',''),))
+                    
+                    
+                except Exception as ex:
+                    response.update({
+                        'msgType':'rpc_exception',
+                        'details': traceback.format_exc(),
+                        'error': str(ex)
+                    })
+                    
+
+                self.send(response)
+                self.ready = True
                 
-                except Exception as e:
-                    # assume connection closed
-                    #logger.exception(e)
-                    break
-    
+                
+        except:
+            # assume connection closed
+            pass
+         
         finally:
             
             # Stop heartbeat
@@ -4664,12 +4719,13 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
                 self.heartbeat.join()
             
             # Unregister client?
-            if self.serviceObj:
-                self.serviceObj.unregisterClient(self)
-                    
-                    
-            self.server.removeClient(clientId)
+            if serviceObj:
+                serviceObj.unregisterClient(self)
+                
+                
+        self.server.removeClient(clientId)
 
+                
             
 """
     RPC server
@@ -4759,7 +4815,8 @@ class vboxEventService(threading.Thread):
                     if e:
                         for c in self.clients.values():
                             try:
-                                c.send({'msgType':'vboxEvent','event':e})
+                                if c.ready:
+                                    c.send({'msgType':'vboxEvent','event':e})
                             except:
                                 # error sending to client
                                 pass

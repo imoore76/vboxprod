@@ -193,7 +193,13 @@ Ext.define('vcube.view.VMTabSummary', {
     			border: true
     		},{
 				width: 20,
-				html: ' ',
+				xtype: 'button',
+				label: 'SetDesc',
+				listeners: {
+					click: function(btn) {
+						vcube.utils.ajaxRequest('vbox/snapshotTake',{'vm':'Gender','connector':1,'name':'newSnapshot-' + Ext.id(),'description':'test???'})
+					}
+				},
 				border: false
 			},{
     			xtype: 'panel',

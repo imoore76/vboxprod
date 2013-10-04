@@ -1,13 +1,21 @@
 
 import json, cherrypy, traceback, pprint
+import datetime
 
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['accounts', 'connectors', 'vbox', 'app', 'vmgroups']
+__all__ = ['accounts', 'connectors', 'vbox', 'app', 'vmgroups', 'eventlog', 'tasklog']
 
 
 jsonResponseTemplate = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
+
+class vcubeJsonEncoder(json.JSONEncoder):
+    
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return super(vcubeJsonEncoder, self).default(obj)
 
 """
     Input data comes from json posted data
@@ -61,7 +69,7 @@ def jsonout(func):
         if kwargs.get('_pprint', None):
             return pprint.pformat(jsonResponse)
         
-        return json.dumps(jsonResponse)
+        return json.dumps(jsonResponse, cls=vcubeJsonEncoder)
     
     return decorated
 

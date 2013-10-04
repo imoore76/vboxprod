@@ -77,7 +77,7 @@ class dispatcher(dispatcher_parent):
             if not kwargs.get('connector', None):
                 raise Exception("No VirtualBox connector id specified")
             
-            response = vcube.getInstance().vboxAction(kwargs['connector'], fn, kwargs)
+            response = vcube.getInstance().vboxAction(kwargs['connector'], fn, kwargs, cherrypy.session.get('user',{}).get('username','Unknown'))
             
             for k in jsonResponse['data'].keys():
                 jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k])

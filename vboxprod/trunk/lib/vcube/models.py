@@ -60,7 +60,6 @@ class Connector(MySqlModel):
 class TaskLog(MySqlModel):
     id = PrimaryKeyField()
     name = CharField(max_length=256, null = False)
-    icon = CharField(max_length=32, null = True)
     machine = CharField(max_length=48, null = False)
     status = IntegerField(default = 0)
     details = CharField(max_length=256, null = True)

@@ -15,3 +15,12 @@ App keeps VM list
 	when server goes offline - remove list of vms
 	
 	vbox events must update internal list..
+	
+	
+	remote_hostOnlyInterfaceCreate.progress = True
+    remote_hostOnlyInterfaceCreate.log = True
+    
+    @staticmethod
+    def remote_hostOnlyInterfaceCreate_log(args, results):
+        return { name : "Create host-only interface" }
+	

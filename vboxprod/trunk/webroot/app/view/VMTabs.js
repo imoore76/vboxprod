@@ -100,6 +100,9 @@ Ext.define('vcube.view.VMTabs', {
     },{
     	xtype: 'VMTabSnapshots'
     },{
+    	xtype: 'EventsAndTasks',
+    	title: 'Events and Tasks'
+    },{
     	xtype: 'VMTabConsole'
     }]
 });

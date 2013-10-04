@@ -94,9 +94,6 @@ Ext.define('vcube.vmdatamediator', {
 				vcube.vmdatamediator.vmData[eventData.machineId].currentSnapshotName = eventData.enrichmentData.currentSnapshotName;
 				vcube.vmdatamediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
 				
-				// Get media again
-				Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMedia')).done(function(d){$('#vboxPane').data('vboxMedia',d);});
-				
 			}
 			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
 				vcube.vmdatamediator.vmDetailsData[eventData.machineId].snapshotCount = eventData.enrichmentData.snapshotCount;

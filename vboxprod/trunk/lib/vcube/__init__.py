@@ -6,10 +6,12 @@ import os, sys, ConfigParser, threading, Queue
 import MySQLdb
 import pprint, traceback
 
+from connector import vboxConnector 
+from vboxclient import vboxRPCClient, vboxRPCClientPool, STATES_TO_TEXT
+
+
 import logging
 logger = logging.getLogger('vcube')
-
-from vboxclient import vboxRPCClient, vboxRPCClientPool, STATES_TO_TEXT
 
 global config, app
 
@@ -34,10 +36,7 @@ def stop():
     app.join()
 
 # Imported after these are defined
-from models import Connector, EventLog
-
-class vboxActionsToTaskLog:
-    actions = []
+from models import Connector, EventLog, TaskLog
     
 class vboxEventsToEventLog:
     events = [
@@ -216,6 +215,67 @@ class Application(threading.Thread):
             self.eventQueuesLock.release()
 
     """
+       Log a task
+    """
+    def logTask(self, taskData):
+
+        try:
+            task = TaskLog()
+            task.started = int(time.time())
+            
+            task.status = taskData.get('status', 0)
+            task.started = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            
+            for attr in ['name','machine','details','connector','user']:
+                setattr(task, attr, taskData.get(attr,None))
+
+            task.save()
+            
+            self.pumpEvent({
+                'source' : 'vcube',
+                'eventType' : 'taskLogEntry',
+                'eventData' : dict(task._data.copy())
+            })
+            return task
+        
+        except Exception as e:
+            pprint.pprint(e)
+            logger.exception(e)
+            
+            return None
+
+    """
+        Update a task
+    """
+    def updateTask(self, task, taskData):
+        
+        try:
+            task.status = taskData.get('status', 1)
+            
+            if task.status > 0 and not taskData.get('completed', None):
+                taskDat['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                
+            for attr in ['name','machine','details','completed']:
+                if taskData.get(attr, None):
+                    setattr(task, attr, taskData.get(attr))
+    
+            task.save()
+            
+            self.pumpEvent({
+                'source' : 'vcube',
+                'eventType' : 'taskLogUpdate',
+                'eventData' : dict(task._data.copy())
+            })
+            
+            return task
+        
+        except Exception as e:
+            pprint.pprint(e)
+            logger.exception(e)
+            
+        return None
+        
+    """
        Log an event
     """
     def logEvent(self, event):
@@ -267,8 +327,71 @@ class Application(threading.Thread):
     """
         Place vboxConnectorAction in queue and wait
     """
-    def vboxAction(self, connector_id, action, args):
-        return self.connectorActionPool[str(connector_id)].vboxAction(action, args)
+    def vboxAction(self, connector_id, action, args, user=''):
+        
+        # Pass-through non-loggable actions
+        if not getattr(getattr(vboxConnector, 'remote_'+action), 'log', False):
+            return self.connectorActionPool[str(connector_id)].vboxAction(action, args)
+        
+        # Initial task entry
+        try:
+            logData = getattr(vboxConnector, 'remote_'+action+'_log')(args, {})
+        except Exception as e:
+            logger.exception(e)
+            logData = {
+                'name': action,
+                'details': 'Log failed: %s' %(str(e),)
+            }
+            
+        logData['connector'] = connector_id
+        logData['user'] = user
+        
+        task = self.logTask(logData)
+
+        # Perform action and parse result
+        result = self.connectorActionPool[str(connector_id)].vboxAction(action, args)
+        
+        # Failed to create task..
+        if not task:
+            return result
+        
+        # Get updated task entry
+        try:
+            
+            logData.update(getattr(vboxConnector, 'remote_'+action+'_log')(args, ({} if not result.get('success', False) else result.get('responseData',{}))))
+            
+        except Exception as e:
+
+            logger.exception(e)
+            logData.update({
+                'name': action,
+                'details': 'Log update failed: %s' %(str(e),)
+            })
+
+        # Set status to completed if it was successful,
+        # else set to errored and append errors
+        if not result.get('success', False):
+            
+            logData['status'] = 2
+            
+            if len(result.get('errors',[])):
+                errorStrings = []
+                for e in result.get('errors'):
+                    errorStrings.append(e.get('error','Unkonwn'))
+                logData['details'] = ' '.join(errorStrings)
+        
+        elif None:
+            task.completed = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+
+        else:
+            logData['status'] = 1
+            logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            
+        self.updateTask(task, logData)
+        
+        return result
+        
+        
     
     """
         Return internal list of virtual machines

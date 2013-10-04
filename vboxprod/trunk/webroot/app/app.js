@@ -20,8 +20,14 @@ Ext.application({
                'vcube.previewbox'],
     
     /* Controllers used by this app */
-    controllers: ['Viewport','Login','NavTree','MainPanel','GroupTabs','Menubar', 'EventsAndTasks',
-                  'VMTabs','VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabConsole'],
+    controllers: [
+                  // Main Views
+                  'Viewport','Login','NavTree','MainPanel','Menubar','EventsAndTasksMain',
+                  // VM Group tabs
+                  'GroupTabs',
+                  // VM tabs
+                  'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabEventsAndTasks','VMTabConsole'
+    ],
     
     /* Login window */
     views: ['Login'],
@@ -73,7 +79,6 @@ Ext.application({
     		this.serverStore.load({
     			scope: this,
     			callback: function(r,o,success) {
-    				console.log(r);
     				if(!success) return;
 					Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
 						Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){

@@ -5,7 +5,8 @@ Ext.define('vcube.view.MainPanel', {
     requires: [           
       'vcube.view.Welcome',
       'vcube.view.GroupTabs',
-      'vcube.view.VMTabs'
+      'vcube.view.VMTabs',
+      'vcube.view.ServerTabs'
     ],
     
     alias: 'widget.MainPanel',
@@ -18,6 +19,8 @@ Ext.define('vcube.view.MainPanel', {
     items: [{
     	xtype: 'Welcome',
     	hidden: false
+    },{
+    	xtype: 'ServerTabs'
     },{
     	xtype: 'GroupTabs'
     },{

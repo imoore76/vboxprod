@@ -15,6 +15,9 @@ Ext.define('vcube.controller.MainPanel', {
     	selector: 'viewport > MainPanel > GroupTabs',
     	ref: 'GroupTabsView'
     },{
+    	selector: 'viewport > MainPanel > ServerTabs',
+    	ref: 'ServerTabsView'
+    },{
     	selector: 'viewport > MainPanel > VMTabs',
     	ref: 'VMTabsView'
     }],
@@ -36,6 +39,7 @@ Ext.define('vcube.controller.MainPanel', {
     	var welcome = this.getWelcomeView();
     	var groupTabs = this.getGroupTabsView();
     	var vmTabs = this.getVMTabsView();
+    	var serverTabs = this.getServerTabsView();
     	
     		
     	// VM selected
@@ -44,6 +48,7 @@ Ext.define('vcube.controller.MainPanel', {
     		if(vmTabs.isVisible()) return;
     		groupTabs.hide();
     		welcome.hide();
+    		serverTabs.hide();
     		vmTabs.show();
     		
     		
@@ -52,8 +57,20 @@ Ext.define('vcube.controller.MainPanel', {
     	} else if(record.raw.data._type == 'vmgroup'){
     		if(groupTabs.isVisible()) return;
     		welcome.hide();
+    		serverTabs.hide();
     		vmTabs.hide();
     		groupTabs.show();
+    		
+    	// Server selected
+    	} else if(record.raw.data._type == 'server') {
+    		if(serverTabs.isVisible()) return;
+    		welcome.hide();
+    		vmTabs.hide();
+    		groupTabs.hide();
+    		serverTabs.show();
+    		
+    		
+    		
     	}
     	// Show welcome
     	else {

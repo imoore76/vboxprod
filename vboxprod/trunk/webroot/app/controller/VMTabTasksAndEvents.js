@@ -1,13 +1,13 @@
 /*
  * Events and tasks controller
  */
-Ext.define('vcube.controller.VMTabEventsAndTasks', {
-    extend: 'vcube.controller.EventsAndTasks',
+Ext.define('vcube.controller.VMTabTasksAndEvents', {
+    extend: 'vcube.controller.TasksAndEvents',
     
     // View references
     refs : [{
-    	selector: 'viewport > MainPanel > VMTabs > EventsAndTasks',
-    	ref: 'EventsAndTasksView'
+    	selector: 'viewport > MainPanel > VMTabs > TasksAndEventsTab',
+    	ref: 'TasksAndEventsView'
     },{
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
@@ -23,19 +23,20 @@ Ext.define('vcube.controller.VMTabEventsAndTasks', {
     selectedVMId : null,
     
     filter: function(eventData) {
-    	console.log("Hit filter with:");
-    	console.log(eventData);
     	return (eventData.machine == this.selectedVMId);
     },
     
     /* Watch for events */
     init: function() {
     	
-    	console.log("In vmtab init");
-    	
-        this.control({
-        	'viewport > MainPanel > VMTabs > EventsAndTasks' : {
-	        	show: this.onTabShow
+    	this.control({
+        	'viewport > MainPanel > VMTabs > TasksAndEventsTab' : {
+	        	show: this.onTabShow,
+    			render: function(panel) {
+    				// Reconfigure panel with unique store instance
+    				this.eventStore = panel.down('#events').getStore();
+    				this.taskStore = panel.down('#tasks').getStore();
+    			}
         	},
         	'viewport > NavTree' : {
         		select: this.onSelectItem
@@ -72,7 +73,7 @@ Ext.define('vcube.controller.VMTabEventsAndTasks', {
     populate: function() {
     	
     	// is this tab still visible?
-    	if(!this.getEventsAndTasksView().isVisible()) {
+    	if(!this.getTasksAndEventsView().isVisible()) {
     		this.dirty = true;
     		return;
     	}

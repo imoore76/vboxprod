@@ -22,11 +22,13 @@ Ext.application({
     /* Controllers used by this app */
     controllers: [
                   // Main Views
-                  'Viewport','Login','NavTree','MainPanel','Menubar','EventsAndTasksMain',
+                  'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEventsMain',
                   // VM Group tabs
                   'GroupTabs',
+                  // Server Tabs
+                  'ServerTabTasksAndEvents',
                   // VM tabs
-                  'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabEventsAndTasks','VMTabConsole'
+                  'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabTasksAndEvents','VMTabConsole'
     ],
     
     /* Login window */

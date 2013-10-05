@@ -66,8 +66,6 @@ Ext.define('vcube.controller.NavTree', {
 		
 		if(!targetGroup || (eventData.group == targetGroup.raw.data.group_id)) return;
 		
-		console.log(this.navTreeStore.getById('vmgroup-' + eventData.group));
-		
 		targetVM = targetVM.remove(false);
 		targetGroup.appendChild(targetVM);
 		

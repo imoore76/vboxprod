@@ -62,6 +62,10 @@ vboxSubscribeEventList = [ vboxMgr.constants.VBoxEventType_OnMachineStateChanged
 """ Helpers """
 
 # Delete pseudo machine states
+vboxMgr_constant_MachineState_FirstOnline = vboxMgr.constants._Values['MachineState']['FirstOnline']
+vboxMgr_constant_MachineState_LastOnline = vboxMgr.constants._Values['MachineState']['LastOnline']
+vboxMgr_constant_MachineState_FirstTransient = vboxMgr.constants._Values['MachineState']['FirstTransient']
+vboxMgr_constant_MachineState_LastTransient = vboxMgr.constants._Values['MachineState']['LastTransient']
 del vboxMgr.constants._Values['MachineState']['FirstOnline']
 del vboxMgr.constants._Values['MachineState']['FirstTransient']
 del vboxMgr.constants._Values['MachineState']['LastOnline']

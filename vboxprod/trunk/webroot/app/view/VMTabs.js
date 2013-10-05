@@ -9,13 +9,12 @@ Ext.define('vcube.view.VMTabs', {
     
 	alias: 'widget.VMTabs',
 	
-	vmData : {},
-	
 	requires: [
                'vcube.view.VMTabSummary',
                'vcube.view.VMTabDetails',
                'vcube.view.VMTabSnapshots',
-               'vcube.view.VMTabConsole'
+               'vcube.view.VMTabConsole',
+               'vcube.view.TasksAndEventsTab'
              ],
 	
 	statics: {
@@ -100,8 +99,7 @@ Ext.define('vcube.view.VMTabs', {
     },{
     	xtype: 'VMTabSnapshots'
     },{
-    	xtype: 'EventsAndTasks',
-    	title: 'Events and Tasks'
+    	xtype: 'TasksAndEventsTab'
     },{
     	xtype: 'VMTabConsole'
     }]

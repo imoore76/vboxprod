@@ -5,7 +5,7 @@ Ext.define('vcube.view.Viewport', {
     extend: 'Ext.container.Viewport',
     
     requires: [
-           'vcube.view.EventsAndTasks',
+           'vcube.view.TasksAndEventsMain',
            'vcube.view.MainPanel',
            'vcube.view.NavTree',
            'vcube.view.Menubar',
@@ -15,8 +15,8 @@ Ext.define('vcube.view.Viewport', {
    
    items : [{
 	   region: 'south',
-	   height: 200,
-	   xtype: 'EventsAndTasks',
+	   height: 180,
+	   xtype: 'TasksAndEventsMain',
 	   split: true
    },{
 	   region: 'west',

@@ -14,6 +14,8 @@ class dispatcher(dispatcher_parent):
         q = EventLog.select()
         if kwargs.get('vm', None):
             q = q.where(EventLog.machine == kwargs.get('vm'))
+        elif kwargs.get('connector', None):
+            q = q.where(EventLog.connector == kwargs.get('connector'))
         if kwargs.get('limit', None):
             q = q.limit(kwargs.get('limit'))
         

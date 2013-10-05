@@ -12,7 +12,9 @@ Ext.define('vcube.view.ServerTabs', {
     	padding: 5
     },    
     items: [{
-        title: 'Group Tab 1'
+        title: 'Server',
+        icon: 'images/vbox/OSE/VirtualBox_cube_42px.png',
+        iconCls: 'icon16'
     },{
     	xtype: 'TasksAndEventsTab'
     }]

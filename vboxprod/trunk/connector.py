@@ -4872,15 +4872,27 @@ class vboxEventService(threading.Thread):
 """
     Manages progress operations
 """
-class vboxProgressOpPool(object):
+class vboxProgressOpPool(threading.Thread):
     
+    sendStatus = None
     progressOpsLock = threading.Lock() 
     progressOps = {}
     
+    def __init__(self, sendStatus=pprint.pprint):
+        self.sendStatus = sendStatus
+        threading.Thread.__init__(self)
+        
     def store(self, progressObj, session = None):
         
         # Does an exception exist?
-        if progressObj.completed and progressObj.resultCode:            
+        if progressObj.completed and progressObj.resultCode:
+            
+            try:
+                if session: session.unlockMachine()
+                session = None
+            except:
+                pass
+            
             raise Exception("%s (%s): %s" %(progressObj.errorInfo.component, progressObj.errorInfo.resultCode, progressObj.errorInfo.text))
 
         self.progressOpsLock.acquire(True)
@@ -4900,55 +4912,85 @@ class vboxProgressOpPool(object):
         finally:
             self.progressOpsLock.release()
         
-    def getStatus(self, progressId):
-        
-        self.progressOpsLock.acquire(True)
-        status = None
-        try:
-            try:
-                progress, session = self.progressOps.get(progressId)
-                
-            except TypeError:
-                raise Exception("Progress operation does not exist")
-            
-            status = {
-                'completed' : progress.completed,
-                'canceled' : progress.canceled,
-                'description' : progress.description,
-                'operationDescription' : progress.operationDescription,
-                'timeRemaining' : progress.timeRemaining,
-                'resultCode' : progress.resultCode,
-                'percent' : progress.percent,
-                'cancelable' : progress.cancelable
-            }
-
-
-            # Does an exception exist?
-            if status['completed'] and status['resultCode']:            
-                raise Exception("%s (%s): %s" %(progress.errorInfo.component, progress.errorInfo.resultCode, progress.errorInfo.text))
-
-
-        finally:
-            self.progressOpsLock.release()
-            
-            # Completed? destroy progress op
-            if status and status.get('completed', True) or status['canceled']:
-                self.destory(progressId)
-
-                    
-        return status
     
-    def destory(self, progressId):
+    def stop(self):
         self.progressOpsLock.acquire(True)
         try:
-            progress, session = self.progressOps[progressId]
-            try:
-                if session:
-                    session.unlockMachine()
-            finally:
-                del self.progressOps[progressId]
+            if len(self.progressOps):
+                logger.error("vboxProgressOpPool shutdown requested while %s operations are still in progress" %s(len(self.progressOps),))
         finally:
+            self.running = False
             self.progressOpsLock.release()
+
+    def run(self):
+        
+        self.running = True
+        
+        while self.running or len(self.progressOps):
+            
+            if len(self.progressOps):
+                
+                self.progressOpsLock.acquire(True)
+                try:
+                    
+                    if not self.running:
+                        logger.error("vboxProgressOpPool waiting for %s operations to complete" %s(len(self.progressOps),))
+
+                    pids = self.progressOps.keys()
+                    for pid in pids:
+                    
+                        try:
+                            
+                            progress, session = self.progressOps.get(pid)
+                            
+                            status = {
+                                'completed' : progress.completed,
+                                'canceled' : progress.canceled,
+                                'description' : progress.description,
+                                'operationDescription' : progress.operationDescription,
+                                'timeRemaining' : progress.timeRemaining,
+                                'percent' : progress.percent,
+                                'cancelable' : progress.cancelable
+                            }
+                
+                
+                            # Completed? destroy progress op
+                            if status['completed'] or status['canceled']:
+                                
+                                try:
+                                    # Does an exception exist?
+                                    if progress.resultCode:
+                                        status['error'] = "%s (%s): %s" %(progress.errorInfo.component, progress.errorInfo.resultCode, progress.errorInfo.text)
+                    
+                                    try:
+                                        if session:
+                                            session.unlockMachine()
+                                    except Exception as e:
+                                        pprint.pprint(e)
+                                        exception.log(e)
+                                finally:
+                                    del self.progressOps[pid]
+                                    
+                            try:
+                                self.sendStatus(status)
+                            except Exception as e:
+                                pprint.pprint(e)
+                                logger.exception(e)
+                                
+                                    
+                        except Exception as e:
+                            pprint.pprint(e)
+                            logger.exception(e)
+                            if self.progressOps.get(pid,None):
+                                del self.progressOps[pid]
+    
+                
+                    
+                finally:
+                    self.progressOpsLock.release()
+                    
+                time.sleep(3)
+        
 
 """
 
@@ -4976,6 +5018,7 @@ def main(argv = sys.argv):
         Holds in-flight progress operations
     """
     progressOpPool = vboxProgressOpPool()
+    progressOpPool.start()
     
     """ Queues to pass events out of vbox to
         connected event listener
@@ -5146,6 +5189,12 @@ def main(argv = sys.argv):
     """
     listenerPool.shutdown()
     listenerPool.join()
+    
+    """
+       Shutdown progress operation pool
+    """
+    progressOpPool.stop()
+    progressOpPool.join()
     
     
 if __name__ == '__main__':

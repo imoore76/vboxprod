@@ -78,8 +78,8 @@ Ext.define('vcube.controller.ServerTabTasksAndEvents', {
     		return;
     	}
     	
-		this.taskStore.getProxy().extraParams = {}; //{'vm' : this.selectedServerId};
-		this.eventStore.getProxy().extraParams = {}; //{'vm' : this.selectedServerId};
+		this.taskStore.getProxy().extraParams = {'server' : this.selectedServerId};
+		this.eventStore.getProxy().extraParams = {'server' : this.selectedServerId};
 
 		this.callParent(arguments);
     }

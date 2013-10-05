@@ -14,6 +14,8 @@ class dispatcher(dispatcher_parent):
         q = TaskLog.select()
         if kwargs.get('vm', None):
             q = q.where(TaskLog.machine == kwargs.get('vm'))
+        elif kwargs.get('connector', None):
+            q = q.where(TaskLog.connector == kwargs.get('connector'))
         if kwargs.get('limit', None):
             q = q.limit(kwargs.get('limit'))
         

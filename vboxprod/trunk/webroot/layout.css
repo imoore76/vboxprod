@@ -1,4 +1,9 @@
 /*
+ * General
+ */
+.icon16 { width: 16px; height: 16px; background-repeat: no-repeat;background-size:16px 16px; }
+
+/*
 Details table
 */
 .vboxDetailsTable { padding: 2px; border-width: 0px; }

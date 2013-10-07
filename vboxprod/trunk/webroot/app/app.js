@@ -11,7 +11,9 @@ Ext.Loader.setConfig({
 
 Ext.application({
 	
+	/* Generic app items */
     name: 'vcube',
+    
     autoCreateViewport: true,
     
     /* Various utils and scripts */
@@ -26,10 +28,13 @@ Ext.application({
                   // VM Group tabs
                   'GroupTabs',
                   // Server Tabs
-                  'ServerTabTasksAndEvents',
+                  'ServerTabConnector', 'ServerTabTasksAndEvents',
                   // VM tabs
                   'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabTasksAndEvents','VMTabConsole'
     ],
+    
+    /* Stores */
+    stores: ['Events','Tasks'],
     
     /* Login window */
     views: ['Login'],

@@ -3,6 +3,7 @@ Ext.define('vcube.view.ServerTabs', {
     alias: 'widget.ServerTabs',
     
 	requires: [
+	   'vcube.view.ServerTabConnector',
        'vcube.view.TasksAndEventsTab'
      ],
 
@@ -12,9 +13,7 @@ Ext.define('vcube.view.ServerTabs', {
     	padding: 5
     },    
     items: [{
-        title: 'Server',
-        icon: 'images/vbox/OSE/VirtualBox_cube_42px.png',
-        iconCls: 'icon16'
+    	xtype: 'ServerTabConnector'
     },{
     	xtype: 'TasksAndEventsTab'
     }]

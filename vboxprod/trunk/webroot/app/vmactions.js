@@ -676,7 +676,7 @@ Ext.define('vcube.vmactions',{
 					return;
 			}
 			
-			Ext.ux.Deferred.when(vboxAjaxRequest('machineSetState',{'vm':vm.id,'state':fn,'connector':vm.connector_id})).fail(function(d){
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineSetState',{'vm':vm.id,'state':fn,'connector':vm.connector_id})).fail(function(d){
 				if(errorMsg) {
 					vcube.utils.alert(errorMsg.replace('%1', vm.name));
 				}

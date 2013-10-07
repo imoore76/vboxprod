@@ -59,8 +59,8 @@ Ext.define('vcube.controller.TasksAndEvents', {
 
     onTaskLogUpdate: function(event) {
 
-    	if(!this.filter(event.eventData)) return;
-    	
+    	if(!(this.taskStore && this.filter(event.eventData))) return;
+
     	var record = this.taskStore.getById(event.eventData.id);
     	if(!record) {
     		this.onTaskLogEntry(event);

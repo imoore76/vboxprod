@@ -184,7 +184,6 @@ class vboxRPCClient(threading.Thread):
         
         self.connected = False
         self.registered = False
-        self.listening = False
         self.sock = None
         self.file = None
     
@@ -279,7 +278,7 @@ class vboxRPCClient(threading.Thread):
             except Exception as e:
                 
                 if self.file is not None:
-                    logger.exception(str(e))
+                    logger.exception(e)
                 
                 # Error state
                 if self.running:
@@ -292,7 +291,7 @@ class vboxRPCClient(threading.Thread):
             try:
                 message = json.loads(response)
             except Exception as e:
-                logger.exception(str(e))
+                logger.exception(e)
                 continue
             
             if message.get('msgType', '') == 'rpc_heartbeat':

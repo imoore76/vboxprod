@@ -1,5 +1,6 @@
 import sys
 import json
+import re
 from datetime import datetime
 import time
 import os, sys, ConfigParser, threading, Queue
@@ -14,6 +15,12 @@ import logging
 logger = logging.getLogger('vcube')
 
 global config, app
+
+# Constants
+TASK_STATUS_STARTED = 0
+TASK_STATUS_COMPLETED = 1
+TASK_STATUS_ERRORED = 2
+TASK_STATUS_CANCELED = 3
 
 # Read config 
 config = ConfigParser.SafeConfigParser()
@@ -76,7 +83,7 @@ class vboxEventsToEventLog:
     def MachineStateChanged(eventData):
         return {'name':'Machine state changed',
                 'machine':eventData['machineId'],
-                'details':'State chnaged to %s' %(eventData['state'],),
+                'details':'State changed to %s' %(re.sub(r'([a-z])([A-Z])',r'\1 \2',eventData['state']),),
                 'connector': eventData['connector_id']
         }
 
@@ -227,7 +234,7 @@ class Application(threading.Thread):
             task = TaskLog()
             task.started = int(time.time())
             
-            task.status = taskData.get('status', 0)
+            task.status = taskData.get('status', TASK_STATUS_STARTED)
             task.started = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
             for attr in ['name','machine','details','connector','user']:
@@ -254,7 +261,7 @@ class Application(threading.Thread):
     def updateTask(self, task, taskData):
         
         try:
-            task.status = taskData.get('status', 1)
+            task.status = taskData.get('status', TASK_STATUS_COMPLETED)
             
             if task.status > 0 and not taskData.get('completed', None):
                 taskDat['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
@@ -265,6 +272,7 @@ class Application(threading.Thread):
     
             task.save()
             
+        
             self.pumpEvent({
                 'source' : 'vcube',
                 'eventType' : 'taskLogUpdate',
@@ -293,27 +301,32 @@ class Application(threading.Thread):
         
         if status['completed'] or status['canceled']:
         
-            # remove from list
-            del self.progressOps[pid]
-            
-            taskData['status'] = 1 if not status['canceled'] else 3
-            
-            taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            
-            if status.get('resultCode', None):
-                taskData['status'] = 2
-                taskData['details'] = status.get('error', taskData['details'])
+            try:            
+                taskData['status'] = TASK_STATUS_COMPLETED if not status['canceled'] else TASK_STATUS_CANCELED
                 
-            self.updateTask(task, taskData)
+                taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                
+                if status.get('resultCode', None):
+                    taskData['status'] = TASK_STATUS_ERRORED
+                    taskData['details'] = status.get('error', taskData['details'])
+                    
+                self.updateTask(task, taskData)
+
+            finally:
+                # remove from list
+                del self.progressOps[pid]
 
         else:
             
             taskData['details'] = status.get('description', task.details)
 
+            eventTaskData = dict(task._data.copy())
+            eventTaskData.update(taskData)
+            
             self.pumpEvent({
                 'source' : 'vcube',
                 'eventType' : 'taskLogUpdate',
-                'eventData' : dict(task._data.copy()).update(taskData)
+                'eventData' : eventTaskData
             })
         
     """
@@ -413,7 +426,7 @@ class Application(threading.Thread):
         # else set to errored and append errors
         if not result.get('success', False):
             
-            logData['status'] = 2
+            logData['status'] = TASK_STATUS_ERRORED
             
             task.completed = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -424,14 +437,14 @@ class Application(threading.Thread):
                 logData['details'] = ' '.join(errorStrings)
             
         
-        elif getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False) and result.get('responseData',{}).get('progress',None):
+        elif getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False) and type(result.get('responseData',None)) is dict and result.get('responseData',{}).get('progress',None):
             
             # Add to progress / task pool
             self.progressOps[result['responseData']['progress']] = task
-            
+            logData['status'] = TASK_STATUS_STARTED
 
         else:
-            logData['status'] = 1
+            logData['status'] = TASK_STATUS_COMPLETED
             logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
         self.updateTask(task, logData)

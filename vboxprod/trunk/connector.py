@@ -4,6 +4,7 @@ import signal
 import ConfigParser
 import math
 import inspect
+import resource
 
 import socket
 import SocketServer
@@ -538,6 +539,25 @@ class vboxConnector(object):
         self.errors = self.messages = []
         
     """
+        Return status about this connector
+    """
+    def remote_getStatus(self, args):
+        
+        return {
+            #'rusage' : resource.getrusage(resource.RUSAGE_SELF),
+            'machines' : len(vboxGetArray(self.vbox, 'machines')),
+            'version' : self.getVersion(),
+            'operatingSystem' : self.vbox.host.operatingSystem,
+            'OSVersion' : self.vbox.host.OSVersion,
+            'settingsFilePath' : self.vbox.settingsFilePath,
+            'maxGuestRAM' : self.vbox.systemProperties.maxGuestRAM,
+            'maxGuestCPUCount' : self.vbox.systemProperties.maxGuestCPUCount,
+            'defaultMachineFolder' : self.vbox.systemProperties.defaultMachineFolder,
+            'homeFolder' : self.vbox.homeFolder
+        }
+
+        
+    """
      * Get VirtualBox version
      * @return dict version information
      """
@@ -1028,7 +1048,7 @@ class vboxConnector(object):
 
         # Shorthand
         """ @m IMachine """
-        m = self.session.machine
+        m = session.machine
 
         m.CPUExecutionCap = int(args['CPUExecutionCap'])
         m.description = args['description']
@@ -1219,7 +1239,7 @@ class vboxConnector(object):
             psf[sf.name] = sf
 
         # Get a list of temp shared folders
-        tsf_tmp = vboxGetArray(self.session.console,'sharedFolders')
+        tsf_tmp = vboxGetArray(session.console,'sharedFolders')
         tsf = {}
         
         for sf in tsf_tmp:
@@ -1247,22 +1267,22 @@ class vboxConnector(object):
                 """ Remove if it doesn't match """
                 if sf['hostPath'] != tsf[sf['name']].hostPath or sf['autoMount'] != tsf[sf['name']].autoMount or sf['writable'] != tsf[sf['name']].writable:
 
-                    self.session.console.removeSharedFolder(sf['name'])
-                    self.session.console.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
+                    session.console.removeSharedFolder(sf['name'])
+                    session.console.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
 
                 del tsf[sf['name']]
 
             else:
                 
                 # Does not exist or was removed. Add it.
-                if sf['type'] != 'machine': self.session.console.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
-                else: self.session.machine.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
+                if sf['type'] != 'machine': session.console.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
+                else: session.machine.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
 
         """
          * Remove remaining
          """
         for sf in psf.values(): m.removeSharedFolder(sf['name'])
-        for sf in tsf.values(): self.session.console.removeSharedFolder(sf['name'])
+        for sf in tsf.values(): session.console.removeSharedFolder(sf['name'])
         
         """
          * USB Filters
@@ -1271,7 +1291,7 @@ class vboxConnector(object):
         usbEx = []
         usbNew = []
 
-        usbc = self._machineGetUSBController(self.session.machine)
+        usbc = self._machineGetUSBController(session.machine)
 
         if state != 'Saved' and usbc['enabled']:
 
@@ -1318,9 +1338,9 @@ class vboxConnector(object):
                 except Exception as e:
                     self.errors.append((e,traceback.format_exc()))
 
-        self.session.machine.saveSettings()
-        self.session.unlockMachine()
-        self.session = None
+        session.machine.saveSettings()
+        session.unlockMachine()
+        session = None
 
         return True
 
@@ -1338,8 +1358,8 @@ class vboxConnector(object):
         
         vmState = machine.state
         vmRunning = machine.state in [vboxMgr.constants.MachineState_Running, vboxMgr.constants.MachineState_Paused, vboxMgr.constants.MachineState_Saved]
-        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
-        machine.lockMachine(self.session, (vboxMgr.constants.LockType_Shared if vmRunning else vboxMgr.constants.LockType_Write))
+        session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(session, (vboxMgr.constants.LockType_Shared if vmRunning else vboxMgr.constants.LockType_Write))
 
         # Switch to machineSaveRunning()?
         if vmRunning:
@@ -1347,7 +1367,7 @@ class vboxConnector(object):
 
         # Shorthand
         """ @m IMachine """
-        m = self.session.machine
+        m = session.machine
 
 
         m.OSTypeId = args['OSTypeId']
@@ -1658,7 +1678,7 @@ class vboxConnector(object):
         usbEx = {}
         usbNew = {}
 
-        usbc = self._machineGetUSBController(self.session.machine)
+        usbc = self._machineGetUSBController(session.machine)
 
         # controller properties
         if usbc['enabled'] != args['USBController']['enabled'] or usbc['enabledEHCI'] != args['USBController']['enabledEHCI']:
@@ -1711,11 +1731,11 @@ class vboxConnector(object):
         if m.name != args['name']:
             m.name = args['name']
             
-        self.session.machine.saveSettings()
+        session.machine.saveSettings()
 
         
-        self.session.unlockMachine()
-        self.session = None
+        session.unlockMachine()
+        session = None
 
         return True
 
@@ -2242,9 +2262,9 @@ class vboxConnector(object):
         state = args['state']
 
         states = {
-            'powerDown' : {'result':vboxMgr.constants.MachineState_PoweredOff,'progress':2},
+            'powerDown' : {'result':vboxMgr.constants.MachineState_PoweredOff,'progress':True},
             'reset' : {},
-            'saveState' : {'result':vboxMgr.constants.MachineState_Saved,'progress':2},
+            'saveState' : {'result':vboxMgr.constants.MachineState_Saved,'progress':True},
             'powerButton' : {'acpi':True},
             'sleepButton' : {'acpi':True},
             'pause' : {'result':vboxMgr.constants.MachineState_Paused,'progress':False},
@@ -2303,7 +2323,7 @@ class vboxConnector(object):
         if states[state].get('progress', False):
 
             """ @progress IProgress """
-            progress = self.session.console.state()
+            progress = getattr(session.console, state)()
             progressid = progressOpPool.store(progress, session)
 
             return {'progress' : progressid, 'requestedState':state}
@@ -2312,19 +2332,19 @@ class vboxConnector(object):
         # Just call the function
         else:
 
-            self.session.console.state((True if states[state]['force'] else None))
+            getattr(session.console, state)((True if states[state]['force'] else None))
 
 
         # Check for ACPI button
-        if states[state].get('acpi',False) and not self.session.console.getPowerButtonHandled():
-            self.session.unlockMachine()
-            self.session = None
+        if states[state].get('acpi',False) and not session.console.getPowerButtonHandled():
+            session.unlockMachine()
+            session = None
             return {'requestedState':state}
 
 
         if not progress:
-            self.session.unlockMachine()
-            self.session = None
+            session.unlockMachine()
+            session = None
 
         return {'requestedState':state}
 
@@ -2710,7 +2730,7 @@ class vboxConnector(object):
                 session.machine.USBController.enabled = True
                 
                 # This causes problems if the extpack isn't installed
-                # self.session.machine.USBController.enabledEHCI = True
+                # session.machine.USBController.enabledEHCI = True
                 
             except:
                 pass
@@ -3919,13 +3939,13 @@ class vboxConnector(object):
         save = (machine.getExtraData('GUI/SaveMountedAtRuntime').lower() == 'yes')
 
         # create session
-        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
+        session = vboxMgr.mgr.getSessionObject(self.vbox)
 
         if machine.sessionState == vboxMgr.constants.SessionState_Unlocked:
-            machine.lockMachine(self.session, vboxMgr.constants.LockType_Write)
+            machine.lockMachine(session, vboxMgr.constants.LockType_Write)
             save = True # force save on closed session as it is not a "run-time" change
         else:
-            machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
+            machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
         
 
         # Empty medium / eject
@@ -3955,13 +3975,13 @@ class vboxConnector(object):
             
         
 
-        self.session.machine.mountMedium(args['controller'],args['port'],args['device'], med,True)
+        session.machine.mountMedium(args['controller'],args['port'],args['device'], med,True)
 
         if save:
-            self.session.machine.saveSettings()
+            session.machine.saveSettings()
 
-        self.session.unlockMachine()
-        self.session = None
+        session.unlockMachine()
+        session = None
 
         return True
 
@@ -4168,15 +4188,15 @@ class vboxConnector(object):
 
         """ @machine IMachine """
         machine = self.vbox.findMachine(args['vm'])
-        self.session = vboxMgr.mgr.getSessionObject(self.vbox)
-        machine.lockMachine(self.session, vboxMgr.constants.LockType_Shared)
+        session = vboxMgr.mgr.getSessionObject(self.vbox)
+        machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
 
         response = {}
-        for u in vboxGetArray(self.session.console,'USBDevices'):
+        for u in vboxGetArray(session.console,'USBDevices'):
             response[u.id] = {'id':u.id,'remote':u.remote}
         
-        self.session.unlockMachine()
-        self.session = None
+        session.unlockMachine()
+        session = None
 
         return response
 
@@ -4785,7 +4805,7 @@ class RPCServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 
 
 
-
+    
 """
 
     Event service is run by RPC server, pumping
@@ -5000,7 +5020,7 @@ class vboxProgressOpPool(threading.Thread):
                                             session.unlockMachine()
                                     except Exception as e:
                                         pprint.pprint(e)
-                                        exception.log(e)
+                                        logger.exception(e)
                                 finally:
                                     del self.progressOps[pid]
                                     

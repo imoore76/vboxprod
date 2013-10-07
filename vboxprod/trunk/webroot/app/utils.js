@@ -109,16 +109,6 @@ Ext.define('vcube.utils', {
 	confirm: function(msg, buttons, cancelText) {
 		
 		
-    	var dialog = new Ext.window.MessageBox();
-
-    	for(var i = 0; i < buttons.length; i++) {
-    		var origFn = buttons[i].listeners.click;
-    		buttons[i].listeners.click = function(){
-    			dialog.close();
-    			origFn();
-    		}
-    	}
-    	
     	if(!cancelText) {
     		cancelText = vcube.utils.trans('Cancel');
     	}
@@ -131,14 +121,12 @@ Ext.define('vcube.utils', {
     		}
     	});
     	
-    	console.log(buttons);
-    	dialog.show({
-    		title: "<div style='display:inline-block;width:16px;height:16px;background:url(images/vbox/OSE/about_16px.png) no-repeat;padding-left:20px'>"+vcube.app.name+"</div>",
+    	new Ext.window.MessageBox({resizable : true, 'buttons': buttons}).show({
+    		title: "<div class='msgBoxTitle'>"+vcube.app.name+"</div>",
     		msg: msg,
-    		resizable: true,
     		icon: Ext.MessageBox.QUESTION,
     		modal: true,
-    		'buttons': buttons,
+    		//'buttons': buttons,
     		closeAction: 'destroy'
     	})
 
@@ -149,14 +137,14 @@ Ext.define('vcube.utils', {
      */
     alert: function(msg, dialogStyle) {
     	
+    	
     	if( typeof(msg) == 'object' && msg['error'])
     		msg = msg.error + "<div class='alertDetails'>Details:<br /><textarea class='alertDetails'>" + Ext.String.htmlEncode(msg.details) + "</textarea></div>";
     		
     	
-    	new Ext.window.MessageBox().show({
-    		title: "<div style='display:inline-block;width:16px;height:16px;background:url(images/vbox/OSE/about_16px.png) no-repeat;padding-left:20px'>"+vcube.app.name+"</div>",
+    	new Ext.window.MessageBox({resizable:true}).show({
+    		title: "<div class='msgBoxTitle'>"+vcube.app.name+"</div>",
     		msg: msg,
-    		resizable: true,
     		icon: Ext.MessageBox.ERROR,
     		modal: true,
     		buttonText: {ok:vcube.utils.trans('OK')},

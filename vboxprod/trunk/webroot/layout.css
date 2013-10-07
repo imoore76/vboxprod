@@ -2,6 +2,13 @@
  * General
  */
 .icon16 { width: 16px; height: 16px; background-repeat: no-repeat;background-size:16px 16px; }
+.msgBoxTitle {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	background: url(images/vbox/OSE/about_16px.png) no-repeat;
+	padding-left:20px
+}
 
 /*
 Details table

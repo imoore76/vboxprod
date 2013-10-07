@@ -42,7 +42,7 @@ Ext.define('vcube.controller.TasksAndEvents', {
     
     onEventLogEntry: function(event) {
     	
-    	if(!this.filter(event.eventData)) return;
+    	if(!(this.eventStore && this.filter(event.eventData))) return;
     	
     	this.eventStore.insert(0,event.eventData);
     	this.trimStore(this.eventStore);
@@ -50,7 +50,7 @@ Ext.define('vcube.controller.TasksAndEvents', {
     
     onTaskLogEntry: function(event) {
     	
-    	if(!this.filter(event.eventData)) return;
+    	if(!(this.taskStore && this.filter(event.eventData))) return;
     	
     	this.taskStore.insert(0,event.eventData);
     	this.trimStore(this.taskStore);

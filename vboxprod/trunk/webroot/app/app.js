@@ -37,6 +37,8 @@ Ext.application({
     // Load mask created on app init
     loadMask: null,
     
+    settings : {},
+    
     // a fatal error has occurred, stop everything and display error
     died: false,
     fatalError: function(message) {    	

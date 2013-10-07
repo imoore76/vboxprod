@@ -166,6 +166,10 @@ class Application(threading.Thread):
     virtualMachines = {}
     virtualMachinesLock = threading.Lock()
     
+    """
+        Used for progress operation to task mapping
+    """
+    progressOps = {}
     
     def __init__(self):
 
@@ -276,6 +280,43 @@ class Application(threading.Thread):
         return None
         
     """
+        Update a task based on progress status
+    """
+    def updateTaskProgress(self, pid, status):
+        
+        if not self.progressOps.get(pid, None): return
+
+        task = self.progressOps[pid]
+        
+        taskData = {}
+        
+        
+        if status['completed'] or status['canceled']:
+        
+            # remove from list
+            del self.progressOps[pid]
+            
+            taskData['status'] = 1 if not status['canceled'] else 3
+            
+            taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            
+            if status.get('resultCode', None):
+                taskData['status'] = 2
+                taskData['details'] = status.get('error', taskData['details'])
+                
+            self.updateTask(task, taskData)
+
+        else:
+            
+            taskData['details'] = status.get('description', task.details)
+
+            self.pumpEvent({
+                'source' : 'vcube',
+                'eventType' : 'taskLogUpdate',
+                'eventData' : dict(task._data.copy()).update(taskData)
+            })
+        
+    """
        Log an event
     """
     def logEvent(self, event):
@@ -374,14 +415,20 @@ class Application(threading.Thread):
             
             logData['status'] = 2
             
+            task.completed = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+
             if len(result.get('errors',[])):
                 errorStrings = []
                 for e in result.get('errors'):
                     errorStrings.append(e.get('error','Unkonwn'))
                 logData['details'] = ' '.join(errorStrings)
+            
         
-        elif None:
-            task.completed = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+        elif getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False) and result.get('responseData',{}).get('progress',None):
+            
+            # Add to progress / task pool
+            self.progressOps[result['responseData']['progress']] = task
+            
 
         else:
             logData['status'] = 1
@@ -409,6 +456,13 @@ class Application(threading.Thread):
     
     def onEvent(self, event):
         
+        if event['eventType'] == 'progressUpdate':
+            """
+                Update task
+            """
+            pprint.pprint(event)
+            self.updateTaskProgress(event['progress'], event['status'])
+            
         if event['eventType'] == 'connectorStateChanged':
             """
                 Connector state change

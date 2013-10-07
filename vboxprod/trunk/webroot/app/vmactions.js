@@ -41,11 +41,12 @@ Ext.define('vcube.vmactions',{
 			label : vcube.utils.trans('Start','UIActionPool'),
 			icon : 'vm_start',
 			icon_16 : 'start',
-			click : function (btn) {
+			click : function (selectionModel) {
 			
 				
 				// Should the "First Run" wizard be started
 				////////////////////////////////////////////
+				/*
 				var firstRun = function(vm) {
 					
 					var frDef = $.Deferred();
@@ -87,26 +88,36 @@ Ext.define('vcube.vmactions',{
 					});
 					return frDef;
 				};
-				
+				*/
 				// Start each eligable selected vm
 				//////////////////////////////////////
 				var startVMs = function() {				
 					
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = selectionModel.getSelection();
 					var vmsToStart = [];
 					for(var i = 0; i < vms.length; i++) {
+						try {
+							vm = vcube.vmdatamediator.getVMData(vmst[i].raw.data.id)
+						} catch(err) {
+							continue;
+						}
 						if(vboxVMStates.isPaused(vms[i]) || vboxVMStates.isPoweredOff(vms[i]) || vboxVMStates.isSaved(vms[i])) {
 							vmsToStart[vmsToStart.length] = vms[i];
 						}
 						
 					}
 					
+					var firstRun = function(vm) {
+						return vm;
+					}
+					
 					(function runVMsToStart(vms){
 						
-						(vms.length && $.when(firstRun(vms.shift())).done(function(vm){
+						(vms.length && Ext.ux.Deferred.when(firstRun(vms.shift())).done(function(vm){
 	
-							$.when(vm,vboxAjaxRequest('machineSetState',{'vm':vm.id,'state':'powerUp'})).done(function(evm,d){
+							$.when(vm,vcube.utils.ajaxRequest('vbox/machineSetState',{'vm':vm.id,'state':'powerUp','connector':vm.connector_id})).done(function(evm,d){
 								// check for progress operation
+								/*
 								if(d && d.responseData && d.responseData.progress) {
 									var icon = null;
 									if(vboxVMStates.isSaved(evm)) icon = 'progress_state_restore_90px.png';
@@ -114,6 +125,7 @@ Ext.define('vcube.vmactions',{
 									vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){return;},icon,
 											vcube.utils.trans('Start the selected virtual machines','UIActionPool'),evm.name);
 								}
+								*/
 							});
 							
 							runVMsToStart(vms);
@@ -124,7 +136,7 @@ Ext.define('vcube.vmactions',{
 				
 				// Check for memory limit
 				// Paused VMs are already using all their memory
-				if($('#vboxPane').data('vboxConfig').vmMemoryStartLimitWarn) {
+				if(vcube.app.settings.vmMemoryStartLimitWarn) {
 					
 					var freeMem = 0;
 					var baseMem = 0;

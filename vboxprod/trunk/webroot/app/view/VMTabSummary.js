@@ -197,7 +197,7 @@ Ext.define('vcube.view.VMTabSummary', {
 				label: 'SetDesc',
 				listeners: {
 					click: function(btn) {
-						vcube.utils.ajaxRequest('vbox/snapshotTake',{'vm':'Gender','connector':1,'name':'newSnapshot-' + Ext.id(),'description':'test???'})
+						vcube.utils.ajaxRequest('vbox/snapshotTake',{'vm':'dad','connector':1,'name':'newSnapshot-' + Ext.id(),'description':'test???'})
 					}
 				},
 				border: false

@@ -8,8 +8,10 @@ Ext.define('vcube.AjaxProxy', {
     	listeners: {
     		exception: function(proxy, response, operation) {
     			
-    			vcube.utils.alert({'error':"Operation `" + operation.request.proxy.url + "` failed (" + response.status + "): " + response.statusText,
-    				'details':response.responseText});
+    			if(response.status != 200) {
+	    			vcube.utils.alert({'error':"Operation `" + operation.request.proxy.url + "` failed (" + response.status + "): " + response.statusText,
+	    				'details':response.responseText});
+    			}
     		},
     	},
     	type: 'ajax',

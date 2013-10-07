@@ -16,8 +16,10 @@ class dispatcher(dispatcher_parent):
             q = q.where(EventLog.machine == kwargs.get('vm'))
         elif kwargs.get('connector', None):
             q = q.where(EventLog.connector == kwargs.get('connector'))
-        if kwargs.get('limit', None):
-            q = q.limit(kwargs.get('limit'))
+        if kwargs.get('page', None):
+            q = q.paginate(int(kwargs.get('page')), kwargs.get('limit', 25))
+        elif kwargs.get('limit', None):
+            q = q.limit(int(kwargs.get('limit')))
         
         return list(q.order_by(EventLog.id.desc()).dicts())
         

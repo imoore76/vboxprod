@@ -4816,6 +4816,7 @@ class vboxEventService(threading.Thread):
                 self.clientLock.acquire(True)
                 try:
                     e = self.eventQueue.get(False)
+                    pprint.pprint(e)
                     if e:
                         for c in self.clients.values():
                             try:
@@ -4874,15 +4875,35 @@ class vboxEventService(threading.Thread):
 """
 class vboxProgressOpPool(threading.Thread):
     
-    sendStatus = None
+    """
+        Event queue to send status events to
+    """
+    eventQueue = None
+    
+    """
+    Sleep interval between progress operation checks
+    """
+    sleepInterval = None
+    
+    """
+    Thread-safe progress operation pool lock
+    """
     progressOpsLock = threading.Lock() 
+    
+    """
+    Progress operation list (pool)
+    """
     progressOps = {}
     
-    def __init__(self, sendStatus=pprint.pprint):
-        self.sendStatus = sendStatus
+    def __init__(self, eventQueue, sleepInterval=3):
+        self.eventQueue = eventQueue
+        self.sleepInterval = sleepInterval
         threading.Thread.__init__(self)
         
     def store(self, progressObj, session = None):
+        """
+        Store a progress operation
+        """
         
         # Does an exception exist?
         if progressObj.completed and progressObj.resultCode:
@@ -4905,6 +4926,9 @@ class vboxProgressOpPool(threading.Thread):
         return pid
     
     def cancel(self, progressId):
+        """
+        Cancel a progress operation
+        """
         self.progressOpsLock.acquire(True)
         try:
             progress, session = self.progressOps.get(progressId)
@@ -4914,15 +4938,22 @@ class vboxProgressOpPool(threading.Thread):
         
     
     def stop(self):
+        """
+        Shutdown pool
+        """
         self.progressOpsLock.acquire(True)
         try:
             if len(self.progressOps):
                 logger.error("vboxProgressOpPool shutdown requested while %s operations are still in progress" %s(len(self.progressOps),))
         finally:
-            self.running = False
             self.progressOpsLock.release()
+            self.running = False
 
     def run(self):
+        """
+        Main thread loop iterates progress operations and sends
+        status updates into the eventQueue
+        """
         
         self.running = True
         
@@ -4950,6 +4981,7 @@ class vboxProgressOpPool(threading.Thread):
                                 'operationDescription' : progress.operationDescription,
                                 'timeRemaining' : progress.timeRemaining,
                                 'percent' : progress.percent,
+                                'resultCode' : 0,
                                 'cancelable' : progress.cancelable
                             }
                 
@@ -4960,6 +4992,7 @@ class vboxProgressOpPool(threading.Thread):
                                 try:
                                     # Does an exception exist?
                                     if progress.resultCode:
+                                        status['resultCode'] = progress.resultCode,
                                         status['error'] = "%s (%s): %s" %(progress.errorInfo.component, progress.errorInfo.resultCode, progress.errorInfo.text)
                     
                                     try:
@@ -4972,7 +5005,13 @@ class vboxProgressOpPool(threading.Thread):
                                     del self.progressOps[pid]
                                     
                             try:
-                                self.sendStatus(status)
+                                
+                                self.eventQueue.put({
+                                    'eventType' : 'progressUpdate',
+                                    'progress' : pid,
+                                    'status' : status
+                                })
+                                
                             except Exception as e:
                                 pprint.pprint(e)
                                 logger.exception(e)
@@ -5014,17 +5053,18 @@ def main(argv = sys.argv):
         running = False
     signal.signal(signal.SIGINT, stop_sigint)
     
-    """
-        Holds in-flight progress operations
-    """
-    progressOpPool = vboxProgressOpPool()
-    progressOpPool.start()
     
     """ Queues to pass events out of vbox to
         connected event listener
     """
     incomingQueue = Queue.Queue()
     outgoingQueue = Queue.Queue()
+
+    """
+        Holds in-flight progress operations
+    """
+    progressOpPool = vboxProgressOpPool(outgoingQueue)
+    progressOpPool.start()
 
     """
     

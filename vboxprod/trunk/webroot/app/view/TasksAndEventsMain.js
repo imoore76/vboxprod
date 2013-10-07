@@ -10,27 +10,7 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     	title: 'Tasks',
     	xtype: 'gridpanel',
     	itemId: 'tasks',
-    	store: Ext.create('Ext.data.Store',{
-    		autoload: false,
-    		proxy: {
-    			type: 'vcubeAjax',
-    			url: 'tasklog/getTasks',
-    	    	reader: {
-    	    		type: 'vcubeJsonReader'
-    	    	}
-    		},
-    		fields : [
-    		   {name: 'id', type: 'int'},
-    		   {name: 'name', type: 'string'},
-    		   {name: 'machine', type: 'string'},
-    		   {name: 'user', type: 'string'},
-    		   {name: 'status', type: 'int'},
-    		   {name: 'details', type: 'string'},
-    		   {name: 'connector', type: 'int'},
-    		   {name: 'started', type: 'date', dateFormat: 'Y-m-d H:i:s'},
-    		   {name: 'completed', type: 'date', dateFormat: 'Y-m-d H:i:s'}
-    		]
-    	}),
+    	store: Ext.create('vcube.store.Tasks'),
     	columns: [
     		{
     			header: 'Task',
@@ -82,7 +62,11 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     			header: 'Server',
     			dataIndex: 'connector',
     			renderer: function(val) {
-    				return vcube.app.serverStore.findRecord('id',val).get('name');
+    				try {
+    					return vcube.app.serverStore.findRecord('id',val).get('name');    					
+    				} catch (err) {
+    					return val;
+    				}
     			},
     			width: 150
     		},{
@@ -103,24 +87,7 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     	title: 'Events',
     	xtype: 'gridpanel',
     	itemId: 'events',
-    	store: Ext.create('Ext.data.Store',{
-    		autoload: false,
-    		proxy: {
-    			type: 'vcubeAjax',
-    			url: 'eventlog/getEvents',
-    	    	reader: {
-    	    		type: 'vcubeJsonReader'
-    	    	}
-    		},
-    		fields : [
-    		   {name: 'name', type: 'string'},
-    		   {name: 'severity', type: 'int'},
-    		   {name: 'details', type: 'string'},
-    		   {name: 'machine', type: 'string'},
-    		   {name: 'connector', type: 'int'},
-    		   {name: 'time', type: 'date', dateFormat: 'Y-m-d H:i:s'}
-    		]
-    	}),
+    	store: Ext.create('vcube.store.Events'),
     	columns: [
     		{ 
     			header: 'Event',
@@ -170,7 +137,11 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     			header: 'Server',
     			dataIndex: 'connector',
     			renderer: function(val) {
-    				return vcube.app.serverStore.findRecord('id',val).get('name');
+    				try {
+    					return vcube.app.serverStore.findRecord('id',val).get('name');    					
+    				} catch (err) {
+    					return val;
+    				}
     			},
     			width: 150
     		},{

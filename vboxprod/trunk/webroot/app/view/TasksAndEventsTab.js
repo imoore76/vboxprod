@@ -6,33 +6,14 @@ Ext.define('vcube.view.TasksAndEventsTab', {
     alias: 'widget.TasksAndEventsTab',
     filter: null,
     title: 'Tasks and Events',
+    stores: ['Tasks','Events'],
     icon: 'images/vbox/OSE/about_16px.png',
     defaults: { viewConfig: { markDirty: false } },
     items: [{
     	title: 'Tasks',
     	xtype: 'gridpanel',
     	itemId: 'tasks',
-    	store: Ext.create('Ext.data.Store',{
-    		autoload: false,
-    		proxy: {
-    			type: 'vcubeAjax',
-    			url: 'tasklog/getTasks',
-    	    	reader: {
-    	    		type: 'vcubeJsonReader'
-    	    	}
-    		},
-    		fields : [
-    		   {name: 'id', type: 'int'},
-    		   {name: 'name', type: 'string'},
-    		   {name: 'machine', type: 'string'},
-    		   {name: 'user', type: 'string'},
-    		   {name: 'status', type: 'int'},
-    		   {name: 'details', type: 'string'},
-    		   {name: 'connector', type: 'int'},
-    		   {name: 'started', type: 'date', dateFormat: 'Y-m-d H:i:s'},
-    		   {name: 'completed', type: 'date', dateFormat: 'Y-m-d H:i:s'}
-    		]
-    	}),
+    	store: Ext.create('vcube.store.Tasks'),
     	columns: [
     		{
     			header: 'Task',
@@ -105,24 +86,7 @@ Ext.define('vcube.view.TasksAndEventsTab', {
     	title: 'Events',
     	xtype: 'gridpanel',
     	itemId: 'events',
-    	store: Ext.create('Ext.data.Store',{
-    		autoload: false,
-    		proxy: {
-    			type: 'vcubeAjax',
-    			url: 'eventlog/getEvents',
-    	    	reader: {
-    	    		type: 'vcubeJsonReader'
-    	    	}
-    		},
-    		fields : [
-    		   {name: 'name', type: 'string'},
-    		   {name: 'severity', type: 'int'},
-    		   {name: 'details', type: 'string'},
-    		   {name: 'machine', type: 'string'},
-    		   {name: 'connector', type: 'int'},
-    		   {name: 'time', type: 'date', dateFormat: 'Y-m-d H:i:s'}
-    		]
-    	}),
+    	store: Ext.create('vcube.store.Events'),
     	columns: [
     		{ 
     			header: 'Event',

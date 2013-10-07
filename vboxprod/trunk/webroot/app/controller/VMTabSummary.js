@@ -51,9 +51,10 @@ Ext.define('vcube.controller.VMTabSummary', {
         this.control({
 	        'viewport > MainPanel > VMTabs > VMTabSummary' : {
 	        	show: this.onTabShow,
-	        	render: function() {
-	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();
-	        	}
+	        	render: this.onTabRender
+	        },
+	        'viewport > MainPanel > VMTabs > VMTabSummary #vmactions > button' : {
+	        	click: this.onActionButtonClick
 	        },
         	'viewport > NavTree' : {
         		select: this.onSelectItem
@@ -75,6 +76,20 @@ Ext.define('vcube.controller.VMTabSummary', {
     /* preview timers */
     previewTimers : {},
 
+    /* When tab is rendered */
+    onTabRender: function() {
+    	
+    	// Hold ref to selection model
+    	this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();
+    	
+    },
+    
+    /* When an action button is clicked */
+    onActionButtonClick: function(button) {
+    	vcube.vmactions[button.itemId].click(this.navTreeSelectionModel);
+    },
+    
+    
     /* When tab is shown */
     onTabShow: function() {
     	

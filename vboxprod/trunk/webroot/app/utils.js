@@ -12,6 +12,20 @@ Ext.define('vcube.utils', {
 		return (vmid && selectionModel.selected.length == 1 && selectionModel.getSelection()[0].raw.data.id == vmid);
 	},
 	
+	/* Return selected VMs' data */
+	getSelectedVMsData: function(selectionModel) {
+		
+		var vmList = [];
+		Ext.each(selectionModel.getSelection(), function(record) {
+			try {
+				vmList.push(vcube.vmdatamediator.getVMData(record.raw.data.id));
+			} catch (err) {
+				// Nothing
+			}
+		});
+		return vmList;
+	},
+	
 	/**
 	 * Send ajax request
 	 */
@@ -87,6 +101,47 @@ Ext.define('vcube.utils', {
 			}
 		
 		}
+	},
+	
+	/**
+	 * Confirmation dialog
+	 */
+	confirm: function(msg, buttons, cancelText) {
+		
+		
+    	var dialog = new Ext.window.MessageBox();
+
+    	for(var i = 0; i < buttons.length; i++) {
+    		var origFn = buttons[i].listeners.click;
+    		buttons[i].listeners.click = function(){
+    			dialog.close();
+    			origFn();
+    		}
+    	}
+    	
+    	if(!cancelText) {
+    		cancelText = vcube.utils.trans('Cancel');
+    	}
+    	buttons.push({
+    		text: cancelText,
+    		listeners: {
+    			click: function(){
+    				dialog.close();
+    			}
+    		}
+    	});
+    	
+    	console.log(buttons);
+    	dialog.show({
+    		title: "<div style='display:inline-block;width:16px;height:16px;background:url(images/vbox/OSE/about_16px.png) no-repeat;padding-left:20px'>"+vcube.app.name+"</div>",
+    		msg: msg,
+    		resizable: true,
+    		icon: Ext.MessageBox.QUESTION,
+    		modal: true,
+    		'buttons': buttons,
+    		closeAction: 'destroy'
+    	})
+
 	},
 	
     /**

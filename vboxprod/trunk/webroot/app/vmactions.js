@@ -89,6 +89,9 @@ Ext.define('vcube.vmactions',{
 					return frDef;
 				};
 				*/
+				var firstRun = function(vm) {
+					return vm;
+				}
 				// Start each eligable selected vm
 				//////////////////////////////////////
 				var startVMs = function() {				
@@ -97,36 +100,22 @@ Ext.define('vcube.vmactions',{
 					var vmsToStart = [];
 					for(var i = 0; i < vms.length; i++) {
 						try {
-							vm = vcube.vmdatamediator.getVMData(vmst[i].raw.data.id)
+							vm = vcube.vmdatamediator.getVMData(vms[i].raw.data.id)
 						} catch(err) {
 							continue;
 						}
-						if(vboxVMStates.isPaused(vms[i]) || vboxVMStates.isPoweredOff(vms[i]) || vboxVMStates.isSaved(vms[i])) {
-							vmsToStart[vmsToStart.length] = vms[i];
+						if(vcube.utils.vboxVMStates.isPaused(vm) || vcube.utils.vboxVMStates.isPoweredOff(vm) || vcube.utils.vboxVMStates.isSaved(vm)) {
+							vmsToStart[vmsToStart.length] = vm;
 						}
 						
 					}
 					
-					var firstRun = function(vm) {
-						return vm;
-					}
 					
 					(function runVMsToStart(vms){
 						
 						(vms.length && Ext.ux.Deferred.when(firstRun(vms.shift())).done(function(vm){
 	
-							$.when(vm,vcube.utils.ajaxRequest('vbox/machineSetState',{'vm':vm.id,'state':'powerUp','connector':vm.connector_id})).done(function(evm,d){
-								// check for progress operation
-								/*
-								if(d && d.responseData && d.responseData.progress) {
-									var icon = null;
-									if(vboxVMStates.isSaved(evm)) icon = 'progress_state_restore_90px.png';
-									else icon = 'progress_start_90px.png';
-									vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){return;},icon,
-											vcube.utils.trans('Start the selected virtual machines','UIActionPool'),evm.name);
-								}
-								*/
-							});
+							vcube.utils.ajaxRequest('vbox/machineSetState',{'vm':vm.id,'state':'powerUp','connector':vm.connector_id});
 							
 							runVMsToStart(vms);
 							
@@ -145,7 +134,7 @@ Ext.define('vcube.vmactions',{
 					var loadData = [vboxAjaxRequest('hostGetMeminfo')];
 					
 					// Load details of each machine to get memory info
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = vboxChooser.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vboxVMStates.isPoweredOff(vms[i]) || vboxVMStates.isSaved(vms[i]))
 							loadData[loadData.length] = vboxVMDataMediator.getVMDataCombined(vms[i].id);
@@ -270,7 +259,7 @@ Ext.define('vcube.vmactions',{
 					
 					var vmList = [];
 					var vmNames = [];
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vboxVMStates.isPoweredOff(vms[i]) && vboxChooser.vmHasUnselectedCopy(vms[i].id)) {
 							vmList[vmList.length] = vms[i].id;
@@ -311,7 +300,7 @@ Ext.define('vcube.vmactions',{
 				
 					var unregisterVMs = function(keepFiles, vms) {
 		
-						var vms = vboxChooser.getSelectedVMsData();
+						var vms = vcube.utils.getSelectedVMsData(selectionModel);
 						
 						for(var i = 0; i < vms.length; i++) {
 							
@@ -342,7 +331,7 @@ Ext.define('vcube.vmactions',{
 					
 					
 					var vmNames = [];
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vboxVMStates.isPoweredOff(vms[i]) && !vboxChooser.vmHasUnselectedCopy(vms[i].id)) {
 							vmNames[vmNames.length] = vms[i].name;
@@ -377,7 +366,7 @@ Ext.define('vcube.vmactions',{
 				buttons[vcube.utils.trans('Discard','UIMessageCenter')] = function(){
 					$(this).empty().remove();
 	
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vboxVMStates.isSaved(vms[i])) {
 							vboxAjaxRequest('machineSetState',{'vm':vms[i].id,'state':'discardSavedState'});
@@ -385,7 +374,7 @@ Ext.define('vcube.vmactions',{
 					}
 				};
 				var vmNames = [];
-				var vms = vboxChooser.getSelectedVMsData();
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vboxVMStates.isSaved(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
@@ -425,7 +414,7 @@ Ext.define('vcube.vmactions',{
 								if(d.responseData.error.err != 'VBOX_E_NOT_SUPPORTED') {
 									vboxAlert({'error':vcube.utils.trans('Failed to update Guest Additions. The Guest Additions installation image will be mounted to provide a manual installation.','UIMessageCenter'),'details':d.responseData.error.err+"\n"+d.responseData.error.message});
 								}
-								vboxVMActions['guestAdditionsInstall'].click(vmid, true);
+								vcube.vmactions['guestAdditionsInstall'].click(vmid, true);
 								return;
 							}
 						},'progress_install_guest_additions_90px.png',vcube.utils.trans('Install Guest Additions...','UIActionPool').replace(/\./g,''));
@@ -500,10 +489,10 @@ Ext.define('vcube.vmactions',{
 			},
 			click: function() {
 	
-				var vms = vboxChooser.getSelectedVMsData();
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vboxVMStates.isRunning(vms[i]) || vboxVMStates.isPaused(vms[i]))
-						vboxVMActions.powerAction('savestate','Save the machine state of the selected virtual machines', vms[i]);
+						vcube.vmactions.powerAction('savestate','Save the machine state of the selected virtual machines', vms[i]);
 				}
 			}
 		},
@@ -520,14 +509,14 @@ Ext.define('vcube.vmactions',{
 				var buttons = {};
 				buttons[vcube.utils.trans('ACPI Shutdown','UIMessageCenter')] = function() {
 					$(this).empty().remove();
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vboxVMStates.isRunning(vms[i]))
-							vboxVMActions.powerAction('powerbutton','Send the ACPI Power Button press event to the virtual machine', vms[i]);		
+							vcube.vmactions.powerAction('powerbutton','Send the ACPI Power Button press event to the virtual machine', vms[i]);		
 					}
 				};
 				var vmNames = [];
-				var vms = vboxChooser.getSelectedVMsData();
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vboxVMStates.isRunning(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
@@ -553,10 +542,10 @@ Ext.define('vcube.vmactions',{
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
 			click: function() {
-				var vms = vboxChooser.getSelectedVMsData();
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vboxVMStates.isRunning(vms[i]))
-						vboxVMActions.powerAction('pause','Suspend the execution of the selected virtual machines', vms[i]);
+						vcube.vmactions.powerAction('pause','Suspend the execution of the selected virtual machines', vms[i]);
 				}
 			}
 		},
@@ -569,23 +558,27 @@ Ext.define('vcube.vmactions',{
 			enabled: function(selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
 			},
-			click: function() {
+			click: function(selectionModel) {
 				
-				var buttons = {};
-				buttons[vcube.utils.trans('Power Off','UIActionPool')] = function() {
-					$(this).empty().remove();
-					
-					var vms = vboxChooser.getSelectedVMsData();
-					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isRunning(vms[i]) || vboxVMStates.isPaused(vms[i]) || vboxVMStates.isStuck(vms[i]))
-							vboxVMActions.powerAction('powerdown','Power off the selected virtual machines', vms[i]);
+				var buttons = [];
+				
+				buttons = [{
+					text: vcube.utils.trans('Power Off','UIActionPool'),
+					listeners: {
+						click: function() {
+							var vms = vcube.utils.getSelectedVMsData(selectionModel);
+							for(var i = 0; i < vms.length; i++) {
+								if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vcube.utils.vboxVMStates.isPaused(vms[i]) || vcube.utils.vboxVMStates.isStuck(vms[i]))
+									vcube.vmactions.powerAction('powerdown','Power off the selected virtual machines', vms[i]);
+							}
+						}
 					}
-				};
+				}];
 				
 				var vmNames = [];
-				var vms = vboxChooser.getSelectedVMsData();
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
-					if(vboxVMStates.isRunning(vms[i]) || vboxVMStates.isPaused(vms[i])) {
+					if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vcube.utils.vboxVMStates.isPaused(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
 					}
 				}
@@ -594,7 +587,7 @@ Ext.define('vcube.vmactions',{
 	
 					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
 					
-					vboxConfirm(vcube.utils.trans("<p>Do you really want to power off the following virtual machines?</p>" +
+					vcube.utils.confirm(vcube.utils.trans("<p>Do you really want to power off the following virtual machines?</p>" +
 							"<p><b>%1</b></p><p>This will cause any unsaved data in applications " +
 							"running inside it to be lost.</p>", 'UIMessageCenter').replace('%1', vmNames), buttons);
 				}
@@ -615,15 +608,15 @@ Ext.define('vcube.vmactions',{
 				buttons[vcube.utils.trans('Reset','UIActionPool')] = function() {
 					$(this).remove();
 	
-					var vms = vboxChooser.getSelectedVMsData();
+					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vboxVMStates.isRunning(vms[i]))
-							vboxVMActions.powerAction('reset','Reset the selected virtual machines', vms[i]);
+							vcube.vmactions.powerAction('reset','Reset the selected virtual machines', vms[i]);
 					}
 				};
 				
 				var vmNames = [];
-				var vms = vboxChooser.getSelectedVMsData();
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vboxVMStates.isRunning(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
@@ -683,17 +676,9 @@ Ext.define('vcube.vmactions',{
 					return;
 			}
 			
-			$.when(vboxAjaxRequest('machineSetState',{'vm':vm.id,'state':fn})).done(function(d){
-				if(!(d && d.success) && errorMsg) {
-					vboxAlert(errorMsg.replace('%1', vm.name));
-					return;
-				}
-				// check for progress operation
-				if(d && d.responseData && d.responseData.progress) {
-					vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){
-						return;
-					},icon,vcube.utils.trans(pt,'UIActionPool'), vm.name);
-					return;
+			Ext.ux.Deferred.when(vboxAjaxRequest('machineSetState',{'vm':vm.id,'state':fn,'connector':vm.connector_id})).fail(function(d){
+				if(errorMsg) {
+					vcube.utils.alert(errorMsg.replace('%1', vm.name));
 				}
 			});	
 			

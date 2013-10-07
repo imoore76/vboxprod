@@ -274,12 +274,8 @@ Ext.define('vcube.view.VMTabSummary', {
     							
     							text: vcube.vmactions[action].label.replace('...',''),
     							
-    							icon: 'images/vbox/' + (vcube.vmactions[action].icon_16 ? vcube.vmactions[action].icon_16 : vcube.vmactions[action].icon) + '_16px.png',
+    							icon: 'images/vbox/' + (vcube.vmactions[action].icon_16 ? vcube.vmactions[action].icon_16 : vcube.vmactions[action].icon) + '_16px.png'
 								
-								listeners: {
-									click: vcube.vmactions[action].click
-								}
-    						
     						}, defaults)));
 
     					});

@@ -542,8 +542,16 @@ class vboxConnector(object):
     """
     def remote_getStatus(self, args):
         
+        machines = {}
+        for machine in vboxGetArray(self.vbox, 'machines'):
+            state = vboxEnumToString("MachineState", machine.state)
+            if not machines.get(state, None):
+                machines[state] = 1
+            else:
+                machines[state] = machines[state] + 1
+                
         return {
-            'machines' : len(vboxGetArray(self.vbox, 'machines')),
+            'machines' : machines,
             'version' : self.getVersion(),
             'operatingSystem' : self.vbox.host.operatingSystem,
             'OSVersion' : self.vbox.host.OSVersion,
@@ -5016,6 +5024,7 @@ class vboxProgressOpPool(threading.Thread):
                                     try:
                                         if session:
                                             session.unlockMachine()
+                                            
                                     except Exception as e:
                                         pprint.pprint(e)
                                         logger.exception(e)

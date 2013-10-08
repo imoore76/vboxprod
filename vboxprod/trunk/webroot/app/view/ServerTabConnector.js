@@ -34,6 +34,30 @@ Ext.define('vcube.view.ServerTabConnector', {
 				}]
 			},
 			
+
+			vms: {
+
+				tableCfg: {
+					title: vcube.utils.trans('Virtual Machines'),
+					icon: 'images/vbox/machine_16px.png',
+					border: true,
+					width: 400,
+					bodyStyle: { background: '#fff' },
+					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
+				},
+				rows: function(data) {
+					rows = [];
+					for(var state in data.machines) {
+						if(typeof(state) != 'string') continue;
+						rows.push({
+							title: '',
+							data: data.machines[state] + ' ' + vcube.utils.vboxVMStates.convert(state)
+						});
+					}
+					return rows;
+				}
+			},
+			
 			paths: {
 				tableCfg: {
 					title: vcube.utils.trans('Paths'),
@@ -82,12 +106,8 @@ Ext.define('vcube.view.ServerTabConnector', {
 	
     title: 'Connector',
     icon: 'images/vbox/OSE/VirtualBox_cube_42px.png',
-    iconCls: 'icon16',    
-    layout: {
-    	type: 'vbox',
-    	align: 'stretch',
-    	pack: 'start'
-    },
+    iconCls: 'icon16',
+    autoScroll: true,
     items: [{
     	border: false,
     	defaults: { border: false },
@@ -95,14 +115,7 @@ Ext.define('vcube.view.ServerTabConnector', {
     	    itemId: 'summary',
     	    defaults: { border: false },
     	    items:[{
-		    	tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name}</h3>asdf{description}'
-		    },{
-		    	height: 20,
-		    	html: ''
-		    },{
-		    	tpl: '<div align="left"><b>Location:</b> {location}</div>'
-		    },{
-		    	tpl: '<div align="left"><b>Status:</b> {status_text}</div>'
+		    	tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name} ({status_text}) - {location}</h3>asdf{description}'
 		    },{
 		    	height: 20,
 		    	html: ''

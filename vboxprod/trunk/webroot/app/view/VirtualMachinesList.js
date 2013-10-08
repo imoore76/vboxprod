@@ -23,6 +23,15 @@ Ext.define('vcube.view.VirtualMachinesList', {
 	    	  header: 'Details',
 	    	  dataIndex: 'details',
 	    	  flex: 1
+	      },{
+			header: 'Memory',
+			dataIndex: 'memory'
+	      },{
+			header: 'CPUs',
+			dataIndex: 'cpuCount'
+	      },{
+			header: 'Execution Cap',
+			dataIndex: 'executionCap'
 	      }]    	
     }]
 });

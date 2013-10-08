@@ -41,7 +41,7 @@ Ext.define('vcube.view.ServerTabConnector', {
 					title: vcube.utils.trans('Virtual Machines'),
 					icon: 'images/vbox/machine_16px.png',
 					border: true,
-					width: 400,
+					width: 150,
 					bodyStyle: { background: '#fff' },
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
@@ -85,13 +85,15 @@ Ext.define('vcube.view.ServerTabConnector', {
 					title: vcube.utils.trans('Resources'),
 					icon: 'images/vbox/chipset_16px.png',
 					border: true,
-					width: 400,
+					width: 200,
 					bodyStyle: { background: '#fff' },
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
 				rows: [{
 					title: 'Max Guest Ram',
-					attrib: 'maxGuestRAM'
+					renderer: function(data) {
+						return vcube.utils.mbytesConvert(data.maxGuestRAM);
+					}
 				},{
 					title: 'Max Guest CPU Count',
 					attrib: 'maxGuestCPUCount'
@@ -107,8 +109,8 @@ Ext.define('vcube.view.ServerTabConnector', {
     title: 'Connector',
     icon: 'images/vbox/OSE/VirtualBox_cube_42px.png',
     iconCls: 'icon16',
-    autoScroll: true,
     items: [{
+    	autoScroll: true,
     	border: false,
     	defaults: { border: false },
     	items: [{

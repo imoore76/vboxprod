@@ -4,6 +4,8 @@ Ext.define('vcube.view.ServerTabs', {
     
 	requires: [
 	   'vcube.view.ServerTabConnector',
+	   'vcube.view.SectionTable',
+	   'vcube.view.VirtualMachinesList',
        'vcube.view.TasksAndEventsTab'
      ],
 
@@ -14,6 +16,8 @@ Ext.define('vcube.view.ServerTabs', {
     },    
     items: [{
     	xtype: 'ServerTabConnector'
+    },{
+    	xtype: 'VirtualMachinesList'
     },{
     	xtype: 'TasksAndEventsTab'
     }]

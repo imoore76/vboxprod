@@ -65,7 +65,11 @@ Ext.define('vcube.view.TasksAndEventsTab', {
     			header: 'Server',
     			dataIndex: 'connector',
     			renderer: function(val) {
-    				return vcube.app.serverStore.findRecord('id',val).get('name');
+    				try {
+    					return vcube.app.serverStore.findRecord('id',val).get('name');    					
+    				} catch (err) {
+    					return 'Unknown(' + val + ')';
+    				}
     			},
     			width: 150
     		},{
@@ -136,7 +140,11 @@ Ext.define('vcube.view.TasksAndEventsTab', {
     			header: 'Server',
     			dataIndex: 'connector',
     			renderer: function(val) {
-    				return vcube.app.serverStore.findRecord('id',val).get('name');
+    				try {
+    					return vcube.app.serverStore.findRecord('id',val).get('name');    					
+    				} catch (err) {
+    					return 'Unknown(' + val + ')';
+    				}
     			},
     			width: 150
     		},{

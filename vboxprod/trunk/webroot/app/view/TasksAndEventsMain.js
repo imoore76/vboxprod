@@ -65,7 +65,7 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     				try {
     					return vcube.app.serverStore.findRecord('id',val).get('name');    					
     				} catch (err) {
-    					return val;
+    					return 'Unknown(' + val + ')';
     				}
     			},
     			width: 150
@@ -140,7 +140,7 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     				try {
     					return vcube.app.serverStore.findRecord('id',val).get('name');    					
     				} catch (err) {
-    					return val;
+    					return 'Unknown(' + val + ')';
     				}
     			},
     			width: 150

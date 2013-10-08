@@ -5,9 +5,6 @@ Ext.define('vcube.controller.VMTabSummary', {
     extend: 'Ext.app.Controller',
     	
     refs : [{
-    	selector: 'viewport > MainPanel > VMTabs',
-    	ref: 'VMTabsView'
-    },{
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
     },{
@@ -167,7 +164,10 @@ Ext.define('vcube.controller.VMTabSummary', {
 	    		
 	    		target.remove(section, true);
 	    		
-	    		target.insert(idx, vcube.view.VMTabs.sectionTable(vcube.view.VMTabSummary.vmSummarySections[section.itemId], data, section.itemId));
+	    		target.insert(idx, Ext.create('vcube.view.SectionTable',{
+	    			sectionCfg: vcube.view.VMTabSummary.vmSummarySections[section.itemId],
+	    			'data': data,
+	    			'name': section.itemId}));
 	    		
 	    	});
 	    	
@@ -338,14 +338,17 @@ Ext.define('vcube.controller.VMTabSummary', {
 
     		// Summary tab tables
     		var summaryTabTables = summaryTab.down('#summaryTables');
-    		summaryTabTables.removeAll();
+    		summaryTabTables.removeAll(true);
     		for(var i in vcube.view.VMTabSummary.vmSummarySections) {
 
     			if(typeof(i) != 'string') continue;
     			
     			if(!vcube.view.VMTabSummary.vmSummarySections[i].condition(data)) continue;
     			
-    			summaryTabTables.add(vcube.view.VMTabs.sectionTable(vcube.view.VMTabSummary.vmSummarySections[i], data, i));
+    			summaryTabTables.add(Ext.create('vcube.view.SectionTable',{
+    				sectionCfg: vcube.view.VMTabSummary.vmSummarySections[i],
+    				'data': data,
+    				name: i}));
     		
     		}
     		

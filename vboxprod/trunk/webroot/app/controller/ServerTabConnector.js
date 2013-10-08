@@ -72,7 +72,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
     },
     
     /* Get vm data and show summary */
-    showServerSummary: function(vmid) {
+    showServerSummary: function(sid) {
     	
     	var summaryTab = this.getServerTabConnectorView();
 
@@ -82,16 +82,35 @@ Ext.define('vcube.controller.ServerTabConnector', {
     	
     	this.dirty = false;
 
-		// batch of updates
-		Ext.suspendLayouts();
 
     	serverData = this.navTreeSelectionModel.getSelection()[0].raw.data;
     	
-    	Ext.each(summaryTab.items.items[0].items.items, function(item){
+    	Ext.each(summaryTab.down('#summary').items.items, function(item){
     		item.update(serverData);
     	});
     	
-    	Ext.resumeLayouts(true);
+    	var sectionTables = summaryTab.down('#sectionTables');
+    	sectionTables.removeAll(true);
+    	
+    	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/getStatus',{connector:sid})).done(function(data){
+    		// batch of updates
+    		Ext.suspendLayouts();
+
+    		for(var i in vcube.view.ServerTabConnector.sections) {
+
+    			if(typeof(i) != 'string') continue;
+    			
+    			if(vcube.view.ServerTabConnector.sections[i].condition && !vcube.view.ServerTabConnector.sections[i].condition(data)) continue;
+    			
+    			sectionTables.add(Ext.create('vcube.view.SectionTable',{
+    				sectionCfg: vcube.view.ServerTabConnector.sections[i],
+    				'data': data,
+    				name: i}));
+    		
+    		}
+
+    		Ext.resumeLayouts(true);
+    	});
     	
 
     }        

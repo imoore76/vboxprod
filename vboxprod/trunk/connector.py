@@ -4,7 +4,6 @@ import signal
 import ConfigParser
 import math
 import inspect
-import resource
 
 import socket
 import SocketServer
@@ -544,16 +543,15 @@ class vboxConnector(object):
     def remote_getStatus(self, args):
         
         return {
-            #'rusage' : resource.getrusage(resource.RUSAGE_SELF),
             'machines' : len(vboxGetArray(self.vbox, 'machines')),
             'version' : self.getVersion(),
             'operatingSystem' : self.vbox.host.operatingSystem,
             'OSVersion' : self.vbox.host.OSVersion,
+            'homeFolder' : self.vbox.homeFolder,
             'settingsFilePath' : self.vbox.settingsFilePath,
-            'maxGuestRAM' : self.vbox.systemProperties.maxGuestRAM,
-            'maxGuestCPUCount' : self.vbox.systemProperties.maxGuestCPUCount,
             'defaultMachineFolder' : self.vbox.systemProperties.defaultMachineFolder,
-            'homeFolder' : self.vbox.homeFolder
+            'maxGuestRAM' : self.vbox.systemProperties.maxGuestRAM,
+            'maxGuestCPUCount' : self.vbox.systemProperties.maxGuestCPUCount
         }
 
         

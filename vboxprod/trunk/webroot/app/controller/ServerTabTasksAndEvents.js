@@ -6,7 +6,7 @@ Ext.define('vcube.controller.ServerTabTasksAndEvents', {
     
     // View references
     refs : [{
-    	selector: 'viewport > MainPanel > ServerTabs > TasksAndEventsTab',
+    	selector: 'viewport > #MainPanel > ServerTabs > TasksAndEventsTab',
     	ref: 'TasksAndEventsView'
     },{
     	selector: 'viewport > NavTree',
@@ -30,7 +30,7 @@ Ext.define('vcube.controller.ServerTabTasksAndEvents', {
     init: function() {
     	
     	this.control({
-        	'viewport > MainPanel > ServerTabs > TasksAndEventsTab' : {
+        	'viewport > #MainPanel > ServerTabs > TasksAndEventsTab' : {
 	        	show: this.onTabShow,
     			render: function(panel) {
     				// Reconfigure panel with unique store instance

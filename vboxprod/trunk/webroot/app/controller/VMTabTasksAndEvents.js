@@ -6,7 +6,7 @@ Ext.define('vcube.controller.VMTabTasksAndEvents', {
     
     // View references
     refs : [{
-    	selector: 'viewport > MainPanel > VMTabs > TasksAndEventsTab',
+    	selector: 'viewport > #MainPanel > VMTabs > TasksAndEventsTab',
     	ref: 'TasksAndEventsView'
     },{
     	selector: 'viewport > NavTree',
@@ -30,7 +30,7 @@ Ext.define('vcube.controller.VMTabTasksAndEvents', {
     init: function() {
     	
     	this.control({
-        	'viewport > MainPanel > VMTabs > TasksAndEventsTab' : {
+        	'viewport > #MainPanel > VMTabs > TasksAndEventsTab' : {
 	        	show: this.onTabShow,
     			render: function(panel) {
     				// Reconfigure panel with unique store instance

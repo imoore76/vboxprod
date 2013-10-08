@@ -41,44 +41,32 @@ Ext.define('vcube.view.ServerTabConnector', {
 					title: vcube.utils.trans('Virtual Machines'),
 					icon: 'images/vbox/machine_16px.png',
 					border: true,
-					width: 150,
+					width: 250,
 					bodyStyle: { background: '#fff' },
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
+				redrawEvents: ['MachineStateChanged'],
 				rows: function(data) {
-					rows = [];
-					for(var state in data.machines) {
+					
+					var rows = [], states = {},
+						vmList = vcube.vmdatamediator.getVMDataByFilter(function(vm){return vm.connector_id == data.connector_id;});
+					
+					Ext.each(vmList, function(vm) {
+						if(!states[vm.state]) states[vm.state] = 1;
+						else states[vm.state]++;
+					});
+					
+					for(var state in states) {
 						if(typeof(state) != 'string') continue;
 						rows.push({
 							title: '',
-							data: data.machines[state] + ' ' + vcube.utils.vboxVMStates.convert(state)
+							data: states[state] + ' ' + vcube.utils.vboxVMStates.convert(state)
 						});
 					}
 					return rows;
 				}
 			},
 			
-			paths: {
-				tableCfg: {
-					title: vcube.utils.trans('Paths'),
-					icon: 'images/vbox/shared_folder_16px.png',
-					border: true,
-					width: 400,
-					bodyStyle: { background: '#fff' },
-					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
-				},
-				rows: [{
-					title: 'Home folder',
-					attrib: 'homeFolder'
-				},{
-					title: 'Settings File',
-					attrib: 'settingsFilePath'
-				},{
-					title: 'Default machine folder',
-					attrib: 'defaultMachineFolder'
-				}]
-				
-			},
 			
 			resources: {
 				tableCfg: {
@@ -99,8 +87,29 @@ Ext.define('vcube.view.ServerTabConnector', {
 					attrib: 'maxGuestCPUCount'
 				}]
 				
-			}
+			},
 
+			paths: {
+				tableCfg: {
+					title: vcube.utils.trans('Paths'),
+					icon: 'images/vbox/shared_folder_16px.png',
+					border: true,
+					width: 600,
+					bodyStyle: { background: '#fff' },
+					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
+				},
+				rows: [{
+					title: 'Home folder',
+					attrib: 'homeFolder'
+				},{
+					title: 'Settings File',
+					attrib: 'settingsFilePath'
+				},{
+					title: 'Default machine folder',
+					attrib: 'defaultMachineFolder'
+				}]
+				
+			}
 		}
 	},
     
@@ -117,7 +126,7 @@ Ext.define('vcube.view.ServerTabConnector', {
     	    itemId: 'summary',
     	    defaults: { border: false },
     	    items:[{
-		    	tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name} ({status_text}) - {location}</h3>asdf{description}'
+		    	tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name} ({status_name}) - {location}</h3>asdf{description}'
 		    },{
 		    	height: 20,
 		    	html: ''

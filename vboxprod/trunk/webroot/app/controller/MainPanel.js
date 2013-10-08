@@ -9,16 +9,16 @@ Ext.define('vcube.controller.MainPanel', {
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
     },{
-    	selector: 'viewport > MainPanel > Welcome',
+    	selector: 'viewport > #MainPanel > Welcome',
     	ref: 'WelcomeView'
     },{
-    	selector: 'viewport > MainPanel > GroupTabs',
+    	selector: 'viewport > #MainPanel > GroupTabs',
     	ref: 'GroupTabsView'
     },{
-    	selector: 'viewport > MainPanel > ServerTabs',
+    	selector: 'viewport > #MainPanel > ServerTabs',
     	ref: 'ServerTabsView'
     },{
-    	selector: 'viewport > MainPanel > VMTabs',
+    	selector: 'viewport > #MainPanel > VMTabs',
     	ref: 'VMTabsView'
     }],
     

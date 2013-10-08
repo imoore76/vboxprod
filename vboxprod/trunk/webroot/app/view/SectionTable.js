@@ -1,3 +1,6 @@
+/**
+ * Section table view. 
+ */
 Ext.define('vcube.view.SectionTable', {
 	
 	extend: 'Ext.panel.Panel',

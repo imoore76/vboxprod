@@ -1,10 +1,10 @@
 Ext.define('vcube.controller.VMTabSnapshots', {
     extend: 'Ext.app.Controller',
     refs : [{
-    	selector: 'viewport > MainPanel > VMTabs',
+    	selector: 'viewport > #MainPanel > VMTabs',
     	ref: 'VMTabsView'
     },{
-    	selector: 'viewport > MainPanel > VMTabs > VMTabSnapshots',
+    	selector: 'viewport > #MainPanel > VMTabs > VMTabSnapshots',
     	ref: 'VMTabSnapshotsView'
     }],
     
@@ -16,10 +16,10 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	
         /* Tree events */
         this.control({
-        	'viewport > MainPanel > VMTabs' : {
+        	'viewport > #MainPanel > VMTabs' : {
         		vmloaded: this.vmloaded
         	},
-        	'viewport > MainPanel > VMTabs > VMTabSnapshots' : {
+        	'viewport > #MainPanel > VMTabs > VMTabSnapshots' : {
         		show: this.loadVMData
         	}
         });

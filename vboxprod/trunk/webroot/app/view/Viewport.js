@@ -5,10 +5,13 @@ Ext.define('vcube.view.Viewport', {
     extend: 'Ext.container.Viewport',
     
     requires: [
-           'vcube.view.TasksAndEventsMain',
-           'vcube.view.MainPanel',
-           'vcube.view.NavTree',
-           'vcube.view.Menubar',
+          'vcube.view.TasksAndEventsMain',
+          'vcube.view.NavTree',
+          'vcube.view.Menubar',
+          'vcube.view.Welcome',
+          'vcube.view.GroupTabs',
+          'vcube.view.VMTabs',
+          'vcube.view.ServerTabs'
    ],
    
    layout: 'border',
@@ -28,8 +31,25 @@ Ext.define('vcube.view.Viewport', {
 	   border: false
    },{
 	   region: 'center',
-	   xtype: 'MainPanel',
 	   layout: 'fit',
-	   flex: 1
+	   itemId: 'MainPanel',
+	   flex: 1,
+		defaults: {
+			hidden: true,
+			flex: 1,
+			border: false,
+			layout: 'fit'
+		},
+		items: [{
+			xtype: 'Welcome',
+			hidden: false
+		},{
+			xtype: 'ServerTabs'
+		},{
+			xtype: 'GroupTabs'
+		},{
+			xtype: 'VMTabs'
+		}]
+
    }]
 });           

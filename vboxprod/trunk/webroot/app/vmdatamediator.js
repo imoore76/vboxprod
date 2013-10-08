@@ -77,6 +77,20 @@ Ext.define('vcube.vmdatamediator', {
 	},
 	
 	/**
+	 * Return all VMs' data that matches a filter
+	 */
+	getVMDataByFilter: function(filter) {
+		var vmList = [];
+		for(var i in vcube.vmdatamediator.vmData) {
+			if(typeof(i) != 'string') continue;
+			if(filter(vcube.vmdatamediator.vmData[i]))
+				vmList.push(vcube.vmdatamediator.vmData[i]);
+		}
+		return vmList;
+		
+	},
+	
+	/**
 	 * Watch for events and update data
 	 */
 	watchEvents: function() {

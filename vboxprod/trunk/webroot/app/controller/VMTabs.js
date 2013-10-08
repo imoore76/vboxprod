@@ -17,7 +17,7 @@ Ext.define('vcube.controller.VMTabs', {
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
     },{
-    	selector: 'viewport > MainPanel > VMTabs',
+    	selector: 'viewport > #MainPanel > VMTabs',
     	ref: 'VMTabsView'
     }],
     

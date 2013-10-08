@@ -1,13 +1,13 @@
 Ext.define('vcube.controller.VMTabConsole', {
     extend: 'Ext.app.Controller',
     refs : [{
-    	selector: 'viewport > MainPanel > VMTabs',
+    	selector: 'viewport > #MainPanel > VMTabs',
     	ref: 'VMTabsView'
     },{
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
     },{
-    	selector: 'viewport > MainPanel > VMTabs > VMTabConsole',
+    	selector: 'viewport > #MainPanel > VMTabs > VMTabConsole',
     	ref: 'VMTabConsoleView'
     }],
     
@@ -18,7 +18,7 @@ Ext.define('vcube.controller.VMTabConsole', {
     init: function(){
     	
         this.control({
-	        'viewport > MainPanel > VMTabs > VMTabConsole' : {
+	        'viewport > #MainPanel > VMTabs > VMTabConsole' : {
 	        	show: this.onTabShow,
 	        	render: function() {
 	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();	        		

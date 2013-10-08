@@ -9,7 +9,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
     },{
-    	selector: 'viewport > MainPanel > ServerTabs > ServerTabConnector',
+    	selector: 'viewport > #MainPanel > ServerTabs > ServerTabConnector',
     	ref: 'ServerTabConnectorView'
     }],
     
@@ -27,7 +27,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
 		
 		
         this.control({
-	        'viewport > MainPanel > ServerTabs > ServerTabConnector' : {
+	        'viewport > #MainPanel > ServerTabs > ServerTabConnector' : {
 	        	show: this.onTabShow,
 	        	render: this.onTabRender
 	        },
@@ -74,9 +74,9 @@ Ext.define('vcube.controller.ServerTabConnector', {
     /* Get vm data and show summary */
     showServerSummary: function(sid) {
     	
-    	var summaryTab = this.getServerTabConnectorView();
+    	var connectorTab = this.getServerTabConnectorView();
 
-    	if(!summaryTab.isVisible()) {
+    	if(!connectorTab.isVisible()) {
     		return;
     	}
     	
@@ -85,17 +85,22 @@ Ext.define('vcube.controller.ServerTabConnector', {
 
     	serverData = this.navTreeSelectionModel.getSelection()[0].raw.data;
     	
-    	Ext.each(summaryTab.down('#summary').items.items, function(item){
+    	Ext.each(connectorTab.down('#summary').items.items, function(item){
     		item.update(serverData);
     	});
     	
-    	var sectionTables = summaryTab.down('#sectionTables');
+    	var sectionTables = connectorTab.down('#sectionTables');
     	sectionTables.removeAll(true);
     	
     	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/getStatus',{connector:sid})).done(function(data){
+    		
     		// batch of updates
     		Ext.suspendLayouts();
+    		
+    		data = Ext.Object.merge(data,serverData);
 
+    		data.connector_id = sid;
+    		
     		for(var i in vcube.view.ServerTabConnector.sections) {
 
     			if(typeof(i) != 'string') continue;

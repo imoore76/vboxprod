@@ -23,7 +23,7 @@ Ext.define('vcube.controller.TasksAndEventsMain', {
     		}
     	});
     	
-    	// Redraw entire tab on machine data change
+    	// Populate when app starts
     	this.application.on({
     		'start' : this.populate,
     		scope: this

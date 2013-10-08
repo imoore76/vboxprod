@@ -8,19 +8,15 @@ import MySQLdb
 import pprint, traceback
 
 from connector import vboxConnector 
-from vboxclient import vboxRPCClient, vboxRPCClientPool, STATES_TO_TEXT
+from vboxclient import vboxRPCClient, vboxRPCClientPool
+
+import constants
 
 
 import logging
 logger = logging.getLogger('vcube')
 
 global config, app
-
-# Constants
-TASK_STATUS_STARTED = 0
-TASK_STATUS_COMPLETED = 1
-TASK_STATUS_ERRORED = 2
-TASK_STATUS_CANCELED = 3
 
 # Read config 
 config = ConfigParser.SafeConfigParser()
@@ -57,7 +53,8 @@ class vboxEventsToEventLog:
     def MachineDataChanged(eventData):
         return {'name':'Machine settings changed',
                 'machine':eventData['machineId'],
-                'connector': eventData['connector_id']
+                'connector': eventData['connector_id'],
+                'category' : constants.LOG_CATEGORY['CONFIGURATION']
         }
         
     @staticmethod
@@ -65,7 +62,8 @@ class vboxEventsToEventLog:
         return {'name':'Snapshot taken',
                 'machine':eventData['machineId'],
                 'details':'Snapshot `%s` taken' %(eventData['enrichmentData'].get('currentSnapshotName'),),
-                'connector': eventData['connector_id']
+                'connector': eventData['connector_id'],
+                'category' : constants.LOG_CATEGORY['SNAPSHOT']
         }
 
     @staticmethod
@@ -76,15 +74,24 @@ class vboxEventsToEventLog:
             name = 'Machine unregistered'
         return {'name':name,
                 'machine':eventData['machineId'],
-                'connector': eventData['connector_id']
+                'connector': eventData['connector_id'],
+                'category' : constants.LOG_CATEGORY['VCUBE']
         }
 
     @staticmethod
     def MachineStateChanged(eventData):
+        severities = {
+            'PoweredOff': constants.SEVERITY['ERROR'],
+            'Paused' : constants.SEVERITY['WARNING'],
+            'Stuck' : constants.SEVERITY['CRITICAL'],
+            'Saved' : constants.SEVERITY['WARNING']
+        }
         return {'name':'Machine state changed',
                 'machine':eventData['machineId'],
                 'details':'State changed to %s' %(re.sub(r'([a-z])([A-Z])',r'\1 \2',eventData['state']),),
-                'connector': eventData['connector_id']
+                'connector': eventData['connector_id'],
+                'severity' : severities.get(eventData['state'], constants.SEVERITY['INFO']),
+                'category' : constants.LOG_CATEGORY['STATE_CHANGE']
         }
 
 
@@ -234,10 +241,10 @@ class Application(threading.Thread):
             task = TaskLog()
             task.started = int(time.time())
             
-            task.status = taskData.get('status', TASK_STATUS_STARTED)
+            task.status = taskData.get('status', constants.TASK_STATUS['STARTED'])
             task.started = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
-            for attr in ['name','machine','details','connector','user']:
+            for attr in ['name','machine','details','connector','user','category']:
                 setattr(task, attr, taskData.get(attr,None))
 
             task.save()
@@ -261,7 +268,7 @@ class Application(threading.Thread):
     def updateTask(self, task, taskData):
         
         try:
-            task.status = taskData.get('status', TASK_STATUS_COMPLETED)
+            task.status = taskData.get('status', constants.TASK_STATUS['COMPLETED'])
             
             if task.status > 0 and not taskData.get('completed', None):
                 taskDat['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
@@ -302,12 +309,12 @@ class Application(threading.Thread):
         if status['completed'] or status['canceled']:
         
             try:            
-                taskData['status'] = TASK_STATUS_COMPLETED if not status['canceled'] else TASK_STATUS_CANCELED
+                taskData['status'] = constants.TASK_STATUS['COMPLETED'] if not status['canceled'] else constants.TASK_STATUS['CANCELED']
                 
                 taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
                 
                 if status.get('resultCode', None):
-                    taskData['status'] = TASK_STATUS_ERRORED
+                    taskData['status'] = constants.TASK_STATUS['ERROR']
                     taskData['details'] = status.get('error', taskData['details'])
                     
                 self.updateTask(task, taskData)
@@ -337,10 +344,10 @@ class Application(threading.Thread):
         try:
             el = EventLog()
             el.started = int(time.time())
-            el.severity = event.get('severity', 0)
+            el.severity = event.get('severity', constants.SEVERITY['INFO'])
             el.time = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
-            for attr in ['name','machine','details','connector']:
+            for attr in ['name','machine','details','connector','category']:
                 setattr(el, attr, event.get(attr,''))
 
             el.save()
@@ -399,6 +406,8 @@ class Application(threading.Thread):
             
         logData['connector'] = connector_id
         logData['user'] = user
+        logData['category'] = constants.LOG_CATEGORY.get(logData.get('category',None), constants.LOG_CATEGORY['VCUBE']) 
+
         
         task = self.logTask(logData)
 
@@ -426,7 +435,7 @@ class Application(threading.Thread):
         # else set to errored and append errors
         if not result.get('success', False):
             
-            logData['status'] = TASK_STATUS_ERRORED
+            logData['status'] = constants.TASK_STATUS['ERROR']
             
             task.completed = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -441,10 +450,10 @@ class Application(threading.Thread):
             
             # Add to progress / task pool
             self.progressOps[result['responseData']['progress']] = task
-            logData['status'] = TASK_STATUS_STARTED
+            logData['status'] = constants.TASK_STATUS['INPROGRESS']
 
         else:
-            logData['status'] = TASK_STATUS_COMPLETED
+            logData['status'] = constants.TASK_STATUS['COMPLETED']
             logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
         self.updateTask(task, logData)
@@ -481,7 +490,7 @@ class Application(threading.Thread):
                 Connector state change
             """
             
-            if event['status'] == 100:
+            if event['status'] == constants.CONNECTOR_STATES['RUNNING']:
                 """ Running """
                 
                 vmListAdded = []
@@ -609,7 +618,7 @@ class Application(threading.Thread):
         if event['eventType'] in vboxEventsToEventLog.events:
             self.logEvent(getattr(vboxEventsToEventLog, event['eventType'])(event))
                           
-    def onConnectorStateChange(self, cid, state, message=''):
+    def onConnectorStatusChange(self, cid, status, message=''):
         
         """
             Pump event to clients first
@@ -618,8 +627,7 @@ class Application(threading.Thread):
             'eventSource' : 'vcube',
             'eventType':'connectorStateChanged',
             'connector_id' : cid,
-            'status' : state,
-            'status_name' : STATES_TO_TEXT.get(state, 'Unknown'),
+            'status' : status,
             'message' : message
         })
         
@@ -627,9 +635,9 @@ class Application(threading.Thread):
         
         try:
             c = Connector.get(Connector.id == int(cid) and Connector.status > -1)
-            if int(c.status) != int(state):
+            if int(c.status) != int(status):
                 logEvent = True
-            c.status = state
+            c.status = status
             c.status_text = message
             c.save()
             
@@ -642,10 +650,11 @@ class Application(threading.Thread):
         if logEvent:
             try:
                 self.logEvent({
-                    'name' : 'Server status changed to ' + STATES_TO_TEXT.get(state, 'Unknown'),
+                    'name' : 'Server status changed to ' + constants.CONNECTOR_STATES_TEXT.get(status, 'Unknown'),
                     'details' : message,
                     'connector' : cid,
-                    'severity' : (5 if state < 100 else 0)
+                    'severity' : (constants.SEVERITY['CRITICAL'] if status < constants.CONNECTOR_STATES['RUNNING'] else constants.SEVERITY['INFO']),
+                    'category' : constants.LOG_CATEGORY['VCUBE']
                 })
                 
             except Exception as e:
@@ -667,7 +676,7 @@ class Application(threading.Thread):
                 
                 """ Add event listener """
                 self.connectorEventListeners[cid] = vboxRPCClient(server=connector, service='vboxEvents',
-                          onStateChange=self.onConnectorStateChange, listener=True)
+                          onStateChange=self.onConnectorStatusChange, listener=True)
                 
                 # Start
                 self.connectorEventListeners[cid].start()

@@ -2,7 +2,6 @@
 
 from vcube.dispatchers import dispatcher_parent, jsonout, require_admin
 from vcube.models import Connector
-from vcube.vboxclient import STATES_TO_TEXT
 import cherrypy
 
 import vcube
@@ -84,10 +83,7 @@ class dispatcher(dispatcher_parent):
     @jsonout
     @require_admin
     def getConnectors(self, *args, **kwargs):
-        clist = list(Connector.select().dicts())
-        for c in clist:
-            c['status_name'] = STATES_TO_TEXT.get(c.get('status', None), 'Unknown')
-        return clist
+        return list(Connector.select().dicts())
     getConnectors.exposed = True
 
 

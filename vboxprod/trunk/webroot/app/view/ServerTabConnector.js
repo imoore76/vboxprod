@@ -116,7 +116,7 @@ Ext.define('vcube.view.ServerTabConnector', {
 	alias: 'widget.ServerTabConnector',
 	
     title: 'Connector',
-    icon: 'images/vbox/OSE/VirtualBox_cube_42px.png',
+    icon: 'images/vbox/virtualbox-vdi.png',
     iconCls: 'icon16',
     items: [{
     	autoScroll: true,

@@ -68,6 +68,9 @@ Ext.application({
     	
     },
         
+    // Constants
+    constants: null,
+    
     // User session data
     session: null,
     
@@ -85,20 +88,26 @@ Ext.application({
     	
     	if(self.session && self.session.user) {
     		
-    		this.serverStore.load({
-    			scope: this,
-    			callback: function(r,o,success) {
-    				if(!success) return;
-					Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
-						Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
-							if(!self.died) {
-								self.serverStore.load();
-								self.fireEvent('start');
-							}
-						});    			
-					});
-    			}
-    		})
+    		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getConstants')).done(function(constants){
+    			
+    			self.constants = constants;
+    			
+    			self.serverStore.load({
+    				scope: this,
+    				callback: function(r,o,success) {
+    					if(!success) return;
+    					Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
+    						Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
+    							if(!self.died) {
+    								self.serverStore.load();
+    								self.fireEvent('start');
+    							}
+    						});    			
+    					});
+    				}
+    			})
+    			
+    		});
     		
     	} else {
     		self.showLogin();

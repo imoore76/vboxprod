@@ -23,7 +23,7 @@ Ext.define('vcube.controller.ServerTabTasksAndEvents', {
     selectedServerId : null,
     
     filter: function(eventData) {
-    	return (eventData.machine == this.selectedServerId);
+    	return (eventData.connector_id == this.selectedServerId);
     },
     
     /* Watch for events */

@@ -10,6 +10,18 @@
 	padding-left:20px
 }
 
+/* Category column */
+/*   'VCUBE' : 0,
+   'CONFIGURATION' : 5,
+   'STATE_CHANGE' : 10,
+   'SNAPSHOT' : 15
+*/
+div.categoryColumn { background-repeat: no-repeat; background-size:16px 16px; width: 16px; height: 16px; display: inline-block; float: left; margin-right: 4px;}
+div.categoryColumn0 { background-image:url(images/vbox/OSE/VirtualBox_cube_42px.png); }
+div.categoryColumn5 { background-image:url(images/vbox/settings_16px.png); }
+div.categoryColumn10 { background-image:url(images/vbox/poweroff_16px.png); }
+div.categoryColumn15 { background-image:url(images/vbox/take_snapshot_16px.png); }
+
 /*
 Details table
 */
@@ -39,11 +51,18 @@ div.gridColumnIcon { height: 16px; width: 16px; display: inline-block; float: le
 div.eventColumnMachine { background-image: url(images/vbox/machine_16px.png); }
 div.eventColumnServer { background-image: url(images/vbox/OSE/VirtualBox_cube_42px.png); }
 div.eventColumnGeneral { background-image: url(images/vbox/VirtualBox_16px.png); }
+
+/*
+   10 : 'Critical',
+   8 : 'Error',
+   6 : 'Warning',
+   4 : 'Info'
+*/
 div.severityColuumn { width: 12px; height: 12px; display: inline-block; float: left; margin-right: 4px; }
-div.severityColuumnCritical { background: #ff3333; }
-div.severityColuumnError { background: #FF8000; }
-div.severityColuumnWarning { background: #FFFF66 }
-div.severityColuumnInfo { background: #00f; }
+div.severityColuumn10 { background: #ff3333; }
+div.severityColuumn8 { background: #FF8000; }
+div.severityColuumn6 { background: #FFFF66 }
+div.severityColuumn4 { background: #00f; }
 
 .vboxSnapshot, .vboxSnapshot.x-grid-tree-node-expanded { background-image:url(images/vbox/offline_snapshot_16px.png) }
 .vboxSnapshotOnline, .vboxSnapshotOnline.x-grid-tree-node-expanded { background-image:url(images/vbox/online_snapshot_16px.png) }

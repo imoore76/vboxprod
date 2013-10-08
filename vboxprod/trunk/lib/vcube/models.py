@@ -62,6 +62,7 @@ class TaskLog(MySqlModel):
     name = CharField(max_length=256, null = False)
     machine = CharField(max_length=48, null = False)
     status = IntegerField(default = 0)
+    category = IntegerField(default = 0)
     details = CharField(max_length=256, null = True)
     user = CharField(max_length=256, null = False)
     connector = IntegerField(null = False)
@@ -71,6 +72,7 @@ class TaskLog(MySqlModel):
 class EventLog(MySqlModel):
     id = PrimaryKeyField()
     severity = IntegerField(default = 0, null = False)
+    category = IntegerField(default = 0)
     name = CharField(max_length=256, null = False)
     details = CharField(max_length=256, null = True)
     machine = CharField(max_length=48, null = False)

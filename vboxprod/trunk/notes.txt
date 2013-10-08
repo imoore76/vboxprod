@@ -1,3 +1,29 @@
+Info tab class
+
+	sectionId = x
+	selectionType = server|vm|group
+	
+	isItemSelected :function() {
+		this.navTreeSelectionModel.getSelection()[0].type == this.selectionType
+			&& id = this.selectionId
+	}
+	
+	dirty = yes/no
+	populate() = main drawing function
+	redraw() = specific sections
+	repopulateOn = ['events..']
+	
+	repopulateEvent : function() {
+		
+	}
+	#info
+		Main information stuff with template
+		
+	#sections
+		Draw sections here
+	
+
+
 NavTree
 	- already has stores and records
 	

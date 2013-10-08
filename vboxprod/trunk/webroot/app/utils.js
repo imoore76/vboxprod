@@ -121,14 +121,28 @@ Ext.define('vcube.utils', {
     		}
     	});
     	
-    	new Ext.window.MessageBox({resizable : true, 'buttons': buttons}).show({
+    	var dialog = new Ext.window.MessageBox({
+    		resizable : true,
+    		'buttons': buttons,
+    		buttonAlign: 'center',
+    		listeners: {
+    			afterrender: function(dlg) {
+    				Ext.each(dlg.query('button'),function(btn) {
+    					btn.on('click', function(){
+    						dlg.close();
+    					});
+    				});
+    			}
+    		}
+    	});
+    	
+    	dialog.show({
     		title: "<div class='msgBoxTitle'>"+vcube.app.name+"</div>",
     		msg: msg,
     		icon: Ext.MessageBox.QUESTION,
     		modal: true,
-    		//'buttons': buttons,
     		closeAction: 'destroy'
-    	})
+    	});
 
 	},
 	

@@ -6,18 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 messageLogger = logging.getLogger(__name__ + '.messages')
 
-STATE_DISCONNECTED = 0
-STATE_ERROR = 20
-STATE_REGISTERING = 30
-STATE_RUNNING = 100
-
-STATES_TO_TEXT = {
-    -1: "Disabled",
-    0 : "Disconnected",
-    20: "Errored",
-    30 : "Registering",
-    100: "Running"
-}
+import constants
 
 class vboxRPCClientPool(threading.Thread):
     
@@ -105,7 +94,7 @@ class vboxRPCClient(threading.Thread):
         self.id = self.server['id']
         
         # Initial state is disconnected
-        self.onStateChange(self.id, STATE_DISCONNECTED, '')
+        self.onStateChange(self.id, constants.CONNECTOR_STATES['DISCONNECTED'], '')
                 
         threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
@@ -124,7 +113,7 @@ class vboxRPCClient(threading.Thread):
             self.stop()
 
             # Error state
-            self.onStateChange(self.id, STATE_ERROR, "Failed to parse server location %s" %(self.server['location']))
+            self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], "Failed to parse server location %s" %(self.server['location']))
             
             return
         
@@ -144,12 +133,12 @@ class vboxRPCClient(threading.Thread):
             logger.error("%s %s" %(self.server['location'], str(e)))
 
             # Error state
-            self.onStateChange(self.id, STATE_ERROR, str(e))
+            self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], str(e))
             
 
     def register(self):
         
-        self.onStateChange(self.id, STATE_REGISTERING, '')
+        self.onStateChange(self.id, constants.CONNECTOR_STATES['REGISTERING'], '')
         
         """ Set service """
         self.sock.sendall(json.dumps(self.genRPCCallMsg('setService', {'service':self.service}))+"\n")
@@ -197,7 +186,7 @@ class vboxRPCClient(threading.Thread):
         self.running = False
         self.disconnect()
         
-        self.onStateChange(self.id, STATE_DISCONNECTED, '')
+        self.onStateChange(self.id, constants.CONNECTOR_STATES['DISCONNECTED'], '')
 
     @property
     def available(self):
@@ -282,7 +271,7 @@ class vboxRPCClient(threading.Thread):
                 
                 # Error state
                 if self.running:
-                    self.onStateChange(self.id, STATE_ERROR, 'Connection closed - will attempt to reconnect')
+                    self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], 'Connection closed - will attempt to reconnect')
     
                 self.disconnect()
                 
@@ -331,7 +320,7 @@ class vboxRPCClient(threading.Thread):
                         logger.exception(e)
                         continue
                     
-                    self.onStateChange(self.id, STATE_RUNNING, '')
+                    self.onStateChange(self.id, constants.CONNECTOR_STATES['RUNNING'], '')
                 
             
             message = self.waitResponse()
@@ -395,7 +384,7 @@ class vboxRPCEventListener(threading.Thread):
         self.onStateChange = onStateChange
         
         # Initial state is disconnected
-        self.onStateChange(self.id, STATE_DISCONNECTED, '')
+        self.onStateChange(self.id, constants.CONNECTOR_STATES['DISCONNECTED'], '')
         
         threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
@@ -411,7 +400,7 @@ class vboxRPCEventListener(threading.Thread):
             self.stop()
 
             # Error state
-            self.onStateChange(self.id, STATE_ERROR, "Failed to parse server location %s" %(self.server['location']))
+            self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], "Failed to parse server location %s" %(self.server['location']))
             
             return
         
@@ -433,7 +422,7 @@ class vboxRPCEventListener(threading.Thread):
                 
                 self.sock.sendall(json.dumps(call) + "\n")
     
-                self.onStateChange(self.id, STATE_REGISTERING, '')
+                self.onStateChange(self.id, constants.CONNECTOR_STATES['REGISTERING'], '')
                 
             except Exception as e:
                 logger.exception(str(e))
@@ -446,7 +435,7 @@ class vboxRPCEventListener(threading.Thread):
             logger.exception("%s %s" %(self.server['location'], str(e)))
 
             # Error state
-            self.onStateChange(self.id, STATE_ERROR, str(e))
+            self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], str(e))
             
 
             
@@ -471,7 +460,7 @@ class vboxRPCEventListener(threading.Thread):
         self.running = False
         self.disconnect()
         
-        self.onStateChange(self.id, STATE_DISCONNECTED, '')
+        self.onStateChange(self.id, constants.CONNECTOR_STATES['DISCONNECTED'], '')
 
         
     def run(self):
@@ -512,7 +501,7 @@ class vboxRPCEventListener(threading.Thread):
                 
                 # Error state
                 if self.running:
-                    self.onStateChange(self.id, STATE_ERROR, 'Connection closed - will attempt to reconnect')
+                    self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], 'Connection closed - will attempt to reconnect')
 
                 self.disconnect()
                 
@@ -532,7 +521,7 @@ class vboxRPCEventListener(threading.Thread):
 
             if message.get('msgType','') == 'rpc_exception':
                 """ Error... disconnect """
-                self.onStateChange(self.id, STATE_ERROR, message.get('error', 'Unknown RPC error'))
+                self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], message.get('error', 'Unknown RPC error'))
                 self.disconnect()
                 continue
 
@@ -550,7 +539,7 @@ class vboxRPCEventListener(threading.Thread):
                 self.registered = True
                 
                 # Running state
-                self.onStateChange(self.id, STATE_RUNNING, '')
+                self.onStateChange(self.id, constants.CONNECTOR_STATES['RUNNING'], '')
 
                 continue
             

@@ -997,7 +997,8 @@ class vboxConnector(object):
         return {
             'name' : "Clone virtual machine",
             'details': ('from snapshot ' + results['snapshotName'] if (results and results.get('snapshotName', '')) else '') + ('to %s' %(args.get('name'))),
-            'machine' : args.get('src','')
+            'machine' : args.get('src',''),
+            'category' : 'VCUBE'
         }
 
     """
@@ -1742,7 +1743,8 @@ class vboxConnector(object):
     def remote_machineSave_log(args, response):
         return {
             'name': 'Save machine settings',
-            'machine': args['vm']
+            'machine': args['vm'],
+            'category' : 'CONFIGURATION'
         }
 
     """
@@ -1764,7 +1766,8 @@ class vboxConnector(object):
     def remote_machineAdd_log(args, results):
         return {
             'name': "Add virtual machine",
-            'machine': results.get('machine','')
+            'machine': results.get('machine',''),
+            'category' : 'VCUBE'
         }
 
 
@@ -1827,7 +1830,10 @@ class vboxConnector(object):
     
     @staticmethod
     def remote_vboxSystemPropertiesSave_log(args, results):
-        return {'name' : "Create host-only interface" }
+        return {
+            'name' : "Save system properties",
+            'category' : 'VCUBE'
+        }
 
     """
      * Import a virtual appliance
@@ -1860,6 +1866,8 @@ class vboxConnector(object):
                 args['descriptions'][a][5][k] = args['descriptions'][a][5][k]
             d.setFinalValues(args['descriptions'][a][5],args['descriptions'][a][3],args['descriptions'][a][4])
             a = a + 1
+            
+        machinesImported = a
 
         """ @progress IProgress """
         progress = app.importMachines(['KeepNATMACs' if args['reinitNetwork'] else 'KeepAllMACs'])
@@ -1868,7 +1876,7 @@ class vboxConnector(object):
         global progressOpPool
         progressid = progressOpPool.store(progress)
 
-        return {'progress' : progressid}
+        return {'progress' : progressid, 'machinesImported': machinesImported}
 
     remote_applianceImport.progress = True
     remote_applianceImport.log = True
@@ -1877,8 +1885,8 @@ class vboxConnector(object):
     def remote_applianceImport_log(args, results):
         return {
                 'name' : "Import appliance",
-                'details': ""
-                """ TODO """
+                'details': ("%s machines imported" %(results.get('machinesImported',0),) if results else ""),
+                'category' : 'VCUBE'
         }
     
     """
@@ -2034,7 +2042,8 @@ class vboxConnector(object):
     def remote_applianceExport_log(args, results):
         return {
             'name': "Export appliance",
-            'details': "Exported %s vms" %(args['vms'].length)
+            'details': "Exported %s vms" %(args['vms'].length),
+            'category' : 'VCUBE'
         }
     
     """
@@ -2160,7 +2169,10 @@ class vboxConnector(object):
 
     @staticmethod
     def remote_hostOnlyInterfacesSave_log(args, results):
-        return {'name':"Save host-only interfaces"}
+        return {
+            'name':"Save host-only interfaces",
+            'category' : 'CONFIGURATION'
+        }
     
     """
      * Add Host-only interface
@@ -2184,7 +2196,10 @@ class vboxConnector(object):
     
     @staticmethod
     def remote_hostOnlyInterfaceCreate_log(args, results):
-        return { 'name' : "Create host-only interface" }
+        return {
+            'name' : "Create host-only interface",
+            'category' : 'CONFIGURATION'
+        }
     
 
     """
@@ -2213,7 +2228,8 @@ class vboxConnector(object):
     @staticmethod
     def remote_hostOnlyInterfaceRemove_log(args, results):
         return {
-            'name': "Remove host-only interface `%s`" %(results.get('interface',''),)
+            'name': "Remove host-only interface" + (" `%s`" %(results.get('interface',''),) if results and results.get('interface',None) else ""),
+            'category' : 'CONFIGURATION'
         }
 
     """
@@ -2303,7 +2319,7 @@ class vboxConnector(object):
             """ @progress IProgress """
             progress = machine.launchVMProcess(session, 'headless', '')
             
-            progressid = progressOpPool.store(progress, session)
+            progressid = progressOpPool.store(progress, None)
 
             
             return {'progress' : progressid, 'requestedState':state}
@@ -2365,7 +2381,8 @@ class vboxConnector(object):
 
         return {
             'machine': args.get('vm'),
-            'name': states.get(results.get('state', args.get('state')))
+            'name': states.get(results.get('state', args.get('state'))),
+            'category' : 'STATE_CHANGE'
          }
         
     """
@@ -2669,7 +2686,8 @@ class vboxConnector(object):
         return {
             'name': 'Remove machine',
             'details': 'Remove machine `%s`' %(results.get('machineName', '')),
-            'machine': args.get('vm','')
+            'machine': args.get('vm',''),
+            'category' : 'VCUBE'
         }
 
 
@@ -2815,7 +2833,8 @@ class vboxConnector(object):
         return {
             'name': 'Create virtual machine',
             'details': 'Create virtual machine `%s`' %(args.get('name',''),),
-            'machine': results.get('vm','')
+            'machine': results.get('vm',''),
+            'category' : 'VCUBE'
         }
 
 
@@ -3309,7 +3328,8 @@ class vboxConnector(object):
     def remote_snapshotRestore_log(args, results):
         return {
             'name' : "Restore snapshot %s" %(results.get('snapshotName', args.get('snapshot')),),
-            'machine': args.get('vm')
+            'machine': args.get('vm'),
+            'category' : 'SNAPSHOT'
         }
 
 
@@ -3362,7 +3382,8 @@ class vboxConnector(object):
     def remote_snapshotDelete_log(args, results):
         return {
             'name' : "Delete snapshot %s" %(results.get('snapshotName', args.get('snapshot')),),
-            'machine': args.get('vm')
+            'machine': args.get('vm'),
+            'category' : 'SNAPSHOT'
         }
 
     """
@@ -3410,7 +3431,8 @@ class vboxConnector(object):
         return {
             'name' : "Take snapshot `%s`" %(args['name'],),
             'details': "Snapshot description: %s" %(args.get('description'),) if args.get('description','') else '',
-            'machine': args.get('vm')
+            'machine': args.get('vm'),
+            'category' : 'SNAPSHOT'
         }
 
 
@@ -3551,7 +3573,8 @@ class vboxConnector(object):
     def remote_mediumResize_log(args, results):
         return {
             'name' : "Resize medium %s" %(results.get('mediumName', args.get('medium')),),
-            'details': "Requested size %d MB" %(long(args['bytes']) / 1024 / 1024)
+            'details': "Requested size %d MB" %(long(args['bytes']) / 1024 / 1024),
+            'category' : 'VCUBE'
         }
 
         
@@ -3591,7 +3614,10 @@ class vboxConnector(object):
     
     @staticmethod
     def remote_mediumCloneTo_log(args, results):
-        return { 'name' : "Clone medium %s to %s" %(args.get('src','Unknown'),args.get('location','Unknown'))}
+        return {
+            'name' : "Clone medium %s to %s" %(args.get('src','Unknown'),args.get('location','Unknown')),
+            'category' : 'VCUBE'
+        }
 
 
     """
@@ -3674,7 +3700,10 @@ class vboxConnector(object):
     
     @staticmethod
     def remote_mediumAdd_log(args, results):
-        return { 'name' : "Add medium %s" %(args.get(['path'])) }
+        return {
+            'name' : "Add medium `%s`" %(args.get(['path'])),
+            'category' : 'VCUBE'
+        }
 
 
     """
@@ -3718,7 +3747,10 @@ class vboxConnector(object):
     
     @staticmethod
     def remote_mediumCreateBaseStorage_log(args, results):
-        return { 'name' : "Create hard disk %s" %(args.get('file'),)}
+        return {
+            'name' : "Create hard disk `%s`" %(args.get('file'),),
+            'category' : 'VCUBE'
+        }
 
 
     """
@@ -3808,7 +3840,8 @@ class vboxConnector(object):
     def remote_mediumRelease_log(args, results):
         return {
             'name' : "Release medium %s" %(results.get('mediumName', args.get('medium')),),
-            'details': "Released from %s" %(', '.join(results.get('machineNames'),)) if results.get('machineNames') else ''
+            'details': "Released from %s" %(', '.join(results.get('machineNames'),)) if results.get('machineNames') else '',
+            'category' : 'CONFIGURATION'
         }
 
 
@@ -3844,7 +3877,8 @@ class vboxConnector(object):
     @staticmethod
     def remote_mediumRemove_log(args, results):
         return {
-            'name' : "Remove medium %s" %(results.get('mediumName', args.get('medium')),)
+            'name' : "Remove medium %s" %(results.get('mediumName', args.get('medium')),),
+            'category' : 'VCUBE'
         }
 
 

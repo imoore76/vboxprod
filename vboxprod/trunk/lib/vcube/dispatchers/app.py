@@ -4,6 +4,7 @@ from vcube.dispatchers import dispatcher_parent, jsonout
 import pprint
 
 import vcube
+import vcube.constants
 
 import cherrypy
 
@@ -47,4 +48,12 @@ class dispatcher(dispatcher_parent):
         return True
     
     logout.exposed = True
+    
+    @jsonout
+    def getConstants(self, *args, **kwargs):
+        constants = {}
+        for k in vcube.constants.__all__:
+            constants[k] = getattr(vcube.constants, k)
+        return constants
+    getConstants.exposed = True
 

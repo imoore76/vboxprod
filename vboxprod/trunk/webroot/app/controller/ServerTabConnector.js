@@ -16,16 +16,6 @@ Ext.define('vcube.controller.ServerTabConnector', {
     /* Watch for events */
     init: function(){
     	
-		// Connector state changes
-    	/*
-		this.application.on({
-			'SessionStateChanged': this.updateServerActions,
-			'MachineStateChanged': this.updateServerActions,
-			scope: this
-		});
-		*/
-		
-		
         this.control({
 	        'viewport > #MainPanel > ServerTabs > ServerTabConnector' : {
 	        	show: this.onTabShow,

@@ -197,7 +197,6 @@ Ext.define('vcube.controller.NavTree', {
 		return {
 			iconCls : 'navTreeIcon',
 			icon : 'images/vbox/OSE/VirtualBox_cube_42px.png',
-			cls: (server.status != 100 ? 'nodeDisabled' : ''),
 			leaf : true,
 			allowDrag: false,
 			allowDrop: false,

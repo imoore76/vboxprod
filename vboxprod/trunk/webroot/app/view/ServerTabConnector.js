@@ -24,7 +24,7 @@ Ext.define('vcube.view.ServerTabConnector', {
 				rows: [{
 					title: 'Operating system',
 					renderer: function(data) {
-						return data.operatingSystem + ' ' + data.OSVersion
+						return data.operatingSystem + ' (' + data.OSVersion + ')'
 					}
 				},{
 					title: 'VirtualBox Version',

@@ -148,7 +148,7 @@ Ext.define('vcube.controller.VMTabDetails', {
 	    		
 	    		self.getVMTabDetailsView().remove(section, true);
 	    		
-	    		self.getVMTabDetailsView().insert(idx, Ext.create('vcube.view.SectionTable',{
+	    		self.getVMTabDetailsView().insert(idx, Ext.create('vcube.widget.SectionTable',{
 	    			sectionCfg: vcube.view.VMTabDetails.vmDetailsSections[section.itemId],
 	    			'data':data,
 	    			'name':section.itemId}));
@@ -207,7 +207,7 @@ Ext.define('vcube.controller.VMTabDetails', {
 				
 				if(typeof(i) != 'string') continue;
 				
-				detailsTab.add(Ext.create('vcube.view.SectionTable',{
+				detailsTab.add(Ext.create('vcube.widget.SectionTable',{
 					sectionCfg : vcube.view.VMTabDetails.vmDetailsSections[i],
 					'data': data,
 					'name': i}));

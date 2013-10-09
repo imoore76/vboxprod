@@ -1,7 +1,7 @@
 /**
  * Section table view. 
  */
-Ext.define('vcube.view.SectionTable', {
+Ext.define('vcube.widget.SectionTable', {
 	
 	extend: 'Ext.panel.Panel',
     
@@ -74,7 +74,7 @@ Ext.define('vcube.view.SectionTable', {
 		    icon: 'images/vbox/' + options.sectionCfg.icon,
 		    cls: 'vboxDetailsTablePanel',
 		    itemId : options.name,
-		    items: vcube.view.SectionTable.sectionTableRows(options.sectionCfg.rows, options.data)
+		    items: vcube.widget.SectionTable.sectionTableRows(options.sectionCfg.rows, options.data)
 		}, (options.sectionCfg.tableCfg ? options.sectionCfg.tableCfg : {}))
 		
 		this.callParent();

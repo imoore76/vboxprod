@@ -24,8 +24,7 @@ Ext.define('vcube.view.TasksAndEventsMain', {
 			},{
 				xtype: 'taskstatuscolumn'
 			},{ 
-				header: 'Details',
-				dataIndex: 'details',
+				xtype: 'taskdetailscolumn',
 				flex: 1
 			},{
 				xtype: 'machinecolumn',

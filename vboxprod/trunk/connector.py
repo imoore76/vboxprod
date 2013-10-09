@@ -4,6 +4,7 @@ import signal
 import ConfigParser
 import math
 import inspect
+import platform
 
 import socket
 import SocketServer
@@ -2405,7 +2406,7 @@ class vboxConnector(object):
         """ @host IHost """
         host = self.vbox.host
         response = {
-            'id' : 'host',
+            'hostname': platform.node(),
             'operatingSystem' : host.operatingSystem,
             'OSVersion' : host.OSVersion,
             'memorySize' : host.memorySize,
@@ -5080,7 +5081,7 @@ class vboxProgressOpPool(threading.Thread):
                 finally:
                     self.progressOpsLock.release()
                     
-                time.sleep(3)
+            time.sleep(3)
         
 
 """

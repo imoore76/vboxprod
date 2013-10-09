@@ -329,6 +329,7 @@ class Application(threading.Thread):
 
             eventTaskData = dict(task._data.copy())
             eventTaskData.update(taskData)
+            eventTaskData['progress'] = status
             
             self.pumpEvent({
                 'source' : 'vcube',

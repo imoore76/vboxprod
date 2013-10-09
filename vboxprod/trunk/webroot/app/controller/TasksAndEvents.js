@@ -66,8 +66,14 @@ Ext.define('vcube.controller.TasksAndEvents', {
     		this.onTaskLogEntry(event);
     		return;
     	}
-    	Ext.each(['completed','details','machine','name','status'], function(k){
-    		record.set(k, event.eventData[k]);
+    	record.raw = event.eventData;
+    	record.set({
+    		'completed': event.eventData['completed'],
+    		'details': event.eventData['details'],
+    		'machine': event.eventData['machine'],
+    		'name': event.eventData['name'],
+    		'status': event.eventData['status'],
+    		'progress': event.eventData['progress']
     	});
     }
 

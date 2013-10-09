@@ -14,7 +14,7 @@ Ext.define('vcube.view.VMTabs', {
                'vcube.view.VMTabDetails',
                'vcube.view.VMTabSnapshots',
                'vcube.view.VMTabConsole',
-               'vcube.view.SectionTable',
+               'vcube.widget.SectionTable',
                'vcube.view.TasksAndEventsTab'
              ],
 	

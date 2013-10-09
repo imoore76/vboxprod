@@ -3,7 +3,7 @@ Ext.define('vcube.view.ServerTabs', {
     alias: 'widget.ServerTabs',
     
 	requires: [
-       'vcube.view.SectionTable',
+       'vcube.widget.SectionTable',
 	   'vcube.view.ServerTabConnector',
 	   'vcube.view.ServerTabHost',
 	   'vcube.view.VirtualMachinesList',

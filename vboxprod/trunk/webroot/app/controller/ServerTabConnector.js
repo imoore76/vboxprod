@@ -97,7 +97,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
     			
     			if(vcube.view.ServerTabConnector.sections[i].condition && !vcube.view.ServerTabConnector.sections[i].condition(data)) continue;
     			
-    			sectionTables.add(Ext.create('vcube.view.SectionTable',{
+    			sectionTables.add(Ext.create('vcube.widget.SectionTable',{
     				sectionCfg: vcube.view.ServerTabConnector.sections[i],
     				'data': data,
     				name: i}));

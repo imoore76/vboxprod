@@ -26,7 +26,7 @@ Ext.define('vcube.view.VMTabSummary', {
 		 * Tables for summary tab
 		 * 
 		 */
-		vmSummarySections : {
+		sections : {
 			
 			info: {
 				

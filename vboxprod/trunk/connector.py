@@ -5064,7 +5064,7 @@ class vboxProgressOpPool(threading.Thread):
                             # sleep time   
                             else:
                                 print "Time remaining is %s" %(status['timeRemaining'],)
-                                sleepTime = min(int(status['timeRemaining']), sleepTime)
+                                sleepTime = min(max(1,int(status['timeRemaining'])), sleepTime)
                                     
                             try:
                                 
@@ -5094,8 +5094,6 @@ class vboxProgressOpPool(threading.Thread):
             else:
                 opCount = 0
                 
-            print "Sleep time is %s" %(sleepTime,)
-            
             for i in range(0,sleepTime):
                
                 # wake up if a progress op was added

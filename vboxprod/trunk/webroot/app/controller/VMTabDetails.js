@@ -7,7 +7,7 @@ Ext.define('vcube.controller.VMTabDetails', {
     init: function(){
     	
     	/* Setup sections */
-    	this.sectionConfig = vcube.view.VMTabDetails.vmDetailsSections;
+    	this.sectionConfig = vcube.view.VMTabDetails.sections;
     	
         this.control({
 	        'viewport > #MainPanel > VMTabs > VMTabDetails' : {

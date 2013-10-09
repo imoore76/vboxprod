@@ -28,7 +28,7 @@ Ext.define('vcube.view.VMTabDetails', {
 		 * List of VM details sections and their content
 		 * 
 		 */
-		vmDetailsSections : {
+		sections : {
 				
 				/*
 				 * General

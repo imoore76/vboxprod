@@ -7,7 +7,10 @@ Ext.define('vcube.controller.VMTabSummary', {
 
     /* Watch for events */
     init: function(){
-    	
+
+    	/* Setup sections */
+    	this.sectionConfig = vcube.view.VMTabSummary.sections;
+
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'vm';
     	
@@ -16,10 +19,7 @@ Ext.define('vcube.controller.VMTabSummary', {
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'machineId';
-    	
-    	/* Setup sections */
-    	this.sectionConfig = vcube.view.VMTabSummary.vmSummarySections;
-    	
+    	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
         	return vcube.vmdatamediator.getVMDataCombined(data.id);

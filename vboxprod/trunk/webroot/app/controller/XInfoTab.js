@@ -7,14 +7,14 @@ Ext.define('vcube.controller.XInfoTab', {
     /* selection model ref */
     navTreeSelectionModel: null,
 
-    /* Try?? */
+    refs : [{
+    	selector: 'viewport > NavTree',
+    	ref: 'NavTreeView'
+    }],
+
+	/* Try?? */
     constructor: function() {
     	
-    	console.log("In constructor");
-    	this.refs = [{
-    		selector: 'viewport > NavTree',
-    		ref: 'NavTreeView'
-    	}];
     	
     	/* Does this tab need to be populated or redrawn? */
     	this.dirty = true;
@@ -40,13 +40,8 @@ Ext.define('vcube.controller.XInfoTab', {
     	/* Point to section config */
     	this.sectionConfig = {};
     	
-    	/* Get information population data */
-    	this.populateData = function() {
-    		return {}
-    	};
     	
     	/* After new data is loaded */
-    	this.
     	this.callParent(arguments);
     	
     },
@@ -92,6 +87,11 @@ Ext.define('vcube.controller.XInfoTab', {
         
     },
     
+    /* Get information population data */
+    populateData : function() {
+    	return {}
+    },
+
     /* When this tab is rendered hold nav tree selection model */
     onTabRender: function(tab) {
     	this.controlledTabView = tab;
@@ -101,7 +101,6 @@ Ext.define('vcube.controller.XInfoTab', {
     
     /* When tab is shown */
     onTabShow: function() {
-    	console.log("inshow");
     	
     	if(!this.dirty) return;
     	
@@ -139,6 +138,8 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     	console.log("here2");
     	
+    	console.log(this.sectionConfig);
+    	
     	// is this tab still visible?
     	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
     		this.dirty = true;
@@ -164,37 +165,33 @@ Ext.define('vcube.controller.XInfoTab', {
     	// Get fresh data
     	Ext.ux.Deferred.when(this.populateData(this.navTreeSelectionModel.getSelection()[0].raw.data)).done(function(data) {
 			
-    		console.log("here5");
     		// If this tab's item is no longer selected, nothing to do
         	if(data.id != self.selectionItemId)
         		return;
         	
-        	console.log("here6");
         	// is this tab still visible?
         	if(!self.controlledTabView.isVisible()) {
         		self.dirty = true;
         		return;
         	}
 
-        	console.log("here7");
+        	var sectionsPane = self.getSectionsPane();
 	    	// Redraw each section that wants to be redrawn
-	    	Ext.each(self.controlledTabView.items.items, function(section, idx) {
+	    	Ext.each(sectionsPane.items.items, function(section, idx) {
 	    		
 	    		if(!Ext.Array.contains(sections, section.itemId)) {
 	    			return;
 	    		}
-	    		console.log("here8");
 	    		
-	    		self.getVMTabDetailsView().remove(section, true);
+	    		sectionsPane.remove(section, true);
 	    		
-	    		self.getVMTabDetailsView().insert(idx, Ext.create('vcube.widget.SectionTable',{
+	    		sectionsPane.insert(idx, Ext.create('vcube.widget.SectionTable',{
 	    			sectionCfg: self.sectionConfig[section.itemId],
 	    			'data':data,
 	    			'name':section.itemId}));
 	    		
 	    	});
 	    	
-	    	console.log("here9");
 	    	self.controlledTabView.doLayout();
 			
 		});
@@ -205,9 +202,6 @@ Ext.define('vcube.controller.XInfoTab', {
      * entire tab is repopulated */
     onRepopulateEvent: function(event) {
 
-    	console.log("Here in     onRepopulateEvent");
-    	console.log(event);
-    	
     	// If this tab's item is no longer selected, nothing to do
     	if(event[this.eventIdAttr] != this.selectionItemId)
     		return;
@@ -280,8 +274,6 @@ Ext.define('vcube.controller.XInfoTab', {
     	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
     		return;
     	}
-    	
-    	console.log("populating");
     	
     	// Data is no longer dirty?.. not sure about this
     	this.dirty = false;

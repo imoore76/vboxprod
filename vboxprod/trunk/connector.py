@@ -2419,6 +2419,7 @@ class vboxConnector(object):
         """
          * Processors
          """
+        ""
         for i in range(0, host.processorCount):
             response['cpus'].append(host.getProcessorDescription(i))
 
@@ -2447,7 +2448,7 @@ class vboxConnector(object):
                 'hardwareAddress' : d.hardwareAddress,
                 'networkName' : d.networkName
             })
-
+        
         """
          * Medium types (DVD and Floppy)
          """

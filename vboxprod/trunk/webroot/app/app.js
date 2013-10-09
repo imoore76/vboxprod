@@ -28,7 +28,7 @@ Ext.application({
                   // VM Group tabs
                   'GroupTabs',
                   // Server Tabs
-                  'ServerTabConnector', 'ServerTabTasksAndEvents',
+                  'ServerTabConnector', 'ServerTabHost', 'ServerTabTasksAndEvents',
                   // VM tabs
                   'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabTasksAndEvents','VMTabConsole'
     ],
@@ -120,6 +120,7 @@ Ext.application({
      */
     launch: function() {
 
+    	
     	// Create some shortcuts
     	vcube.app = this;
     	
@@ -145,6 +146,10 @@ Ext.application({
     	    	}
     		}
     	})
+
+    	if (Ext.get('page-loader')) {
+    		Ext.get('page-loader').remove();
+    	}
 
     	vcube.utils.ajaxRequest('app/getSession',{},function(data){
     		self.loadSession(data);

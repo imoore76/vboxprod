@@ -49,7 +49,7 @@ Ext.define('vcube.view.ServerTabConnector', {
 				rows: function(data) {
 					
 					var rows = [], states = {},
-						vmList = vcube.vmdatamediator.getVMDataByFilter(function(vm){return vm.connector_id == data.connector_id;});
+						vmList = vcube.vmdatamediator.getVMDataByFilter(function(vm){return vm.connector_id == data.id;});
 					
 					Ext.each(vmList, function(vm) {
 						if(!states[vm.state]) states[vm.state] = 1;
@@ -123,18 +123,11 @@ Ext.define('vcube.view.ServerTabConnector', {
     	border: false,
     	defaults: { border: false },
     	items: [{
-    	    itemId: 'summary',
-    	    defaults: { border: false },
-    	    items:[{
-		    	tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name} ({status_name}) - {location}</h3>asdf{description}'
-		    },{
-		    	height: 20,
-		    	html: ''
-		    }]
+    	    itemId: 'infopane',
+    	    tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name} ({status_name}) - {location}</h3>asdf{description}' +
+    	    	'<div style="padding: 20px"> </div>'
     	},{
-    		itemId: 'sectionTables',
-    		defaults: { border: false },
-    		html: ''
+    		itemId: 'sectionspane'
     	}]
     }]
 });

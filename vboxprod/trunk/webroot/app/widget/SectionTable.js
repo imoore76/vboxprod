@@ -24,7 +24,10 @@ Ext.define('vcube.widget.SectionTable', {
 		sectionTableRows: function(rows, data) {
 			
 			// Is rows a function?
-			if(typeof(rows) == 'function') rows = rows(data);
+			if(typeof(rows) == 'function') {
+				rows = rows(data);
+				console.log(rows);
+			}
 			
 			var tableItems = [];
 			for(var i = 0; i < rows.length; i++) {

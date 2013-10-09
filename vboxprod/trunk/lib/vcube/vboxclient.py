@@ -202,7 +202,7 @@ class vboxRPCClient(threading.Thread):
                 'requestId': rpcRequestId
             }
         
-    def rpcCall(self, call, args, timeout=20):
+    def rpcCall(self, call, args, timeout=30):
         """
             Send message and return response or raise
             exception if timeout occurs

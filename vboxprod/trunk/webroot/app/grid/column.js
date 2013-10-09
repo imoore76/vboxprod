@@ -45,37 +45,29 @@ Ext.define('vcube.grid.column.TaskDetailsColumn', {
     alias: 'widget.taskdetailscolumn',
     header: 'Details',
 	dataIndex: 'details',
-	renderer: function(val,m,record) {
-		
-		var elmId = this.id + '-' + record.raw.id;
-		var cmpId = elmId + '-cmp';
+	renderer: function(val,m,record,ri,ci,store,view) {
 
 		// Still in progress?
 		if(record.raw.progress) {
-			/*
-			if(Ext.getCmp(cmpId)) {
-				Ext.getCmp(cmpId).destroy();
-			}
-			Ext.defer(function () {
-				Ext.widget('progressbar', {
-					renderTo: elmId,
-					id: cmpId,
-					value: record.raw.progress.percent,
-					text: record.raw.progress.operationDescription,
-					style: {
-						margin: '0px'
-					}
-				});
-			}, 50);
-			return '<div style="border: 1px solid #060; width:100%; height: 16px;"><div style="background:#292;height:16px;display:inline-block;width='+record.raw.progress.percent+'%">'+
-			record.raw.progress.percent+'%</div></div>';			
-			*/
-			return '<div style="border: 1px solid #060; width:100%; height: 16px; overflow: hidden;text-align:center">' +
-				'<span>'+record.raw.progress.operationDescription+' (' + record.raw.progress.percent + '%)</span>'+
-				'<div style="position: relative; top: -16; left: 0; background: #9f9; overflow: hidden; width:' + record.raw.progress.percent + '%">' + record.raw.progress.operationDescription + '</div>'+
-				'</div>';
-			//return '<span id="vboxHostMemUsed"><div style="background-color:#a33" id="vboxHostMemUsedPct"><div style="background-color:#a93;float:right;" id="vboxHostMemResPct"></div></div><div style="width:100%;position:relative;top:-14px;left:0px;text-align:center;"><span id="vboxHostMemUsedLblPct" style="float:left" /><span id="vboxHostMemFreeLbl" style="float:right" /></div></span>				
+			
+			m.style = "padding: 0px;";
+			
+			var width = view.panel.columns[ci].el.dom.scrollWidth - 2;
+			
+			return '<div class="x-progress x-progress-default">'+
+	        	'<div class="x-progress-text x-progress-text-back" style="width: ' + width + 'px;">'+
+	        	record.raw.progress.operationDescription +
+	        '</div>'+
+	        '<div class="x-progress-bar x-progress-bar-default" style="width:'+record.raw.progress.percent+'%">'+
+	            '<div class="x-progress-text" style="width: '+width+'px;">'+
+	                '<div>'+
+	                record.raw.progress.operationDescription + 
+	                '</div>'+
+	            '</div>'+
+	        '</div>'+
+	    '</div>';
 		}
+		m.style = "";
 		var status = 'Unknown';
 		try {
 			status = vcube.app.constants.TASK_STATUS_TEXT[val];

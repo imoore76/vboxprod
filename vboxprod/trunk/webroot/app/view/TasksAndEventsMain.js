@@ -5,6 +5,7 @@ Ext.define('vcube.view.TasksAndEventsMain', {
 	extend: 'Ext.tab.Panel',
     alias: 'widget.TasksAndEventsMain',
     requires: ['vcube.grid.column'],
+    taskDetailsColumnWidth: 0,
     filter: null,
     defaults: { viewConfig: { markDirty: false } },
     items: [{

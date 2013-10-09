@@ -1,5 +1,19 @@
+
 Info tab class
 
+	itemSelect - Selection changed
+		mark tab dirty
+		if type is our type, run populate
+		
+	tabShow - 
+		if this tab is dirty, run populate
+		
+	populate - Get data and populate sections
+		if this tab is not shown, do nothing
+		else the tab is no longer dirty
+		
+		
+		
 	sectionId = x
 	selectionType = server|vm|group
 	

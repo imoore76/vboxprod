@@ -216,7 +216,10 @@ class Application(threading.Thread):
     """
     def pumpEvent(self, event):
 
-        self.onEvent(event)
+        # onEvent returns false if we should not
+        # pump this event to the client
+        if not self.onEvent(event):
+            return
         
         for eh in self.eventHandlers:
             eh(event)
@@ -404,12 +407,14 @@ class Application(threading.Thread):
                 'name': action,
                 'details': 'Log failed: %s' %(str(e),)
             }
-            
+        
+        # Enrich task log data
         logData['connector'] = connector_id
         logData['user'] = user
         logData['category'] = constants.LOG_CATEGORY.get(logData.get('category',None), constants.LOG_CATEGORY['VCUBE']) 
 
         
+        # Log task
         task = self.logTask(logData)
 
         # Perform action and parse result
@@ -433,7 +438,7 @@ class Application(threading.Thread):
             })
 
         # Set status to completed if it was successful,
-        # else set to errored and append errors
+        # else set to erred and append errors
         if not result.get('success', False):
             
             logData['status'] = constants.TASK_STATUS['ERROR']
@@ -446,13 +451,16 @@ class Application(threading.Thread):
                     errorStrings.append(e.get('error','Unkonwn'))
                 logData['details'] = ' '.join(errorStrings)
             
-        
+    
+        # vboxConnector method says we should look for a progress operation
+        # result and responseData contains a progress id
         elif getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False) and type(result.get('responseData',None)) is dict and result.get('responseData',{}).get('progress',None):
             
             # Add to progress / task pool
             self.progressOps[result['responseData']['progress']] = task
             logData['status'] = constants.TASK_STATUS['INPROGRESS']
 
+        # Task is completed
         else:
             logData['status'] = constants.TASK_STATUS['COMPLETED']
             logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
@@ -485,6 +493,7 @@ class Application(threading.Thread):
             """
             pprint.pprint(event)
             self.updateTaskProgress(event['progress'], event['status'])
+            return False
             
         if event['eventType'] == 'connectorStateChanged':
             """
@@ -618,6 +627,8 @@ class Application(threading.Thread):
         """ Add to event log """
         if event['eventType'] in vboxEventsToEventLog.events:
             self.logEvent(getattr(vboxEventsToEventLog, event['eventType'])(event))
+            
+        return True
                           
     def onConnectorStatusChange(self, cid, status, message=''):
         

@@ -2,7 +2,7 @@
  * Events and tasks controller
  */
 Ext.define('vcube.controller.ServerTabTasksAndEvents', {
-    extend: 'vcube.controller.TasksAndEvents',
+    extend: 'vcube.controller.XTasksAndEvents',
     
     // View references
     refs : [{

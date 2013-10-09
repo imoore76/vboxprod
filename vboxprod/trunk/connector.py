@@ -51,7 +51,6 @@ vboxSubscribeEventList = [ vboxMgr.constants.VBoxEventType_OnMachineStateChanged
     vboxMgr.constants.VBoxEventType_OnRuntimeError,
     vboxMgr.constants.VBoxEventType_OnCPUChanged,
     vboxMgr.constants.VBoxEventType_OnVRDEServerInfoChanged,
-    vboxMgr.constants.VBoxEventType_OnEventSourceChanged,
     vboxMgr.constants.VBoxEventType_OnCPUExecutionCapChanged,
     vboxMgr.constants.VBoxEventType_OnNATRedirect,
     vboxMgr.constants.VBoxEventType_OnHostPCIDevicePlug,
@@ -2338,8 +2337,9 @@ class vboxConnector(object):
 
             """ @progress IProgress """
             progress = getattr(session.console, state)()
-            progressid = progressOpPool.store(progress, session)
-
+            #progressid = progressOpPool.store(progress, session)
+            progressid = progressOpPool.store(progress, None)
+            
             return {'progress' : progressid, 'requestedState':state}
 
         # Operation does not return a progress object
@@ -5011,6 +5011,9 @@ class vboxProgressOpPool(threading.Thread):
         
         while self.running or len(self.progressOps):
             
+            # At most we will sleep 3 seconds
+            sleepTime = 3
+            
             if len(self.progressOps):
                 
                 self.progressOpsLock.acquire(True)
@@ -5036,7 +5039,7 @@ class vboxProgressOpPool(threading.Thread):
                                 'resultCode' : 0,
                                 'cancelable' : progress.cancelable
                             }
-                
+                                            
                 
                             # Completed? destroy progress op
                             if status['completed'] or status['canceled']:
@@ -5056,6 +5059,12 @@ class vboxProgressOpPool(threading.Thread):
                                         logger.exception(e)
                                 finally:
                                     del self.progressOps[pid]
+                            
+                            # Operation still in progress, update
+                            # sleep time   
+                            else:
+                                print "Time remaining is %s" %(status['timeRemaining'],)
+                                sleepTime = min(int(status['timeRemaining']), sleepTime)
                                     
                             try:
                                 
@@ -5079,9 +5088,21 @@ class vboxProgressOpPool(threading.Thread):
                 
                     
                 finally:
+                    opCount = len(self.progressOps)
                     self.progressOpsLock.release()
-                    
-            time.sleep(3)
+            
+            else:
+                opCount = 0
+                
+            print "Sleep time is %s" %(sleepTime,)
+            
+            for i in range(0,sleepTime):
+               
+                # wake up if a progress op was added
+                if len(self.progressOps) != opCount:
+                   break
+               
+                time.sleep(1)
         
 
 """

@@ -2,7 +2,7 @@
  * Events and tasks controller
  */
 Ext.define('vcube.controller.TasksAndEventsMain', {
-    extend: 'vcube.controller.TasksAndEvents',
+    extend: 'vcube.controller.XTasksAndEvents',
     
     /* Store limit ? */
     storeLimit: 25,

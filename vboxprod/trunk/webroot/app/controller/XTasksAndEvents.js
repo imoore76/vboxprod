@@ -1,7 +1,7 @@
 /*
  * Events and tasks controller parent class
  */
-Ext.define('vcube.controller.TasksAndEvents', {
+Ext.define('vcube.controller.XTasksAndEvents', {
     extend: 'Ext.app.Controller',
     
     /* Store limit ? */
@@ -12,16 +12,6 @@ Ext.define('vcube.controller.TasksAndEvents', {
     
     /* Watch for events */
     init: function() {
-    	
-    	// Track details column size
-    	this.control({
-	    	'taskdetailscolumn' : {
-				resize: function(col,size) {
-					col._colSize = size;
-					//console.log(col);
-				}
-			}
-    	});
     	
     	// Redraw entire tab on machine data change
     	this.application.on({

@@ -20,6 +20,7 @@ Ext.define('vcube.view.VMTabDetails', {
     defaults: { xtype: 'panel', width: '100%', margin: '0 10 10 10' },
     style : { background: '#f9f9f9' },
     bodyStyle : { background: '#f9f9f9' },
+    itemId: 'sectionspane',
 	statics: {
 		
 		/*

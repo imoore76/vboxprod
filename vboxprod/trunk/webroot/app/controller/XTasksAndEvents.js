@@ -4,6 +4,12 @@
 Ext.define('vcube.controller.XTasksAndEvents', {
     extend: 'Ext.app.Controller',
     
+    statics: {
+    	cancelProgress: function(progress_id, connector_id) {
+    		vcube.utils.ajaxRequest("vbox/progressCancel",{progress:progress_id, connector: connector_id});
+    	},    	
+    },
+    
     /* Store limit ? */
     storeLimit: 0,
     
@@ -26,6 +32,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     /* These will be filled later */
     eventStore : null,
     taskStore: null,
+    
     
     populate: function() {
     	this.eventStore.removeAll();

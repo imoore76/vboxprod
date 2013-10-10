@@ -87,6 +87,12 @@ Ext.define('vcube.grid.column.TaskStatusColumn', {
     header: 'Status',
 	dataIndex: 'status',
 	renderer: function(val,m,record) {
+		
+		// Still in progress?
+		if(record.raw.progress && record.raw.progress.cancelable) {
+			return '<a href="#" onClick="javascript:vcube.controller.XTasksAndEvents.cancelProgress(\''+
+				record.raw.progress.progress_id +'\', '+ record.raw.progress.connector_id + ')" />Cancel</a>';
+		}
 		var status = 'Unknown';
 		try {
 			status = vcube.app.constants.TASK_STATUS_TEXT[val];

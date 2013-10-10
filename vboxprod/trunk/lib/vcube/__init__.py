@@ -298,16 +298,17 @@ class Application(threading.Thread):
         return None
         
     """
-        Update a task based on progress status
+        Update a task based on progress status event
     """
-    def updateTaskProgress(self, pid, status):
+    def updateTaskProgress(self, event):
         
-        if not self.progressOps.get(pid, None): return
+        if not self.progressOps.get(event['progress'], None): return
 
-        task = self.progressOps[pid]
+        task = self.progressOps[event['progress']]
         
         taskData = {}
         
+        status = dict(event['status'].copy())
         
         if status['completed'] or status['canceled']:
         
@@ -332,6 +333,8 @@ class Application(threading.Thread):
 
             eventTaskData = dict(task._data.copy())
             eventTaskData.update(taskData)
+            status['progress_id'] = event['progress']
+            status['connector_id'] = event['connector_id']
             eventTaskData['progress'] = status
             
             self.pumpEvent({
@@ -492,7 +495,7 @@ class Application(threading.Thread):
                 Update task
             """
             pprint.pprint(event)
-            self.updateTaskProgress(event['progress'], event['status'])
+            self.updateTaskProgress(event)
             return False
             
         if event['eventType'] == 'connectorStateChanged':

@@ -3432,7 +3432,7 @@ class vboxConnector(object):
     
 
         """ @s ISnapshot """
-        s = machine.findSnapshot(None)
+        s = machine.findSnapshot('')
         response['snapshot'] = self._snapshotGetDetails(s,True)
 
         response['currentSnapshotId'] = (machine.currentSnapshot.id if machine.currentSnapshot else '')
@@ -3456,7 +3456,7 @@ class vboxConnector(object):
             for c in vboxGetArray(s,'children'):
                 children.append(self._snapshotGetDetails(c, True))
 
-        timestamp = int(math.floor(s.timeStamp/1000))
+        timestamp = int(math.floor(long(s.timeStamp)/1000))
 
         return {
             'id' : s.id,

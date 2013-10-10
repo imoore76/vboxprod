@@ -30,8 +30,8 @@ Ext.define('vcube.data.reader.Json', {
             }
             
             if(this.asChildren) {
-            	
-            	if(!data) {
+
+            	if(!data || !data.id) {
             		data = [];
             	} else if(data.toString() != "[object Array]") {
             		data = new Array(data);

@@ -1,31 +1,47 @@
-Ext.define('vcube.JsonReader', {
+Ext.define('vcube.data.reader.Json', {
     extend: 'Ext.data.reader.Json',
     alias: 'reader.vcubeJsonReader',
 
+    getMetaData : function() {
+    	return this.metaData;
+    },
+    
     getResponseData: function(response) {
         var data, error;
          
         try {
-            data = Ext.decode(response.responseText).data;
+
+        	data = Ext.decode(response.responseText).data;
             
+
             // Handle errors and messages
-            vcube.utils.handleResponseMetaData(data);
+        	vcube.utils.handleResponseMetaData(data);
             
             // Root will be responseData
             data = data.responseData;
-            
+
+            // Initial root. Used in treestores
             if(this.initialRoot) {
+            	// Hold response data without the root
+            	// this sometimes contains metadata
+            	this.metaData = data;
             	data = data[this.initialRoot];
+            	this.metaData[this.initialRoot] = null;
             }
             
             if(this.asChildren) {
-
-            	if(data.toString() != "[object Array]")
-            		data = new Array(data);
             	
+            	if(!data) {
+            		data = [];
+            	} else if(data.toString() != "[object Array]") {
+            		data = new Array(data);
+            	}
+            
             	data = {'text':'.','children':data,'expanded':true};
             	
+            	
             }
+            
             return this.readRecords(data);
 
         } catch (ex) {

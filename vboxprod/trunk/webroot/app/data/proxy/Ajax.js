@@ -1,7 +1,7 @@
 /**
  * app ajax proxy
  */
-Ext.define('vcube.AjaxProxy', {
+Ext.define('vcube.data.proxy.Ajax', {
     extend: 'Ext.data.proxy.Ajax',
     alias: 'proxy.vcubeAjax',
     config: {
@@ -16,7 +16,7 @@ Ext.define('vcube.AjaxProxy', {
     	},
     	type: 'ajax',
     	reader: {
-    		type: 'vcubeJsonReader'
+    		type: 'vcube.data.reader.Json'
     	}    	
     }
 });

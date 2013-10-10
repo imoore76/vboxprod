@@ -36,7 +36,7 @@ class dispatcher(dispatcher_parent):
         if user != False:
             cherrypy.session['user'] = user
             print "OK!!!!"
-            return self.getSession(_raw=True)
+            return self.getSession(_jsonout_raw=True)
         return False
     
     login.exposed = True

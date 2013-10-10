@@ -17,7 +17,7 @@ Ext.application({
     autoCreateViewport: true,
     
     /* Various utils and scripts */
-    requires: ['vcube.JsonReader', 'vcube.AjaxProxy', 'Ext.ux.Deferred',
+    requires: ['vcube.data.reader.Json', 'vcube.data.proxy.Ajax', 'Ext.ux.Deferred',
                'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener',
                'vcube.previewbox'],
     

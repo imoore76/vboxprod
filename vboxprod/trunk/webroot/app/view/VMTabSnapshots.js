@@ -9,6 +9,23 @@ Ext.define('vcube.view.VMTabSnapshots', {
     
 	alias: 'widget.VMTabSnapshots',
 	
+	statics: {
+		
+		// Snapshot node template
+		nodeTextTpl : "{0} <span class='vboxSnapshotTimestamp'>{1}</span>",
+		
+		// Current state node
+		currentStateNode: function(vm) {
+			return {
+				'text': '<strong>'+vcube.utils.trans((vm.currentStateModified ? 'Current State (changed)' : 'Current State'),'VBoxSnapshotsWgt')+'</strong>',
+				'icon' : 'images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state),
+				'leaf' : true,
+				'cls' : 'snapshotCurrent',
+				'id' : 'current'
+			}
+		}
+	},
+	
 	/* Snapshots */
 	title: 'Snapshots',
 	icon: 'images/vbox/take_snapshot_16px.png',
@@ -16,55 +33,34 @@ Ext.define('vcube.view.VMTabSnapshots', {
 	items: [{
 		xtype: 'treepanel',
 		itemId: 'snapshottree',
-		listeners: {
-			show: function(p) {
-				p.getComponent('snapshottree').doLayout().getStore().getRootNode().expand();
-				
-			}
-		},
 		viewConfig:{
 			markDirty:false
 		},
 		rootVisible: false,
 		lines: true,
 		store: new Ext.data.TreeStore({
-			
-			model: 'vcube.model.Snapshot',
+			clearOnLoad: true,
 			autoLoad: false,
 			
+		    fields: ['id', 
+		             'name', 'description', 'online', 'timeStamp',
+		             'text',
+		             { name: 'expanded', type: 'boolean', defaultValue: true, persist: true }],
+
 			listeners: {
-				
-				
+								
 				append: function(thisNode,newNode,index,eOpts) {
-					newNode.set('text',newNode.raw.name + ' <span class="vboxSnapshotTimestamp"> </span>');
+					if(newNode.get('id') == 'current') return;
+					newNode.set('text',Ext.String.format(vcube.view.VMTabSnapshots.nodeTextTpl, newNode.raw.name, ''));
 					newNode.set('icon', 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png');
 					newNode.set('expanded',(newNode.raw.children && newNode.raw.children.length));
-				},
-				
-				// Append current state
-				load: function(s, node, records, success) {
-					var cState = {
-							id: 'current',
-							text: 'Current State',
-							name: 'Current State',
-							leaf: true
-					};
-					var rData = s.getProxy().getReader().responseData;
-					var pNode = null;
-					if(rData.currentSnapshotId) {
-						pNode = s.getNodeById(rData.currentSnapshotId);
-					} else {
-						pNode = s.getRootNode();
-					}
-					
-					pNode.appendChild(pNode.createNode(cState));
-					pNode.expand();
 				}
+				
 			},
 			
 			proxy: {
 				type: 'ajax',
-				url: 'data/operasnapshots.json',
+				url: 'vbox/machineGetSnapshots',
 				reader: {
 					type: 'vcubeJsonReader',
 					initialRoot: 'snapshot',

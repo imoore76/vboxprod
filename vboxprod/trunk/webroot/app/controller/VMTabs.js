@@ -10,8 +10,6 @@ Ext.define('vcube.controller.VMTabs', {
 	
     extend: 'Ext.app.Controller',
     
-    models: ['Snapshot'],
-    
     // Hold nav tree ref so that we only have to get this once
     refs : [{
     	selector: 'viewport > NavTree',

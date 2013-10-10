@@ -3436,6 +3436,7 @@ class vboxConnector(object):
         response['snapshot'] = self._snapshotGetDetails(s,True)
 
         response['currentSnapshotId'] = (machine.currentSnapshot.id if machine.currentSnapshot else '')
+        response['currentStateModified'] = machine.currentStateModified
 
         return response
 

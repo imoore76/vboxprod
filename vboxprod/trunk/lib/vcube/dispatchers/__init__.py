@@ -48,7 +48,7 @@ def jsonout(func):
         except:
             pass
         
-        if kwargs.get('_raw') == True:
+        if kwargs.get('_jsonout_raw') == True:
             return func(*args, **kwargs)
         
         jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
@@ -66,7 +66,7 @@ def jsonout(func):
             e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
             jsonResponse['data']['errors'].append(e)
         
-        if kwargs.get('_pprint', None):
+        if kwargs.get('_dispatcher_pprint', None):
             return pprint.pformat(jsonResponse)
         
         return json.dumps(jsonResponse, cls=vcubeJsonEncoder)

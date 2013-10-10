@@ -8,6 +8,10 @@ import pprint, cherrypy
 
 class dispatcher(dispatcher_parent):
     
+    """
+        Add all methods from vboxConnector class
+        that start with remote_
+    """
     def __init__(self):
         
         from connector import vboxConnector
@@ -24,6 +28,10 @@ class dispatcher(dispatcher_parent):
                 callback.exposed = True
                 setattr(self, fn, callback)
         
+        
+    """
+        Get screenshot of machine. Handles caching
+    """
     def machineGetScreenShot(self, *args, **kwargs):
         
         """
@@ -62,6 +70,8 @@ class dispatcher(dispatcher_parent):
         
     machineGetScreenShot.exposed = True
             
+            
+            
     @jsonin
     def vboxAction(self, *args, **kwargs):
         
@@ -75,7 +85,7 @@ class dispatcher(dispatcher_parent):
         try:
             
             if not kwargs.get('connector', None):
-                raise Exception("No VirtualBox connector id specified")
+                raise Exception("No VirtualBox connector id specified (%s) %s" %(fn, kwargs))
             
             response = vcube.getInstance().vboxAction(kwargs['connector'], fn, kwargs, cherrypy.session.get('user',{}).get('username','Unknown'))
             
@@ -88,7 +98,7 @@ class dispatcher(dispatcher_parent):
             e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
             jsonResponse['data']['errors'].append(e)
 
-        if kwargs.get('_pprint', None):
+        if kwargs.get('_dispatcher_pprint', None):
             return pprint.pformat(jsonResponse)
         
         return json.dumps(jsonResponse)

@@ -50,8 +50,6 @@ Ext.define('vcube.controller.XInfoTab', {
     /* Watch for events */
     init: function(){
     	
-    	console.log("In xinfotab init with");
-    		console.log(this);
     	/* Non-primative types .. */
         this.control({
         	'viewport > NavTree' : {
@@ -305,6 +303,11 @@ Ext.define('vcube.controller.XInfoTab', {
     		Ext.resumeLayouts(true);
 
 
+    	}).fail(function() {
+    		
+    		// batch of updates are over
+    		Ext.resumeLayouts(true);
+    		
     	});
     }
 

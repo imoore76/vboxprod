@@ -37,7 +37,7 @@ Ext.define('vcube.controller.Login', {
     				self.getLoginWindow().hide();
     				self.application.loadSession(data);
     			} else {
-    				self.application.alert('Invalid login');
+    				vcube.utils.alert('Invalid login');
     				self.getPasswordField().setValue('').focus();
     			}
     		});

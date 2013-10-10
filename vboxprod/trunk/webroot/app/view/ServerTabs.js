@@ -12,7 +12,6 @@ Ext.define('vcube.view.ServerTabs', {
 
     defaults: {
     	border: false,
-    	layout: 'fit',
     	padding: 5
     },    
     items: [{

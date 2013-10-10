@@ -26,7 +26,6 @@ Ext.define('vcube.widget.SectionTable', {
 			// Is rows a function?
 			if(typeof(rows) == 'function') {
 				rows = rows(data);
-				console.log(rows);
 			}
 			
 			var tableItems = [];

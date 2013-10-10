@@ -2411,9 +2411,7 @@ class vboxConnector(object):
             'OSVersion' : host.OSVersion,
             'memorySize' : host.memorySize,
             'cpus' : [],
-            'networkInterfaces' : [],
-            'DVDDrives' : [],
-            'floppyDrives' : []
+            'networkInterfaces' : []
         }
 
         """
@@ -2448,32 +2446,6 @@ class vboxConnector(object):
                 'hardwareAddress' : d.hardwareAddress,
                 'networkName' : d.networkName
             })
-        
-        """
-         * Medium types (DVD and Floppy)
-         """
-        for d in vboxGetArray(host, 'DVDDrives'):
-
-            response['DVDDrives'].append({
-                'id' : d.id,
-                'name' : d.name,
-                'location' : d.location,
-                'description' : d.description,
-                'deviceType' : 'DVD',
-                'hostDrive' : True
-            })
-
-        for d in vboxGetArray(host, 'floppyDrives'):
-
-            response['floppyDrives'].append({
-                'id' : d.id,
-                'name' : d.name,
-                'location' : d.location,
-                'description' : d.description,
-                'deviceType' : 'Floppy',
-                'hostDrive' : True
-            })
-
         
         return response
 

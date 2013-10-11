@@ -517,7 +517,7 @@ class Application(threading.Thread):
             self.updateTaskProgress(event)
             return False
             
-        if event['eventType'] == 'connectorStateChanged':
+        if event['eventType'] == 'ConnectorStateChanged':
             """
                 Connector state change
             """
@@ -542,7 +542,7 @@ class Application(threading.Thread):
                         
                         self.pumpEvent({
                             'eventSource' : 'vcube',
-                            'eventType' : 'vcubeMachinesAdded',
+                            'eventType' : 'MachinesAdded',
                             'connector_id' : event['connector_id'],
                             'machines' : vmListAdded
                         })
@@ -567,7 +567,7 @@ class Application(threading.Thread):
                         
                         self.pumpEvent({
                             'eventSource' : 'vcube',
-                            'eventType':'vcubeMachinesRemoved',
+                            'eventType':'MachinesRemoved',
                             'connector' : event['connector_id'],
                             'machines' : vmListRemoved
                         })
@@ -656,7 +656,7 @@ class Application(threading.Thread):
         """
         self.pumpEvent({
             'eventSource' : 'vcube',
-            'eventType':'connectorStateChanged',
+            'eventType':'ConnectorStateChanged',
             'connector_id' : cid,
             'status' : status,
             'status_text' : message

@@ -214,6 +214,11 @@ Ext.define('vcube.controller.XInfoTab', {
         		return;
         	}
         	
+        	if(data == null) {
+        		self.dirty = true;
+        		return;
+        	}
+        	
 	    	// Redraw each section that wants to be redrawn
 	    	Ext.each(sectionsPane.items.items, function(section, idx) {
 	    		
@@ -287,16 +292,22 @@ Ext.define('vcube.controller.XInfoTab', {
     },
 
     /* Draw sections */
-    drawSections: function(data) {
+    drawSections: function(data, recordData) {
 
     	// Tab info table
     	var infoPane = this.getInfoPane();
-    	if(infoPane) infoPane.update(data);
-		
+    	if(infoPane) infoPane.update((data ? Ext.apply({}, data, recordData) : recordData));
+    	
 		// Tab section tables
 		var sectionsPane = this.getSectionsPane();
 		if(sectionsPane) {
+			
 			sectionsPane.removeAll(true);
+			
+			// Don't draw these if there is no data
+			if(!data) return;
+			
+			data = Ext.apply({}, data, recordData);
 			
 			for(var i in this.sectionConfig) {
 				
@@ -346,7 +357,7 @@ Ext.define('vcube.controller.XInfoTab', {
     		Ext.suspendLayouts();
     		
     		// draw sections with data
-    		self.drawSections.apply(self, [Ext.Object.merge({},data,recordData)]);
+    		self.drawSections.apply(self, [data, recordData]);
 
     		// batch of updates are over
     		Ext.resumeLayouts(true);

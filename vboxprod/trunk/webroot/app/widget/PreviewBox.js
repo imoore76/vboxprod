@@ -1,29 +1,139 @@
+/*
+ * There can be only one instance of this
+ */
 Ext.define('vcube.widget.PreviewBox',{
 
 	extend: 'Ext.panel.Panel',
 	alias: 'widget.PreviewBox',
 	width: 200,
 	
-	/* Aspect ration for preview window */
-	previewAspectRatio : 1.6,
+	title: 'Preview',
+	icon: 'images/vbox/vrdp_16px.png',
+	itemId: 'PreviewPanel',
+	autoWidth: true,
+	autoHeight: true,
+	bodyStyle: {
+	    background: '#fff'
+	},
+	border: true,
 
-	/* Holds preview dimension cache */
-	resolutionCache : {},
-
-	/* preview update timer and interval */
-	previewUpdateTimer : null,
-	previewUpdateInterval : 3,
-	
 	elementId: null,
 	
 	constructor: function(options) {
 		Ext.apply(this,options);
-		this.elementId = 'preview-box-' + Ext.id();
-		this.items.push({html:'<div id="' + this.elementId +"' />"});
+		this.elementId = 'vcube-widget-previewbox-' + Ext.id();
+		this.html = '<div id="' + this.elementId +"' />";
 	},
 	
+
+	/* Hold canvas element after render */
+	listeners: {
+		
+		afterrender: function() {
+
+			vcube.widget.PreviewBox.canvasElement = document.getElementById(this.elementId);
+			
+			height = parseInt(vcube.widget.PreviewBox.previewWidth / vcube.widget.PreviewBox.previewAspectRatio);
+
+			vcube.widget.PreviewBox.drawPreview(this.canvasElement, null, vcube.widget.PreviewBox.previewWidth, height);
+		}
+	},
+	
+	/* Configure with VM */
+	reconfigure: function(vm) {
+		
+		vcube.widget.PreviewBox.vm = vm;
+		vcube.widget.PreviewBox.drawPreview()
+		
+			/* Preview image from vbox */
+		vboxDrawPreviewImg : new Image(),
+		vboxDrawPreviewImg.onload : function() {
+	
+			var width = vcube.widget.PreviewBox.previewWidth;
+			
+			var vmid = vcube.widget.PreviewBox.vm;
+			
+			// Set and cache dimensions
+			if(this.height > 0) {
+				
+				// If width != requested width, it is scaled
+				if(this.width != vcube.widget.PreviewBox.previewWidth) {
+					height = this.height * (vcube.widget.PreviewBox.previewWidth / this.width);
+				// Not scaled
+				} else {					
+					height = this.height;							
+				}
+	
+				vcube.widget.PreviewBox.resolutionCache[vmid] = {
+					'height':height
+				};
+	
+			// Height of image is 0
+			} else {
+				
+				// Check for cached resolution
+				if(vcube.widget.PreviewBox.resolutionCache[vmid]) {				
+					height = vcube.widget.PreviewBox.resolutionCache[vmid].height;
+				} else {
+					height = parseInt(width / vcube.widget.PreviewBox.previewAspectRatio);
+				}
+				
+				// Clear interval if set
+				var timer = vcube.widget.PreviewBox.previewTimer;
+				if(timer) window.clearInterval(timer);
+				vcube.widget.PreviewBox.previewTimer = null;
+				
+			}
+			
+			// Get fresh VM data
+			var vm = vcube.vmdatamediator.getVMData(vmid);
+			
+			// Return if this is stale
+			if(!vm) {
+				var timer = vcube.widget.PreviewBox.previewTimer;
+				if(timer) window.clearInterval(timer);
+				vcube.widget.PreviewBox.previewTimer = null;
+				return;
+			}
+			
+			// Canvas redraw
+			vcube.previewbox.drawPreview(vcube.widget.PreviewBox.canvasElement, (this.height <= 1 ? null : this), width, height);
+			
+		};
+	
+		if(data.accessible) {
+			
+			// Update disabled? State not Running or Saved
+			if(!previewUpdateInterval || (!vcube.utils.vboxVMStates.isRunning(data) && !vcube.utils.vboxVMStates.isSaved(data))) {
+				__vboxDrawPreviewImg.height = 0;
+				__vboxDrawPreviewImg.onload();
+			} else {
+				// Running VMs get random numbers.
+				// Saved are based on last state change to try to let the browser cache Saved screen shots
+				var randid = data.lastStateChange;
+				if(vcube.utils.vboxVMStates.isRunning(data)) {
+					var currentTime = new Date();
+					randid = Math.floor(currentTime.getTime() / 1000);
+				}
+				__vboxDrawPreviewImg.src = 'vbox/machineGetScreenShot?width='+previewWidth+'&vm='+vmid+'&randid='+randid+'&server='+data._serverid;
+				
+			}
+		}
+	},
+	
+
+
 	statics: {
 	
+		/* Aspect ration for preview window */
+		previewAspectRatio : 1.6,
+		
+		/* Holds preview dimension cache */
+		resolutionCache : {},
+		
+		/* Preview width by default */
+		previewWidth: 200,
+
 		/*
 		 * Test to determine if browser supports canvas element
 		 */
@@ -572,15 +682,5 @@ Ext.define('vcube.widget.PreviewBox',{
 			
 		}
 	
-	},
-	
-	listeners: {
-		
-		afterrender: function() {
-		}
-	},
-	
-	reconfigure: function() {
-		
 	}
 });

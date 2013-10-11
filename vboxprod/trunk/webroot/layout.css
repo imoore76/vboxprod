@@ -16,6 +16,18 @@ div.x-grid-cell-inner div.x-progress-bar { padding: 0px; margin: 0px; background
 div.x-grid-cell-inner div.x-progress div { padding: 0px; margin: 0px }
 div.x-grid-cell-inner div.x-progress-text { font-size: 9px; padding: 0px; margin: 0px; }
 
+/* Tooltip */
+.x-tip {
+	background: #f0f0f0;
+	background: -moz-linear-gradient(top, #ffffff 0%, #e0e0e0 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffffff), color-stop(100%,#e0e0e0)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top, #ffffff 0%,#e0e0e0 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top, #ffffff 0%,#e0e0e0 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top, #ffffff 0%,#e0e0e0 100%); /* IE10+ */
+	background: linear-gradient(to bottom, #ffffff 0%,#e0e0e0 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#e0e0e0',GradientType=0 ); /* IE6-9 */
+	
+}
 /* Category column 
    0 : 'vCube',
    5 : 'Configuration change',
@@ -43,7 +55,7 @@ Details table
 .vmTabDetails .x-table-layout-cell { padding: 1px 2px 1px 2px; }
 .vmTabDetails .vboxDetailsTable { font-size: 90%; }
 .vmTabDetails .vboxDetailsTableHeader { white-space: nowrap; }
-.vboxDetailsIndented { margin-left: 20px; }
+.vboxDetailsIndented { padding-left: 20px; }
 .vboxDetailsTableData { margin-left: 4px; }
 
 span.vboxDetailsNone { font-style: italic; font-weight: normal; }

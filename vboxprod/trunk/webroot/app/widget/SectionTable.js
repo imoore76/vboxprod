@@ -54,11 +54,11 @@ Ext.define('vcube.widget.SectionTable', {
 
 				
 				if(rows[i].title && !rowData) {
-					tableItems.push({'html':rows[i].title, 'cls': 'vboxDetailsTableData', colspan: 2 , 'width': '100%'});
+					tableItems.push({'html':rows[i].title, 'cls': '', colspan: 2, 'width': '100%'});
 				} else {
 					
-					tableItems.push({'html':rows[i].title + (rows[i].title ? ':' : ''), 'cls': 'vboxDetailsTableHeader'});
-					tableItems.push({'html':rowData, 'cls': 'vboxDetailsTableData' + (rows[i].indented ? ' vboxDetailsIndented' : ''), 'width': '100%'});
+					tableItems.push({'html':rows[i].title + (rows[i].title ? ':' : ''), 'cls': 'vboxDetailsTableHeader'+ (rows[i].indented ? ' vboxDetailsIndented' : '')});
+					tableItems.push({'html':rowData, 'cls': 'vboxDetailsTableData', 'width': '100%'});
 				}
 				
 				

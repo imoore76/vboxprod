@@ -15,14 +15,16 @@ Ext.define('vcube.controller.ServerTabHost', {
     	this.selectionItemType = 'server';
     	
     	/* Repopulate on Events*/
-    	this.repopulateOn = []; //['MachineDataChanged'];
+    	this.repopulateOn = ['ConnectorStateChanged'];
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'connector_id';
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
-        	console.log(data);
+        	if(data.status != vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
+        		return null;
+        	}
         	return vcube.utils.ajaxRequest('vbox/hostGetDetails',{connector:data.id})
         };
 

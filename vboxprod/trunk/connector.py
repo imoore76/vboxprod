@@ -3979,14 +3979,14 @@ class vboxConnector(object):
         mv = vboxEnumList("MediumVariant")
         variant = m.variant
 
-        # Base medium
-        if baseInfo and m.deviceType == vboxMgr.constants.DeviceType_HardDisk and (m.base and m.base.id != m.id):
-            baseMedium = self._mediumGetDetails(m.base, True)            
-        else:
-            baseMedium = ({'id':m.base.id} if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None)
             
         if baseInfo:
             
+            if m.deviceType == vboxMgr.constants.DeviceType_HardDisk and (m.base and m.base.id != m.id):
+                baseMedium = self._mediumGetDetails(m.base, True)
+            else:
+                baseMedium = None
+                
             return {
                 'id' : m.id,
                 'description' : m.description,
@@ -4045,7 +4045,7 @@ class vboxConnector(object):
                 'type' : vboxEnumToString("MediumType",m.type),
                 'parent' : (m.parent.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.parent) else None),
                 'children' : children,
-                'base' : baseMedium,
+                'base' :  ({'id':m.base.id} if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
                 'readOnly' : bool(m.readOnly),
                 'logicalSize' : (long(m.logicalSize)/1024)/1024,
                 'autoReset' : bool(m.autoReset),

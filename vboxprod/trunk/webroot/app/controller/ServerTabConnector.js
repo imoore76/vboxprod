@@ -18,14 +18,18 @@ Ext.define('vcube.controller.ServerTabConnector', {
     	this.updateInfoOnRecordChange = true;
 
     	/* Repopulate on Events*/
-    	this.repopulateOn = [];
+    	this.repopulateOn = ['ConnectorStateChanged'];
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'connector_id';
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
-        	return vcube.utils.ajaxRequest('vbox/getStatus',{connector:data.id})
+        	if(data.status == vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
+        		return vcube.utils.ajaxRequest('vbox/getStatus',{connector:data.id});
+        	} else {
+        		return null;
+        	}
         };
 
     			

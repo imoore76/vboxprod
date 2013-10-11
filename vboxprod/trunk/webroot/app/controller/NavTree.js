@@ -27,8 +27,11 @@ Ext.define('vcube.controller.NavTree', {
 			VMGroupRemoved: this.onVMGroupRemoved,
 			VMGroupUpdated: this.onVMGroupUpdated,
 			
-			connectorStateChanged: this.onConnectorStateChanged,
+			ConnectorStateChanged: this.onConnectorStateChanged,
 			ConnectorUpdated: this.onConnectorUpdated,
+			
+			MachinesAdded: this.onMachinesAdded,
+			MachinesRemoved: this.onMachinesRemoved,
 			
 			scope : this
 		
@@ -57,6 +60,27 @@ Ext.define('vcube.controller.NavTree', {
 	/*
 	 * App Events
 	 */
+	onMachinesAdded: function(eventData) {
+
+		for ( var i = 0; i < eventData.machines.length; i++) {
+
+			appendTarget = (eventData.machines[i].group_id ? this.navTreeStore.getNodeById('vmgroup-' + eventData.machines[i].group_id) : this.vmsNode);
+
+			if (!appendTarget)
+				appendTarget = this.vmsNode;
+
+			appendTarget.appendChild(appendTarget.createNode(this.createVMNodeCfg(eventData.machines[i])));
+
+
+		}
+	},
+
+	onMachinesRemoved: function(eventData) {
+		for(var i = 0; i < eventData.machines.length; i++) {
+			this.navTreeStore.getNodeById('vm-' + eventData.machines[i]).remove(true);
+		}
+	},
+
 	onMachineGroupChanged: function(eventData) {
 		
 		var targetVM = this.navTreeStore.getNodeById('vm-'+ eventData.machineId);

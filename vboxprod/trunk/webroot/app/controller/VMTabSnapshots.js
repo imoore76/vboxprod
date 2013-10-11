@@ -59,7 +59,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 			
 			return Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, name, ts)
 	    }
-
+	    
 	},
 	
     /* Watch for events */
@@ -97,6 +97,9 @@ Ext.define('vcube.controller.VMTabSnapshots', {
         this.control({
         	'viewport > #MainPanel > VMTabs > VMTabSnapshots' : {
         		render: this.onTabRender
+        	},
+        	'viewport > #MainPanel > VMTabs > VMTabSnapshots toolbar > button' : {
+        		click: this.onButtonClick
         	}
         });
         
@@ -107,6 +110,35 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     // Snapshot tree and store refs
     snapshotTree: null,
     snapshotTreeStore: null,
+    
+    
+    /*
+     * Snapshot actions
+     */
+    takeSnapshot: function() {
+    	
+    },
+    
+    restoreSnapshot: function(ss) {
+    	console.log(ss);
+    },
+    
+    deleteSnapshot: function(ss) {
+    	console.log(ss);
+    },
+    
+    cloneSnapshot: function(ss) {
+    	console.log(ss);
+    },
+    
+    showSnapshot: function(ss) {
+    	console.log(ss);
+    },
+
+    /* When a button is clicked */
+    onButtonClick: function(btn) {
+    	this[btn.itemId](this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw);
+    },
     
     /* Hold ref to snapshot tree store when tab is rendered */
     onTabRender: function(tab) {
@@ -248,9 +280,6 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	
     	updateChildren(this.snapshotTreeStore.getRootNode());
     	
-    	console.log("Min");
-    	console.log(minTs);
-
     	var timerSet = (minTs >= 60 ? 60 : 10);
     	var self = this;
     	vcube.controller.VMTabSnapshots.timer = window.setTimeout(function(){

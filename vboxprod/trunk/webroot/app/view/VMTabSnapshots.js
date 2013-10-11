@@ -17,11 +17,11 @@ Ext.define('vcube.view.VMTabSnapshots', {
 		// Current state node
 		currentStateNode: function(vm) {
 			return {
-				'text': '<strong>'+vcube.utils.trans((vm.currentStateModified ? 'Current State (changed)' : 'Current State'),'VBoxSnapshotsWgt')+'</strong>',
-				'icon' : 'images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state),
-				'leaf' : true,
-				'cls' : 'snapshotCurrent',
-				'id' : 'current'
+				text: '<strong>'+vcube.utils.trans((vm.currentStateModified ? 'Current State (changed)' : 'Current State'),'VBoxSnapshotsWgt')+'</strong>',
+				icon : 'images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state),
+				leaf : true,
+				cls : 'snapshotCurrent',
+				id : 'current'
 			}
 		},
 		
@@ -88,15 +88,38 @@ Ext.define('vcube.view.VMTabSnapshots', {
 			}
 			
 		}),
-		tbar: [
-		       {xtype:'button',tooltip:vcube.utils.trans('Take Snapshot...','UIActionPool').replace('...',''),icon:'images/vbox/take_snapshot_16px.png'},
-		       '-',
-		       {xtype:'button',tooltip:vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/discard_cur_state_16px.png'},
-		       {xtype:'button',tooltip:vcube.utils.trans('Delete Snapshot','VBoxSnapshotsWgt'),icon:'images/vbox/delete_snapshot_16px.png'},
-		       '-',
-		       {xtype:'button',tooltip:vcube.utils.trans('Clone...','UIActionPool').replace('...',''),icon:'images/vbox/vm_clone_16px.png'},
-		       '-',
-		       {xtype:'button',tooltip:vcube.utils.trans('Show Details','VBoxSnapshotsWgt'),icon:'images/vbox/show_snapshot_details_16px.png'}
+		tbar:[{
+	    	   xtype:'button',
+	    	   itemId:'takeSnapshot',
+	    	   tooltip:vcube.utils.trans('Take Snapshot...','UIActionPool').replace('...',''),
+	    	   icon:'images/vbox/take_snapshot_16px.png'
+	    	},
+	       '-',
+	       {
+	    		xtype:'button',
+	    		itemId: 'restoreSnapshot',
+	    		tooltip:vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),
+	    		icon:'images/vbox/discard_cur_state_16px.png'
+		    },{
+		    	xtype:'button',
+		    	itemId: 'deleteSnapshot',
+		    	tooltip:vcube.utils.trans('Delete Snapshot','VBoxSnapshotsWgt'),
+		    	icon:'images/vbox/delete_snapshot_16px.png'
+		    },
+		    '-',
+		    {
+		    	xtype:'button',
+		    	itemId: 'cloneSnapshot',
+		    	tooltip:vcube.utils.trans('Clone...','UIActionPool').replace('...',''),
+		    	icon:'images/vbox/vm_clone_16px.png'
+		    },
+		    '-',
+		    {
+		    	xtype:'button',
+		    	itemId: 'showSnapshot',
+		    	tooltip:vcube.utils.trans('Show Details','VBoxSnapshotsWgt'),
+		    	icon:'images/vbox/show_snapshot_details_16px.png'
+		    }
        ]
 	}]
 });

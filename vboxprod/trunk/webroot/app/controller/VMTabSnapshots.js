@@ -6,7 +6,59 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 	
 		timer : null,
 		
-		timeSpans : new Array()
+		timeSpans : new Array(),
+		
+	    /* Get node title with time (currentTime passed so that it's cached) */
+	    nodeTitleWithTimeString: function(name, timeStamp, currentTime) {
+	    	
+	    	// Shorthand
+	    	var timeSpans = vcube.controller.VMTabSnapshots.timeSpans;
+	    	
+			var sts = parseInt(timeStamp);
+			var t = Math.max(currentTime - sts, 1);
+			
+			var ts = '';
+			
+			// Check for max age.
+			if(Math.floor(t / 86400) > 30) {
+				
+				var sdate = new Date(sts * 1000);
+				ts = vcube.utils.trans(' (%1)','VBoxSnapshotsWgt').replace('%1',sdate.toLocaleString());
+				
+				
+			} else {
+				
+				var ago = 0;
+				var ts = 'seconds';
+				for(var i in timeSpans) {
+					var l = Math.floor(t / timeSpans[i]);
+					if(l > 0) {
+						ago = l;
+						ts = i;
+						break;
+					}
+				}
+				switch(ts) {
+				case 'days':
+					ts = vcube.utils.trans('%n day(s)', 'VBoxGlobal', ago).replace('%n', ago);
+					break;
+				case 'hours':
+					ts = vcube.utils.trans('%n hour(s)', 'VBoxGlobal', ago).replace('%n', ago);
+					break;				
+				case 'minutes':
+					ts = vcube.utils.trans('%n minute(s)', 'VBoxGlobal', ago).replace('%n', ago);
+					break;				
+				case 'seconds':
+					ts = vcube.utils.trans('%n second(s)', 'VBoxGlobal', ago).replace('%n', ago);
+					break;				
+				}
+				
+				ts = vcube.utils.trans(' (%1 ago)','VBoxSnapshotsWgt').replace('%1', ts);
+				
+			}
+			
+			return Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, name, ts)
+	    }
 
 	},
 	
@@ -27,16 +79,16 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	this.selectionItemType = 'vm';
     	
     	/* Repopulate on Events*/
-    	this.repopulateOn = ['SnapshotTaken','SnapshotDeleted'];
+    	this.repopulateOn = ['SnapshotTaken'];//,'SnapshotDeleted'];
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'machineId';
     	    	
 		// Special case for snapshot actions
 		this.application.on({
-			'SessionStateChanged': this.onSessionStateChanged,
 			'MachineStateChanged': this.onMachineStateChanged,
 			'SnapshotChanged': this.onSnapshotChanged,
+			'SnapshotDeleted' : this.onSnapshotDeleted,
 			scope: this
 		});
 		
@@ -59,13 +111,20 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     /* Hold ref to snapshot tree store when tab is rendered */
     onTabRender: function(tab) {
     	
+    	var self = this;
+    	
     	this.snapshotTree = tab.down('#snapshottree');
     	this.snapshotTreeStore = this.snapshotTree.getStore();
     	
+    	
+    	/**
+    	 * 
+    	 * Snapshot tooltips
+    	 * 
+    	 **/
     	var snapshotTreeView = this.snapshotTree.getView();
+
     	this.snapshotTree.on('render', function(view) {
-    		
-    		console.log(snapshotTreeView.itemSelector);
     		
     	    view.tip = Ext.create('Ext.tip.ToolTip', {
     	        // The overall target element.
@@ -78,45 +137,24 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	        renderTo: Ext.getBody(),
     	        listeners: {
     	            // Change content dynamically depending on which element triggered the show.
+    	        	
     	            beforeshow: function updateTipBody(tip) {
     	            	
     	            	var record = snapshotTreeView.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(snapshotTreeView.itemSelector));
 
     	            	if(!record) return false;
-    	            	/*
+    	            	
     	            	if(record.get('id') =='current') {
-    	            		'<strong>'+
-    						trans((vm.currentStateModified ? 'Current State (changed)' : 'Current State'),'VBoxSnapshotsWgt') + '</strong><br />'+
-    						trans('%1 since %2','VBoxSnapshotsWgt').replace('%1',trans(vboxVMStates.convert(vm.state),'VBoxGlobal'))
-    							.replace('%2',vboxDateTimeString(vm.lastStateChange))
-    						+ (vm.snapshotCount > 0 ? '<hr />' + (vm.currentStateModified ?
-    									trans('The current state differs from the state stored in the current snapshot','VBoxSnapshotsWgt')
-    									: trans('The current state is identical to the state stored in the current snapshot','VBoxSnapshotsWgt'))
-    							: '')
-    	            	} else {
-    	            		var s = record.data;
+
+    	            		tip.update(vcube.view.VMTabSnapshots.currentStateTip(
+    	            				Ext.Object.merge({'snapshotCount':(snapshotTreeView.getStore().getCount()-1)},vcube.vmdatamediator.getVMData(self.selectionItemId), record.data)
+    	            				));
     	            		
-    	            		tip.update('<p><strong>'+s.name+'</strong> ('+vbox.utils.trans((s.online ? 'online)' : 'offline)'),'VBoxSnapshotsWgt')+'</p>'+
-    	    				'<p>'+ vboxDateTimeString(s.timeStamp, trans('Taken at %1','VBoxSnapshotsWgt'), trans('Taken on %1','VBoxSnapshotsWgt'))+'</p>' +
-    	    							(s.description ? '<hr />' + $('<div />').text(s.description).html() : '')
+    	            	} else {
+    	            		
+    	            		tip.update(vcube.view.VMTabSnapshots.snapshotTip(record.data));
     	            	}
-    	            	console.log(tip);
-    	            	*/
     	            	
-    	            	console.log(Ext.get(tip.triggerEvent.target).findParentNode(snapshotTreeView.itemSelector));
-    	            	
-    	            	/*
-    	            	tip.update(tip.triggerEvent.target.className);
-    	            	return true;
-    	            	
-    	            	if(!tip.triggerEvent.target || tip.triggerEvent.target.className.indexOf('x-tree-node-text') < 0)
-    	            		return false;
-    	            	
-    	            	console.log(tip);
-    	            	*/
-    	            	
-    	            	
-    	                tip.update('Over company "' + snapshotTreeView.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(snapshotTreeView.itemSelector)).get('name') + '"');
     	            }
     	        }
     	    });
@@ -124,21 +162,59 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	this.callParent(arguments);
     },
     
-    /* Update current state on session state change */
-    onSessionStateChanged: function(event) {
-    	
-    },
-    
     /* Update current state when machine state changes */
     onMachineStateChanged: function(event) {
     	
+    	if(!this.filterEvent(event)) return;
+    	
+    	var nodeCfg = vcube.view.VMTabSnapshots.currentStateNode(Ext.Object.merge({currentStateModified:true},vcube.vmdatamediator.getVMData(this.selectionItemId)));
+    	this.snapshotTreeStore.getNodeById('current').set(nodeCfg);
     },
     
     /* Update a snapshot when it has changed */
     onSnapshotChanged: function(event) {
     	
+    	if(!this.filterEvent(event)) return;
+    	
+    	var targetNode = this.snapshotTreeStore.getNodeById(event.snapshotId);
+    	
+    	var currentTime = new Date();
+    	currentTime = Math.floor(currentTime.getTime() / 1000);
+
+    	targetNode.set({
+    		'text' : vcube.controller.VMTabSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.get('timeStamp'), currentTime),
+    		'name': event.enrichmentData.name,
+    		'description': event.enrichmentData.description
+    	});
+    	
+    	
     },
     
+    /* Remove snapshot when it has been deleted */
+    onSnapshotDeleted: function(event) {
+    	
+    	if(!this.filterEvent(event)) return;
+    	
+    		var removeTarget = this.snapshotTreeStore.getNodeById(event.snapshotId);
+    		
+    		
+    		var n = removeTarget.getChildAt(0);
+    		//console.log(n);
+    		//return;
+    		
+    		while(n) {
+    			
+    			removeTarget.parentNode.appendChild(n);//.remove());
+    			n = removeTarget.getChildAt(0);
+    		}
+
+    		var parent = removeTarget.parentNode;
+    		console.log(parent.childNodes.length);
+    		parent.removeChild(removeTarget, true, true, true);
+    		//removeTarget.remove(true, true);
+		
+    	
+    },
 
     
     /* Update snapshot timestamps */
@@ -161,52 +237,9 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     			
     			if(childNode.data.id == 'current') return;
 
-    			var sts = parseInt(childNode.data.timeStamp);
-    			var t = Math.max(currentTime - sts, 1);
+    			minTs = Math.min(minTs,Math.max(parseInt(childNode.data.timeStamp), 1));
     			
-    			minTs = Math.min(minTs,t);
-    			
-    			var ts = '';
-    			
-    			// Check for max age.
-    			if(Math.floor(t / 86400) > 30) {
-    				
-    				var sdate = new Date(sts * 1000);
-    				ts = vcube.utils.trans(' (%1)','VBoxSnapshotsWgt').replace('%1',sdate.toLocaleString());
-    				
-    				
-    			} else {
-    				
-    				var ago = 0;
-    				var ts = 'seconds';
-    				for(var i in timeSpans) {
-    					var l = Math.floor(t / timeSpans[i]);
-    					if(l > 0) {
-    						ago = l;
-    						ts = i;
-    						break;
-    					}
-    				}
-    				switch(ts) {
-    				case 'days':
-    					ts = vcube.utils.trans('%n day(s)', 'VBoxGlobal', ago).replace('%n', ago);
-    					break;
-    				case 'hours':
-    					ts = vcube.utils.trans('%n hour(s)', 'VBoxGlobal', ago).replace('%n', ago);
-    					break;				
-    				case 'minutes':
-    					ts = vcube.utils.trans('%n minute(s)', 'VBoxGlobal', ago).replace('%n', ago);
-    					break;				
-    				case 'seconds':
-    					ts = vcube.utils.trans('%n second(s)', 'VBoxGlobal', ago).replace('%n', ago);
-    					break;				
-    				}
-    				
-    				ts = vcube.utils.trans(' (%1 ago)','VBoxSnapshotsWgt').replace('%1', ts);
-    				
-    			}
-    			
-    			childNode.set('text', Ext.String.format(vcube.view.VMTabSnapshots.nodeTextTpl, childNode.data.name, ts));
+    			childNode.set('text', vcube.controller.VMTabSnapshots.nodeTitleWithTimeString(childNode.data.name, childNode.data.timeStamp, currentTime));
     			
     			updateChildren(childNode);
     		});
@@ -214,6 +247,9 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 
     	
     	updateChildren(this.snapshotTreeStore.getRootNode());
+    	
+    	console.log("Min");
+    	console.log(minTs);
 
     	var timerSet = (minTs >= 60 ? 60 : 10);
     	var self = this;
@@ -250,11 +286,6 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 					return;
 				}
 				
-				/*
-				 * currentStateModified
-				 * currentSnapshotId
-				 */
-				
 				// Append current state
 				var meta = this.snapshotTreeStore.getProxy().getReader().getMetaData();
 				
@@ -262,13 +293,15 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 				
 				if(!appendTarget) appendTarget = this.snapshotTree.getRootNode();
 				
+				
 				appendTarget.appendChild(
-						appendTarget.createNode(
-								vcube.view.VMTabSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), meta))
-						)
+					appendTarget.createNode(
+						vcube.view.VMTabSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), meta))
+					)
 				);
 				appendTarget.expand();
 
+				
 				// Expand
 				this.snapshotTree.getRootNode().expand();
 				this.updateTimestamps();

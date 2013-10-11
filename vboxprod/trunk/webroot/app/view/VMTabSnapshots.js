@@ -12,7 +12,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 	statics: {
 		
 		// Snapshot node template
-		nodeTextTpl : "{0} <span class='vboxSnapshotTimestamp'>{1}</span>",
+		snapshotTextTpl : "{0} <span class='vboxSnapshotTimestamp'>{1}</span>",
 		
 		// Current state node
 		currentStateNode: function(vm) {
@@ -23,6 +23,23 @@ Ext.define('vcube.view.VMTabSnapshots', {
 				'cls' : 'snapshotCurrent',
 				'id' : 'current'
 			}
+		},
+		
+		snapshotTip: function(s) {
+			return '<strong>'+s.name+'</strong> ('+vcube.utils.trans((s.online ? 'online)' : 'offline)'),'VBoxSnapshotsWgt')+
+				'<p>'+ vcube.utils.dateTimeString(s.timeStamp, vcube.utils.trans('Taken at %1','VBoxSnapshotsWgt'), vcube.utils.trans('Taken on %1','VBoxSnapshotsWgt'))+'</p>' +
+				(s.description ? '<hr />' + s.description : '');
+		},
+		
+		currentStateTip: function(vm) {
+			return '<strong>'+
+	    		vcube.utils.trans((vm.currentStateModified ? 'Current State (changed)' : 'Current State'),'VBoxSnapshotsWgt') + '</strong><br />'+
+	    		vcube.utils.trans('%1 since %2','VBoxSnapshotsWgt').replace('%1',vcube.utils.trans(vcube.utils.vboxVMStates.convert(vm.state),'VBoxGlobal'))
+					.replace('%2',vcube.utils.dateTimeString(vm.lastStateChange))
+				+ (vm.snapshotCount > 0 ? ('<hr />' + (vm.currentStateModified ?
+							vcube.utils.trans('The current state differs from the state stored in the current snapshot','VBoxSnapshotsWgt')
+							: vcube.utils.trans('The current state is identical to the state stored in the current snapshot','VBoxSnapshotsWgt')))
+				: '');
 		}
 	},
 	
@@ -41,7 +58,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 		store: new Ext.data.TreeStore({
 			clearOnLoad: true,
 			autoLoad: false,
-			
+			autosync: false,
 		    fields: ['id', 
 		             'name', 'description', 'online', 'timeStamp',
 		             'text',
@@ -51,9 +68,11 @@ Ext.define('vcube.view.VMTabSnapshots', {
 								
 				append: function(thisNode,newNode,index,eOpts) {
 					if(newNode.get('id') == 'current') return;
-					newNode.set('text',Ext.String.format(vcube.view.VMTabSnapshots.nodeTextTpl, newNode.raw.name, ''));
-					newNode.set('icon', 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png');
-					newNode.set('expanded',(newNode.raw.children && newNode.raw.children.length));
+					newNode.set({
+						'text': Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, newNode.raw.name, ''),
+						'icon': 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png',
+						'expanded': (newNode.raw.children && newNode.raw.children.length)
+					});
 				}
 				
 			},

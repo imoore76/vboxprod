@@ -128,24 +128,9 @@ Ext.define('vcube.controller.XInfoTab', {
     /* When a redraw event is encountered, a section is redrawn */
     onRedrawEvent: function(event) {
 
-    	console.log("here1");
-    	console.log(event);
-    	// If this tab's item is no longer selected, nothing to do
-    	if(event[this.eventIdAttr] != this.selectionItemId)
-    		return;
-    	
-    	console.log("here2");
-    	
-    	console.log(this.sectionConfig);
-    	
-    	// is this tab still visible?
-    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
-    		this.dirty = true;
-    		return;
-    	}
-    	
-    	console.log("here3");
+    	if(!this.filterEvent(event)) return;
 
+    	
     	// Compose a list of sections that want to redraw
     	// on this type of event
     	var sections = [];
@@ -155,8 +140,6 @@ Ext.define('vcube.controller.XInfoTab', {
 				sections.push(i);
 			}
     	}
-    	
-    	console.log("here4");
     	
     	var self = this;
     	
@@ -200,19 +183,28 @@ Ext.define('vcube.controller.XInfoTab', {
      * entire tab is repopulated */
     onRepopulateEvent: function(event) {
 
-    	// If this tab's item is no longer selected, nothing to do
-    	if(event[this.eventIdAttr] != this.selectionItemId)
-    		return;
+    	if(!this.filterEvent(event)) return;
     	
-    	// is this tab still visible?
-    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
-    		this.dirty = true;
-    		return;
-    	}
-
     	this.populate(this.navTreeSelectionModel.getSelection()[0].raw.data);
 
     	
+    },
+    
+    /* Return true if this is an interesting event */
+    filterEvent: function(event) {
+
+    	// If this tab's item is no longer selected, nothing to do
+    	if(event[this.eventIdAttr] != this.selectionItemId)
+    		return false;
+
+    	// is this tab still visible?
+    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
+    		this.dirty = true;
+    		return false;
+    	}
+    	
+    	return true;
+
     },
     
     /* Get info table and cache result */

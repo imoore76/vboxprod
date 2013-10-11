@@ -54,13 +54,15 @@ LOG_CATEGORY = {
    'VCUBE' : 0,
    'CONFIGURATION' : 5,
    'STATE_CHANGE' : 10,
-   'SNAPSHOT' : 15
+   'SNAPSHOT' : 15,
+   'MEDIA' : 20
 }
 
 LOG_CATEGORY_TEXT = {
    0 : 'vCube',
    5 : 'Configuration change',
    10 : 'State change',
-   15 : 'Snapshot'
+   15 : 'Snapshot',
+   20 : 'Media'
 }
 

@@ -102,7 +102,7 @@ def _machineGetBaseInfo(machine):
             'group_id' : machine.getExtraData(vboxConnector.groupKey),
             'OSTypeId' : machine.OSTypeId,
             'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
-            'lastStateChange' : long(machine.lastStateChange)/1000,
+            'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
             'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
             'icon' : machine.getExtraData(vboxConnector.iconKey),
             'accessible' : True
@@ -421,11 +421,13 @@ def enrichEvents(eventList):
 
                 try:
                     eventList[ek]['enrichmentData'] = {
-                        'lastStateChange' : str(machine.lastStateChange/1000),
+                        'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
                         'currentStateModified' : machine.currentStateModified
                     }
                     
                 except:
+                    logger.exception(e)
+                    pprint.pprint(e)
                     eventList[ek]['enrichmentData'] = {'lastStateChange' : 0}
                 
                 
@@ -441,6 +443,13 @@ def enrichEvents(eventList):
                         'snapshotCount' : machine.snapshotCount,
                         'currentStateModified' : machine.currentStateModified
                     }
+                    
+                    if event['eventType'] == 'OnSnapshotChanged':
+                        snapshot = machine.findSnapshot(event['snapshotId'])
+                        eventList[ek]['enrichmentData'].update({
+                           'name': snapshot.name,
+                           'description': snapshot.description
+                        })
         
                 except:
                     pass
@@ -3245,7 +3254,7 @@ class vboxConnector(object):
         """ @snapshot ISnapshot """
         snapshot = vm.findSnapshot(args['snapshot'])
 
-        response = self._snapshotGetDetails(snapshot,False)
+        response = vboxConnector._snapshotGetDetails(snapshot,False)
         response['machine'] = self.remote_machineGetDetails({},snapshot.machine)
 
         return response
@@ -3433,7 +3442,7 @@ class vboxConnector(object):
 
         """ @s ISnapshot """
         s = machine.findSnapshot('')
-        response['snapshot'] = self._snapshotGetDetails(s,True)
+        response['snapshot'] = vboxConnector._snapshotGetDetails(s,True)
 
         response['currentSnapshotId'] = (machine.currentSnapshot.id if machine.currentSnapshot else '')
         response['currentStateModified'] = machine.currentStateModified
@@ -3448,13 +3457,14 @@ class vboxConnector(object):
      * @param boolean sninfo traverse child snapshots
      * @return array snapshot info
      """
-    def _snapshotGetDetails(self, s,sninfo=False):
+    @staticmethod
+    def _snapshotGetDetails(s,sninfo=False):
 
         children = []
 
         if sninfo:
             for c in vboxGetArray(s,'children'):
-                children.append(self._snapshotGetDetails(c, True))
+                children.append(vboxConnector._snapshotGetDetails(c, True))
 
         timestamp = int(math.floor(long(s.timeStamp)/1000))
 
@@ -3463,7 +3473,7 @@ class vboxConnector(object):
             'name' : s.name,
             'description' : s.description,
             'timeStamp' : timestamp,
-            'timeStampSplit' : self._util_splitTime(int(time.time()) - timestamp),
+            'timeStampSplit' : vboxConnector._util_splitTime(int(time.time()) - timestamp),
             'online' : s.online,
             'children' : children
         }
@@ -4254,7 +4264,8 @@ class vboxConnector(object):
      * @param integer t number of seconds
      * @return array containing number of days / hours / minutes / seconds
      """
-    def _util_splitTime(self, t):
+    @staticmethod
+    def _util_splitTime(t):
 
         spans = [
             {'name':'days','value':86400},

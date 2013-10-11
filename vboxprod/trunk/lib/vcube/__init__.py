@@ -216,10 +216,13 @@ class Application(threading.Thread):
     """
     def pumpEvent(self, event):
 
+        pprint.pprint(event)
+
         # onEvent returns false if we should not
         # pump this event to the client
         if not self.onEvent(event):
             return
+        
         
         for eh in self.eventHandlers:
             eh(event)

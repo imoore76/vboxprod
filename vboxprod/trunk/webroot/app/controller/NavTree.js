@@ -28,6 +28,7 @@ Ext.define('vcube.controller.NavTree', {
 			VMGroupUpdated: this.onVMGroupUpdated,
 			
 			connectorStateChanged: this.onConnectorStateChanged,
+			ConnectorUpdated: this.onConnectorUpdated,
 			
 			scope : this
 		
@@ -137,16 +138,24 @@ Ext.define('vcube.controller.NavTree', {
 	
 	onConnectorStateChanged: function(eventData) {
 
-		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector);
+		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector_id);
 		if(!serverNode) return;
 		
-		var newServerData = Ext.Object.merge(serverNode.raw.data, {status:eventData.status, status_name:eventData.status_name, message: eventData.message});
+		var newServerData = Ext.Object.merge(serverNode.raw.data, {status:eventData.status, status_name:eventData.status_name, status_text: eventData.status_text});
 		
-		var newData = this.createServerNodeCfg(newServerData);
-		for(var k in newData) {
-			if(typeof(k) == 'string')
-				serverNode.set(k, newData[k]);
-		}
+		serverNode.set(this.createServerNodeCfg(newServerData));
+		serverNode.parentNode.sort(this.sortCmp, false);
+
+	},
+	
+	onConnectorUpdated: function(eventData) {
+
+		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector_id);
+		if(!serverNode) return;
+		
+		var newServerData = Ext.Object.merge(serverNode.raw.data, eventData.connector);
+
+		serverNode.set(this.createServerNodeCfg(newServerData));
 		serverNode.parentNode.sort(this.sortCmp, false);
 
 	},
@@ -175,7 +184,7 @@ Ext.define('vcube.controller.NavTree', {
 		Ext.each(droppedItems.records, function(item){
 			var itemid = item.raw.data.id;
 			if(item.raw.data._type == 'vm') {
-				vcube.utils.ajaxRequest('vbox/machineSetGroup',{'group':targetId,'vm':itemid,'connector':item.raw.data.connector_id});
+				vcube.utils.ajaxRequest('vbox/machineSetGroup',Ext.apply({'group':targetId},vcube.utils.vmAjaxParams(itemid)));
 			} else {
 				vcube.utils.ajaxRequest('vmgroups/updateGroup',{'id':itemid,'parent_id':targetId});
 			}
@@ -202,7 +211,7 @@ Ext.define('vcube.controller.NavTree', {
 			allowDrop: false,
 			text : data.name
 					+ ' (<span class="navTreeServerStatus">'
-					+ data.status_name
+					+ vcube.app.constants.CONNECTOR_STATES_TEXT[data.status]
 					+ '</span>)',
 			data : data,
 			id : 'server-' + data.id

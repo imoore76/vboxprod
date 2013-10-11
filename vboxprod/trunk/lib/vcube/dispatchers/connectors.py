@@ -30,6 +30,7 @@ class dispatcher(dispatcher_parent):
         vcube.getInstance().pumpEvent({
             'eventSource' : 'vcube',
             'eventType':'ConnectorAdded',
+            'connector_id' : c.id,
             'connector' : dict(c._data.copy())
         })
 
@@ -62,7 +63,7 @@ class dispatcher(dispatcher_parent):
     @require_admin
     def updateConnector(self, *args, **kwargs):
         c = Connector.get(Connector.id == kwargs.get('id',0))
-        for attr in ['name','location', 'status', 'status_text']:
+        for attr in ['name','location', 'status', 'description', 'status_text']:
             if kwargs.get(attr, None) is not None:
                 setattr(c, attr, kwargs.get(attr))
         c.save()
@@ -73,6 +74,7 @@ class dispatcher(dispatcher_parent):
         vcube.getInstance().pumpEvent({
             'eventSource' : 'vcube',
             'eventType':'ConnectorUpdated',
+            'connector_id' : c.id,
             'connector' : dict(c._data.copy())
         })
 

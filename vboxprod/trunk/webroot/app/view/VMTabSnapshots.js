@@ -25,12 +25,14 @@ Ext.define('vcube.view.VMTabSnapshots', {
 			}
 		},
 		
+		/* Snapshot tooltip */
 		snapshotTip: function(s) {
-			return '<strong>'+s.name+'</strong> ('+vcube.utils.trans((s.online ? 'online)' : 'offline)'),'VBoxSnapshotsWgt')+
+			return '<strong>'+Ext.String.htmlEncode(s.name)+'</strong> ('+vcube.utils.trans((s.online ? 'online)' : 'offline)'),'VBoxSnapshotsWgt')+
 				'<p>'+ vcube.utils.dateTimeString(s.timeStamp, vcube.utils.trans('Taken at %1','VBoxSnapshotsWgt'), vcube.utils.trans('Taken on %1','VBoxSnapshotsWgt'))+'</p>' +
-				(s.description ? '<hr />' + s.description : '');
+				(s.description ? '<hr />' + Ext.String.htmlEncode(s.description) : '');
 		},
 		
+		/* Current state tooltip */
 		currentStateTip: function(vm) {
 			return '<strong>'+
 	    		vcube.utils.trans((vm.currentStateModified ? 'Current State (changed)' : 'Current State'),'VBoxSnapshotsWgt') + '</strong><br />'+
@@ -41,6 +43,8 @@ Ext.define('vcube.view.VMTabSnapshots', {
 							: vcube.utils.trans('The current state is identical to the state stored in the current snapshot','VBoxSnapshotsWgt')))
 				: '');
 		}
+		
+
 	},
 	
 	/* Snapshots */
@@ -61,7 +65,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 			autosync: false,
 		    fields: ['id', 
 		             'name', 'description', 'online', 'timeStamp',
-		             'text',
+		             'text', 
 		             { name: 'expanded', type: 'boolean', defaultValue: true, persist: true }],
 
 			listeners: {
@@ -69,7 +73,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 				append: function(thisNode,newNode,index,eOpts) {
 					if(newNode.get('id') == 'current') return;
 					newNode.set({
-						'text': Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, newNode.raw.name, ''),
+						'text': Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, Ext.String.htmlEncode(newNode.raw.name), ''),
 						'icon': 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png',
 						'expanded': (newNode.raw.children && newNode.raw.children.length)
 					});

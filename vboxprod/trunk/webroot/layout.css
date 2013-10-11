@@ -16,17 +16,25 @@ div.x-grid-cell-inner div.x-progress-bar { padding: 0px; margin: 0px; background
 div.x-grid-cell-inner div.x-progress div { padding: 0px; margin: 0px }
 div.x-grid-cell-inner div.x-progress-text { font-size: 9px; padding: 0px; margin: 0px; }
 
-/* Category column */
-/*   'VCUBE' : 0,
-   'CONFIGURATION' : 5,
-   'STATE_CHANGE' : 10,
-   'SNAPSHOT' : 15
+/* Category column 
+   0 : 'vCube',
+   5 : 'Configuration change',
+   10 : 'State change',
+   15 : 'Snapshot',
+   20 : 'Media',
+   30 : "VirtualBox Host",
+   40  : "VirtualBox",
+   45  : "Connector"
 */
 div.categoryColumn { background-repeat: no-repeat; background-size:16px 16px; width: 16px; height: 16px; display: inline-block; float: left; margin-right: 4px;}
-div.categoryColumn0 { background-image:url(images/vbox/OSE/VirtualBox_cube_42px.png); }
-div.categoryColumn5 { background-image:url(images/vbox/settings_16px.png); }
-div.categoryColumn10 { background-image:url(images/vbox/poweroff_16px.png); }
-div.categoryColumn15 { background-image:url(images/vbox/take_snapshot_16px.png); }
+div.categoryColumnType0 { background-image:url(images/vbox/OSE/VirtualBox_cube_42px.png); }
+div.categoryColumnType5 { background-image:url(images/vbox/settings_16px.png); }
+div.categoryColumnType10 { background-image:url(images/vbox/poweroff_16px.png); }
+div.categoryColumnType15 { background-image:url(images/vbox/take_snapshot_16px.png); }
+div.categoryColumnType20 { background-image:url(images/vbox/diskimage_16px.png); }
+div.categoryColumnType30 { background-image:url(images/vbox/virtualbox-vbox.png); }
+div.categoryColumnType40 { background-image:url(images/vbox/virtualbox-vmdk.png); }
+div.categoryColumnType45 { background-image:url(images/vbox/virtualbox-vdi.png); }
 
 /*
 Details table
@@ -64,7 +72,7 @@ div.eventColumnGeneral { background-image: url(images/vbox/VirtualBox_16px.png);
    6 : 'Warning',
    4 : 'Info'
 */
-div.severityColuumn { width: 12px; height: 12px; display: inline-block; float: left; margin-right: 4px; }
+div.severityColuumn { width: 12px; height: 12px; display: inline-block; float: left; margin-right: 4px; border: 1px solid #000; }
 div.severityColuumn10 { background: #ff3333; }
 div.severityColuumn8 { background: #FF8000; }
 div.severityColuumn6 { background: #FFFF66 }

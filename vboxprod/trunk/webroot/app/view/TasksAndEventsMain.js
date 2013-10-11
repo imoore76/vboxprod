@@ -62,6 +62,9 @@ Ext.define('vcube.view.TasksAndEventsMain', {
 			},{ 
 				header: 'Details',
 				dataIndex: 'details',
+				renderer: function(v){
+					return Ext.String.htmlEncode(v);
+				},
 				flex: 1
 			},{
 				xtype: 'machinecolumn',

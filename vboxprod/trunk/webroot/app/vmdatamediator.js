@@ -348,7 +348,7 @@ Ext.define('vcube.vmdatamediator', {
 			
 			vcube.vmdatamediator.promises.getVMDetails[vmid] = Ext.create('Ext.ux.Deferred');
 
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',{vm:vmid,'connector':vcube.vmdatamediator.vmData[vmid].connector_id}))
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',vcube.utils.vmAjaxParams(vmid)))
 			.fail(function(){
 			
 				vcube.vmdatamediator.promises.getVMDetails[vmid].reject();
@@ -384,9 +384,7 @@ Ext.define('vcube.vmdatamediator', {
 			
 			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
 
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',{
-				vm:vmid,
-				connector:vcube.vmdatamediator.vmData[vmid].connector_id})).done(function(d){
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',vcube.utils.vmAjaxParams(vmid))).done(function(d){
 				vcube.vmdatamediator.vmRuntimeData[d.id] = d;
 				if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
 					vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolve(d);

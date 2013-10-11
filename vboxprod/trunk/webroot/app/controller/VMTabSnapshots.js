@@ -57,8 +57,281 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 				
 			}
 			
-			return Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, name, ts)
+			return Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, Ext.String.htmlEncode(name), ts)
+	    },
+	    
+	    /**
+	     * 
+	     * Snapshot action list
+	     * 
+	     */
+	    snapshotActions: {
+	    	
+		  	takeSnapshot: {
+		  		
+		  		enabled : function(ss, vm) {
+		  			
+		  			return (ss && ss.id == 'current' && !Ext.Array.contains(['RestoringSnapshot','LiveSnapshotting','DeletingSnapshot','Starting','PoweringOff'], vm.state));
+		  		},
+		  		
+
+		  		click : function (ss, vm, snStore) {
+	
+		  			$('#vboxSnapshotNewImg').attr('src',"images/vbox/" + vboxGuestOSTypeIcon(vm.OSTypeId));
+	
+		  			var snRegEx = new RegExp('^' + vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1','([0-9]+)') + '$');
+		  			
+		  			// Get max snapshot name
+		  			var snMax = 0;
+		  			var snList = $('#vboxSnapshotList').find('li');
+		  			for(var i = 0; i < snList.length; i++) {
+		  				var snNum = snRegEx.exec($(snList[i]).data('vboxSnapshot').name);
+		  				if(snNum) snMax = Math.max(parseInt(snNum[1]), snMax);
+		  			}
+		  			
+		  			$('#vboxSnapshotNewName').val(vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1',(snMax+1)));
+		  			$('#vboxSnapshotNewDesc').val('');
+		  			
+		  			
+		  			var buttons = {};
+		  			buttons[vcube.utils.trans('OK','QIMessageBox')] = function() {
+
+		  				vcube.utils.ajaxRequest('vbox/snapshotTake',{});
+						$(this).dialog('close');
+	
+						
+		  			};
+		  			buttons[vcube.utils.trans('Cancel','QIMessageBox')] = function() { $(this).dialog('close'); };
+		  			
+		  			$('#vboxSnapshotNew').dialog({'closeOnEscape':false,'width':'400px','height':'auto','buttons':buttons,'modal':true,'autoOpen':true,'dialogClass':'vboxDialogContent','title':'<img src="images/vbox/take_snapshot_16px.png" class="vboxDialogTitleIcon" height="16" width="16" /> ' + vcube.utils.trans('Take Snapshot of Virtual Machine','VBoxTakeSnapshotDlg')});
+		  			
+		  	  	}
+		  	},
+		  	
+		  	/*
+		  	 * Restore a snapshot
+		  	 */
+		  	restoreSnapshot: {
+		  		
+		  		enabled : function(ss, vm) {
+		  			
+		  			return (ss && ss.id != 'current' && !vcube.utils.vboxVMStates.isRunning(vm) && !vcube.utils.vboxVMStates.isPaused(vm));
+		  		},
+		  		
+		  		click : function (ss, vm) {
+		  			
+		  			var vm = vboxChooser.getSingleSelected();
+		  			
+		  	  		var snapshot = $('#vboxSnapshotList').find('div.vboxListItemSelected').first().parent().data('vboxSnapshot');
+		  	  		
+					var buttons = {};
+					var q = '';
+					
+					// Check if the current state is modified
+					if(vm.currentStateModified) {
+	
+						q = vcube.utils.trans("<p>You are about to restore snapshot <nobr><b>%1</b></nobr>.</p>" +
+		                        "<p>You can create a snapshot of the current state of the virtual machine first by checking the box below; " +
+		                        "if you do not do this the current state will be permanently lost. Do you wish to proceed?</p>",'UIMessageCenter');
+						q += '<p><label><input type="checkbox" id="vboxRestoreSnapshotCreate" checked /> ' + vcube.utils.trans('Create a snapshot of the current machine state','UIMessageCenter') + '</label></p>';
+						
+						buttons[vcube.utils.trans('Restore','UIMessageCenter')] = function() {
+	
+							var snrestore = function(takeSnapshot){
+								
+								// Don't do anything if taking a snapshot failed
+								if(takeSnapshot && !takeSnapshot.success)
+									return;
+								
+					  	  		var l = new vboxLoader();
+					  	  		l.add('snapshotRestore',function(d){
+					  	  			if(d && d.responseData && d.responseData.progress) {
+										vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){
+										
+											// Let events get picked up. Nothing to do here
+	
+										},'progress_snapshot_restore_90px.png',vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),
+											vm.name);
+									} else if(d && d.error) {
+										vboxAlert(d.error);
+									}
+					 	  		},{'vm':vm.id,'snapshot':snapshot.id});
+	
+								l.run();										
+	
+							};
+							
+							if($('#vboxRestoreSnapshotCreate').prop('checked')) {
+								vboxSnapshotButtons[0].click(snrestore);
+							} else {
+								snrestore();
+							}
+				  	  		$(this).empty().remove();
+						};
+	
+					} else {
+						
+						q = vcube.utils.trans('<p>Are you sure you want to restore snapshot <nobr><b>%1</b></nobr>?</p>','UIMessageCenter');
+						
+						buttons[vcube.utils.trans('Restore','UIMessageCenter')] = function() {
+				  	  		var l = new vboxLoader();
+				  	  		l.add('snapshotRestore',function(d){
+				  	  			if(d && d.responseData && d.responseData.progress) {
+									vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){
+	
+										// Let events get picked up. Nothing to do here
+										
+									},'progress_snapshot_restore_90px.png',vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),
+										vm.name);
+								} else if(d && d.error) {
+									vboxAlert(d.error);
+								}
+				 	  		},{'vm':vm.id,'snapshot':snapshot.id});
+				  	  		$(this).empty().remove();
+	
+							l.run();				
+					
+						};
+					}
+	
+					vboxConfirm(q.replace('%1',$('<div />').text(snapshot.name).html()),buttons);
+		  	  	},
+		  	},
+		  	
+		  	/*
+		  	 * Delete snapshot
+		  	 */
+		  	deleteSnapshot : {
+		  		
+		  		enabled : function(ss, vm) {
+		  			return (ss && ss.id != 'current'); // && ss.children.length <= 1);
+		  		},
+		  		
+		  		click : function (ss, vm) {
+		  			
+		  	  		var snapshot = $('#vboxSnapshotList').find('div.vboxListItemSelected').first().parent().data('vboxSnapshot');
+					var buttons = {};
+					buttons[vcube.utils.trans('Delete','UIMessageCenter')] = function() {
+			  	  		var l = new vboxLoader();
+			  	  		l.add('snapshotDelete',function(d){
+			  	  			if(d && d.responseData && d.responseData.progress) {
+								vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){
+									
+									// Let events get picked up. Nothing to do here
+									
+								},'progress_snapshot_discard_90px.png',vcube.utils.trans('Delete Snapshot','VBoxSnapshotsWgt'),
+									vm.name + ' - ' + snapshot.name);
+							}
+			 	  		},{'vm':vm.id,'snapshot':snapshot.id});
+						l.run();				
+					};
+					vboxConfirm(vcube.utils.trans('<p>Deleting the snapshot will cause the state information saved in it to be lost, and disk data spread over several image files that VirtualBox has created together with the snapshot will be merged into one file. This can be a lengthy process, and the information in the snapshot cannot be recovered.</p></p>Are you sure you want to delete the selected snapshot <b>%1</b>?</p>','UIMessageCenter').replace('%1',$('<div />').text(snapshot.name).html()),buttons);  	  		
+		  	  	}
+		  	},
+		  	
+		  	/*
+		  	 * CLone
+		  	 */
+		  	cloneSnapshot: {
+		  		
+		  		enabled : function(ss, vm) { 
+		  			return (ss && !vcube.utils.vboxVMStates.isPaused(vm) && !vcube.utils.vboxVMStates.isRunning(vm));
+		  		},
+		  		click : function (ss, vm) {
+	
+		  	  		new vboxWizardCloneVMDialog({'vm':vm,'snapshot':(ss.id == 'current' ? undefined : ss)}).run();
+		  			
+		  	  	}
+		  	},
+		  	
+		  	/*
+		  	 * Show snapshot details
+		  	 */
+		  	showSnapshot: {
+		  		
+		  		enabled : function(ss, vm) {
+		  			return (ss && ss.id != 'current');
+		  		},
+		  		
+		  		click : function (ss, vm) {
+	
+		  			// Current snapshot
+		  	  		var snapshot = $('#vboxSnapshotList').find('div.vboxListItemSelected').first().parent().data('vboxSnapshot');
+		  			
+					var l = new vboxLoader();
+					l.add('snapshotGetDetails',function(d){
+	
+						$('#vboxSnapshotDetailsName').val(d.responseData.name);
+						$('#vboxSnapshotDetailsTaken').html(vboxDateTimeString(d.responseData.timeStamp));
+						$('#vboxSnapshotDetailsDesc').val(d.responseData.description);
+						
+						if(d.responseData.online) {
+							$('#vboxSnapshotSS').html('<a href="screen.php?vm='+vm.id+'&snapshot='+d.responseData.id+'&full=1" target="_blank"><img src="screen.php?vm='+vm.id+'&snapshot='+d.responseData.id+'" /></a>').show();
+						} else {
+							$('#vboxSnapshotSS').empty().hide();
+						}
+						
+			  	  		// Display details
+			  	  		$('#vboxSnapshotDetailsVM').empty();
+			  	  		
+				  	  	// Enclosing details Table
+				  	  	var vboxDetailsTable = $('<table />').attr({'class':'vboxDetailsTable'});
+				  	  	
+				  	  	// Set to isSnapshot
+				  	  	d.responseData.machine._isSnapshot = true;
+				  	  	
+				  	  	for(var i in vboxVMDetailsSections) {
+				
+				  	  		section = vboxVMDetailsSections[i];
+				  	  		
+				  	  		if(section.noSnapshot) continue;
+				  	  		
+					  	  	$('<tr />').attr({'class':'vboxDetailsHead'}).append(
+					  	  		$('<th />').attr({'class':'vboxDetailsSection','colspan':'2'}).disableSelection()
+					  	  			.html("<img style='float:left; margin-right: 3px; ' src='images/vbox/" + section.icon + "' height='16' width='16' /> ")
+					  	  			.append(
+					  	  				$('<span />').css({'float':'left'}).append(document.createTextNode(section.title +' '))
+					  	  			)
+					  	  	).appendTo(vboxDetailsTable);
+	
+				  	  		__vboxDetailAddRows(d.responseData.machine, section.rows, vboxDetailsTable);
+				
+				  	  	}
+			  	  	
+				  	  $('#vboxSnapshotDetailsVM').append(vboxDetailsTable);
+	
+			  	  		
+					},{'vm':vm.id,'snapshot':snapshot.id});
+					l.onLoad = function(){
+		  			
+			  			var buttons = {};
+						buttons[vcube.utils.trans('OK','QIMessageBox')] = function() {
+	
+				  			// Current snapshot
+				  	  		var snapshot = $('#vboxSnapshotList').find('div.vboxListItemSelected').first().parent().data('vboxSnapshot');
+									
+				  	  		var l = new vboxLoader();
+				  	  		l.add('snapshotSave',function(d){
+				  	  			
+				  	  			// Let events get picked up. Nothing to do here
+				  	  		
+				 	  		},{'vm':vm.id,'snapshot':snapshot.id,'name':$('#vboxSnapshotDetailsName').val(),'description':$('#vboxSnapshotDetailsDesc').val()});
+				 	  		$(this).dialog('close');
+							l.run();
+							
+						};
+						buttons[vcube.utils.trans('Cancel','QIMessageBox')] = function(){
+							$(this).dialog('close');
+						};
+						$('#vboxSnapshotDetails').dialog({'closeOnEscape':false,'width':'600px','height':'auto','buttons':buttons,'modal':true,'autoOpen':true,'dialogClass':'vboxDialogContent','title':'<img src="images/vbox/show_snapshot_details_16px.png" class="vboxDialogTitleIcon" /> '+vcube.utils.trans('Details of %1 (%2)','VBoxSnapshotDetailsDlg').replace('%1',$('<div />').text(snapshot.name).html()).replace('%2',vm.name)});
+					};
+					l.run();
+		  	  	}
+		  	}
+	  	
+	  	
 	    }
+
 	    
 	},
 	
@@ -100,6 +373,9 @@ Ext.define('vcube.controller.VMTabSnapshots', {
         	},
         	'viewport > #MainPanel > VMTabs > VMTabSnapshots toolbar > button' : {
         		click: this.onButtonClick
+        	},
+        	'viewport > #MainPanel > VMTabs > VMTabSnapshots > treepanel' : {
+        		select: this.updateButtons
         	}
         });
         
@@ -112,32 +388,44 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     snapshotTreeStore: null,
     
     
-    /*
-     * Snapshot actions
-     */
-    takeSnapshot: function() {
-    	
-    },
-    
-    restoreSnapshot: function(ss) {
-    	console.log(ss);
-    },
-    
-    deleteSnapshot: function(ss) {
-    	console.log(ss);
-    },
-    
-    cloneSnapshot: function(ss) {
-    	console.log(ss);
-    },
-    
-    showSnapshot: function(ss) {
-    	console.log(ss);
-    },
-
-    /* When a button is clicked */
+    /* When a toolbar button is clicked */
     onButtonClick: function(btn) {
-    	this[btn.itemId](this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw);
+
+    	vcube.controller.VMTabSnapshots.snapshotActions[btn.itemId].click(
+    			this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw,
+    			vcube.vmdatamediator.getVMData(this.selectionItemId));
+    },
+    
+    /* Update buttons */
+    updateButtons: function() {
+    	
+    	var self = this;
+
+    	// Snapshot data
+    	var ss = null;
+    	if(this.snapshotTree.getView().getSelectionModel().selected.length)
+    		ss = this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw;
+    	
+    	// vm data
+    	var vm = vcube.vmdatamediator.getVMData(this.selectionItemId);
+    	
+    	Ext.each(this.snapshotTree.getDockedItems('toolbar')[0].items.items, function(btn) {
+    		
+    		
+    		if(btn.xtype == 'button') {
+    			
+    			if(vcube.controller.VMTabSnapshots.snapshotActions[btn.itemId].enabled(ss, vm))
+    				btn.enable();
+    			else
+    				btn.disable();    			
+    		}
+    		
+    		
+    	});
+    	
+    	return;
+    	
+    	
     },
     
     /* Hold ref to snapshot tree store when tab is rendered */
@@ -290,6 +578,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     /* Populate snapshot tree */
     populate: function(recordData) {
 
+    	
     	if(vcube.controller.VMTabSnapshots.timer) {
     		window.clearTimeout(vcube.controller.VMTabSnapshots.timer);
     	}
@@ -299,13 +588,15 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     		return;
     	}
     	
+    	this.updateButtons();
+
     	// Data is no longer dirty
     	this.dirty = false;
     	
     	// Show loading mask
     	this.controlledTabView.setLoading(true);
     	
-    	this.snapshotTreeStore.getProxy().extraParams = {'vm' : recordData.id, 'connector': recordData.connector_id};
+    	this.snapshotTreeStore.getProxy().extraParams = vcube.utils.vmAjaxParams(recordData.id);
     	
     	this.snapshotTreeStore.load({
 			scope: this,

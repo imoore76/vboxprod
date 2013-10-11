@@ -20,56 +20,20 @@ eventlogger = logging.getLogger('connector.events')
 
 from vboxapi import VirtualBoxManager, PlatformXPCOM
 
+# Our library modules
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__))+'/lib')
+import vcube.constants
+
 
 """
     Globals
 """
 
-vboxMgr = VirtualBoxManager(None, None)
-vbox = vboxMgr.vbox
-
-vboxSubscribeEventList = [ vboxMgr.constants.VBoxEventType_OnMachineStateChanged,
-    vboxMgr.constants.VBoxEventType_OnMachineDataChanged,
-    vboxMgr.constants.VBoxEventType_OnExtraDataChanged,
-    vboxMgr.constants.VBoxEventType_OnMediumRegistered,
-    vboxMgr.constants.VBoxEventType_OnMachineRegistered,
-    vboxMgr.constants.VBoxEventType_OnSessionStateChanged,
-    vboxMgr.constants.VBoxEventType_OnSnapshotTaken,
-    vboxMgr.constants.VBoxEventType_OnSnapshotDeleted,
-    vboxMgr.constants.VBoxEventType_OnSnapshotChanged,
-    vboxMgr.constants.VBoxEventType_OnAdditionsStateChanged,
-    vboxMgr.constants.VBoxEventType_OnNetworkAdapterChanged,
-    vboxMgr.constants.VBoxEventType_OnSerialPortChanged,
-    vboxMgr.constants.VBoxEventType_OnParallelPortChanged,
-    vboxMgr.constants.VBoxEventType_OnStorageControllerChanged,
-    vboxMgr.constants.VBoxEventType_OnMediumChanged,
-    vboxMgr.constants.VBoxEventType_OnVRDEServerChanged,
-    vboxMgr.constants.VBoxEventType_OnUSBControllerChanged,
-    vboxMgr.constants.VBoxEventType_OnUSBDeviceStateChanged,
-    vboxMgr.constants.VBoxEventType_OnSharedFolderChanged,
-    vboxMgr.constants.VBoxEventType_OnRuntimeError,
-    vboxMgr.constants.VBoxEventType_OnCPUChanged,
-    vboxMgr.constants.VBoxEventType_OnVRDEServerInfoChanged,
-    vboxMgr.constants.VBoxEventType_OnCPUExecutionCapChanged,
-    vboxMgr.constants.VBoxEventType_OnNATRedirect,
-    vboxMgr.constants.VBoxEventType_OnHostPCIDevicePlug,
-    vboxMgr.constants.VBoxEventType_OnVBoxSVCAvailabilityChanged,
-    vboxMgr.constants.VBoxEventType_OnBandwidthGroupChanged,
-    vboxMgr.constants.VBoxEventType_OnStorageDeviceChanged
- ]
+vboxMgr = None
+vbox = None
+vboxSubscribeEventList = []
 
 """ Helpers """
-
-# Delete pseudo machine states
-vboxMgr_constant_MachineState_FirstOnline = vboxMgr.constants._Values['MachineState']['FirstOnline']
-vboxMgr_constant_MachineState_LastOnline = vboxMgr.constants._Values['MachineState']['LastOnline']
-vboxMgr_constant_MachineState_FirstTransient = vboxMgr.constants._Values['MachineState']['FirstTransient']
-vboxMgr_constant_MachineState_LastTransient = vboxMgr.constants._Values['MachineState']['LastTransient']
-del vboxMgr.constants._Values['MachineState']['FirstOnline']
-del vboxMgr.constants._Values['MachineState']['FirstTransient']
-del vboxMgr.constants._Values['MachineState']['LastOnline']
-del vboxMgr.constants._Values['MachineState']['LastTransient']
 
 def vboxEnumToString(enum, elem):
     vals = vboxMgr.constants.all_values(enum)
@@ -139,7 +103,7 @@ def _machineGetBaseInfo(machine):
                 'interfaceID' : machine.accessError.interfaceID,
                 'component' : machine.accessError.component,
                 'text' : vboxConnector._util_resultCodeText(machine.accessError.text) 
-            }#machine.accessError
+            }
         }
 
 """
@@ -291,15 +255,10 @@ def enrichEvents(eventList):
     machine = None
     session = None
     
-    # Try to keep machines in order to limit locking / unlocking
-    keys = eventList.keys()
-    keys.sort()
     
     # Wrap to always unlock any sessions that may be open
     try:
-        for ek in keys:
-            
-            event = eventList[ek]
+        for ek, event in enumerate(eventList):
             
             # Network adapter changed            
             if event['eventType'] == 'OnNetworkAdapterChanged':
@@ -416,16 +375,18 @@ def enrichEvents(eventList):
             # Update lastStateChange on OnMachineStateChange events
             elif event['eventType'] == 'OnMachineStateChanged':
                 
-                if not machine or (machine and machine.id != event['machineId']):
-                    machine = vbox.findMachine(event['machineId'])
 
                 try:
+                    
+                    if not machine or (machine and machine.id != event['machineId']):
+                        machine = vbox.findMachine(event['machineId'])
+
                     eventList[ek]['enrichmentData'] = {
                         'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
                         'currentStateModified' : machine.currentStateModified
                     }
                     
-                except:
+                except Exception as e:
                     logger.exception(e)
                     pprint.pprint(e)
                     eventList[ek]['enrichmentData'] = {'lastStateChange' : 0}
@@ -471,6 +432,8 @@ def enrichEvents(eventList):
 """
     Access to virtualbox from RPC calls
 """
+
+
 class vboxConnector(object):
 
     """
@@ -1007,7 +970,7 @@ class vboxConnector(object):
             'name' : "Clone virtual machine",
             'details': ('from snapshot ' + results['snapshotName'] if (results and results.get('snapshotName', '')) else '') + ('to %s' %(args.get('name'))),
             'machine' : args.get('src',''),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
 
     """
@@ -1753,7 +1716,7 @@ class vboxConnector(object):
         return {
             'name': 'Save machine settings',
             'machine': args['vm'],
-            'category' : 'CONFIGURATION'
+            'category' : vcube.constants.LOG_CATEGORY['CONFIGURATION']
         }
 
     """
@@ -1776,7 +1739,7 @@ class vboxConnector(object):
         return {
             'name': "Add virtual machine",
             'machine': results.get('machine',''),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
 
 
@@ -1841,7 +1804,7 @@ class vboxConnector(object):
     def remote_vboxSystemPropertiesSave_log(args, results):
         return {
             'name' : "Save system properties",
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
 
     """
@@ -1895,7 +1858,7 @@ class vboxConnector(object):
         return {
                 'name' : "Import appliance",
                 'details': ("%s machines imported" %(results.get('machinesImported',0),) if results else ""),
-                'category' : 'VCUBE'
+                'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
     
     """
@@ -2052,7 +2015,7 @@ class vboxConnector(object):
         return {
             'name': "Export appliance",
             'details': "Exported %s vms" %(args['vms'].length),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
     
     """
@@ -2180,7 +2143,7 @@ class vboxConnector(object):
     def remote_hostOnlyInterfacesSave_log(args, results):
         return {
             'name':"Save host-only interfaces",
-            'category' : 'CONFIGURATION'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX_HOST']
         }
     
     """
@@ -2207,7 +2170,7 @@ class vboxConnector(object):
     def remote_hostOnlyInterfaceCreate_log(args, results):
         return {
             'name' : "Create host-only interface",
-            'category' : 'CONFIGURATION'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX_HOST']
         }
     
 
@@ -2238,7 +2201,7 @@ class vboxConnector(object):
     def remote_hostOnlyInterfaceRemove_log(args, results):
         return {
             'name': "Remove host-only interface" + (" `%s`" %(results.get('interface',''),) if results and results.get('interface',None) else ""),
-            'category' : 'CONFIGURATION'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX_HOST']
         }
 
     """
@@ -2392,7 +2355,7 @@ class vboxConnector(object):
         return {
             'machine': args.get('vm'),
             'name': states.get(results.get('state', args.get('state'))),
-            'category' : 'STATE_CHANGE'
+            'category' : vcube.constants.LOG_CATEGORY['STATE_CHANGE']
          }
         
     """
@@ -2668,9 +2631,9 @@ class vboxConnector(object):
     def remote_machineRemove_log(args, results):
         return {
             'name': 'Remove machine',
-            'details': 'Remove machine `%s`' %(results.get('machineName', '')),
+            'details': 'Remove machine `%s`' %(results.get('machineName', args.get('vm',''))),
             'machine': args.get('vm',''),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
 
 
@@ -2817,7 +2780,7 @@ class vboxConnector(object):
             'name': 'Create virtual machine',
             'details': 'Create virtual machine `%s`' %(args.get('name',''),),
             'machine': results.get('vm',''),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
 
 
@@ -3312,7 +3275,7 @@ class vboxConnector(object):
         return {
             'name' : "Restore snapshot %s" %(results.get('snapshotName', args.get('snapshot')),),
             'machine': args.get('vm'),
-            'category' : 'SNAPSHOT'
+            'category' : vcube.constants.LOG_CATEGORY['SNAPSHOT']
         }
 
 
@@ -3366,7 +3329,7 @@ class vboxConnector(object):
         return {
             'name' : "Delete snapshot %s" %(results.get('snapshotName', args.get('snapshot')),),
             'machine': args.get('vm'),
-            'category' : 'SNAPSHOT'
+            'category' : vcube.constants.LOG_CATEGORY['SNAPSHOT']
         }
 
     """
@@ -3415,7 +3378,7 @@ class vboxConnector(object):
             'name' : "Take snapshot `%s`" %(args['name'],),
             'details': "Snapshot description: %s" %(args.get('description'),) if args.get('description','') else '',
             'machine': args.get('vm'),
-            'category' : 'SNAPSHOT'
+            'category' : vcube.constants.LOG_CATEGORY['SNAPSHOT']
         }
 
 
@@ -3559,7 +3522,7 @@ class vboxConnector(object):
         return {
             'name' : "Resize medium %s" %(results.get('mediumName', args.get('medium')),),
             'details': "Requested size %d MB" %(long(args['bytes']) / 1024 / 1024),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 
         
@@ -3601,7 +3564,7 @@ class vboxConnector(object):
     def remote_mediumCloneTo_log(args, results):
         return {
             'name' : "Clone medium %s to %s" %(args.get('src','Unknown'),args.get('location','Unknown')),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 
 
@@ -3687,7 +3650,7 @@ class vboxConnector(object):
     def remote_mediumAdd_log(args, results):
         return {
             'name' : "Add medium `%s`" %(args.get(['path'])),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 
 
@@ -3734,7 +3697,7 @@ class vboxConnector(object):
     def remote_mediumCreateBaseStorage_log(args, results):
         return {
             'name' : "Create hard disk `%s`" %(args.get('file'),),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 
 
@@ -3826,7 +3789,7 @@ class vboxConnector(object):
         return {
             'name' : "Release medium %s" %(results.get('mediumName', args.get('medium')),),
             'details': "Released from %s" %(', '.join(results.get('machineNames'),)) if results.get('machineNames') else '',
-            'category' : 'CONFIGURATION'
+            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 
 
@@ -3863,7 +3826,7 @@ class vboxConnector(object):
     def remote_mediumRemove_log(args, results):
         return {
             'name' : "Remove medium %s" %(results.get('mediumName', args.get('medium')),),
-            'category' : 'VCUBE'
+            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 
 
@@ -5100,7 +5063,51 @@ def main(argv = sys.argv):
     #sys.setdefaultencoding('utf8')
     
     
-    global vboxMgr, running, progressOpPool
+    global vboxMgr, vbox, running, progressOpPool, vboxSubscribeEventList
+    
+    vboxMgr = VirtualBoxManager(None, None)
+    vbox = vboxMgr.vbox
+    
+    vboxSubscribeEventList = [ vboxMgr.constants.VBoxEventType_OnMachineStateChanged,
+        vboxMgr.constants.VBoxEventType_OnMachineDataChanged,
+        vboxMgr.constants.VBoxEventType_OnExtraDataChanged,
+        vboxMgr.constants.VBoxEventType_OnMediumRegistered,
+        vboxMgr.constants.VBoxEventType_OnMachineRegistered,
+        vboxMgr.constants.VBoxEventType_OnSessionStateChanged,
+        vboxMgr.constants.VBoxEventType_OnSnapshotTaken,
+        vboxMgr.constants.VBoxEventType_OnSnapshotDeleted,
+        vboxMgr.constants.VBoxEventType_OnSnapshotChanged,
+        vboxMgr.constants.VBoxEventType_OnAdditionsStateChanged,
+        vboxMgr.constants.VBoxEventType_OnNetworkAdapterChanged,
+        vboxMgr.constants.VBoxEventType_OnSerialPortChanged,
+        vboxMgr.constants.VBoxEventType_OnParallelPortChanged,
+        vboxMgr.constants.VBoxEventType_OnStorageControllerChanged,
+        vboxMgr.constants.VBoxEventType_OnMediumChanged,
+        vboxMgr.constants.VBoxEventType_OnVRDEServerChanged,
+        vboxMgr.constants.VBoxEventType_OnUSBControllerChanged,
+        vboxMgr.constants.VBoxEventType_OnUSBDeviceStateChanged,
+        vboxMgr.constants.VBoxEventType_OnSharedFolderChanged,
+        vboxMgr.constants.VBoxEventType_OnRuntimeError,
+        vboxMgr.constants.VBoxEventType_OnCPUChanged,
+        vboxMgr.constants.VBoxEventType_OnVRDEServerInfoChanged,
+        vboxMgr.constants.VBoxEventType_OnCPUExecutionCapChanged,
+        vboxMgr.constants.VBoxEventType_OnNATRedirect,
+        vboxMgr.constants.VBoxEventType_OnHostPCIDevicePlug,
+        vboxMgr.constants.VBoxEventType_OnVBoxSVCAvailabilityChanged,
+        vboxMgr.constants.VBoxEventType_OnBandwidthGroupChanged,
+        vboxMgr.constants.VBoxEventType_OnStorageDeviceChanged
+     ]
+
+    # Delete pseudo machine states
+    vboxMgr_constant_MachineState_FirstOnline = vboxMgr.constants._Values['MachineState']['FirstOnline']
+    vboxMgr_constant_MachineState_LastOnline = vboxMgr.constants._Values['MachineState']['LastOnline']
+    vboxMgr_constant_MachineState_FirstTransient = vboxMgr.constants._Values['MachineState']['FirstTransient']
+    vboxMgr_constant_MachineState_LastTransient = vboxMgr.constants._Values['MachineState']['LastTransient']
+    del vboxMgr.constants._Values['MachineState']['FirstOnline']
+    del vboxMgr.constants._Values['MachineState']['FirstTransient']
+    del vboxMgr.constants._Values['MachineState']['LastOnline']
+    del vboxMgr.constants._Values['MachineState']['LastTransient']
+
     
 
     running = True
@@ -5222,14 +5229,14 @@ def main(argv = sys.argv):
                 Get events from incoming queue (populated by listenerPool)
                 enrich them and place them in the outgoing queue (eventServer)
             """
-            eventList = {}
+            eventList = []
             while not incomingQueue.empty():
                 
                 event = incomingQueue.get(False)
                 
                 if event:
                     
-                    eventList[event['dedupId']] = event
+                    eventList.append(event)
                     
                     # Subscribe to any machines that are running
                     if event['eventType'] == 'OnMachineStateChanged' and event['state'] == 'Running':
@@ -5251,7 +5258,7 @@ def main(argv = sys.argv):
             if len(eventList):
                 enrichEvents(eventList)
                 
-            for e in eventList.values():
+            for e in eventList:
                 #eventlogger.debug("Event %s" %(e,))
                 outgoingQueue.put(e)
                 

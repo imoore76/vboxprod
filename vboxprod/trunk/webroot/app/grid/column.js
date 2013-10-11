@@ -29,7 +29,7 @@ Ext.define('vcube.grid.column.ServerColumn', {
 	dataIndex: 'connector',
 	renderer: function(val) {
 		try {
-			return vcube.app.serverStore.findRecord('id',val).get('name');    					
+			return Ext.String.htmlEncode(vcube.app.serverStore.findRecord('id',val).get('name'));    					
 		} catch (err) {
 			return 'Unknown(' + val + ')';
 		}
@@ -68,13 +68,7 @@ Ext.define('vcube.grid.column.TaskDetailsColumn', {
 	    '</div>';
 		}
 		m.style = "";
-		var status = 'Unknown';
-		try {
-			status = vcube.app.constants.TASK_STATUS_TEXT[val];
-		} catch(err) {
-			status = 'Unknown';
-		}
-		return status;
+		return Ext.String.htmlEncode(val);
 	}
 });
 
@@ -141,7 +135,7 @@ Ext.define('vcube.grid.column.TaskNameColumn', {
 		} else {
 			cls = 'eventColumnGeneral';
 		}
-		return '<div class="gridColumnIcon '+cls+'"> </div>' + v;
+		return '<div class="gridColumnIcon '+cls+'"> </div>' + Ext.String.htmlEncode(v);
 	},
 	width: 300
 });
@@ -162,7 +156,7 @@ Ext.define('vcube.grid.column.EventNameColumn', {
 		} else {
 			cls = 'eventColumnGeneral';
 		}
-		return '<div class="gridColumnIcon '+cls+'"> </div>' + v;
+		return '<div class="gridColumnIcon '+cls+'"> </div>' + Ext.String.htmlEncode(v);
 	},
 	width: 300
 });
@@ -182,7 +176,7 @@ Ext.define('vcube.grid.column.LogCategoryColumn', {
 		} catch(err) {
 			name = 'Unknown';
 		}
-		return "<div class='categoryColumn categoryColumn" + v + "'> </div>" + name;
+		return "<div class='categoryColumn categoryColumnType" + v + "'> </div>" + name;
 	}
 });
 

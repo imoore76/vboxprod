@@ -55,7 +55,10 @@ LOG_CATEGORY = {
    'CONFIGURATION' : 5,
    'STATE_CHANGE' : 10,
    'SNAPSHOT' : 15,
-   'MEDIA' : 20
+   'MEDIA' : 20,
+   'VBOX_HOST' : 30,
+   'VBOX' : 40,
+   'CONNECTOR' : 45
 }
 
 LOG_CATEGORY_TEXT = {
@@ -63,6 +66,9 @@ LOG_CATEGORY_TEXT = {
    5 : 'Configuration change',
    10 : 'State change',
    15 : 'Snapshot',
-   20 : 'Media'
+   20 : 'Media',
+   30 : "VirtualBox Host",
+   40  : "VirtualBox",
+   45 : "Connector"
 }
 

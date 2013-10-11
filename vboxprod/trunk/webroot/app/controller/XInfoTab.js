@@ -67,9 +67,15 @@ Ext.define('vcube.controller.XInfoTab', {
 			var self = this;
 			if(this.sectionConfig[i].redrawOnEvents) {
 				Ext.each(this.sectionConfig[i].redrawOnEvents,function(event){
-					redrawEvents[event] = self.onRedrawEvent;
+					redrawEvents[event] = self.onSubscribedEvent;
 				});
 			}
+			if(this.sectionConfig[i].notifyEvents) {
+				Ext.each(this.sectionConfig[i].notifyEvents,function(event){
+					redrawEvents[event] = self.onSubscribedEvent;
+				});
+			}
+
 			redrawEvents['scope'] = this;
 		}		
 		this.application.on(redrawEvents);
@@ -94,7 +100,26 @@ Ext.define('vcube.controller.XInfoTab', {
     onTabRender: function(tab) {
     	this.controlledTabView = tab;
     	this.controlledTabView.on({'show':this.onTabShow,'scope':this});
-    	this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();    	
+    	this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();    
+    	
+    	// Subscribe to store changes?
+    	if(this.updateInfoOnRecordChange) {
+    		this.getNavTreeView().getStore().on({'update':this.onRecordChanged,'scope':this});
+    	}
+    },
+    
+    /* Run when record has changed */
+    onRecordChanged: function(store, record) {
+
+    	if(this.selectionNodeId != record.get('id'))
+    		return;
+
+    	var inf = this.getInfoPane();
+    	
+    	if(!inf) return;
+    	
+    	inf.update(record.raw.data);
+    	
     },
     
     /* When tab is shown */
@@ -126,25 +151,58 @@ Ext.define('vcube.controller.XInfoTab', {
     },
     
     /* When a redraw event is encountered, a section is redrawn */
-    onRedrawEvent: function(event) {
+    onSubscribedEvent: function(event) {
 
     	if(!this.filterEvent(event)) return;
 
-    	
     	// Compose a list of sections that want to redraw
     	// on this type of event
-    	var sections = [];
+    	var redrawSections = [];
+    	var notifySections = [];
     	for(var i in this.sectionConfig) {
     		if(typeof(i) != 'string') continue;
 			if(this.sectionConfig[i].redrawOnEvents && Ext.Array.contains(this.sectionConfig[i].redrawOnEvents, event.eventType)) {
-				sections.push(i);
+				redrawSections.push(i);
+			} else if(this.sectionConfig[i].notifyEvents && Ext.Array.contains(this.sectionConfig[i].notifyEvents, event.eventType)) {
+				notifySections.push(i);
 			}
     	}
     	
     	var self = this;
+
+    	var sectionsPane = this.getSectionsPane();
+    	var recordData = this.navTreeSelectionModel.getSelection()[0].raw.data;
+    	
+    	// Notify sections of event
+    	if(notifySections.length) {
+    		
+    		Ext.each(sectionsPane.items.items, function(section, idx) {
+    			
+    			if(!Ext.Array.contains(notifySections, section.itemId)) {
+    				return;
+    			}
+    			
+    			sectionsPane.remove(section, true);
+    			
+    			sectionsPane.insert(idx, Ext.create('vcube.widget.SectionTable',{
+    				sectionCfg: self.sectionConfig[section.itemId].onEvent(event, recordData),
+    				'data':recordData,
+    				'name':section.itemId}
+    			));
+    			
+    		});
+
+    	}
+    	
+    	// No sections to redraw, just return
+    	if(!redrawSections.length) {
+    		return;
+    	}
+    	
+    	// Redraw each section that wants to be redrawn
     	
     	// Get fresh data
-    	Ext.ux.Deferred.when(this.populateData(this.navTreeSelectionModel.getSelection()[0].raw.data)).done(function(data) {
+    	Ext.ux.Deferred.when(this.populateData(recordData)).done(function(data) {
 			
     		// If this tab's item is no longer selected, nothing to do
         	if(data.id != self.selectionItemId)
@@ -155,12 +213,11 @@ Ext.define('vcube.controller.XInfoTab', {
         		self.dirty = true;
         		return;
         	}
-
-        	var sectionsPane = self.getSectionsPane();
+        	
 	    	// Redraw each section that wants to be redrawn
 	    	Ext.each(sectionsPane.items.items, function(section, idx) {
 	    		
-	    		if(!Ext.Array.contains(sections, section.itemId)) {
+	    		if(!Ext.Array.contains(redrawSections, section.itemId)) {
 	    			return;
 	    		}
 	    		
@@ -168,9 +225,9 @@ Ext.define('vcube.controller.XInfoTab', {
 	    		
 	    		sectionsPane.insert(idx, Ext.create('vcube.widget.SectionTable',{
 	    			sectionCfg: self.sectionConfig[section.itemId],
-	    			'data':data,
-	    			'name':section.itemId}));
-	    		
+	    			'data':Ext.Object.merge({},data,recordData),
+	    			'name':section.itemId}
+	    		));		
 	    	});
 	    	
 	    	self.controlledTabView.doLayout();
@@ -258,7 +315,7 @@ Ext.define('vcube.controller.XInfoTab', {
     },
     
     /* Populate tab */
-    populate: function(data) {
+    populate: function(recordData) {
     	
     	// Nothing to do if tab isn't visible
     	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
@@ -274,7 +331,7 @@ Ext.define('vcube.controller.XInfoTab', {
     	// Hold ref to self
     	var self = this;
     	
-    	Ext.ux.Deferred.when(this.populateData(data)).done(function(pdata) {
+    	Ext.ux.Deferred.when(this.populateData(recordData)).done(function(data) {
     	
     		// Remove loading mask
     		self.controlledTabView.setLoading(false);
@@ -289,7 +346,7 @@ Ext.define('vcube.controller.XInfoTab', {
     		Ext.suspendLayouts();
     		
     		// draw sections with data
-    		self.drawSections.apply(self, [pdata]);
+    		self.drawSections.apply(self, [Ext.Object.merge({},data,recordData)]);
 
     		// batch of updates are over
     		Ext.resumeLayouts(true);

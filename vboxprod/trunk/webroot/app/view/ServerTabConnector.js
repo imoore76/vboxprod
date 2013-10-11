@@ -45,8 +45,14 @@ Ext.define('vcube.view.ServerTabConnector', {
 					bodyStyle: { background: '#fff' },
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
-				redrawEvents: ['MachineStateChanged'],
+				notifyEvents: ['MachineStateChanged'],
+				onEvent: function(event, recordData) {
+					return Ext.Object.merge({},
+							vcube.view.ServerTabConnector.sections.vms,
+							{'rows': vcube.view.ServerTabConnector.sections.vms.rows(recordData)});
+				},
 				rows: function(data) {
+					
 					
 					var rows = [], states = {},
 						vmList = vcube.vmdatamediator.getVMDataByFilter(function(vm){return vm.connector_id == data.id;});
@@ -124,7 +130,12 @@ Ext.define('vcube.view.ServerTabConnector', {
     	defaults: { border: false },
     	items: [{
     	    itemId: 'infopane',
-    	    tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" /><h3 align="left">{name} ({status_name}) - {location}</h3>asdf{description}' +
+    	    tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" />'+
+    	    	'<div><h3 align="left" style="display: inline-block">'+
+    	    		'{[Ext.String.htmlEncode(values.name)]} @ {location} - ({[vcube.app.constants.CONNECTOR_STATES_TEXT[values.status]]})'+
+    	    		'</h3>'+
+    	    	'<tpl if="status_text.length"> - {status_text}</tpl>'+
+    	    	'</div><div>{[Ext.String.htmlEncode(values.description)]}</div>'+
     	    	'<div style="padding: 20px"> </div>'
     	},{
     		itemId: 'sectionspane'

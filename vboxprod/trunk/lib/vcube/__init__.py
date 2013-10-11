@@ -7,30 +7,37 @@ import os, sys, ConfigParser, threading, Queue
 import MySQLdb
 import pprint, traceback
 
-from connector import vboxConnector 
+from connector import vboxConnector
+import constants
+
 from vboxclient import vboxRPCClient, vboxRPCClientPool
 
-import constants
 
 
 import logging
 logger = logging.getLogger('vcube')
 
-global config, app
+config = None
+app = None
 
-# Read config 
-config = ConfigParser.SafeConfigParser()
-config.read(os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))) + '/settings.ini')
 
 def getConfig():
+    # Read config 
+    global config
+    if not config:
+        config = ConfigParser.SafeConfigParser()
+        config.read(os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))) + '/settings.ini')
     return config
 
 def getInstance():
     global app
+    if not app:                
+        app = Application()
     return app
 
 def start():
     global app
+    app = getInstance()
     app.start()
     
 def stop():
@@ -68,14 +75,23 @@ class vboxEventsToEventLog:
 
     @staticmethod
     def MachineRegistered(eventData):
-        if eventData.registered:
+        if eventData['registered']:
             name = 'Machine registered'
+            severity = constants.SEVERITY['INFO']
+            try:
+                details = "`%s` registered" %(eventData['enrichmentData']['name'])
+            except:
+                pass
         else:
             name = 'Machine unregistered'
+            severity = constants.SEVERITY['WARNING']
+            details = ''
         return {'name':name,
+                'details' : details,
                 'machine':eventData['machineId'],
                 'connector': eventData['connector_id'],
-                'category' : constants.LOG_CATEGORY['VCUBE']
+                'severity' : severity,
+                'category' : constants.LOG_CATEGORY['VBOX']
         }
 
     @staticmethod
@@ -263,7 +279,7 @@ class Application(threading.Thread):
             return task
         
         except Exception as e:
-            pprint.pprint(e)
+            traceback.print_exc()
             logger.exception(e)
             
             return None
@@ -295,7 +311,7 @@ class Application(threading.Thread):
             return task
         
         except Exception as e:
-            pprint.pprint(e)
+            traceback.print_exc()
             logger.exception(e)
             
         return None
@@ -370,6 +386,7 @@ class Application(threading.Thread):
             return el.id
         
         except Exception as e:
+            traceback.print_exc()
             logger.exception(e)
             
     def registerEventQueue(self, queue):
@@ -408,6 +425,7 @@ class Application(threading.Thread):
         try:
             logData = getattr(vboxConnector, 'remote_'+action+'_log')(args, {})
         except Exception as e:
+            traceback.print_exc()
             logger.exception(e)
             logData = {
                 'name': action,
@@ -417,7 +435,6 @@ class Application(threading.Thread):
         # Enrich task log data
         logData['connector'] = connector_id
         logData['user'] = user
-        logData['category'] = constants.LOG_CATEGORY.get(logData.get('category',None), constants.LOG_CATEGORY['VCUBE']) 
 
         
         # Log task
@@ -436,7 +453,7 @@ class Application(threading.Thread):
             logData.update(getattr(vboxConnector, 'remote_'+action+'_log')(args, ({} if not result.get('success', False) else result.get('responseData',{}))))
             
         except Exception as e:
-
+            traceback.print_exc()
             logger.exception(e)
             logData.update({
                 'name': action,
@@ -497,7 +514,6 @@ class Application(threading.Thread):
             """
                 Update task
             """
-            pprint.pprint(event)
             self.updateTaskProgress(event)
             return False
             
@@ -568,7 +584,7 @@ class Application(threading.Thread):
             try:
                 if event['registered']:
                     vm = event['enrichmentData']
-                    vm['connector_id'] = 0
+                    vm['connector_id'] = event['connector_id']
                     self.virtualMachines[vm['id']] = vm
                 else:
                     del self.virtualMachines[event['machineId']]
@@ -601,14 +617,11 @@ class Application(threading.Thread):
             """
                 Any type of machine data changed
             """
+            self.virtualMachinesLock.acquire(True)
             try:
-                self.virtualMachinesLock.acquire(True)
-                try:
-                    self.virtualMachines[event['machineId']].update(event['enrichmentData'])
-                finally:
-                    self.virtualMachinesLock.release()
+                self.virtualMachines[event['machineId']].update(event['enrichmentData'])
             finally:
-                pass
+                self.virtualMachinesLock.release()
         
         elif event['eventType'] == 'MachineGroupChanged':
             """
@@ -630,7 +643,7 @@ class Application(threading.Thread):
             finally:
                 self.virtualMachinesLock.release()
             
-        """ Add to event log """
+        """ Add to event log """        
         if event['eventType'] in vboxEventsToEventLog.events:
             self.logEvent(getattr(vboxEventsToEventLog, event['eventType'])(event))
             
@@ -646,7 +659,7 @@ class Application(threading.Thread):
             'eventType':'connectorStateChanged',
             'connector_id' : cid,
             'status' : status,
-            'message' : message
+            'status_text' : message
         })
         
         logEvent = False
@@ -663,19 +676,30 @@ class Application(threading.Thread):
             return
         
         except Exception as e:
+            traceback.print_exc()
             logger.exception(e)
             
         if logEvent:
+            
+            sevLookups = {
+                constants.CONNECTOR_STATES['DISABLED'] : constants.SEVERITY['WARNING'],
+                constants.CONNECTOR_STATES['DISCONNECTED'] : constants.SEVERITY['INFO'],
+                constants.CONNECTOR_STATES['ERROR'] : constants.SEVERITY['CRITICAL'],
+                constants.CONNECTOR_STATES['REGISTERING'] : constants.SEVERITY['WARNING'],
+                constants.CONNECTOR_STATES['RUNNING'] : constants.SEVERITY['INFO']
+            }
+            
             try:
                 self.logEvent({
                     'name' : 'Server status changed to ' + constants.CONNECTOR_STATES_TEXT.get(status, 'Unknown'),
                     'details' : message,
                     'connector' : cid,
-                    'severity' : (constants.SEVERITY['CRITICAL'] if status < constants.CONNECTOR_STATES['RUNNING'] else constants.SEVERITY['INFO']),
-                    'category' : constants.LOG_CATEGORY['VCUBE']
+                    'severity' : sevLookups.get(status, constants.SEVERITY['INFO']),
+                    'category' : constants.LOG_CATEGORY['CONNECTOR']
                 })
                 
             except Exception as e:
+                traceback.print_exc()
                 logger.exception(e)
             
         
@@ -707,6 +731,7 @@ class Application(threading.Thread):
                         self.pumpEvent(message['event'])
                     
                     except Exception as e:
+                        traceback.print_exc()
                         logger.exception(e)
                     
                 # Listen for vbox events
@@ -819,9 +844,5 @@ class Application(threading.Thread):
             self.connectorsLock.release()
     
 
-        
-    
-        
-app = Application()
 
 

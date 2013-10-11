@@ -115,7 +115,7 @@ Ext.define('vcube.vmactions',{
 						
 						(vms.length && Ext.ux.Deferred.when(firstRun(vms.shift())).done(function(vm){
 	
-							vcube.utils.ajaxRequest('vbox/machineSetState',{'vm':vm.id,'state':'powerUp','connector':vm.connector_id});
+							vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({'state':'powerUp'},vcube.utils.vmAjaxParams(vm.id)));
 							
 							runVMsToStart(vms);
 							

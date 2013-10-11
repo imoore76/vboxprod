@@ -13,9 +13,12 @@ Ext.define('vcube.controller.ServerTabConnector', {
 
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'server';
-    	
+
+    	/* Update info pane on these events */
+    	this.updateInfoOnRecordChange = true;
+
     	/* Repopulate on Events*/
-    	this.repopulateOn = []; //['MachineDataChanged'];
+    	this.repopulateOn = [];
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'connector_id';
@@ -25,17 +28,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
         	return vcube.utils.ajaxRequest('vbox/getStatus',{connector:data.id})
         };
 
-    	
-		// Special case for VM actions
-        /*
-		this.application.on({
-			'SessionStateChanged': this.updateVMActions,
-			'MachineStateChanged': this.updateVMActions,
-			scope: this
-		});
-		*/
-		
-		
+    			
         this.control({
 	        'viewport > #MainPanel > ServerTabs > ServerTabConnector' : {
 	        	render: this.onTabRender

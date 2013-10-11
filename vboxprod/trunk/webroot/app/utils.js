@@ -12,6 +12,14 @@ Ext.define('vcube.utils', {
 		return (vmid && selectionModel.selected.length == 1 && selectionModel.getSelection()[0].raw.data.id == vmid);
 	},
 	
+	/* Return ajax parameters that specify a VM */
+	vmAjaxParams: function(vmid) {
+		return {
+			'vm': vmid,
+			'connector': vcube.vmdatamediator.getVMData(vmid).connector_id
+		}
+	},
+	
 	/* Return selected VMs' data */
 	getSelectedVMsData: function(selectionModel) {
 		

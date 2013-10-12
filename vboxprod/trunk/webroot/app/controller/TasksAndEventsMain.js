@@ -17,8 +17,11 @@ Ext.define('vcube.controller.TasksAndEventsMain', {
     			
     			render: function(panel) {
     				// Reconfigure panel with unique store instance
+    				this.eventTabView = panel.down('#events').getView();
+    				this.taskTabView = panel.down('#tasks').getView();
     				this.eventStore = panel.down('#events').getStore();
     				this.taskStore = panel.down('#tasks').getStore();
+    				
     			}
     		}
     	});
@@ -33,12 +36,24 @@ Ext.define('vcube.controller.TasksAndEventsMain', {
     	this.callParent(arguments);
     },
     
-    onConnectorUpdated: function() {
-    	this.taskStore.each(function(s){
-    		s.set('connector', s.get('connector'));
+    onConnectorUpdated: function(eventData) {
+    	
+    	var self = this;
+    	
+
+    	
+    	this.taskStore.each(function(s,idx){
+    		if(s.get('connector') == eventData.connector_id) {
+    			//self.taskTabView.refreshNode(idx);
+    			//s.set('connector', eventData.connector_id);
+    		}
     	});
-    	this.eventStore.each(function(s){
-    		s.set('connector', s.get('connector'));
+    	
+    	this.eventStore.each(function(s, idx){
+    		if(s.get('connector') == eventData.connector_id) {
+    			self.eventTabView.refreshNode(idx);
+    			//s.set('connector', eventData.connector_id);
+    		}
     	});
 
     }

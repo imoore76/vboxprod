@@ -16,6 +16,21 @@ div.x-grid-cell-inner div.x-progress-bar { padding: 0px; margin: 0px; background
 div.x-grid-cell-inner div.x-progress div { padding: 0px; margin: 0px }
 div.x-grid-cell-inner div.x-progress-text { font-size: 9px; padding: 0px; margin: 0px; }
 
+/* Masks should have some opacity */
+body > div.modal-mask-default {
+
+	opacity: .7;
+	filter:alpha(opacity=70);
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=70)";
+	
+}
+
+/* Form field help text */
+.ux-form-fieldhelptext
+{
+	font-size: 10px;
+	color: #333333;
+}
 /* Tooltip */
 .x-tip {
 	background: #f0f0f0;

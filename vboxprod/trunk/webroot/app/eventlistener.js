@@ -81,6 +81,8 @@ Ext.define('vcube.eventlistener', {
 		
 		console.log(e);
 		
+		// Some listeners want raw vbox events first to update
+		// underlaying internal data
 		if(e['eventSource'] == 'vbox') {
 			vcube.app.fireEvent('vbox' + e.eventType, e);			
 		}

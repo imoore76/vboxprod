@@ -166,7 +166,7 @@ Ext.define('vcube.vmdatamediator', {
 					
 					vcube.vmdatamediator.expireVMDetails(eventData.machineId);
 					vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
-					vcube.vmdatamediator.vmData[eventData.machineId] = null;
+					delete vcube.vmdatamediator.vmData[eventData.machineId];
 					
 				} else if(eventData.enrichmentData) {
 				    

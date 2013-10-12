@@ -5,6 +5,7 @@ from vcube.models import Connector
 import cherrypy
 
 import vcube
+from vcube import constants
 
 class dispatcher(dispatcher_parent):
 
@@ -20,8 +21,9 @@ class dispatcher(dispatcher_parent):
             raise Exception("A connector with that name exists")
         
         c = Connector()
-        for attr in ['name','location']:
+        for attr in ['name','location','description']:
             setattr(c, attr, kwargs.get(attr))
+        c.status = 0
         c.save()
         
         # Tell application that a connector was added
@@ -63,9 +65,15 @@ class dispatcher(dispatcher_parent):
     @require_admin
     def updateConnector(self, *args, **kwargs):
         c = Connector.get(Connector.id == kwargs.get('id',0))
-        for attr in ['name','location', 'status', 'description', 'status_text']:
+        for attr in ['name','location', 'description', 'status_text']:
             if kwargs.get(attr, None) is not None:
                 setattr(c, attr, kwargs.get(attr))
+                
+        
+        if kwargs.get('status',None) is not None:
+            if int(kwargs['status']) == constants.CONNECTOR_STATES['DISABLED'] or (c.status == constants.CONNECTOR_STATES['DISABLED'] and int(kwargs['status']) == constants.CONNECTOR_STATES['DISCONNECTED']):
+                c.status = kwargs.get('status')
+
         c.save()
         
         # Tell application that a connector was removed

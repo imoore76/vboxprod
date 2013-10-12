@@ -29,7 +29,7 @@ Ext.define('vcube.grid.column.ServerColumn', {
 	dataIndex: 'connector',
 	renderer: function(val) {
 		try {
-			return Ext.String.htmlEncode(vcube.app.serverStore.findRecord('id',val).get('name'));    					
+			return Ext.String.htmlEncode(vcube.app.serverStore.getById(val).get('name'));    					
 		} catch (err) {
 			return 'Unknown(' + val + ')';
 		}

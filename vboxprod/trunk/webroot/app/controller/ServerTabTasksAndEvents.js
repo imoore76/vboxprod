@@ -39,25 +39,55 @@ Ext.define('vcube.controller.ServerTabTasksAndEvents', {
     			}
         	},
         	'viewport > NavTree' : {
-        		select: this.onSelectItem
+        		selectionchange: this.onSelectionChange
         	}
         });
+    	
+    	// Populate when app starts
+    	this.application.on({
+    		'ConnectorUpdated': this.onConnectorUpdated,
+    		scope: this
+    	});
+
 
     	this.callParent(arguments);
     },
-    
-    /* When item is selected */
-    onSelectItem: function(row, record) {
+
+    onConnectorUpdated: function(eventData) {
+    	
+    	if(!(this.selectedServerId && eventData.connector_id == this.selectedServerId))
+    		return;
+    		
+    	if(!this.getTasksAndEventsView().isVisible()) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	this.taskStore.each(function(s){
+    		s.set('connector', eventData.connector_id);
+    	});
+    	this.eventStore.each(function(s){
+    		s.set('connector', eventData.connector_id);
+    	});
+
+    },
+
+    /* An selection in the tree has changed */
+    onSelectionChange: function(panel, records) {
     	
     	this.dirty = true;
     	
-    	// Only load if Server is selected
-    	if(!record || record.raw.data._type != 'server')
-    		return;
+    	if(records.length && records[0].raw.data._type == 'server') {
 
-    	this.selectedServerId = record.raw.data.id;
+    		this.selectedServerId = record.raw.data.id;    		
+    		this.populate();
     	
-    	this.populate();
+    	} else {
+    	
+    		this.selectedServerId = null;
+    	}
+    	
+
     },
     
     /* When tab is shown */
@@ -82,6 +112,7 @@ Ext.define('vcube.controller.ServerTabTasksAndEvents', {
 		this.eventStore.getProxy().extraParams = {'server' : this.selectedServerId};
 
 		this.callParent(arguments);
+		
     }
 
 

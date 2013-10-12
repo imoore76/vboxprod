@@ -25,7 +25,7 @@ Ext.define('vcube.controller.VMTabConsole', {
 	        	}
 	        },
         	'viewport > NavTree' : {
-        		select: this.onSelectItem
+        		selectionchange: this.onSelectionChange
         	}
         });
         
@@ -37,7 +37,11 @@ Ext.define('vcube.controller.VMTabConsole', {
     	
     },
     
-    onSelectItem: function(row, record) {
+    /* An selection in the tree has changed */
+    onSelectionChange: function(panel, records) {
+
+    	if(records.length) record = records[0];
+    	else return;
     	
     	// Only load if VM is selected
     	if(!record || record.raw.data._type != 'vm')

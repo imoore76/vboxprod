@@ -39,25 +39,29 @@ Ext.define('vcube.controller.VMTabTasksAndEvents', {
     			}
         	},
         	'viewport > NavTree' : {
-        		select: this.onSelectItem
+        		selectionchange: this.onSelectionChange
         	}
         });
 
     	this.callParent(arguments);
     },
     
-    /* When item is selected */
-    onSelectItem: function(row, record) {
+    /* An selection in the tree has changed */
+    onSelectionChange: function(panel, records) {
     	
     	this.dirty = true;
     	
-    	// Only load if VM is selected
-    	if(!record || record.raw.data._type != 'vm')
-    		return;
-
-    	this.selectedVMId = record.raw.data.id;
+    	if(records.length && records[0].raw.data._type == 'vm') {
     	
-    	this.populate();
+    		this.selectedVMId = record.raw.data.id;
+    		this.populate();    		
+
+    	} else {
+    		
+    		this.selectedVMId;
+    	}
+    	
+    	
     },
     
     /* When tab is shown */

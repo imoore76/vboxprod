@@ -45,14 +45,13 @@ Ext.define('vcube.view.ServerTabConnector', {
 					bodyStyle: { background: '#fff' },
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
-				notifyEvents: ['MachineStateChanged'],
+				notifyEvents: ['MachineStateChanged','MachineRegistered'],
 				onEvent: function(event, recordData) {
 					return Ext.Object.merge({},
 							vcube.view.ServerTabConnector.sections.vms,
 							{'rows': vcube.view.ServerTabConnector.sections.vms.rows(recordData)});
 				},
 				rows: function(data) {
-					
 					
 					var rows = [], states = {},
 						vmList = vcube.vmdatamediator.getVMDataByFilter(function(vm){return vm.connector_id == data.id;});
@@ -129,14 +128,35 @@ Ext.define('vcube.view.ServerTabConnector', {
     	border: false,
     	defaults: { border: false },
     	items: [{
-    	    itemId: 'infopane',
-    	    tpl: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 style="float:left; margin-right: 20px;" />'+
-    	    	'<div><h3 align="left" style="display: inline-block">'+
-    	    		'{[Ext.String.htmlEncode(values.name)]} @ {location} - ({[vcube.app.constants.CONNECTOR_STATES_TEXT[values.status]]})'+
-    	    		'</h3>'+
-    	    	'<tpl if="status_text.length"> - {status_text}</tpl>'+
-    	    	'</div><div>{[Ext.String.htmlEncode(values.description)]}</div>'+
-    	    	'<div style="padding: 20px"> </div>'
+    		layout: 'hbox',
+    		defaults: { border: false },
+    		items: [{
+    			layout: {
+    				type: 'vbox',
+    				align: 'stretch'
+    			},
+    			defaults: { border: false },
+    			items: [{
+    				html: '<img src="images/vbox/OSE/VirtualBox_cube_42px.png" height=64 width=64 />' 
+    			},{
+					xtype: 'button',
+					text: 'Edit',
+					border: true,
+					margin: '4 0 0 0 ',
+					itemId: 'editConnector' 					
+    			}]
+    		},{
+    			
+    			itemId: 'infopane',
+    			flex: 1,
+    			margin: '0 0 10 10',
+    			tpl: '<div><h3 align="left" style="display: inline-block">'+
+	    			'{[Ext.String.htmlEncode(values.name)]} @ {location} - ({[vcube.app.constants.CONNECTOR_STATES_TEXT[values.status]]})'+
+	    			'</h3>'+
+	    			'<tpl if="status_text.length"> - {status_text}</tpl>'+
+	    			'</div><div>{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</div>'+
+    			'<div style="padding: 20px"> </div>'
+    		}]
     	},{
     		itemId: 'sectionspane'
     	}]

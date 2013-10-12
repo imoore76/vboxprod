@@ -28,19 +28,31 @@ Ext.define('vcube.controller.MainPanel', {
         /* Tree events */
         this.control({
         	'NavTree' : {
-        		select: this.selectItem
+        		selectionchange: this.onSelectionChange
         	}
         });
     },
     
-    /* An item is selected */
-    selectItem: function(row,record,index,eOpts) {
+    /* An selection in the tree has changed */
+    onSelectionChange: function(panel, records) {
     	
     	var welcome = this.getWelcomeView();
     	var groupTabs = this.getGroupTabsView();
     	var vmTabs = this.getVMTabsView();
     	var serverTabs = this.getServerTabsView();
     	
+    	if(records.length) {
+    		record = records[0];
+    	} else {
+    		
+    		if(welcome.isVisible()) return;
+    		serverTabs.hide();
+    		groupTabs.hide();
+    		vmTabs.hide();
+    		welcome.show();
+    		return;
+
+    	}
     		
     	// VM selected
     	if(record.raw.data._type == 'vm') {
@@ -68,16 +80,8 @@ Ext.define('vcube.controller.MainPanel', {
     		vmTabs.hide();
     		groupTabs.hide();
     		serverTabs.show();
+    		    		
     		
-    		
-    		
-    	}
-    	// Show welcome
-    	else {
-			if(welcome.isVisible()) return;
-			groupTabs.hide();
-			vmTabs.hide();
-			welcome.show();
     	}
     }
     

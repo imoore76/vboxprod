@@ -26,10 +26,21 @@ Ext.define('vcube.controller.TasksAndEventsMain', {
     	// Populate when app starts
     	this.application.on({
     		'start' : this.populate,
+    		'ConnectorUpdated': this.onConnectorUpdated,
     		scope: this
     	});
     	
     	this.callParent(arguments);
+    },
+    
+    onConnectorUpdated: function() {
+    	this.taskStore.each(function(s){
+    		s.set('connector', s.get('connector'));
+    	});
+    	this.eventStore.each(function(s){
+    		s.set('connector', s.get('connector'));
+    	});
+
     }
 });
 

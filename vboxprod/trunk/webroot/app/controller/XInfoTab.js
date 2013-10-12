@@ -50,10 +50,9 @@ Ext.define('vcube.controller.XInfoTab', {
     /* Watch for events */
     init: function(){
     	
-    	/* Non-primative types .. */
         this.control({
         	'viewport > NavTree' : {
-        		select: this.onSelectItem
+        		selectionchange: this.onSelectionChange
         	}
         });
         
@@ -131,23 +130,29 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     },
 
-    /* When item is selected */
-    onSelectItem: function(row, record) {
-    	
-    	this.dirty = true;
-    	
-    	// Only load if Server is selected
-    	if(!record || record.raw.data._type != this.selectionItemType)
-    		return;
+    /* An selection in the tree has changed */
+    onSelectionChange: function(panel, records) {
 
-    	// Update node id
-    	this.selectionNodeId = record.get('id');
-    	
-    	// Update selection item id
-    	this.selectionItemId = record.raw.data.id;
-    	
-    	// Populate
-    	this.populate(record.raw.data);
+    	this.dirty = true;
+
+    	if(records.length && record.raw.data._type == this.selectionItemType) {
+    		
+    		// Update node id
+    		this.selectionNodeId = record.get('id');
+    		
+    		// Update selection item id
+    		this.selectionItemId = record.raw.data.id;
+    		
+    		// Populate
+    		this.populate(record.raw.data);
+
+    	} else {
+
+    		// null these out
+    		this.selectionNodeId = this.selectionItemId = null;
+
+    	}
+
     },
     
     /* When a redraw event is encountered, a section is redrawn */
@@ -230,7 +235,7 @@ Ext.define('vcube.controller.XInfoTab', {
 	    		
 	    		sectionsPane.insert(idx, Ext.create('vcube.widget.SectionTable',{
 	    			sectionCfg: self.sectionConfig[section.itemId],
-	    			'data':Ext.Object.merge({},data,recordData),
+	    			'data':Ext.Object.merge({},recordData,data),
 	    			'name':section.itemId}
 	    		));		
 	    	});

@@ -40,9 +40,9 @@ Ext.define('vcube.controller.NavTree', {
 		/* Tree events */
 		this.control({
 			'viewport > NavTree' : {
-				select : this.selectItem,
 				render: function(tv) {
 					tv.getView().on('drop', this.itemDropped, this);
+					this.selectionModel = tv.getView().getSelectionModel();
 				}
 			}
 		});
@@ -56,12 +56,16 @@ Ext.define('vcube.controller.NavTree', {
 	rootNode : null,
 	serversNode : null,
 	vmsNode : null,
+	selectionModel: null,
 
 	/*
 	 * App Events
 	 */
 	onMachinesAdded: function(eventData) {
 
+		var sortIds = {};
+		var sortList = [];
+		
 		for ( var i = 0; i < eventData.machines.length; i++) {
 
 			appendTarget = (eventData.machines[i].group_id ? this.navTreeStore.getNodeById('vmgroup-' + eventData.machines[i].group_id) : this.vmsNode);
@@ -70,8 +74,17 @@ Ext.define('vcube.controller.NavTree', {
 				appendTarget = this.vmsNode;
 
 			appendTarget.appendChild(appendTarget.createNode(this.createVMNodeCfg(eventData.machines[i])));
+			
+			if(!sortIds[appendTarget.id]) {
+				sortList.push(appendTarget);
+				sortIds[appendTarget.id] = true;
+			}
 
 
+		}
+		
+		for(var i = 0; i < sortList.length; i++) {
+			sortList[i].sort(this.sortCmp, false);
 		}
 	},
 
@@ -91,8 +104,7 @@ Ext.define('vcube.controller.NavTree', {
 		
 		if(!targetGroup || (eventData.group == targetGroup.raw.data.group_id)) return;
 		
-		targetVM = targetVM.remove(false);
-		targetGroup.appendChild(targetVM);
+		targetGroup.appendChild(targetVM.remove(false));
 		
 		targetGroup.sort(this.sortCmp, false);
 	},
@@ -233,7 +245,7 @@ Ext.define('vcube.controller.NavTree', {
 			leaf : true,
 			allowDrag: false,
 			allowDrop: false,
-			text : data.name
+			text : Ext.String.htmlEncode(data.name)
 					+ ' (<span class="navTreeServerStatus">'
 					+ vcube.app.constants.CONNECTOR_STATES_TEXT[data.status]
 					+ '</span>)',
@@ -276,7 +288,7 @@ Ext.define('vcube.controller.NavTree', {
 		return {
 			iconCls : 'navTreeIcon',
 			leaf : false,
-			text : data.name,
+			text : Ext.String.htmlEncode(data.name),
 			expanded: true,
 			id : 'vmgroup-' + data.id,
 			data : data
@@ -328,13 +340,6 @@ Ext.define('vcube.controller.NavTree', {
 
 	},
 
-	/* An item is selected */
-	selectItem : function(row, record, index, eOpts) {
-		// console.log("Record");
-		// console.log(record);
-	},
-	
-	
 
 	/* Populate navigation tree */
 	populateTree : function() {

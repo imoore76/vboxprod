@@ -18,6 +18,8 @@ Ext.application({
     
     /* Various utils and scripts */
     requires: ['vcube.data.reader.Json', 'vcube.data.proxy.Ajax', 'Ext.ux.Deferred',
+               'Ext.ux.form.plugin.FieldHelpText',
+               'vcube.ExtPatches.ExtZIndexManager',
                'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener',
                'vcube.previewbox'],
     
@@ -31,13 +33,14 @@ Ext.application({
                   'ServerTabConnector', 'ServerTabHost', 'ServerTabTasksAndEvents',
                   // VM tabs
                   'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabTasksAndEvents','VMTabConsole'
+                  
     ],
     
     /* Stores */
     stores: ['Events','Tasks'],
     
     /* Login window */
-    views: ['Login'],
+    views: ['Login','ConnectorAddEdit'],
     
     // Load mask created on app init
     loadMask: null,
@@ -115,11 +118,20 @@ Ext.application({
 
     },
     
+    onConnectorUpdated: function(eventData) {
+    	this.serverStore.getById(eventData.connector_id).set(eventData.connector);
+    },
+    
     /**
      * Main application launch
      */
     launch: function() {
 
+    	
+    	this.on({
+    		'ConnectorUpdated': this.onConnectorUpdated,
+    		scope: this
+    	});
     	
     	// Create some shortcuts
     	vcube.app = this;

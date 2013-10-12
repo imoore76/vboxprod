@@ -375,7 +375,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
         		click: this.onButtonClick
         	},
         	'viewport > #MainPanel > VMTabs > VMTabSnapshots > treepanel' : {
-        		select: this.updateButtons
+        		selectionchange: this.updateButtons
         	}
         });
         
@@ -391,6 +391,9 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     /* When a toolbar button is clicked */
     onButtonClick: function(btn) {
 
+    	if(!this.snapshotTree.getView().getSelectionModel().selected.length)
+    		return;
+    	
     	vcube.controller.VMTabSnapshots.snapshotActions[btn.itemId].click(
     			this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw,
     			vcube.vmdatamediator.getVMData(this.selectionItemId));
@@ -588,6 +591,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     		return;
     	}
     	
+    	this.snapshotTree.getView().getSelectionModel().deselectAll();
     	this.updateButtons();
 
     	// Data is no longer dirty

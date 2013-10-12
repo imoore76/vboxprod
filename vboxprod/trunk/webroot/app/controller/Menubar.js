@@ -24,9 +24,6 @@ Ext.define('vcube.controller.Menubar', {
         
         /* Tree events */
         this.control({
-        	'NavTree' : {
-        		select: this.selectItem
-        	},
         	'viewport > Menubar menuitem' : {
         		click: this.itemClicked
         	}
@@ -47,11 +44,7 @@ Ext.define('vcube.controller.Menubar', {
     	}
     },
     
-    /* An item is selected */
-    selectItem: function(row,record,index,eOpts) {
-    	//console.log(record);
-    },
-    
+ 
     /* Populate navigation tree with groups and VMs */
     updateLogout: function() {
     	this.getLogoutItem().setText('Logout - ' + (this.application.session.user.name ? this.application.session.user.name : this.application.session.user.userid));

@@ -212,7 +212,7 @@ Ext.define('vcube.view.VMTabSummary', {
     				width: '100%',
     				tpl: new Ext.XTemplate('<table style="width:100%"><tr><td><h3 align="left" style="margin-left: 10px">{name}</h3><div></td>'+
     						'<td width="1%"><div align="center">{[(values.icon ? \'<img src="{values.icon}" style="width:64px;height:64px;display:block;"/>Change Icon\' : \'Set Icon\')]}</div></td></tr>'+
-    						'<tr><td colspan=2>{description}</td></tr></table>')
+    						'<tr><td colspan=2>{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</td></tr></table>')
     			},{
     				height: 20,
     				html: '',

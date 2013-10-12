@@ -28,11 +28,11 @@ Ext.define('vcube.view.Login', {
     	xtype: 'form',
     	
         labelWidth:80,
-        url:'login.asp', 
         frame:true, 
         defaultType:'textfield',
         monitorValid:true,
         buttonAlign:'center',
+
         items:[{
             fieldLabel:'Username', 
             name:'loginUsername', 

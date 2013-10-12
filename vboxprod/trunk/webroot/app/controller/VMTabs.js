@@ -26,15 +26,18 @@ Ext.define('vcube.controller.VMTabs', {
         /* Tree events */
         this.control({
         	'viewport > NavTree' : {
-        		select: this.selectItem
+        		selectionchange: this.onSelectionChange
         	}
         });
         
     },
     
-    /* An item is selected */
-    selectItem: function(row,record,index,eOpts) {
+    /* An selection in the tree has changed */
+    onSelectionChange: function(panel, records) {
 
+    	if(records.length) record = records[0];
+    	else return;
+    	
     	// Only load if VM is selected
     	if(!record || record.raw.data._type != 'vm')
     		return;

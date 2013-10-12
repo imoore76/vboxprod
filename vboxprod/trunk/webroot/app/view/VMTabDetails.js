@@ -212,8 +212,6 @@ Ext.define('vcube.view.VMTabDetails', {
 									medium = medium.base;
 								}
 								
-								console.log(medium);
-
 								portDesc = vcube.utils.vboxMedia.mediumPrint(medium,false,it);
 
 								rows[rows.length] = {

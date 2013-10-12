@@ -13,6 +13,7 @@ class vboxRPCClientPool(threading.Thread):
     clients = []
     running = False
     
+    
     def __init__(self, server, threads):
         
         for i in range(0,threads):
@@ -82,6 +83,8 @@ class vboxRPCClient(threading.Thread):
     listener = False
     listenFor = []
     
+    state = -1
+    
     connectionRetryInterval = 10
     
         
@@ -94,10 +97,18 @@ class vboxRPCClient(threading.Thread):
         self.id = self.server['id']
         
         # Initial state is disconnected
-        self.onStateChange(self.id, constants.CONNECTOR_STATES['DISCONNECTED'], '')
+        self.setState(constants.CONNECTOR_STATES['DISCONNECTED'], '')
                 
         threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
         
+        
+    def setState(self, state, message):
+        
+        if self.state == state: return
+        
+        self.state = state
+        
+        self.onStateChange(self.id, state, message)
         
     def connect(self):
         """
@@ -113,7 +124,7 @@ class vboxRPCClient(threading.Thread):
             self.stop()
 
             # Error state
-            self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], "Failed to parse server location %s" %(self.server['location']))
+            self.setState(constants.CONNECTOR_STATES['ERROR'], "Failed to parse server location %s" %(self.server['location']))
             
             return
         
@@ -133,12 +144,12 @@ class vboxRPCClient(threading.Thread):
             logger.error("%s %s" %(self.server['location'], str(e)))
 
             # Error state
-            self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], str(e))
+            self.setState(constants.CONNECTOR_STATES['ERROR'], str(e))
             
 
     def register(self):
         
-        self.onStateChange(self.id, constants.CONNECTOR_STATES['REGISTERING'], '')
+        self.setState(constants.CONNECTOR_STATES['REGISTERING'], '')
         
         """ Set service """
         self.sock.sendall(json.dumps(self.genRPCCallMsg('setService', {'service':self.service}))+"\n")
@@ -186,7 +197,7 @@ class vboxRPCClient(threading.Thread):
         self.running = False
         self.disconnect()
         
-        self.onStateChange(self.id, constants.CONNECTOR_STATES['DISCONNECTED'], '')
+        self.setState(constants.CONNECTOR_STATES['DISCONNECTED'], '')
 
     @property
     def available(self):
@@ -271,7 +282,7 @@ class vboxRPCClient(threading.Thread):
                 
                 # Error state
                 if self.running:
-                    self.onStateChange(self.id, constants.CONNECTOR_STATES['ERROR'], 'Connection closed - will attempt to reconnect')
+                    self.setState(constants.CONNECTOR_STATES['ERROR'], 'Connection closed - will attempt to reconnect')
     
                 self.disconnect()
                 
@@ -320,7 +331,7 @@ class vboxRPCClient(threading.Thread):
                         logger.exception(e)
                         continue
                     
-                    self.onStateChange(self.id, constants.CONNECTOR_STATES['RUNNING'], '')
+                    self.setState(constants.CONNECTOR_STATES['RUNNING'], '')
                 
             
             message = self.waitResponse()
@@ -378,6 +389,7 @@ class vboxRPCEventListener(threading.Thread):
         
         self.server = server
         
+        print "here.....asdfpoaisjdfpoiajsdpofijaspodifjsdfkj"
         self.id = server['id']
                 
         self.onEvent = onEvent

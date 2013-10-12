@@ -36,11 +36,59 @@ Ext.define('vcube.controller.ServerTabConnector', {
         this.control({
 	        'viewport > #MainPanel > ServerTabs > ServerTabConnector' : {
 	        	render: this.onTabRender
+	        },
+	        'viewport > #MainPanel > ServerTabs > ServerTabConnector #editConnector' : {
+	        	click: this.editConnector
 	        }
         });
         
         this.callParent();
         
+    },
+    
+    /* Edit connector */
+    editConnector: function() {
+    	
+    	var self = this;
+    	
+    	Ext.create('vcube.view.ConnectorAddEdit',{
+    		title: 'Edit Connector',
+    		listeners: {
+    			
+    			/* Set values when window is shown */
+    			show: function(pane) {
+    				
+    				var connectorData = this.getNavTreeView().getStore().getById(this.selectionNodeId).raw.data;
+    				pane.down('#form').getForm().setValues(
+						Ext.Object.merge({},connectorData,{
+							status: (connectorData.status > vcube.app.constants.CONNECTOR_STATES['DISABLED'] ? vcube.app.constants.CONNECTOR_STATES['DISCONNECTED'] : connectorData.status)  
+						})
+    				);
+    				
+    				/* Save function */
+    				pane.down('#save').on('click',function(btn){
+    					
+    					var win = btn.up('.window');
+    					
+    					win.setLoading(true);
+    					
+    					vcube.utils.ajaxRequest('connectors/updateConnector',btn.up('.form').getForm().getValues(), function(data) {
+    						if(data == true) {
+    							win.close();
+    							return;
+    						}
+    						win.setLoading(false);
+    					},function(){
+    						win.setLoading(false);
+    					});
+    				});
+    				
+    			},
+    			scope: this
+    		}
+    	}).show();
+    	
+    	
     }
 
 });

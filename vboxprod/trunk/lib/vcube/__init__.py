@@ -583,10 +583,26 @@ class Application(threading.Thread):
             self.virtualMachinesLock.acquire(True)
             try:
                 if event['registered']:
+                    
                     vm = event['enrichmentData']
                     vm['connector_id'] = event['connector_id']
                     self.virtualMachines[vm['id']] = vm
+
+                    self.pumpEvent({
+                        'eventSource' : 'vcube',
+                        'eventType' : 'MachinesAdded',
+                        'connector_id' : event['connector_id'],
+                        'machines' : [vm]
+                    })
+
                 else:
+                    self.pumpEvent({
+                        'eventSource' : 'vcube',
+                        'eventType':'MachinesRemoved',
+                        'connector' : event['connector_id'],
+                        'machines' : [event['machineId']]
+                    })
+
                     del self.virtualMachines[event['machineId']]
             finally:
                 self.virtualMachinesLock.release()
@@ -608,8 +624,9 @@ class Application(threading.Thread):
             """
             self.virtualMachinesLock.acquire(True)
             try:
-                self.virtualMachines[event['machineId']]['state']  = event['state']
-                self.virtualMachines[event['machineId']]['lastStateChange'] = event['enrichmentData']['lastStateChange']
+                if self.virtualMachines.get(event['machineId'], None) is not None:
+                    self.virtualMachines[event['machineId']]['state']  = event['state']
+                    self.virtualMachines[event['machineId']]['lastStateChange'] = event['enrichmentData']['lastStateChange']
             finally:
                 self.virtualMachinesLock.release()
         

@@ -39,9 +39,6 @@ Ext.application({
     /* Stores */
     stores: ['Events','Tasks'],
     
-    /* Login window */
-    views: ['Login','ConnectorAddEdit'],
-    
     // Load mask created on app init
     loadMask: null,
     

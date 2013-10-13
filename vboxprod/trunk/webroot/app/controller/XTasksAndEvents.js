@@ -13,8 +13,6 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     /* Store limit ? */
     storeLimit: 0,
     
-    /* Filter for events */
-    filter: function() { return true; },
     
     /* Watch for events */
     init: function() {
@@ -32,40 +30,47 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     /* These will be filled later */
     eventStore : null,
     taskStore: null,
+        
     
-    
+    /* Populate stores */
     populate: function() {
+    	
     	this.eventStore.removeAll();
     	this.taskStore.removeAll();
+    	
     	this.eventStore.load();
     	this.taskStore.load();
+    	
     },
     
+    /* Trim store if there is a limit set */
     trimStore: function(store) {
     	if(!this.storeLimit) return;    	
     	store.remove(store.getRange(this.storeLimit));
     },
     
+    /* Event log entry event */
     onEventLogEntry: function(event) {
     	
-    	if(!(this.eventStore && this.filter(event.eventData))) return;
-    	
+    	if(!(this.eventStore)) return;
     	this.eventStore.insert(0,event.eventData);
     	this.trimStore(this.eventStore);
     },
     
+    /* Task log entry event */
     onTaskLogEntry: function(event) {
     	
-    	if(!(this.taskStore && this.filter(event.eventData))) return;
+    	if(!(this.taskStore)) return;
     	
     	this.taskStore.insert(0,event.eventData);
     	this.trimStore(this.taskStore);
     	
     },
 
+    /* Task log update event */
     onTaskLogUpdate: function(event) {
 
-    	if(!(this.taskStore && this.filter(event.eventData))) return;
+    	if(!(this.taskStore)) return;
 
     	var record = this.taskStore.getById(event.eventData.id);
     	if(!record) {

@@ -68,6 +68,12 @@ Ext.define('vcube.view.ServerTabConnector', {
 							data: states[state] + ' ' + vcube.utils.vboxVMStates.convert(state)
 						});
 					}
+					if(rows.length == 0) {
+						rows = [{
+							title: '',
+							data: '0 Virtual Machines'
+						}];
+					}
 					return rows;
 				}
 			},

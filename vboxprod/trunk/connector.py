@@ -1315,6 +1315,47 @@ class vboxConnector(object):
         return True
 
     """
+        Save virtual machine summary (name,icon,description)
+    """
+    def remote_machineSaveSummary(self, args):
+
+        session = None
+                
+        # create session and lock machine
+        """ @machine IMachine """
+        machine = self.vbox.findMachine(args['id'])
+
+        try:        
+
+            if (args.get('description',None) is not None and machine.description != args.get('description','')) or (args.get('name',None) is not None and machine.name != args.get('name','')):
+                
+                vmRunning = machine.state in [vboxMgr.constants.MachineState_Running, vboxMgr.constants.MachineState_Paused, vboxMgr.constants.MachineState_Saved]
+
+                session = vboxMgr.mgr.getSessionObject(self.vbox)
+                
+                machine.lockMachine(session, (vboxMgr.constants.LockType_Shared if vmRunning else vboxMgr.constants.LockType_Write))
+            
+                if args.get('description', None) is not None and machine.description != args.get('description',''):
+                    session.machine.description = args.get('description','')
+                    
+                if args.get('name',None) is not None and machine.name != args.get('name'):
+                    session.machine.name = args.get('name')
+                    
+                session.machine.saveSettings()
+                session.unlockMachine()
+                session = None
+            
+            """ Custom Icon """
+            if args.get('icon', None) is not None and machine.getExtraData(vboxConnector.iconKey) != args.get('icon'):
+                machine.setExtraData(vboxConnector.iconKey, args['icon'])
+
+        finally:
+            if session:
+                session.unlockMachine()
+                
+        return True
+        
+    """
      * Save virtual machine settings.
      * 
      * @param array args array of arguments. See def body for details.

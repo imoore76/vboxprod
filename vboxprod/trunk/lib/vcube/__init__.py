@@ -261,10 +261,13 @@ class Application(threading.Thread):
 
         try:
             task = TaskLog()
-            task.started = int(time.time())
+
+            task.started = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
             task.status = taskData.get('status', constants.TASK_STATUS['STARTED'])
-            task.started = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            
+            if task.status == constants.TASK_STATUS['COMPLETED']:
+                task.completed = task.started
             
             for attr in ['name','machine','details','connector','user','category']:
                 setattr(task, attr, taskData.get(attr,None))

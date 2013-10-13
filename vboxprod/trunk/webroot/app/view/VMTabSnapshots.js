@@ -51,6 +51,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 	title: 'Snapshots',
 	icon: 'images/vbox/take_snapshot_16px.png',
 	layout: 'fit',
+	frame: true,
 	items: [{
 		xtype: 'treepanel',
 		itemId: 'snapshottree',

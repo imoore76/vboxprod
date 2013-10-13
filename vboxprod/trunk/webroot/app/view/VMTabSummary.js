@@ -190,11 +190,8 @@ Ext.define('vcube.view.VMTabSummary', {
     			    background: '#fff'
     			},
     			html: '<div id="vboxPreviewBox" />',
-    			border: true
-    		},{
-				width: 20,
-				html: '',
-				border: false
+    			border: true,
+    			margin: '0 20 0 0',
 			},{
     			xtype: 'panel',
     			layout: {
@@ -210,25 +207,26 @@ Ext.define('vcube.view.VMTabSummary', {
     				padding: 0,
     				bodyStyle: { background: 'transparent' },
     				width: '100%',
-    				tpl: new Ext.XTemplate('<table style="width:100%"><tr><td><h3 align="left" style="margin-left: 10px">{name}</h3><div></td>'+
-    						'<td width="1%"><div align="center">{[(values.icon ? \'<img src="{values.icon}" style="width:64px;height:64px;display:block;"/>Change Icon\' : \'Set Icon\')]}</div></td></tr>'+
-    						'<tr><td colspan=2>{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</td></tr></table>')
+    				tpl: new Ext.XTemplate('<table><tr valign="top"><td><h3 align="left">{name}</h3><div></td>'+
+    						'<td width="100%; padding: 4px;"><div style="overflow: auto; height:64px; font-size: 11px; margin-left: 10px; margin-right: 10px;">{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</td>'+
+    						'<td width="68"><div align="center">{[(values.icon ? \'<img src="\' + values.icon +\'" style="width:64px;height:64px;display:block;"/>\' : \'No Icon\')]}</div></td>'+
+    						'</tr></table>')
     			},{
-    				height: 20,
-    				html: '',
-    				border: false
+    				items: [{
+    					xtype: 'button',
+    					text: 'Edit',
+    					itemId: 'edit'
+    				}]
     			},{
     				xtype: 'panel',
-    				itemId: 'sectionspane'    				
+    				itemId: 'sectionspane',
+    				margin: '10 0 0 0'
     			}]
-    		},{
-				width: 20,
-				html: ' ',
-				border: false
     		},{
     			title: 'Actions',
     			layout: 'vbox',
     			itemId: 'vmactions',
+    			margin: '0 0 0 20',
     			bodyStyle: { background: '#fff' },
     			border: true,
     			width: 200,

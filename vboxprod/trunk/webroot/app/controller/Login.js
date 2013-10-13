@@ -5,6 +5,8 @@ Ext.define('vcube.controller.Login', {
 	
     extend: 'Ext.app.Controller',
     
+    views: ['Login'],
+    
     refs : [{
     	selector: 'Login',
     	ref: 'LoginWindow',

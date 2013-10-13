@@ -6,6 +6,7 @@ Ext.define('vcube.view.TasksAndEventsTab', {
     alias: 'widget.TasksAndEventsTab',
     taskDetailsColumnWidth: 0,
     filter: null,
+    frame: true,
     title: 'Tasks and Events',
     requires: ['vcube.grid.column'],
     stores: ['Tasks','Events'],

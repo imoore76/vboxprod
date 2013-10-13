@@ -2,8 +2,10 @@
  * VM summary tab controller
  */
 Ext.define('vcube.controller.VMTabSummary', {
-    extend: 'vcube.controller.XInfoTab',
-    	
+
+	extend: 'vcube.controller.XInfoTab',
+    
+	views: ['VMEditSummary'],
 
     /* Watch for events */
     init: function(){
@@ -15,7 +17,7 @@ Ext.define('vcube.controller.VMTabSummary', {
     	this.selectionItemType = 'vm';
     	
     	/* Repopulate on Events*/
-    	this.repopulateOn = ['MachineDataChanged'];
+    	this.repopulateOn = ['MachineDataChanged','MachineIconChanged'];
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'machineId';
@@ -24,7 +26,7 @@ Ext.define('vcube.controller.VMTabSummary', {
         this.populateData = function(data) {
         	return vcube.vmdatamediator.getVMDataCombined(data.id);
         };
-
+        
     	
 		// Special case for VM actions
 		this.application.on({
@@ -40,11 +42,75 @@ Ext.define('vcube.controller.VMTabSummary', {
 	        },
 	        'viewport > #MainPanel > VMTabs > VMTabSummary #vmactions > button' : {
 	        	click: this.onActionButtonClick
-        	}
+        	},
+	        'viewport > #MainPanel > VMTabs > VMTabSummary #edit' : {
+	        	click: this.editVM
+	        }
+
         });
         
         this.callParent();
         
+    },
+    
+    /* Edit vm */
+    editVM: function() {
+    	
+    	var self = this;
+    	
+    	Ext.create('vcube.view.VMEditSummary',{
+    		listeners: {
+    			
+    			/* Set values when window is shown */
+    			show: function(win) {
+    				
+    				/* Save function */
+    				win.down('#save').on('click',function(btn){
+    					
+    					win.setLoading(true);
+    					
+    					vcube.utils.ajaxRequest('vbox/machineSaveSummary',Ext.apply(btn.up('.form').getForm().getValues(), vcube.utils.vmAjaxParams(self.selectionItemId)), function(data) {
+    						if(data == true) {
+    							win.close();
+    							return;
+    						}
+    						win.setLoading(false);
+    					},function(){
+    						win.setLoading(false);
+    					});    						
+    				});
+
+    				
+    				
+    				/* Load data */
+    				win.setLoading(true);
+
+    				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(this.selectionItemId)).done(function(data){
+    					
+    					win.setLoading(false);
+
+    					if(!vcube.utils.vboxVMStates.isEditable(data)) {
+    						win.down('#vmname').disable();
+    					}
+
+    					win.down('#form').getForm().setValues({
+    						id: data.id,
+    						icon: data.icon,
+    						description: data.description,
+    						name: data.name
+    					});
+    					
+    				
+    				}).fail(function(){
+    					win.setLoading(false);
+    				});
+    				
+    			},
+    			scope: this
+    		}
+    	}).show();
+    	
+    	
     },
     
     /* Holds preview dimension cache */

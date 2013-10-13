@@ -6,6 +6,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
     alias: 'widget.VirtualMachinesList',
     title: 'Virtual Machines',
     icon: 'images/vbox/machine_16px.png',
+    frame: true,
     defaults: { viewConfig: { markDirty: false } },
     items: [{
     	xtype: 'gridpanel',

@@ -29,7 +29,7 @@ Ext.define('vcube.grid.column.ServerColumn', {
 	dataIndex: 'connector',
 	renderer: function(val) {
 		try {
-			return '<div class="activeConnector-'+val+'-Name">'+Ext.String.htmlEncode(vcube.app.serverStore.getById(val).get('name'))+'</div>';    					
+			return '<span class="activeLabel-connector-'+val+'-name">'+Ext.String.htmlEncode(vcube.app.serverStore.getById(val).get('name'))+'</span>';    					
 		} catch (err) {
 			return 'Unknown(' + val + ')';
 		}
@@ -109,7 +109,7 @@ Ext.define('vcube.grid.column.MachineColumn', {
 	renderer: function(vmid) {
 		if(vmid) {
 			try {
-				return vcube.vmdatamediator.getVMData(vmid).name;
+				return '<span class="activeLabel-vm-'+vmid+'-name">' + vcube.vmdatamediator.getVMData(vmid).name + '</span>';
 			} catch(err) {
 				return vmid;
 			}

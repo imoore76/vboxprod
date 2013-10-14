@@ -22,7 +22,7 @@ Ext.define('vcube.controller.ServerTabHost', {
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
-        	if(data.status != vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
+        	if(data.state != vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
         		return null;
         	}
         	return vcube.utils.ajaxRequest('vbox/hostGetDetails',{connector:data.id})

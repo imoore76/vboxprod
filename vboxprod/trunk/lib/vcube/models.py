@@ -53,8 +53,8 @@ class Connector(MySqlModel):
     name = CharField(unique = True, max_length=32, null = False)    
     location = CharField(max_length=256, null = False)
     description = CharField(max_length=256, null = True, default='')
-    status = IntegerField(default = 0)
-    status_text = CharField(max_length=256, null = True, default='')
+    state = IntegerField(default = 0)
+    state_text = CharField(max_length=256, null = True, default='')
     
 
 class TaskLog(MySqlModel):

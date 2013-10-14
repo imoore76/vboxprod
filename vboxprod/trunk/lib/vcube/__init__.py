@@ -525,7 +525,7 @@ class Application(threading.Thread):
                 Connector state change
             """
             
-            if event['status'] == constants.CONNECTOR_STATES['RUNNING']:
+            if event['state'] == constants.CONNECTOR_STATES['RUNNING']:
                 """ Running """
                 
                 vmListAdded = []
@@ -669,7 +669,7 @@ class Application(threading.Thread):
             
         return True
                           
-    def onConnectorStatusChange(self, cid, status, message=''):
+    def onConnectorStatusChange(self, cid, state, message=''):
         
         """
             Pump event to clients first
@@ -678,18 +678,18 @@ class Application(threading.Thread):
             'eventSource' : 'vcube',
             'eventType':'ConnectorStateChanged',
             'connector_id' : cid,
-            'status' : status,
-            'status_text' : message
+            'state' : state,
+            'state_text' : message
         })
         
         logEvent = False
         
         try:
-            c = Connector.get(Connector.id == int(cid) and Connector.status > -1)
-            if int(c.status) != int(status):
+            c = Connector.get(Connector.id == int(cid) and Connector.state > -1)
+            if int(c.state) != int(state):
                 logEvent = True
-            c.status = status
-            c.status_text = message
+            c.state = state
+            c.state_text = message
             c.save()
             
         except Connector.DoesNotExist:
@@ -711,10 +711,10 @@ class Application(threading.Thread):
             
             try:
                 self.logEvent({
-                    'name' : 'Server status changed to ' + constants.CONNECTOR_STATES_TEXT.get(status, 'Unknown'),
+                    'name' : 'Server state changed to ' + constants.CONNECTOR_STATES_TEXT.get(state, 'Unknown'),
                     'details' : message,
                     'connector' : cid,
-                    'severity' : sevLookups.get(status, constants.SEVERITY['INFO']),
+                    'severity' : sevLookups.get(state, constants.SEVERITY['INFO']),
                     'category' : constants.LOG_CATEGORY['CONNECTOR']
                 })
                 
@@ -807,11 +807,11 @@ class Application(threading.Thread):
             self.removeConnector(cid)
             self.addConnector(connector)
             
-        elif int(connector['status']) == -1 and self.connectorEventListeners.get(cid, None):
+        elif int(connector['state']) == -1 and self.connectorEventListeners.get(cid, None):
             """ disabled """
             self.removeConnector(cid)
         
-        elif int(connector['status']) == 0 and not self.connectorEventListeners.get(cid, None):
+        elif int(connector['state']) == 0 and not self.connectorEventListeners.get(cid, None):
             """ enabled """
             self.addConnector(connector)
         
@@ -824,7 +824,7 @@ class Application(threading.Thread):
         self.running = True
         
         # Add connectors
-        for c in list(Connector.select().where(Connector.status > -1).dicts()):
+        for c in list(Connector.select().where(Connector.state > -1).dicts()):
             self.addConnector(c)
 
         

@@ -144,8 +144,8 @@ Ext.application({
     		   {name: 'name', type: 'string'},
     		   {name: 'description', type: 'string'},
     		   {name: 'location', type: 'string'},
-    		   {name: 'status_text', type: 'string'},
-    		   {name: 'status', type: 'int'}
+    		   {name: 'state_text', type: 'string'},
+    		   {name: 'state', type: 'int'}
     		],
     		proxy: {
     			type: 'vcubeAjax',

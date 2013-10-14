@@ -27,7 +27,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
-        	if(data.status == vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
+        	if(data.state == vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
         		return vcube.utils.ajaxRequest('vbox/getStatus',{connector:data.id});
         	} else {
         		return null;
@@ -63,7 +63,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
     				var connectorData = this.getNavTreeView().getStore().getById(this.selectionNodeId).raw.data;
     				pane.down('#form').getForm().setValues(
 						Ext.Object.merge({},connectorData,{
-							status: (connectorData.status > vcube.app.constants.CONNECTOR_STATES['DISABLED'] ? vcube.app.constants.CONNECTOR_STATES['DISCONNECTED'] : connectorData.status)  
+							state: (connectorData.state > vcube.app.constants.CONNECTOR_STATES['DISABLED'] ? vcube.app.constants.CONNECTOR_STATES['DISCONNECTED'] : connectorData.state)  
 						})
     				);
     				

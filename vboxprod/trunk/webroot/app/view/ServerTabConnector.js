@@ -157,9 +157,9 @@ Ext.define('vcube.view.ServerTabConnector', {
     			flex: 1,
     			margin: '0 0 10 10',
     			tpl: '<div><h3 align="left" style="display: inline-block">'+
-	    			'{[Ext.String.htmlEncode(values.name)]} @ {location} - ({[vcube.app.constants.CONNECTOR_STATES_TEXT[values.status]]})'+
+	    			'{[Ext.String.htmlEncode(values.name)]} @ {location} - ({[vcube.app.constants.CONNECTOR_STATES_TEXT[values.state]]})'+
 	    			'</h3>'+
-	    			'<tpl if="status_text.length"> - {status_text}</tpl>'+
+	    			'<tpl if="state_text.length"> - {state_text}</tpl>'+
 	    			'</div><div>{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</div>'+
     			'<div style="padding: 20px"> </div>'
     		}]

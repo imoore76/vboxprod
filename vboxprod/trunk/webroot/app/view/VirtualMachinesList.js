@@ -51,7 +51,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
 	    	  dataIndex: 'lastStateChange'
 	      },{
 	    	  header: 'OS',
-	    	  dataIndex: 'status'
+	    	  dataIndex: 'OSTypeDesc'
 	      },{
 	    	  header: 'Details',
 	    	  dataIndex: 'details',

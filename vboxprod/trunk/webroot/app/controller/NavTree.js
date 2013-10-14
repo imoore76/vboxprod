@@ -177,7 +177,7 @@ Ext.define('vcube.controller.NavTree', {
 		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector_id);
 		if(!serverNode) return;
 		
-		var newServerData = Ext.Object.merge(serverNode.raw.data, {status:eventData.status, status_name:eventData.status_name, status_text: eventData.status_text});
+		var newServerData = Ext.Object.merge(serverNode.raw.data, {state:eventData.state, state_text: eventData.state_text});
 		
 		serverNode.set(this.createServerNodeCfg(newServerData));
 		serverNode.parentNode.sort(this.sortCmp, false);
@@ -247,7 +247,7 @@ Ext.define('vcube.controller.NavTree', {
 			allowDrop: false,
 			text : Ext.String.htmlEncode(data.name)
 					+ ' (<span class="navTreeServerStatus">'
-					+ vcube.app.constants.CONNECTOR_STATES_TEXT[data.status]
+					+ vcube.app.constants.CONNECTOR_STATES_TEXT[data.state]
 					+ '</span>)',
 			data : data,
 			id : 'server-' + data.id

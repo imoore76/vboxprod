@@ -57,7 +57,7 @@ Ext.define('vcube.view.ConnectorAddEdit', {
     		},{
     			xtype: 'combobox',
     			fieldLabel: 'State',
-    			name: 'status',
+    			name: 'state',
     			queryMode: 'local',
     			displayField: 'name',
     			valueField: 'value',

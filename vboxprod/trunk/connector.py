@@ -67,6 +67,7 @@ def _machineGetBaseInfo(machine):
             'OSTypeId' : machine.OSTypeId,
             'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
             'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
+            'currentStateModified': machine.currentStateModified,
             'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
             'icon' : machine.getExtraData(vboxConnector.iconKey),
             'accessible' : True
@@ -96,6 +97,7 @@ def _machineGetBaseInfo(machine):
             'OSTypeDesc' : '',
             'lastStateChange' : 0,
             'sessionState' : 'Unknown',
+            'currentStateModified': True,
             'icon' : '',
             'accessible' : False,
             'accessError': {
@@ -3328,7 +3330,7 @@ class vboxConnector(object):
      """
     def remote_snapshotDelete(self, args):
 
-        progressid, progress = session = None
+        progressid = progress = session = None
         snapshotName = ''
         
         try:

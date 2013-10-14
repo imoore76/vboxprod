@@ -560,17 +560,16 @@ Ext.define('vcube.vmactions',{
 			},
 			click: function(selectionModel) {
 				
-				var buttons = [];
-				
-				buttons = [{
+				var buttons = [{
 					text: vcube.utils.trans('Power Off','UIActionPool'),
 					listeners: {
-						click: function() {
+						click: function(btn) {
 							var vms = vcube.utils.getSelectedVMsData(selectionModel);
 							for(var i = 0; i < vms.length; i++) {
 								if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vcube.utils.vboxVMStates.isPaused(vms[i]) || vcube.utils.vboxVMStates.isStuck(vms[i]))
 									vcube.vmactions.powerAction('powerdown','Power off the selected virtual machines', vms[i]);
 							}
+							btn.up('.window').close();
 						}
 					}
 				}];

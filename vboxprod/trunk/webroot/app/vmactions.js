@@ -10,7 +10,7 @@ Ext.define('vcube.vmactions',{
 			label:vcube.utils.trans('New...','UIActionPool'),
 			icon:'vm_new',
 			icon_16:'new',
-			click: function(fromGroup){
+			action: function(fromGroup){
 				new vboxWizardNewVMDialog((fromGroup ? $(vboxChooser.getSelectedGroupElements()[0]).data('vmGroupPath') : '')).run();
 			}
 		},
@@ -19,7 +19,7 @@ Ext.define('vcube.vmactions',{
 		add: {
 			label:vcube.utils.trans('Add...','UIActionPool'),
 			icon:'vm_add',
-			click:function(){
+			action:function(){
 				vboxFileBrowser($('#vboxPane').data('vboxSystemProperties').defaultMachineFolder,function(f){
 					if(!f) return;
 					var l = new vboxLoader();
@@ -41,7 +41,7 @@ Ext.define('vcube.vmactions',{
 			label : vcube.utils.trans('Start','UIActionPool'),
 			icon : 'vm_start',
 			icon_16 : 'start',
-			click : function (selectionModel) {
+			action : function (selectionModel) {
 			
 				
 				// Should the "First Run" wizard be started
@@ -204,7 +204,7 @@ Ext.define('vcube.vmactions',{
 			label:vcube.utils.trans('Settings...','UIActionPool'),
 			icon:'vm_settings',
 			icon_16:'settings',
-			click:function(){
+			action:function(){
 				
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
 			},
@@ -219,7 +219,7 @@ Ext.define('vcube.vmactions',{
 			icon:'vm_clone',
 			icon_16:'vm_clone',
 			icon_disabled:'vm_clone_disabled',
-			click:function(){
+			action:function(){
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
 			enabled: function (selectionModel) {
@@ -232,7 +232,7 @@ Ext.define('vcube.vmactions',{
 			label:vcube.utils.trans('Refresh','UIVMLogViewer'),
 			icon:'refresh',
 			icon_disabled:'refresh_disabled',
-			click:function(){
+			action:function(){
 				
 				var vmid = vboxChooser.getSingleSelectedId();
 				
@@ -250,7 +250,7 @@ Ext.define('vcube.vmactions',{
 	    remove: {
 			label:vcube.utils.trans('Remove...', 'UIActionPool'),
 			icon:'delete',
-			click:function(){
+			action:function(){
 	
 				///////////////////
 				// Remove VMs
@@ -360,7 +360,7 @@ Ext.define('vcube.vmactions',{
 			label:vcube.utils.trans('Discard saved state...','UIActionPool'),
 			icon:'vm_discard',
 			icon_16:'discard',
-			click:function(){
+			action:function(){
 				
 				var buttons = {};
 				buttons[vcube.utils.trans('Discard','UIMessageCenter')] = function(){
@@ -397,7 +397,7 @@ Ext.define('vcube.vmactions',{
 	    guestAdditionsInstall : {
 	    	label: vcube.utils.trans('Install Guest Additions...','UIActionPool'),
 	    	icon: 'guesttools',
-	    	click: function(vmid, mount_only) {
+	    	action: function(vmid, mount_only) {
 	    		
 	    		if(!vmid)
 	    			vmid = vboxChooser.getSingleSelected().id;
@@ -471,7 +471,7 @@ Ext.define('vcube.vmactions',{
 			label:vcube.utils.trans('Show Log...','UIActionPool'),
 			icon:'show_logs',
 			icon_disabled:'show_logs_disabled',
-			click:function(){
+			action:function(){
 	    		vboxShowLogsDialogInit(vboxChooser.getSingleSelected());
 			},
 			enabled:function(selectionModel){
@@ -487,7 +487,7 @@ Ext.define('vcube.vmactions',{
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
-			click: function() {
+			action: function() {
 	
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
@@ -505,7 +505,7 @@ Ext.define('vcube.vmactions',{
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
-			click: function() {
+			action: function() {
 				var buttons = {};
 				buttons[vcube.utils.trans('ACPI Shutdown','UIMessageCenter')] = function() {
 					$(this).empty().remove();
@@ -541,7 +541,7 @@ Ext.define('vcube.vmactions',{
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
-			click: function() {
+			action: function() {
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vboxVMStates.isRunning(vms[i]))
@@ -558,7 +558,7 @@ Ext.define('vcube.vmactions',{
 			enabled: function(selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
 			},
-			click: function(selectionModel) {
+			action: function(selectionModel) {
 				
 				var buttons = [{
 					text: vcube.utils.trans('Power Off','UIActionPool'),
@@ -602,7 +602,7 @@ Ext.define('vcube.vmactions',{
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
-			click: function() {
+			action: function() {
 				var buttons = {};
 				buttons[vcube.utils.trans('Reset','UIActionPool')] = function() {
 					$(this).remove();
@@ -642,7 +642,7 @@ Ext.define('vcube.vmactions',{
 			icon: 'acpi',
 			icon_disabled:'acpi_disabled',
 			menu: true,
-			click: function () { return true; /* handled by stop context menu */ },
+			action: function () { return true; /* handled by stop context menu */ },
 			enabled: function (selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			}

@@ -296,7 +296,7 @@ class Application(threading.Thread):
             task.status = taskData.get('status', constants.TASK_STATUS['COMPLETED'])
             
             if task.status > 0 and not taskData.get('completed', None):
-                taskDat['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
                 
             for attr in ['name','machine','details','completed']:
                 if taskData.get(attr, None):
@@ -341,13 +341,21 @@ class Application(threading.Thread):
                 
                 if status.get('resultCode', None):
                     taskData['status'] = constants.TASK_STATUS['ERROR']
-                    taskData['details'] = status.get('error', taskData['details'])
+                    taskData['details'] = status.get('error', taskData.get('details','Unknown error'))
                     
                 self.updateTask(task, taskData)
+                
+                status.update({'taskName':task.name,'progress':event['progress']})
+                
+                self.pumpEvent({
+                    'source' : 'vcube',
+                    'eventType' : 'ProgressCompleted',
+                    'eventData' : status
+                })
 
             finally:
                 # remove from list
-                del self.progressOps[pid]
+                del self.progressOps[event['progress']]
 
         else:
             
@@ -517,7 +525,7 @@ class Application(threading.Thread):
             """
                 Update task
             """
-            self.updateTaskProgress(event)
+            self.updateTaskProgress(event)            
             return False
             
         if event['eventType'] == 'ConnectorStateChanged':

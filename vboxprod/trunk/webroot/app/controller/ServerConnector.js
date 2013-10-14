@@ -5,8 +5,6 @@ Ext.define('vcube.controller.ServerConnector', {
 	
     extend: 'vcube.controller.XInfoTab',
     
-    views: ['ConnectorAddEdit'],
-    
     /* Watch for events */
     init: function(){
 
@@ -53,7 +51,7 @@ Ext.define('vcube.controller.ServerConnector', {
     	
     	var self = this;
     	
-    	Ext.create('vcube.view.ConnectorAddEdit',{
+    	Ext.create('vcube.view.ServerConnector.AddEdit',{
     		title: 'Edit Connector',
     		listeners: {
     			

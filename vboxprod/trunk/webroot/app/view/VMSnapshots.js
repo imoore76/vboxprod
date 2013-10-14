@@ -42,6 +42,15 @@ Ext.define('vcube.view.VMSnapshots', {
 							vcube.utils.trans('The current state differs from the state stored in the current snapshot','VBoxSnapshotsWgt')
 							: vcube.utils.trans('The current state is identical to the state stored in the current snapshot','VBoxSnapshotsWgt')))
 				: '');
+		},
+		
+		snapshotNode: function(data, expanded) {
+			return Ext.Object.merge({
+				'loaded' : true,
+				'text': Ext.String.format(vcube.view.VMSnapshots.snapshotTextTpl, Ext.String.htmlEncode(data.name), ''),
+				'icon': 'images/vbox/' + (data.online ? 'online' : 'offline') + '_snapshot_16px.png',
+				'expanded': expanded
+			},data);
 		}
 		
 
@@ -60,39 +69,6 @@ Ext.define('vcube.view.VMSnapshots', {
 		},
 		rootVisible: false,
 		lines: true,
-		store: new Ext.data.TreeStore({
-			clearOnLoad: true,
-			autoLoad: false,
-			autosync: false,
-		    fields: ['id', 
-		             'name', 'description', 'online', 'timeStamp',
-		             'text', 
-		             { name: 'expanded', type: 'boolean', defaultValue: true, persist: true }],
-
-			listeners: {
-								
-				append: function(thisNode,newNode,index,eOpts) {
-					if(newNode.get('id') == 'current') return;
-					newNode.set({
-						'text': Ext.String.format(vcube.view.VMSnapshots.snapshotTextTpl, Ext.String.htmlEncode(newNode.raw.name), ''),
-						'icon': 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png',
-						'expanded': (newNode.raw.children && newNode.raw.children.length)
-					});
-				}
-				
-			},
-			
-			proxy: {
-				type: 'ajax',
-				url: 'vbox/machineGetSnapshots',
-				reader: {
-					type: 'vcubeJsonReader',
-					initialRoot: 'snapshot',
-					asChildren: true
-				}
-			}
-			
-		}),
 		tbar:[{
 	    	   xtype:'button',
 	    	   itemId:'takeSnapshot',
@@ -128,3 +104,166 @@ Ext.define('vcube.view.VMSnapshots', {
        ]
 	}]
 });
+
+
+/**
+ * Take snapshot dialog
+ */
+Ext.define('vcube.view.VMSnapshots.TakeSnapshot', {
+	
+    extend: 'Ext.window.Window',
+
+    title: vcube.utils.trans('Take Snapshot of Virtual Machine','UIActionPool'),
+
+    icon:'images/vbox/take_snapshot_16px.png',
+
+    width:400,
+    height: 240,
+    
+    closable: true,
+    modal: true,
+    resizable: true,
+    plain: true,
+    border: false,
+    closeAction: 'destroy',
+    layout: 'fit',
+
+    
+    items : [{
+		frame:true,
+		xtype: 'form',
+		itemId: 'form',
+		buttonAlign:'center',
+		monitorValid:true,
+		border: false,
+		layout: {
+			type: 'hbox'
+		},
+		items:[{
+			xtype: 'image',
+			height: 32,
+			width: 32,
+			itemId: 'osimage',
+			margin: 10
+		},{			
+			flex: 1,
+			bodyStyle: { background: 'transparent' },
+			border: false,
+			items: [{
+				xtype: 'displayfield',
+				value: vcube.utils.trans('Snapshot Name'),
+				padding: '0 0 0 0',
+				margin: '0 0 0 0',
+				hideLabel: true
+			},{
+				xtype: 'textfield',
+				name: 'name',
+				allowBlank: false,
+				hideLabel: true,
+				width: 300
+			},{
+				xtype: 'displayfield',
+				value: vcube.utils.trans('Snapshot Description'),
+				padding: '0 0 0 0',
+				margin: '0 0 0 0',
+				hideLabel: true
+			},{
+				xtype: 'textareafield',
+				hideLabel: true,
+				name: 'description',
+				width: 300
+			}]	
+		}],
+		buttons:[{ 
+			text: vcube.utils.trans('OK'),
+			itemId: 'ok',
+			formBind: true
+		},{
+			text: vcube.utils.trans('Cancel'),
+			itemId: 'cancel',
+			listeners: {
+				click: function(btn) {
+					btn.up('.window').close();
+				}
+			}
+		}]
+	}]
+});
+
+
+
+/**
+ * Snapshot details dialog
+ */
+Ext.define('vcube.view.VMSnapshots.Details', {
+	
+    extend: 'Ext.window.Window',
+
+    title: vcube.utils.trans('Take Snapshot of Virtual Machine','UIActionPool'),
+
+    icon: 'images/vbox/show_snapshot_details_16px.png',
+
+    width:600,
+    height: 600,
+    
+    closable: true,
+    modal: true,
+    resizable: true,
+    plain: true,
+    border: false,
+    closeAction: 'destroy',
+    layout: 'fit',
+
+    items: [{
+	    frame:true,
+	    xtype: 'form',
+	    itemId: 'form',
+	    monitorValid:true,
+	    buttonAlign:'center',
+	    items: [{
+	    	xtype: 'hidden',
+	    	name: 'id'
+	    },{
+	    	xtype: 'textfield',
+	    	name: 'name',
+	    	allowBlank: false,
+	    	fieldLabel: vcube.utils.trans('Name'),
+	    	width: 300
+	    },{
+	    	xtype: 'displayfield',
+	    	fieldLabel: vcube.utils.trans('Taken'),
+	    	value: '',
+	    	itemId: 'taken'
+	    },{
+	    	fieldLabel: 'Preview',
+	    	xtype: 'image',
+	    	itemId: 'preview'
+	    },{
+	    	xtype: 'textareafield',
+	    	fieldLabel: 'Description',
+	    	name: 'description',
+	    	anchor: '100%'
+	    },{
+	    	itemId: 'details',
+	    	padding: '4 4 4 4',
+	    	autoScroll: true,
+	    	height: 300
+	    }],
+	    
+	    buttons:[{ 
+	    	text: vcube.utils.trans('OK'),
+	    	itemId: 'ok',
+	    	formBind: true
+	    },{
+	    	text: vcube.utils.trans('Cancel'),
+	    	listeners: {
+	    		click: function(btn) {
+	    			btn.up('.window').close();
+	    		}
+	    	}
+	    }]
+
+    }]
+});
+
+

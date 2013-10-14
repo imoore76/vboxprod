@@ -2,11 +2,13 @@ Ext.define('vcube.controller.VMSnapshots', {
 	
 	extend: 'vcube.controller.XInfoTab',
 	
-	views: ['vcube.view.SnapshotTake'],
-	    
 	statics: {
 	
 		timer : null,
+		
+		// Max age of snapshot timestamps before we just display
+		// a date for timestamp age
+		maxAge: (86400 * 30),
 		
 		timeSpans : new Array(),
 		
@@ -77,8 +79,13 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  		},
 		  		
 
-		  		click : function (ss, vm, rootNode) {
+		  		action : function (ss, vm, rootNode) {
 	
+		  			/* Since this could be called from restore snapshot,
+		  			 * return a deferred object
+		  			 */
+		  			var promise = Ext.create('Ext.ux.Deferred');
+		  			
 		  			/* Elect SS name */
 		  			var ssNumber = 1; //vm.snapshotCount + 1;
 		  			var ssName = vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1', ssNumber);
@@ -88,7 +95,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  				ssName = vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1', ssNumber);
 		  			}
 
-		  			var win = Ext.create('vcube.view.SnapshotTake',{
+		  			Ext.create('vcube.view.VMSnapshots.TakeSnapshot',{
 		  				listeners: {
 		  					show: function(win) {
 		  						win.down('#osimage').setSrc("images/vbox/" + vcube.utils.vboxGuestOSTypeIcon(vm.OSTypeId));
@@ -100,15 +107,23 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  									Ext.apply(win.down('#form').getForm().getValues(), vcube.utils.vmAjaxParams(vm.id)),
 		  									function(data) {
 		  										win.setLoading(false);
-		  										if(data) win.close();
+		  										if(data) {
+		  											win.close();
+		  											promise.resolve(data);
+		  										}
 		  							}, function() {
 		  								win.setLoading(false);
+		  								promise.reject();
 		  							})
+		  						});
+		  						win.down('#cancel').on('click',function(){
+		  							promise.reject();
 		  						});
 		  					}
 		  				}
 		  			}).show();
 	
+		  			return promise;
 		  					  			
 		  			
 		  	  	}
@@ -124,7 +139,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  			return (ss && ss.id != 'current' && !vcube.utils.vboxVMStates.isRunning(vm) && !vcube.utils.vboxVMStates.isPaused(vm));
 		  		},
 		  		
-		  		click : function (snapshot, vm) {
+		  		action : function (snapshot, vm) {
 		  			
 		  			
 					var buttons = {};
@@ -205,7 +220,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  			return (ss && ss.id != 'current'); // && ss.children.length <= 1);
 		  		},
 		  		
-		  		click : function (ss, vm) {
+		  		action : function (ss, vm) {
 		  			
 					var buttons = [{
 						text: vcube.utils.trans('Delete','UIMessageCenter'),
@@ -232,7 +247,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  		enabled : function(ss, vm) { 
 		  			return (ss && !vcube.utils.vboxVMStates.isPaused(vm) && !vcube.utils.vboxVMStates.isRunning(vm));
 		  		},
-		  		click : function (ss, vm) {
+		  		action : function (ss, vm) {
 	
 		  	  		new vboxWizardCloneVMDialog({'vm':vm,'snapshot':(ss.id == 'current' ? undefined : ss)}).run();
 		  			
@@ -248,10 +263,58 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  			return (ss && ss.id != 'current');
 		  		},
 		  		
-		  		click : function (ss, vm) {
-	
-		  			// Current snapshot
-		  	  		var snapshot = $('#vboxSnapshotList').find('div.vboxListItemSelected').first().parent().data('vboxSnapshot');
+		  		action : function (snapshot, vm) {
+
+		  			vcube.app.setLoading(true);
+		  			
+		  			vcube.utils.ajaxRequest('vbox/snapshotGetDetails', Ext.apply({'snapshot':snapshot.id},vcube.utils.vmAjaxParams(vm.id)), function(data) {
+		  				
+		  				vcube.app.setLoading(false);
+		  				
+		  				console.log(data);
+		  				data.machine._isSnapshot = true;
+		  				
+		  				Ext.create('vcube.view.VMSnapshots.Details',  {
+		  					
+		  					listeners: {
+		  						show: function(win) {
+		  							
+		  							// Set basic values
+		  							win.down('#form').getForm().setValues({'name':data.name,'description':data.description});
+		  							
+		  							win.down('#taken').setValue(vcube.utils.dateTimeString(data.timeStamp));
+		  							
+		  							// Preview image
+		  							if(data.online) {
+		  								//win.down('#preview')
+		  							} else {
+		  								// hide preview
+		  							}
+		  							
+		  							// Add details
+		  							var sectionsPane = win.down('#details');
+		  							for(var i in vcube.view.VMDetails.sections) {
+		  								
+		  								if(typeof(i) != 'string') continue;
+		  								
+		  								if(vcube.view.VMDetails.sections[i].condition && !vcube.view.VMDetails.sections[i].condition(data.machine)) continue;
+		  								
+		  								sectionsPane.add(Ext.create('vcube.widget.SectionTable',{
+		  									sectionCfg: vcube.view.VMDetails.sections[i],
+		  									'data': data.machine,
+		  									name: i}));
+		  								
+		  							}
+
+		  						}
+		  					}
+		  				}).show();
+		  				
+		  			},function(){
+		  				vcube.app.setLoading(false);
+		  			});
+		  			
+		  			return;
 		  			
 					var l = new vboxLoader();
 					l.add('snapshotGetDetails',function(d){
@@ -346,18 +409,15 @@ Ext.define('vcube.controller.VMSnapshots', {
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'vm';
     	
-    	/* Repopulate on Events*/
-    	this.repopulateOn = ['SnapshotTaken'];//,'SnapshotDeleted'];
-    	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'machineId';
     	    	
 		// Special case for snapshot actions
 		this.application.on({
 			'MachineStateChanged': this.onMachineStateChanged,
-			'MachineDataChanged': this.onMachineDataChanged,
 			'SnapshotChanged': this.onSnapshotChanged,
 			'SnapshotDeleted' : this.onSnapshotDeleted,
+			'SnapshotTaken' : this.onSnapshotTaken,
 			scope: this
 		});
 		
@@ -390,7 +450,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     	if(!this.snapshotTree.getView().getSelectionModel().selected.length)
     		return;
     	
-    	vcube.controller.VMSnapshots.snapshotActions[btn.itemId].click(
+    	vcube.controller.VMSnapshots.snapshotActions[btn.itemId].action(
     			this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw,
     			vcube.vmdatamediator.getVMData(this.selectionItemId),
     			this.snapshotTree.getRootNode());
@@ -467,18 +527,19 @@ Ext.define('vcube.controller.VMSnapshots', {
     	            	if(record.get('id') =='current') {
 
     	            		tip.update(vcube.view.VMSnapshots.currentStateTip(
-    	            				Ext.Object.merge({'snapshotCount':(snapshotTreeView.getStore().getCount()-1)},vcube.vmdatamediator.getVMData(self.selectionItemId), record.data)
+    	            				Ext.Object.merge({'snapshotCount':(snapshotTreeView.getStore().getCount()-1)},vcube.vmdatamediator.getVMData(self.selectionItemId), record.raw)
     	            				));
     	            		
     	            	} else {
     	            		
-    	            		tip.update(vcube.view.VMSnapshots.snapshotTip(record.data));
+    	            		tip.update(vcube.view.VMSnapshots.snapshotTip(record.raw));
     	            	}
     	            	
     	            }
     	        }
     	    });
     	});
+    	
     	this.callParent(arguments);
     },
     
@@ -491,18 +552,43 @@ Ext.define('vcube.controller.VMSnapshots', {
     	this.snapshotTreeStore.getNodeById('current').set(nodeCfg);
     },
     
-    /* Repopulate on machine data changed because it could be a snapshot
-     * restore
-     */
-    onMachineDataChanged: function(event) {
+    /* Fires when a snapshot has been taken */
+    onSnapshotTaken: function(event) {
+    	
     	if(!this.filterEvent(event)) return;
-    	this.populate({'id':this.selectionItemId});
+    	
+    	// Nothing to do if tab isn't visible
+    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	// Append snapshot to current state's parent
+    	this.snapshotTreeStore.getNodeById('current').parentNode.appendChild(vcube.view.VMSnapshots.snapshotNode(event.enrichmentData.snapshot));
+    	
+    	// Move current to child of just appended snapshot
+    	this.snapshotTreeStore.getNodeById(event.enrichmentData.snapshot.id).appendChild(this.snapshotTreeStore.getNodeById('current'));
+    	this.snapshotTreeStore.getNodeById(event.enrichmentData.snapshot.id).expand();
+    	
+    	// Update timestamps
+    	this.updateTimestamps();
+    	
+    	
+    	
+    	
     },
     
     /* Update a snapshot when it has changed */
     onSnapshotChanged: function(event) {
     	
     	if(!this.filterEvent(event)) return;
+    	
+    	// Nothing to do if tab isn't visible
+    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
+    		this.dirty = true;
+    		return;
+    	}
+
     	
     	var targetNode = this.snapshotTreeStore.getNodeById(event.snapshotId);
     	
@@ -518,29 +604,40 @@ Ext.define('vcube.controller.VMSnapshots', {
     	
     },
     
-    /* Remove snapshot when it has been deleted */
+    /* Remove snapshot when it has been deleted or move
+     * current state when a snapshot has been restored */
     onSnapshotDeleted: function(event) {
     	
     	if(!this.filterEvent(event)) return;
-    	
+
+    	// Nothing to do if tab isn't visible
+    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
+    		this.dirty = true;
+    		return;
+    	}
+
+    	// Snapshot deleted
+    	if(event.snapshotId) {
+    		
     		var removeTarget = this.snapshotTreeStore.getNodeById(event.snapshotId);
     		
     		if(!removeTarget) return;
     		
     		var n = removeTarget.getChildAt(0);
-    		//console.log(n);
-    		//return;
     		
     		while(n) {
     			
     			removeTarget.parentNode.appendChild(n);//.remove());
     			n = removeTarget.getChildAt(0);
     		}
+    		
+    		removeTarget.parentNode.removeChild(removeTarget, true);
 
-    		var parent = removeTarget.parentNode;
-    		console.log(parent.childNodes.length);
-    		parent.removeChild(removeTarget, true, true, true);
-    		//removeTarget.remove(true, true);
+    	// Snapshot restored
+    	} else {
+    		this.snapshotTreeStore.getNodeById(event.enrichmentData.currentSnapshot).appendChild(this.snapshotTreeStore.getNodeById('current'));
+    		this.snapshotTreeStore.getNodeById(event.enrichmentData.currentSnapshot).expand();
+    	}
 		
     	
     },
@@ -548,6 +645,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     
     /* Update snapshot timestamps */
     updateTimestamps: function() {
+    	
     	
     	// Shorthand
     	var timeSpans = vcube.controller.VMSnapshots.timeSpans;
@@ -558,17 +656,23 @@ Ext.define('vcube.controller.VMSnapshots', {
     	var currentTime = new Date();
     	currentTime = Math.floor(currentTime.getTime() / 1000);
 
-
     	function updateChildren(node) {
     		
     		
     		Ext.each(node.childNodes, function(childNode) {
     			
-    			if(childNode.data.id == 'current') return;
+    			if(childNode.raw.id == 'current') return;
 
-    			minTs = Math.min(minTs,Math.max(parseInt(childNode.data.timeStamp), 1));
-    			
-    			childNode.set('text', vcube.controller.VMSnapshots.nodeTitleWithTimeString(childNode.data.name, childNode.data.timeStamp, currentTime));
+
+    			if(!childNode.raw._skipTS) {
+    				
+    				minTs = Math.min(minTs,Math.max(parseInt(childNode.raw.timeStamp), 1));
+    				
+    				childNode.set('text', vcube.controller.VMSnapshots.nodeTitleWithTimeString(childNode.raw.name, childNode.raw.timeStamp, currentTime));
+    				
+    				if(currentTime - childNode.raw.timeStamp > vcube.controller.VMSnapshots.maxAge)
+    					childNode.raw._skipTS = true;
+    			}
     			
     			updateChildren(childNode);
     		});
@@ -594,6 +698,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     	
     	// Nothing to do if tab isn't visible
     	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
+    		this.dirty = true;
     		return;
     	}
     	
@@ -606,39 +711,59 @@ Ext.define('vcube.controller.VMSnapshots', {
     	// Show loading mask
     	this.controlledTabView.setLoading(true);
     	
-    	this.snapshotTreeStore.getProxy().extraParams = vcube.utils.vmAjaxParams(recordData.id);
+    	try {
+    		//this.snapshotTree.getRootNode().removeAll(true);    		
+    	} catch (err) {
+    		
+    	}
+    	this.snapshotTreeStore.getRootNode().removeAll();
+    	var self = this;
     	
-    	this.snapshotTreeStore.load({
-			scope: this,
-			callback: function(r,o,success) {
-				this.controlledTabView.setLoading(false);
-				if(!success) {
-					return;
-				}
-				
-				// Append current state
-				var meta = this.snapshotTreeStore.getProxy().getReader().getMetaData();
-				
-				var appendTarget = this.snapshotTreeStore.getNodeById(meta.currentSnapshotId);
-				
-				if(!appendTarget) appendTarget = this.snapshotTree.getRootNode();
-				
-				
-				appendTarget.appendChild(
-					appendTarget.createNode(
-						vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), meta))
-					)
-				);
-				appendTarget.expand();
+    	
+    	vcube.utils.ajaxRequest('vbox/machineGetSnapshots',vcube.utils.vmAjaxParams(recordData.id),function(responseData) {
+    		
+    		self.controlledTabView.setLoading(false);
+    		
+    		
+    		function appendChildren(parentNode, children) {
+    			if(!children) return;
+    			for(var i = 0; i < children.length; i++) {
 
-				
-				// Expand
-				this.snapshotTree.getRootNode().expand();
-				this.updateTimestamps();
-				
-			}
+    				var childNodes = children[i].children;
+    				delete children[i].children;
+    				
+    				var child = parentNode.createNode(vcube.view.VMSnapshots.snapshotNode(children[i], (childNodes && childNodes.length)));
+    				
+    				if(childNodes) appendChildren(child, childNodes);
+    				parentNode.appendChild(child);
+    			}
+    		}
+
+    		if(responseData.snapshot && responseData.snapshot.id)
+    			appendChildren(self.snapshotTree.getRootNode(), [responseData.snapshot]);
+    		
+    		// Append current state
+    		var appendTarget = self.snapshotTreeStore.getNodeById(responseData.currentSnapshotId);
+    		
+    		if(!appendTarget) appendTarget = self.snapshotTree.getRootNode();
+    		
+    		
+    		appendTarget.appendChild(
+				appendTarget.createNode(
+					vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), {currentSnapshotId: responseData.currentSnapshotId, currentStateModified: responseData.currentStateModified}))
+				)
+    		);
+    		appendTarget.expand();
+    		
+    		
+    		// Expand
+    		self.snapshotTree.getRootNode().expand();
+    		self.updateTimestamps();
+    		
+    	},function() {
+    		self.controlledTabView.setLoading(false);
     	});
-
+    	
     }
 
 });

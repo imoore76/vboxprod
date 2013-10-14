@@ -39,7 +39,7 @@ Ext.define('vcube.view.VMSummary', {
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
 				condition: function(vm) {
-					return vm.accessible;
+					return (vm.accessible || vm._isSnapshot);
 				},
 				redrawOnEvents: ['SessionStateChanged','MachineStateChanged','SnapshotTaken','SnapshotChanged','SnapshotDeleted'],
 				rows: [{
@@ -83,7 +83,7 @@ Ext.define('vcube.view.VMSummary', {
 				},
 				redrawOnEvents: ['CPUChanged','CPUExecutionCapChanged'],
 				condition: function(vm) {
-					return vm.accessible;
+					return (vm.accessible || vm._isSnapshot);
 				},
 				rows: [{
 					title: vcube.utils.trans('CPU(s)'),
@@ -117,7 +117,7 @@ Ext.define('vcube.view.VMSummary', {
 					style: { margin: '0 20px 20px 0', display: 'inline-block', float: 'left' }
 				},
 				condition: function(vm) {
-					return (!vm.accessible);
+					return (!vm.accessible && !vm._isSnapshot);
 				},
 				rows: [{
 					title: 'The selected Virtual Machine is <i>inaccessible</i>. Please inspect the error message shown below and press the <b>Refresh</b> button if you want to repeat the accessibility check:',
@@ -207,9 +207,9 @@ Ext.define('vcube.view.VMSummary', {
     				padding: 0,
     				bodyStyle: { background: 'transparent' },
     				width: '100%',
-    				tpl: new Ext.XTemplate('<table><tr valign="top"><td><h3 align="left">{name}</h3><div></td>'+
-    						'<td width="100%; padding: 4px;"><div style="overflow: auto; height:64px; font-size: 11px; margin-left: 10px; margin-right: 10px;">{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</td>'+
-    						'<td width="68"><div align="center">{[(values.icon ? \'<img src="\' + values.icon +\'" style="width:64px;height:64px;display:block;"/>\' : \'No Icon\')]}</div></td>'+
+    				tpl: new Ext.XTemplate('<table class="infoTable"><tr valign="top"><td class="summaryName">{name}</td>'+
+    						'<td class="description"><div class="description">{[Ext.util.Format.nl2br(Ext.String.htmlEncode(values.description))]}</td>'+
+    						'<td class="icon"><div align="center">{[(values.icon ? \'<img src="\' + values.icon +\'" />\' : \'No Icon\')]}</td>'+
     						'</tr></table>')
     			},{
     				items: [{
@@ -255,4 +255,76 @@ Ext.define('vcube.view.VMSummary', {
     		}]
     	}]
     }]
+});
+
+Ext.define('vcube.view.VMSummary.Edit', {
+	
+    extend: 'Ext.window.Window',
+
+    title: 'Edit Virtual Machine Summary',
+    
+    icon: 'images/vbox/machine_16px.png',
+
+    width:560,
+    height: 240,
+    
+    closable: true,
+    modal: true,
+    resizable: true,
+    plain: true,
+    border: false,
+    closeAction: 'destroy',
+    layout: 'fit',
+
+    initComponent: function() {
+    	
+    	this.items = [{
+    		xtype: 'form',
+    		itemId: 'form',
+    		frame:true,
+    		defaultType:'textfield',
+    		monitorValid:true,
+    		buttonAlign:'center',
+    		
+    		items: [{
+    			xtype: 'hidden',
+    			name: 'id'
+    		},{
+    			fieldLabel: 'Name',
+    			name: 'name',
+    			width: 500,
+    			itemId: 'vmname',
+    			allowBlank: false
+    		},{
+    			fieldLabel: 'Icon',
+    			name: 'icon',
+    			width: 500,
+    			allowBlank: true,
+    			plugins: [{
+    				ptype: 'fieldhelptext',
+    				text: 'Full or relative URL of an image'
+    			}]
+    		},{
+    			xtype: 'textareafield',
+    			fieldLabel: 'Description',
+    			name: 'description',
+    			anchor: '100%'
+    		}],
+    		
+    		buttons:[{ 
+    			text: vcube.utils.trans('Save'),
+    			itemId: 'save',
+    			formBind: true
+    		},{
+    			text: vcube.utils.trans('Cancel'),
+    			listeners: {
+    				click: function(btn) {
+    					btn.up('.window').close();
+    				}
+    			}
+    		}]
+    	
+    	}]
+    	this.callParent();
+    },
 });

@@ -69,6 +69,11 @@ Ext.define('vcube.utils', {
     			// Resolve or reject
     			if(data && data.responseData !== null) {
     				
+    				// Check for a progress operation initiated by this client
+    				if(data.responseData.progress) {
+    					vcube.app.addProgress(data.responseData.progress);
+    				}
+    				
     				promise.resolve(data.responseData, addparams, context);
     				
     				if(success_callback) {

@@ -44,7 +44,7 @@ class dispatcher(dispatcher_parent):
             'machine': '',
             'category': constants.LOG_CATEGORY['CONNECTOR'],
             'connector': kwargs.get('id', 0),
-            'state': constants.TASK_STATUS['COMPLETED']
+            'status': constants.TASK_STATUS['COMPLETED']
             
         })
     
@@ -82,7 +82,7 @@ class dispatcher(dispatcher_parent):
             'category': constants.LOG_CATEGORY['CONNECTOR'],
             'connector': kwargs.get('id', 0),
             'machine': '',
-            'state': constants.TASK_STATUS['COMPLETED']
+            'status': constants.TASK_STATUS['COMPLETED']
             
         })
 
@@ -125,7 +125,7 @@ class dispatcher(dispatcher_parent):
             'category': constants.LOG_CATEGORY['CONNECTOR'],
             'connector': kwargs.get('id', 0),
             'machine': '',
-            'state': constants.TASK_STATUS['COMPLETED']
+            'status': constants.TASK_STATUS['COMPLETED']
             
         })
 

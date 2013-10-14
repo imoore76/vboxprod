@@ -52,4 +52,4 @@ Ext.define('vcube.view.Viewport', {
 		}]
 
    }]
-});           
+});

@@ -3,7 +3,7 @@
  * 
  */
 
-Ext.define('vcube.view.VMTabss', {
+Ext.define('vcube.view.VMTabs', {
     
 	extend: 'Ext.tab.Panel',
     

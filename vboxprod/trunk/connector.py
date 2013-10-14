@@ -402,11 +402,17 @@ def enrichEvents(eventList):
 
                 try:
                     eventList[ek]['enrichmentData'] = {
+                        'currentSnapshot' : machine.currentSnapshot.id if machine.currentSnapshot else '',
                         'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
                         'snapshotCount' : machine.snapshotCount,
                         'currentStateModified' : machine.currentStateModified
                     }
                     
+                    if event['eventType'] == 'OnSnapshotTaken':
+                        
+                        snapshot = machine.findSnapshot(event['snapshotId'])
+                        eventList[ek]['enrichmentData']['snapshot'] = vboxConnector._snapshotGetDetails(snapshot,False)
+                        
                     if event['eventType'] == 'OnSnapshotChanged':
                         snapshot = machine.findSnapshot(event['snapshotId'])
                         eventList[ek]['enrichmentData'].update({

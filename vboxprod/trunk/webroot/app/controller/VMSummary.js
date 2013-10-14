@@ -5,8 +5,6 @@ Ext.define('vcube.controller.VMSummary', {
 
 	extend: 'vcube.controller.XInfoTab',
     
-	views: ['VMEditSummary'],
-
     /* Watch for events */
     init: function(){
 
@@ -58,7 +56,7 @@ Ext.define('vcube.controller.VMSummary', {
     	
     	var self = this;
     	
-    	Ext.create('vcube.view.VMEditSummary',{
+    	Ext.create('vcube.view.VMSummary.Edit',{
     		listeners: {
     			
     			/* Set values when window is shown */
@@ -121,7 +119,7 @@ Ext.define('vcube.controller.VMSummary', {
 
     /* When an action button is clicked */
     onActionButtonClick: function(button) {
-    	vcube.vmactions[button.itemId].click(this.navTreeSelectionModel);
+    	vcube.vmactions[button.itemId].action(this.navTreeSelectionModel);
     },
     
     drawSections: function(data) {

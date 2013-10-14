@@ -16,6 +16,37 @@ div.x-grid-cell-inner div.x-progress-bar { padding: 0px; margin: 0px; background
 div.x-grid-cell-inner div.x-progress div { padding: 0px; margin: 0px }
 div.x-grid-cell-inner div.x-progress-text { font-size: 9px; padding: 0px; margin: 0px; }
 
+/* VM summary info table */
+table.infoTable tr {
+	vertical-align: top;
+}
+table.infoTable td.summaryName {
+	white-space: nowrap;
+	font-weight: bold;
+	font-size: 14px;
+	width: 1%;
+}
+table.infoTable td.description {
+	padding: 4px;
+}
+table.infoTable div.description {
+	overflow: auto;
+	height:64px;
+	font-size: 11px;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+table.infoTable td.icon {
+	width: 68px;
+}
+
+table.infoTable td.icon img {
+	width:64px;
+	height:64px;
+	display:block;
+}
+
 /* Masks should have some opacity */
 body > div.modal-mask-default {
 

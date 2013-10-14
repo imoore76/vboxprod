@@ -36,6 +36,7 @@ Ext.application({
                   
     ],
     
+    
     /* Stores */
     stores: ['Events','Tasks'],
     
@@ -43,6 +44,37 @@ Ext.application({
     loadMask: null,
     
     settings : {},
+    
+    /* Progress operations to watch */
+    progressOps : {},
+    
+    /* Add progress operation to watch list */
+    addProgress: function(pid) {
+    	this.progressOps[pid] = true;
+    },
+    
+    /* Check for progress operation completion */
+    onProgressCompleted: function(event) {
+    	
+    	for(var i in this.progressOps) {
+    		if(typeof(i) != 'string') continue;
+
+    		if(i == event.eventData.progress) {
+    			
+    			if(event.eventData.canceled) {
+    				vcube.utils.alert('Task `' + event.eventData.taskName + '` was canceled.');
+    				
+    			} else if(event.eventData.resultCode){
+    				
+    				vcube.utils.alert('Task `' + event.eventData.taskName +'` failed: ' + event.eventData.error);
+    			}
+    			
+    			delete this.progressOps[i];
+    			return;
+    		}
+    	}
+    	
+    },
     
     // a fatal error has occurred, stop everything and display error
     died: false,
@@ -60,6 +92,10 @@ Ext.application({
     	this.fireEvent('stop');
     },
     
+    /* Show loading screen */
+    setLoading: function(loading) {
+    	return;
+    },
     
     // Show login box
     showLogin: function() {
@@ -127,6 +163,7 @@ Ext.application({
     	
     	this.on({
     		'ConnectorUpdated': this.onConnectorUpdated,
+    		'ProgressCompleted': this.onProgressCompleted,
     		scope: this
     	});
     	

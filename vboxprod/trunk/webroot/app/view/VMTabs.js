@@ -3,17 +3,17 @@
  * 
  */
 
-Ext.define('vcube.view.VMTabs', {
+Ext.define('vcube.view.VMTabss', {
     
 	extend: 'Ext.tab.Panel',
     
 	alias: 'widget.VMTabs',
 	
 	requires: [
-               'vcube.view.VMTabSummary',
-               'vcube.view.VMTabDetails',
-               'vcube.view.VMTabSnapshots',
-               'vcube.view.VMTabConsole',
+               'vcube.view.VMSummary',
+               'vcube.view.VMDetails',
+               'vcube.view.VMSnapshots',
+               'vcube.view.VMConsole',
                'vcube.widget.SectionTable',
                'vcube.view.TasksAndEventsTab'
              ],
@@ -23,14 +23,14 @@ Ext.define('vcube.view.VMTabs', {
     	padding: 5
     },    
     items: [{
-    	xtype: 'VMTabSummary'
+    	xtype: 'VMSummary'
     },{
-    	xtype: 'VMTabDetails'
+    	xtype: 'VMDetails'
     },{
-    	xtype: 'VMTabSnapshots'
+    	xtype: 'VMSnapshots'
     },{
     	xtype: 'TasksAndEventsTab'
     },{
-    	xtype: 'VMTabConsole'
+    	xtype: 'VMConsole'
     }]
 });

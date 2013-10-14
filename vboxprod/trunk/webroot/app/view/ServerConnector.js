@@ -3,7 +3,7 @@
  * 
  */
 
-Ext.define('vcube.view.ServerTabConnector', {
+Ext.define('vcube.view.ServerConnector', {
     
 	extend: 'Ext.panel.Panel',
 	
@@ -48,8 +48,8 @@ Ext.define('vcube.view.ServerTabConnector', {
 				notifyEvents: ['MachineStateChanged','MachineRegistered'],
 				onEvent: function(event, recordData) {
 					return Ext.Object.merge({},
-							vcube.view.ServerTabConnector.sections.vms,
-							{'rows': vcube.view.ServerTabConnector.sections.vms.rows(recordData)});
+							vcube.view.ServerConnector.sections.vms,
+							{'rows': vcube.view.ServerConnector.sections.vms.rows(recordData)});
 				},
 				rows: function(data) {
 					
@@ -81,7 +81,7 @@ Ext.define('vcube.view.ServerTabConnector', {
 			
 			resources: {
 				tableCfg: {
-					title: vcube.utils.trans('Resources'),
+					title: vcube.utils.trans('Limits'),
 					icon: 'images/vbox/chipset_16px.png',
 					border: true,
 					width: 200,
@@ -124,7 +124,7 @@ Ext.define('vcube.view.ServerTabConnector', {
 		}
 	},
     
-	alias: 'widget.ServerTabConnector',
+	alias: 'widget.ServerConnector',
 	
     title: 'Connector',
     icon: 'images/vbox/virtualbox-vdi.png',

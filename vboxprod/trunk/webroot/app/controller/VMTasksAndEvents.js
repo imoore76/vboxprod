@@ -1,7 +1,7 @@
 /*
  * Events and tasks controller
  */
-Ext.define('vcube.controller.VMTabTasksAndEvents', {
+Ext.define('vcube.controller.VMTasksAndEvents', {
     extend: 'vcube.controller.XTasksAndEventsTab',
     
     

@@ -62,6 +62,7 @@ Ext.define('vcube.view.ConnectorAddEdit', {
     			displayField: 'name',
     			valueField: 'value',
     			width: 300,
+    			editable: false,
     			store: Ext.create('Ext.data.Store',{
             		fields: ['name','value'],
             		data: [{

@@ -30,9 +30,9 @@ Ext.application({
                   // VM Group tabs
                   'GroupTabs',
                   // Server Tabs
-                  'ServerTabConnector', 'ServerTabHost', 'ServerTabTasksAndEvents',
+                  'ServerConnector', 'ServerHost', 'ServerTasksAndEvents',
                   // VM tabs
-                  'VMTabs', 'VMTabSummary','VMTabDetails','VMTabSnapshots','VMTabTasksAndEvents','VMTabConsole'
+                  'VMTabs', 'VMSummary','VMDetails','VMSnapshots','VMTasksAndEvents','VMConsole'
                   
     ],
     

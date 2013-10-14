@@ -1,7 +1,7 @@
 /*
  * Events and tasks controller
  */
-Ext.define('vcube.controller.ServerTabTasksAndEvents', {
+Ext.define('vcube.controller.ServerTasksAndEvents', {
     extend: 'vcube.controller.XTasksAndEventsTab',
     
     /* Nav tree selection data._type field */

@@ -1,7 +1,7 @@
 /*
  * VM summary tab controller
  */
-Ext.define('vcube.controller.VMTabSummary', {
+Ext.define('vcube.controller.VMSummary', {
 
 	extend: 'vcube.controller.XInfoTab',
     
@@ -11,7 +11,7 @@ Ext.define('vcube.controller.VMTabSummary', {
     init: function(){
 
     	/* Setup sections */
-    	this.sectionConfig = vcube.view.VMTabSummary.sections;
+    	this.sectionConfig = vcube.view.VMSummary.sections;
 
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'vm';
@@ -37,13 +37,13 @@ Ext.define('vcube.controller.VMTabSummary', {
 		
 		
         this.control({
-	        'viewport > #MainPanel > VMTabs > VMTabSummary' : {
+	        'viewport > #MainPanel > VMTabs > VMSummary' : {
 	        	render: this.onTabRender
 	        },
-	        'viewport > #MainPanel > VMTabs > VMTabSummary #vmactions > button' : {
+	        'viewport > #MainPanel > VMTabs > VMSummary #vmactions > button' : {
 	        	click: this.onActionButtonClick
         	},
-	        'viewport > #MainPanel > VMTabs > VMTabSummary #edit' : {
+	        'viewport > #MainPanel > VMTabs > VMSummary #edit' : {
 	        	click: this.editVM
 	        }
 

@@ -3,11 +3,11 @@
  * 
  */
 
-Ext.define('vcube.view.VMTabDetails', {
+Ext.define('vcube.view.VMDetails', {
     
 	extend: 'Ext.panel.Panel',
     
-	alias: 'widget.VMTabDetails',
+	alias: 'widget.VMDetails',
 	
 	/* Details */
     title: 'Details',

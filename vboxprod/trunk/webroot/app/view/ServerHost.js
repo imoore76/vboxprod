@@ -3,9 +3,9 @@
  * 
  */
 
-Ext.define('vcube.view.ServerTabHost', {
+Ext.define('vcube.view.ServerHost', {
 	extend: 'Ext.panel.Panel',
-	alias: 'widget.ServerTabHost',
+	alias: 'widget.ServerHost',
 
     title: 'Host',
     

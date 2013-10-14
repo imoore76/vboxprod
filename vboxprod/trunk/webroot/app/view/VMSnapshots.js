@@ -3,11 +3,11 @@
  * 
  */
 
-Ext.define('vcube.view.VMTabSnapshots', {
+Ext.define('vcube.view.VMSnapshots', {
     
 	extend: 'Ext.panel.Panel',
     
-	alias: 'widget.VMTabSnapshots',
+	alias: 'widget.VMSnapshots',
 	
 	statics: {
 		
@@ -74,7 +74,7 @@ Ext.define('vcube.view.VMTabSnapshots', {
 				append: function(thisNode,newNode,index,eOpts) {
 					if(newNode.get('id') == 'current') return;
 					newNode.set({
-						'text': Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, Ext.String.htmlEncode(newNode.raw.name), ''),
+						'text': Ext.String.format(vcube.view.VMSnapshots.snapshotTextTpl, Ext.String.htmlEncode(newNode.raw.name), ''),
 						'icon': 'images/vbox/' + (newNode.raw.online ? 'online' : 'offline') + '_snapshot_16px.png',
 						'expanded': (newNode.raw.children && newNode.raw.children.length)
 					});

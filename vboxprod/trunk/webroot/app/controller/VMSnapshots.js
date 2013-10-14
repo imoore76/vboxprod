@@ -1,4 +1,4 @@
-Ext.define('vcube.controller.VMTabSnapshots', {
+Ext.define('vcube.controller.VMSnapshots', {
 	
 	extend: 'vcube.controller.XInfoTab',
 	
@@ -14,7 +14,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 	    nodeTitleWithTimeString: function(name, timeStamp, currentTime) {
 	    	
 	    	// Shorthand
-	    	var timeSpans = vcube.controller.VMTabSnapshots.timeSpans;
+	    	var timeSpans = vcube.controller.VMSnapshots.timeSpans;
 	    	
 			var sts = parseInt(timeStamp);
 			var t = Math.max(currentTime - sts, 1);
@@ -59,7 +59,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 				
 			}
 			
-			return Ext.String.format(vcube.view.VMTabSnapshots.snapshotTextTpl, Ext.String.htmlEncode(name), ts)
+			return Ext.String.format(vcube.view.VMSnapshots.snapshotTextTpl, Ext.String.htmlEncode(name), ts)
 	    },
 	    
 	    /**
@@ -334,11 +334,11 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     init: function(){
     	
     	/* Sort time spans */
-    	vcube.controller.VMTabSnapshots.timeSpans['days'] = 86400;
-        vcube.controller.VMTabSnapshots.timeSpans['hours'] = 3600;
-        vcube.controller.VMTabSnapshots.timeSpans['minutes'] = 60;
-        vcube.controller.VMTabSnapshots.timeSpans['seconds'] = 1;
-    	vcube.controller.VMTabSnapshots.timeSpans.sort(function(a,b){return (a > b ? -1 : 1);});
+    	vcube.controller.VMSnapshots.timeSpans['days'] = 86400;
+        vcube.controller.VMSnapshots.timeSpans['hours'] = 3600;
+        vcube.controller.VMSnapshots.timeSpans['minutes'] = 60;
+        vcube.controller.VMSnapshots.timeSpans['seconds'] = 1;
+    	vcube.controller.VMSnapshots.timeSpans.sort(function(a,b){return (a > b ? -1 : 1);});
     	
     	/* Setup sections */
     	this.sectionConfig = [];
@@ -364,13 +364,13 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 		
         /* Tab rendered */
         this.control({
-        	'viewport > #MainPanel > VMTabs > VMTabSnapshots' : {
+        	'viewport > #MainPanel > VMTabs > VMSnapshots' : {
         		render: this.onTabRender
         	},
-        	'viewport > #MainPanel > VMTabs > VMTabSnapshots toolbar > button' : {
+        	'viewport > #MainPanel > VMTabs > VMSnapshots toolbar > button' : {
         		click: this.onButtonClick
         	},
-        	'viewport > #MainPanel > VMTabs > VMTabSnapshots > treepanel' : {
+        	'viewport > #MainPanel > VMTabs > VMSnapshots > treepanel' : {
         		selectionchange: this.updateButtons
         	}
         });
@@ -390,7 +390,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	if(!this.snapshotTree.getView().getSelectionModel().selected.length)
     		return;
     	
-    	vcube.controller.VMTabSnapshots.snapshotActions[btn.itemId].click(
+    	vcube.controller.VMSnapshots.snapshotActions[btn.itemId].click(
     			this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw,
     			vcube.vmdatamediator.getVMData(this.selectionItemId),
     			this.snapshotTree.getRootNode());
@@ -414,7 +414,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     		
     		if(btn.xtype == 'button') {
     			
-    			if(vcube.controller.VMTabSnapshots.snapshotActions[btn.itemId].enabled(ss, vm))
+    			if(vcube.controller.VMSnapshots.snapshotActions[btn.itemId].enabled(ss, vm))
     				btn.enable();
     			else
     				btn.disable();    			
@@ -466,13 +466,13 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	            	
     	            	if(record.get('id') =='current') {
 
-    	            		tip.update(vcube.view.VMTabSnapshots.currentStateTip(
+    	            		tip.update(vcube.view.VMSnapshots.currentStateTip(
     	            				Ext.Object.merge({'snapshotCount':(snapshotTreeView.getStore().getCount()-1)},vcube.vmdatamediator.getVMData(self.selectionItemId), record.data)
     	            				));
     	            		
     	            	} else {
     	            		
-    	            		tip.update(vcube.view.VMTabSnapshots.snapshotTip(record.data));
+    	            		tip.update(vcube.view.VMSnapshots.snapshotTip(record.data));
     	            	}
     	            	
     	            }
@@ -487,7 +487,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	
     	if(!this.filterEvent(event)) return;
     	
-    	var nodeCfg = vcube.view.VMTabSnapshots.currentStateNode(Ext.Object.merge({currentStateModified:true},vcube.vmdatamediator.getVMData(this.selectionItemId)));
+    	var nodeCfg = vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({currentStateModified:true},vcube.vmdatamediator.getVMData(this.selectionItemId)));
     	this.snapshotTreeStore.getNodeById('current').set(nodeCfg);
     },
     
@@ -510,7 +510,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	currentTime = Math.floor(currentTime.getTime() / 1000);
 
     	targetNode.set({
-    		'text' : vcube.controller.VMTabSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.get('timeStamp'), currentTime),
+    		'text' : vcube.controller.VMSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.get('timeStamp'), currentTime),
     		'name': event.enrichmentData.name,
     		'description': event.enrichmentData.description
     	});
@@ -550,7 +550,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     updateTimestamps: function() {
     	
     	// Shorthand
-    	var timeSpans = vcube.controller.VMTabSnapshots.timeSpans;
+    	var timeSpans = vcube.controller.VMSnapshots.timeSpans;
     	
     	// Keep minimum timestamp
     	var minTs = 60;
@@ -568,7 +568,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 
     			minTs = Math.min(minTs,Math.max(parseInt(childNode.data.timeStamp), 1));
     			
-    			childNode.set('text', vcube.controller.VMTabSnapshots.nodeTitleWithTimeString(childNode.data.name, childNode.data.timeStamp, currentTime));
+    			childNode.set('text', vcube.controller.VMSnapshots.nodeTitleWithTimeString(childNode.data.name, childNode.data.timeStamp, currentTime));
     			
     			updateChildren(childNode);
     		});
@@ -579,7 +579,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     	
     	var timerSet = (minTs >= 60 ? 60 : 10);
     	var self = this;
-    	vcube.controller.VMTabSnapshots.timer = window.setTimeout(function(){
+    	vcube.controller.VMSnapshots.timer = window.setTimeout(function(){
     		self.updateTimestamps();
     	}, (timerSet * 1000));
     },
@@ -588,8 +588,8 @@ Ext.define('vcube.controller.VMTabSnapshots', {
     populate: function(recordData) {
 
     	
-    	if(vcube.controller.VMTabSnapshots.timer) {
-    		window.clearTimeout(vcube.controller.VMTabSnapshots.timer);
+    	if(vcube.controller.VMSnapshots.timer) {
+    		window.clearTimeout(vcube.controller.VMSnapshots.timer);
     	}
     	
     	// Nothing to do if tab isn't visible
@@ -626,7 +626,7 @@ Ext.define('vcube.controller.VMTabSnapshots', {
 				
 				appendTarget.appendChild(
 					appendTarget.createNode(
-						vcube.view.VMTabSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), meta))
+						vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), meta))
 					)
 				);
 				appendTarget.expand();

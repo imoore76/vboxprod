@@ -7,11 +7,11 @@ var previewWidth = 200;
 var previewAspectRatio = 1.6;
 var previewUpdateInterval = 3;
 
-Ext.define('vcube.view.VMTabSummary', {
+Ext.define('vcube.view.VMSummary', {
     
 	extend: 'Ext.panel.Panel',
     
-	alias: 'widget.VMTabSummary',
+	alias: 'widget.VMSummary',
 	
 	
 	statics: {
@@ -236,7 +236,7 @@ Ext.define('vcube.view.VMTabSummary', {
     					
     					defaults = { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' };
 
-    					Ext.each(vcube.view.VMTabSummary.vmactions, function(action, i) {
+    					Ext.each(vcube.view.VMSummary.vmactions, function(action, i) {
     						
     						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
     							

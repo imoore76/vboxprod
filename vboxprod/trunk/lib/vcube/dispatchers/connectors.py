@@ -23,7 +23,7 @@ class dispatcher(dispatcher_parent):
         c = Connector()
         for attr in ['name','location','description']:
             setattr(c, attr, kwargs.get(attr))
-        c.status = 0
+        c.state = 0
         c.save()
         
         # Tell application that a connector was added
@@ -38,13 +38,13 @@ class dispatcher(dispatcher_parent):
 
     
         vcube.getInstance().logTask({
-            'name': 'Connector added',
+            'name': 'Add connector',
             'user': cherrypy.session.get('user',{}).get('username','Unknown'),
             'details': 'Connector `%s` added' %(kwargs.get('name'),),
             'machine': '',
             'category': constants.LOG_CATEGORY['CONNECTOR'],
             'connector': kwargs.get('id', 0),
-            'status': constants.TASK_STATUS['COMPLETED']
+            'state': constants.TASK_STATUS['COMPLETED']
             
         })
     
@@ -76,13 +76,13 @@ class dispatcher(dispatcher_parent):
         
 
         vcube.getInstance().logTask({
-            'name': 'Connector deleted',
+            'name': 'Remove connector',
             'user': cherrypy.session.get('user',{}).get('username','Unknown'),
-            'details': 'Connector `%s` deleted' %(name,),
+            'details': 'Connector `%s` removed' %(name,),
             'category': constants.LOG_CATEGORY['CONNECTOR'],
             'connector': kwargs.get('id', 0),
             'machine': '',
-            'status': constants.TASK_STATUS['COMPLETED']
+            'state': constants.TASK_STATUS['COMPLETED']
             
         })
 
@@ -95,15 +95,15 @@ class dispatcher(dispatcher_parent):
     @require_admin
     def updateConnector(self, *args, **kwargs):
         c = Connector.get(Connector.id == kwargs.get('id',0))
-        for attr in ['name','location', 'description', 'status_text']:
+        for attr in ['name','location', 'description', 'state_text']:
             if kwargs.get(attr, None) is not None:
                 setattr(c, attr, kwargs.get(attr))
                 
         
         stateChanged = False
-        if kwargs.get('status',None) is not None:
-            if int(kwargs['status']) == constants.CONNECTOR_STATES['DISABLED'] or (c.status == constants.CONNECTOR_STATES['DISABLED'] and int(kwargs['status']) == constants.CONNECTOR_STATES['DISCONNECTED']):
-                c.status = kwargs.get('status')
+        if kwargs.get('state',None) is not None:
+            if int(kwargs['state']) == constants.CONNECTOR_STATES['DISABLED'] or (c.state == constants.CONNECTOR_STATES['DISABLED'] and int(kwargs['state']) == constants.CONNECTOR_STATES['DISCONNECTED']):
+                c.state = kwargs.get('state')
                 stateChanged = True
 
         c.save()
@@ -119,13 +119,13 @@ class dispatcher(dispatcher_parent):
         })
 
         vcube.getInstance().logTask({
-            'name': 'Connector changed',
+            'name': 'Change connector',
             'user': cherrypy.session.get('user',{}).get('username','Unknown'),
-            'details': 'Connector `%s` configuration changed' %(c.name,) + ('. State: %s' %(constants.CONNECTOR_STATES_TEXT[c.status],) if stateChanged else ''),
+            'details': 'Connector `%s` configuration changed' %(c.name,) + ('. State: %s' %(constants.CONNECTOR_STATES_TEXT[c.state],) if stateChanged else ''),
             'category': constants.LOG_CATEGORY['CONNECTOR'],
             'connector': kwargs.get('id', 0),
             'machine': '',
-            'status': constants.TASK_STATUS['COMPLETED']
+            'state': constants.TASK_STATUS['COMPLETED']
             
         })
 

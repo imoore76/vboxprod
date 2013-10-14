@@ -1,4 +1,4 @@
-Ext.define('vcube.controller.VMTabConsole', {
+Ext.define('vcube.controller.VMConsole', {
     extend: 'Ext.app.Controller',
     refs : [{
     	selector: 'viewport > #MainPanel > VMTabs',
@@ -7,8 +7,8 @@ Ext.define('vcube.controller.VMTabConsole', {
     	selector: 'viewport > NavTree',
     	ref: 'NavTreeView'
     },{
-    	selector: 'viewport > #MainPanel > VMTabs > VMTabConsole',
-    	ref: 'VMTabConsoleView'
+    	selector: 'viewport > #MainPanel > VMTabs > VMConsole',
+    	ref: 'VMConsoleView'
     }],
     
     /* True if loaded vm data is not current */
@@ -18,7 +18,7 @@ Ext.define('vcube.controller.VMTabConsole', {
     init: function(){
     	
         this.control({
-	        'viewport > #MainPanel > VMTabs > VMTabConsole' : {
+	        'viewport > #MainPanel > VMTabs > VMConsole' : {
 	        	show: this.onTabShow,
 	        	render: function() {
 	        		this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();	        		
@@ -48,12 +48,12 @@ Ext.define('vcube.controller.VMTabConsole', {
     		return;
 
     	if(!vcube.utils.vboxVMStates.isRunning(record.raw.data)) {
-    		this.getVMTabConsoleView().disable();
+    		this.getVMConsoleView().disable();
     	} else {
-    		this.getVMTabConsoleView().enable();
+    		this.getVMConsoleView().enable();
     	}
     	
-    	if(!this.getVMTabConsoleView().isVisible()) return;
+    	if(!this.getVMConsoleView().isVisible()) return;
     	
     }
 });

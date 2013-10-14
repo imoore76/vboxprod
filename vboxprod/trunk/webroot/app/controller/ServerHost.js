@@ -1,7 +1,7 @@
 /*
  * Server summary tab controller
  */
-Ext.define('vcube.controller.ServerTabHost', {
+Ext.define('vcube.controller.ServerHost', {
 	
     extend: 'vcube.controller.XInfoTab',
     
@@ -9,7 +9,7 @@ Ext.define('vcube.controller.ServerTabHost', {
     init: function(){
 
     	/* Setup sections */
-    	this.sectionConfig = vcube.view.ServerTabHost.sections;
+    	this.sectionConfig = vcube.view.ServerHost.sections;
 
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'server';
@@ -40,7 +40,7 @@ Ext.define('vcube.controller.ServerTabHost', {
 		
 		
         this.control({
-	        'viewport > #MainPanel > ServerTabs > ServerTabHost' : {
+	        'viewport > #MainPanel > ServerTabs > ServerHost' : {
 	        	render: this.onTabRender
 	        }
         });

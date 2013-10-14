@@ -1,7 +1,7 @@
 /*
  * Server summary tab controller
  */
-Ext.define('vcube.controller.ServerTabConnector', {
+Ext.define('vcube.controller.ServerConnector', {
 	
     extend: 'vcube.controller.XInfoTab',
     
@@ -11,7 +11,7 @@ Ext.define('vcube.controller.ServerTabConnector', {
     init: function(){
 
     	/* Setup sections */
-    	this.sectionConfig = vcube.view.ServerTabConnector.sections;
+    	this.sectionConfig = vcube.view.ServerConnector.sections;
 
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'server';
@@ -36,10 +36,10 @@ Ext.define('vcube.controller.ServerTabConnector', {
 
     			
         this.control({
-	        'viewport > #MainPanel > ServerTabs > ServerTabConnector' : {
+	        'viewport > #MainPanel > ServerTabs > ServerConnector' : {
 	        	render: this.onTabRender
 	        },
-	        'viewport > #MainPanel > ServerTabs > ServerTabConnector #editConnector' : {
+	        'viewport > #MainPanel > ServerTabs > ServerConnector #editConnector' : {
 	        	click: this.editConnector
 	        }
         });

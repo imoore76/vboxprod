@@ -3,11 +3,11 @@
  * 
  */
 
-Ext.define('vcube.view.VMTabConsole', {
+Ext.define('vcube.view.VMConsole', {
     
 	extend: 'Ext.panel.Panel',
     
-	alias: 'widget.VMTabConsole',
+	alias: 'widget.VMConsole',
 	
 	/* Console */
 	title: 'Console',

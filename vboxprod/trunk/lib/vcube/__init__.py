@@ -723,7 +723,7 @@ class Application(threading.Thread):
             
             try:
                 self.logEvent({
-                    'name' : 'Server state changed to ' + constants.CONNECTOR_STATES_TEXT.get(state, 'Unknown'),
+                    'name' : 'Connector state changed to ' + constants.CONNECTOR_STATES_TEXT.get(state, 'Unknown'),
                     'details' : message,
                     'connector' : cid,
                     'severity' : sevLookups.get(state, constants.SEVERITY['INFO']),

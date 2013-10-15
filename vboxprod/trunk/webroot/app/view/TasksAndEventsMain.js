@@ -82,3 +82,123 @@ Ext.define('vcube.view.TasksAndEventsMain', {
     }]
 
 });
+
+Ext.define('vcube.view.TasksAndEventsMain.TaskDetails', {
+    extend: 'Ext.window.Window',
+
+    title: vcube.utils.trans('Task Details'),
+
+    icon: 'images/vbox/OSE/about_16px.png',
+
+    width:400,
+    height: 400,
+    
+    closable: true,
+    modal: true,
+    resizable: true,
+    plain: true,
+    border: false,
+    closeAction: 'destroy',
+    layout: 'fit',
+    items: [{
+	    frame:true,
+	    xtype: 'form',
+	    itemId: 'form',
+	    defaults: { xtype: 'displayfield' },
+	    buttonAlign:'center',
+	    items: [{
+	    	name: 'name',
+	    	fieldLabel: vcube.utils.trans('Name')
+	    },{
+	    	name: 'status',
+	    	fieldLabel: vcube.utils.trans('Status')
+	    },{	    	
+	    	name: 'user',
+	    	fieldLabel: vcube.utils.trans('Initiated by')
+	    },{
+	    	name: 'category',
+	    	fieldLabel: vcube.utils.trans('Category')
+	    },{
+	    	name: 'machine',
+	    	fieldLabel: vcube.utils.trans('Machine')
+	    },{
+	    	name: 'connector',
+	    	fieldLabel: vcube.utils.trans('Server')
+	    },{
+	    	name: 'details',
+	    	fieldLabel: vcube.utils.trans('Details')
+	    },{
+	    	name: 'started',
+	    	fieldLabel: vcube.utils.trans('Started')
+	    },{
+	    	name: 'completed',
+	    	fieldLabel: vcube.utils.trans('Completed')
+	    }],
+	    
+	    buttons:[{ 
+	    	text: vcube.utils.trans('OK'),
+	    	listeners: {
+	    		click: function(btn) { btn.up('.window').close(); }
+	    	}
+	    }]
+
+    }]
+});
+	
+
+Ext.define('vcube.view.TasksAndEventsMain.EventDetails', {
+    extend: 'Ext.window.Window',
+
+    title: vcube.utils.trans('Event Details'),
+
+    icon: 'images/vbox/OSE/about_16px.png',
+
+    width:400,
+    height: 300,
+    
+    closable: true,
+    modal: true,
+    resizable: true,
+    plain: true,
+    border: false,
+    closeAction: 'destroy',
+    layout: 'fit',
+    items: [{
+	    frame:true,
+	    xtype: 'form',
+	    itemId: 'form',
+	    defaults: { xtype: 'displayfield' },
+	    buttonAlign:'center',
+	    items: [{
+	    	name: 'name',
+	    	fieldLabel: vcube.utils.trans('Name')
+	    },{
+	    	name: 'severity',
+	    	fieldLabel: vcube.utils.trans('Severity')
+	    },{	    	
+	    	name: 'category',
+	    	fieldLabel: vcube.utils.trans('Category')
+	    },{
+	    	name: 'machine',
+	    	fieldLabel: vcube.utils.trans('Machine')
+	    },{
+	    	name: 'connector',
+	    	fieldLabel: vcube.utils.trans('Server')
+	    },{
+	    	name: 'details',
+	    	fieldLabel: vcube.utils.trans('Details')
+	    },{
+	    	name: 'time',
+	    	fieldLabel: vcube.utils.trans('Time')
+	    }],
+	    
+	    buttons:[{ 
+	    	text: vcube.utils.trans('OK'),
+	    	listeners: {
+	    		click: function(btn) { btn.up('.window').close(); }
+	    	}
+	    }]
+
+    }]
+});
+	

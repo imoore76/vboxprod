@@ -27,6 +27,8 @@ Ext.define('vcube.controller.VMTasksAndEvents', {
     				this.taskStore = panel.down('#tasks').getStore();
     				
     				this.controlledTab = panel;
+    				
+    				this.onRender(panel);
     			}
         	}
         });

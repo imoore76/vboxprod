@@ -32,6 +32,63 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     taskStore: null,
         
     
+    /*
+     * Setup item dblclick on render
+     */
+    onRender: function(panel) {
+    	panel.down('#events').on('itemdblclick', this.onEventDblClick);
+    	panel.down('#tasks').on('itemdblclick', this.onTaskDblClick);
+    },
+    
+    /* On item dblclick */
+    onTaskDblClick: function(grid, record) {
+
+    	var win = Ext.create('vcube.view.TasksAndEventsMain.TaskDetails');
+    	win.show();
+    	win.setLoading(true);
+    	
+    	var values = Ext.apply({},record.raw);
+    	
+    	values.name = Ext.String.htmlEncode(values.name);
+    	values.details = Ext.String.htmlEncode(values.details);
+    	try {
+    		values.connector = Ext.String.htmlEncode(vcube.app.serverStore.getById(values.connector).get('name'));    		
+    	} catch(err) {}
+    	try {
+    		values.machine = vcube.vmdatamediator.getVMData(values.machine).name;
+    	} catch(err) {}
+    	values.category = vcube.app.constants.LOG_CATEGORY_TEXT[values.category];
+    	values.status = vcube.app.constants.TASK_STATUS_TEXT[values.status];
+    	
+    	win.down('#form').getForm().setValues(values);
+    	win.setLoading(false);
+    },
+
+    /* On item dblclick */
+    onEventDblClick: function(grid, record) {
+    	
+    	var win = Ext.create('vcube.view.TasksAndEventsMain.EventDetails');
+    	win.show();
+    	win.setLoading(true);
+    	
+    	var values = Ext.apply({},record.raw);
+    	
+    	values.name = Ext.String.htmlEncode(values.name);
+    	values.details = Ext.String.htmlEncode(values.details);
+
+    	try {
+    		values.connector = Ext.String.htmlEncode(vcube.app.serverStore.getById(values.connector).get('name'));    		
+    	} catch(err) {}
+    	try {
+    		values.machine = vcube.vmdatamediator.getVMData(values.machine).name;
+    	} catch(err) {}
+    	values.category = vcube.app.constants.LOG_CATEGORY_TEXT[values.category];
+    	values.severity = vcube.app.constants.SEVERITY_TEXT[values.severity];
+    	
+    	win.down('#form').getForm().setValues(values);
+    	win.setLoading(false);
+    },
+
     /* Populate stores */
     populate: function() {
     	

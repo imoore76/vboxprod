@@ -109,6 +109,8 @@ span.navTreeServerStatus { font-style:italic; }
 /*.vmStateIcon { display: inline-block; position: relative; left: -10px; width: 16px; height: 16px; background-repeat: no-repeat;background-size:16px 16px;}
 .vmStateRunning .vmStateIcon { background-image:url(images/vbox/state_running_16px.png); }*/
 
+.snapshotDetails .vboxDetailsTablePanel { margin-bottom: 10px; }
+.snapshotDetails .snapshotDetailsSection > div { padding: 6px }
 
 .vcubeNavTree .x-tree-icon { height: 18px; width: 18px; background-size: 18px 18px; }
 .vcubeNavTree .x-tree-node-text {

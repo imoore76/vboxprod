@@ -139,7 +139,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  			return (ss && ss.id != 'current' && !vcube.utils.vboxVMStates.isRunning(vm) && !vcube.utils.vboxVMStates.isPaused(vm));
 		  		},
 		  		
-		  		action : function (snapshot, vm) {
+		  		action : function (snapshot, vm, rootNode) {
 		  			
 		  			
 					var buttons = {};
@@ -167,6 +167,8 @@ Ext.define('vcube.controller.VMSnapshots', {
 										if(takeSnapshot && !takeSnapshot.success)
 											return;
 										
+										return;
+										
 										vcube.utils.ajaxRequest('vbox/snapshotRestore', Ext.apply({'snapshot':snapshot.id}, vcube.utils.vmAjaxParams(vm.id)),function(data){
 											btn.up('.window').close()
 										},function(){
@@ -176,8 +178,10 @@ Ext.define('vcube.controller.VMSnapshots', {
 										
 									};
 									
-									if($('#vboxRestoreSnapshotCreate').prop('checked')) {
-										vboxSnapshotButtons[0].click(snrestore);
+									if(document.getElementById('vboxRestoreSnapshotCreate').checked) {
+
+										Ext.ux.Deferred.when(vcube.controller.VMSnapshots.snapshotActions.takeSnapshot.action(snapshot, vm, rootNode)).done(snrestore);
+										
 									} else {
 										snrestore();
 									}
@@ -265,128 +269,64 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  		
 		  		action : function (snapshot, vm) {
 
-		  			vcube.app.setLoading(true);
+		  			
+		  			var win = Ext.create('vcube.view.VMSnapshots.Details');
+		  			win.show();
+		  			win.setLoading(true);
 		  			
 		  			vcube.utils.ajaxRequest('vbox/snapshotGetDetails', Ext.apply({'snapshot':snapshot.id},vcube.utils.vmAjaxParams(vm.id)), function(data) {
 		  				
-		  				vcube.app.setLoading(false);
-		  				
-		  				console.log(data);
-		  				data.machine._isSnapshot = true;
-		  				
-		  				Ext.create('vcube.view.VMSnapshots.Details',  {
-		  					
-		  					listeners: {
-		  						show: function(win) {
-		  							
-		  							// Set basic values
-		  							win.down('#form').getForm().setValues({'name':data.name,'description':data.description});
-		  							
-		  							win.down('#taken').setValue(vcube.utils.dateTimeString(data.timeStamp));
-		  							
-		  							// Preview image
-		  							if(data.online) {
-		  								//win.down('#preview')
-		  							} else {
-		  								// hide preview
-		  							}
-		  							
-		  							// Add details
-		  							var sectionsPane = win.down('#details');
-		  							for(var i in vcube.view.VMDetails.sections) {
-		  								
-		  								if(typeof(i) != 'string') continue;
-		  								
-		  								if(vcube.view.VMDetails.sections[i].condition && !vcube.view.VMDetails.sections[i].condition(data.machine)) continue;
-		  								
-		  								sectionsPane.add(Ext.create('vcube.widget.SectionTable',{
-		  									sectionCfg: vcube.view.VMDetails.sections[i],
-		  									'data': data.machine,
-		  									name: i}));
-		  								
-		  							}
 
-		  						}
-		  					}
-		  				}).show();
-		  				
+			  				data.machine._isSnapshot = true;
+
+			  				// Set basic values
+							win.down('#form').getForm().setValues({'name':data.name,'description':data.description});
+							
+							win.down('#taken').setValue(vcube.utils.dateTimeString(data.timeStamp));
+							
+							// Preview image
+							if(data.online) {
+								var params = Ext.apply({'snapshot':snapshot.id},vcube.utils.vmAjaxParams(vm.id));
+								win.down('#preview').setValue('<img src="vbox/machineGetScreenShot?' + Ext.urlEncode(params) + '" />');
+							} else {
+								win.down('#preview').hide();
+							}
+							
+							// Add details
+							var sectionsPane = win.down('#details');
+							for(var i in vcube.view.VMDetails.sections) {
+								
+								if(typeof(i) != 'string') continue;
+								
+								if(vcube.view.VMDetails.sections[i].condition && !vcube.view.VMDetails.sections[i].condition(data.machine)) continue;
+								
+								sectionsPane.add(Ext.create('vcube.widget.SectionTable',{
+									sectionCfg: vcube.view.VMDetails.sections[i],
+									'data': data.machine,
+									name: i}));
+								
+							}
+							
+							win.down('#ok').on('click',function(btn){
+								var vals = win.down('#form').getForm().getValues();
+								win.setLoading(true);
+								vcube.utils.ajaxRequest('vbox/snapshotSave',Ext.apply({'snapshot':snapshot.id,'name':vals.name,'description':vals.description},vcube.utils.vmAjaxParams(vm.id)),function(){
+									win.setLoading(false);
+									win.close();
+								},function(){
+									win.setLoading(false);
+								});
+								
+							});
+							
+							win.setLoading(false);
+		 
 		  			},function(){
-		  				vcube.app.setLoading(false);
+		  				win.setLoading(false);
 		  			});
 		  			
-		  			return;
-		  			
-					var l = new vboxLoader();
-					l.add('snapshotGetDetails',function(d){
-	
-						$('#vboxSnapshotDetailsName').val(d.responseData.name);
-						$('#vboxSnapshotDetailsTaken').html(vboxDateTimeString(d.responseData.timeStamp));
-						$('#vboxSnapshotDetailsDesc').val(d.responseData.description);
-						
-						if(d.responseData.online) {
-							$('#vboxSnapshotSS').html('<a href="screen.php?vm='+vm.id+'&snapshot='+d.responseData.id+'&full=1" target="_blank"><img src="screen.php?vm='+vm.id+'&snapshot='+d.responseData.id+'" /></a>').show();
-						} else {
-							$('#vboxSnapshotSS').empty().hide();
-						}
-						
-			  	  		// Display details
-			  	  		$('#vboxSnapshotDetailsVM').empty();
-			  	  		
-				  	  	// Enclosing details Table
-				  	  	var vboxDetailsTable = $('<table />').attr({'class':'vboxDetailsTable'});
-				  	  	
-				  	  	// Set to isSnapshot
-				  	  	d.responseData.machine._isSnapshot = true;
-				  	  	
-				  	  	for(var i in vboxVMDetailsSections) {
-				
-				  	  		section = vboxVMDetailsSections[i];
-				  	  		
-				  	  		if(section.noSnapshot) continue;
-				  	  		
-					  	  	$('<tr />').attr({'class':'vboxDetailsHead'}).append(
-					  	  		$('<th />').attr({'class':'vboxDetailsSection','colspan':'2'}).disableSelection()
-					  	  			.html("<img style='float:left; margin-right: 3px; ' src='images/vbox/" + section.icon + "' height='16' width='16' /> ")
-					  	  			.append(
-					  	  				$('<span />').css({'float':'left'}).append(document.createTextNode(section.title +' '))
-					  	  			)
-					  	  	).appendTo(vboxDetailsTable);
-	
-				  	  		__vboxDetailAddRows(d.responseData.machine, section.rows, vboxDetailsTable);
-				
-				  	  	}
-			  	  	
-				  	  $('#vboxSnapshotDetailsVM').append(vboxDetailsTable);
-	
-			  	  		
-					},{'vm':vm.id,'snapshot':snapshot.id});
-					l.onLoad = function(){
-		  			
-			  			var buttons = {};
-						buttons[vcube.utils.trans('OK','QIMessageBox')] = function() {
-	
-				  			// Current snapshot
-				  	  		var snapshot = $('#vboxSnapshotList').find('div.vboxListItemSelected').first().parent().data('vboxSnapshot');
-									
-				  	  		var l = new vboxLoader();
-				  	  		l.add('snapshotSave',function(d){
-				  	  			
-				  	  			// Let events get picked up. Nothing to do here
-				  	  		
-				 	  		},{'vm':vm.id,'snapshot':snapshot.id,'name':$('#vboxSnapshotDetailsName').val(),'description':$('#vboxSnapshotDetailsDesc').val()});
-				 	  		$(this).dialog('close');
-							l.run();
-							
-						};
-						buttons[vcube.utils.trans('Cancel','QIMessageBox')] = function(){
-							$(this).dialog('close');
-						};
-						$('#vboxSnapshotDetails').dialog({'closeOnEscape':false,'width':'600px','height':'auto','buttons':buttons,'modal':true,'autoOpen':true,'dialogClass':'vboxDialogContent','title':'<img src="images/vbox/show_snapshot_details_16px.png" class="vboxDialogTitleIcon" /> '+vcube.utils.trans('Details of %1 (%2)','VBoxSnapshotDetailsDlg').replace('%1',$('<div />').text(snapshot.name).html()).replace('%2',vm.name)});
-					};
-					l.run();
 		  	  	}
-		  	}
-	  	
+		  	}	  	
 	  	
 	    }
 
@@ -443,6 +383,13 @@ Ext.define('vcube.controller.VMSnapshots', {
     snapshotTree: null,
     snapshotTreeStore: null,
     
+    sortFn: function(snNode1, snNode2) {
+    	if(snNode1.get('id') == 'current') return -1;
+    	if(snNode2.get('id') == 'current') return 1;
+    	if(snNode1.get('timeStamp') > snNode2.get('timeStamp')) return -1;
+    	if(snNode2.get('timeStamp') > snNode2.get('timeStamp')) return 1;
+    	return 0;
+    },
     
     /* When a toolbar button is clicked */
     onButtonClick: function(btn) {
@@ -596,10 +543,12 @@ Ext.define('vcube.controller.VMSnapshots', {
     	currentTime = Math.floor(currentTime.getTime() / 1000);
 
     	targetNode.set({
-    		'text' : vcube.controller.VMSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.get('timeStamp'), currentTime),
+    		'text' : vcube.controller.VMSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.raw.timeStamp, currentTime),
     		'name': event.enrichmentData.name,
     		'description': event.enrichmentData.description
     	});
+    	
+    	Ext.apply(targetNode.raw,{name: event.enrichmentData.name, description: event.enrichmentData.description});
     	
     	
     },
@@ -631,6 +580,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     			n = removeTarget.getChildAt(0);
     		}
     		
+    		removeTarget.parentNode.sort(this.sortFn);
     		removeTarget.parentNode.removeChild(removeTarget, true);
 
     	// Snapshot restored
@@ -735,12 +685,16 @@ Ext.define('vcube.controller.VMSnapshots', {
     				var child = parentNode.createNode(vcube.view.VMSnapshots.snapshotNode(children[i], (childNodes && childNodes.length)));
     				
     				if(childNodes) appendChildren(child, childNodes);
+    				
+    				child.sort(self.sortFn);
     				parentNode.appendChild(child);
     			}
     		}
 
     		if(responseData.snapshot && responseData.snapshot.id)
     			appendChildren(self.snapshotTree.getRootNode(), [responseData.snapshot]);
+    		
+    		self.snapshotTree.getRootNode().sort(self.sortFn);
     		
     		// Append current state
     		var appendTarget = self.snapshotTreeStore.getNodeById(responseData.currentSnapshotId);

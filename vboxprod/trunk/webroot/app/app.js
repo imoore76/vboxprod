@@ -66,7 +66,7 @@ Ext.application({
     				
     			} else if(event.eventData.resultCode){
     				
-    				vcube.utils.alert('Task `' + event.eventData.taskName +'` failed: ' + event.eventData.error);
+    				vcube.utils.alert('Task `' + event.eventData.taskName +'` failed.<p>' + event.eventData.error+'</p>');
     			}
     			
     			delete this.progressOps[i];

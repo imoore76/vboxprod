@@ -494,12 +494,16 @@ class Application(threading.Thread):
             self.progressOps[result['responseData']['progress']] = task
             logData['status'] = constants.TASK_STATUS['INPROGRESS']
 
+            # Insert task id into result
+            result['responseData'].update({'task_id': task.id})
+
         # Task is completed
         else:
             logData['status'] = constants.TASK_STATUS['COMPLETED']
             logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
         self.updateTask(task, logData)
+        
         
         return result
         

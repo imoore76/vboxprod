@@ -48,6 +48,9 @@ Ext.application({
     /* Progress operations to watch */
     progressOps : {},
     
+    /* Task list to watch */
+    taskList: {},
+    
     /* Add progress operation to watch list */
     addProgress: function(pid) {
     	this.progressOps[pid] = true;
@@ -75,6 +78,19 @@ Ext.application({
     	}
     	
     },
+    
+    /* Check for a task we wanted to be notified of */
+    onTaskUpdate: function(event) {
+    	
+    	
+    	
+    },
+    
+    /* Notify of task update */
+    notifyTask: function(task_id, promise) {
+    	this.taskList[task_id] = promise;
+    },
+    
     
     // a fatal error has occurred, stop everything and display error
     died: false,

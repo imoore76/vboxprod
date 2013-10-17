@@ -42,6 +42,14 @@ def vboxEnumToString(enum, elem):
 def vboxStringToEnum(enum, elem):
     return getattr(vboxMgr.constants, enum + '_' + elem)
 
+def vboxEnumToList(enum, elem):
+    vals = vboxMgr.constants.all_values(enum)
+    returnVals = []
+    for k,v in vals.iteritems():
+        if v & elem:
+            returnVals.append(k)
+    return returnVals
+
 def vboxEnumList(enum):
     return vboxMgr.constants.all_values(enum)
 
@@ -50,6 +58,7 @@ def vboxGetArray(obj, elem):
     vals = vboxMgr.getArray(obj, elem)
     if vals is None: vals = []
     return vals
+
 
 
 """
@@ -1269,7 +1278,7 @@ class vboxConnector(object):
         usbEx = []
         usbNew = []
 
-        usbc = self._machineGetUSBController(session.machine)
+        usbc = self._machineGetUSBControllers(session.machine)
 
         if state != 'Saved' and usbc['enabled']:
 
@@ -1429,7 +1438,7 @@ class vboxConnector(object):
         m.keyboardHIDType = vboxStringToEnum("KeyboardHIDType",args['keyboardHIDType'])
         m.pointingHIDType = vboxStringToEnum("PointingHIDType",args['pointingHIDType'])
         m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages, (True if int(args['HWVirtExProperties']['LargePages']) else False))
-        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Exclusive, (True if int(args['HWVirtExProperties']['Exclusive']) else False))
+        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_UnrestrictedExecution, (True if int(args['HWVirtExProperties']['UnrestrictedExecution']) else False))
         m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
 
         """ Custom Icon """
@@ -1697,7 +1706,7 @@ class vboxConnector(object):
         usbEx = {}
         usbNew = {}
 
-        usbc = self._machineGetUSBController(session.machine)
+        usbc = self._machineGetUSBControllers(session.machine)
 
         # controller properties
         if usbc['enabled'] != args['USBController']['enabled'] or usbc['enabledEHCI'] != args['USBController']['enabledEHCI']:
@@ -2023,7 +2032,7 @@ class vboxConnector(object):
 
             """ @m IMachine """
             m = self.vbox.findMachine(vm['id'])
-            desc = m.export(app, args['file'])
+            desc = m.exportTo(app, args['file'])
             props = desc.getDescription()
             ptypes = []
             for p in props[0]: ptypes.append(str(p))
@@ -2048,7 +2057,7 @@ class vboxConnector(object):
 
 
         """ @progress IProgress """
-        progress = app.write(args.get('format','ovf-1.0'),(True if args['manifest'] else False),args['file'])
+        progress = app.write(args.get('format','ovf-1.0'),([] if args['manifest'] else [vboxMgr.constants.ExportOptions_CreateManifest]),args['file'])
         
         # Save progress
         global progressOpPool
@@ -2556,8 +2565,9 @@ class vboxConnector(object):
         # Shared Folders
         data['sharedFolders'] = self._machineGetSharedFolders(machine)
 
-        # USB Filters
-        data['USBController'] = self._machineGetUSBController(machine)
+        # USB Controllers and Filters
+        data['USBControllers'] = self._machineGetUSBControllers(machine)
+        data['USBDeviceFilters'] = self._machineGetUSBDeviceFilters(machine)
 
         # Items when not obtaining snapshot machine info
         if not snapshot:
@@ -2664,7 +2674,7 @@ class vboxConnector(object):
                 hds.append(self.vbox.openMedium(hd.location,vboxMgr.constants.DeviceType_HardDisk, None, None))
 
             """ @progress IProgress """
-            progress = machine.delete(hds)
+            progress = machine.deleteConfig(hds)
 
             global progressOpPool
             progressid = progressOpPool.store(progress)
@@ -2962,13 +2972,31 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array USB controller info
      """
-    def _machineGetUSBController(self, m):
+    def _machineGetUSBControllers(self, m):
+
+        controllers = []
+        
+        """ @u IUSBController """
+        for c in vboxGetArray(m, 'USBControllers'):
+            controllers.append({
+                'name': c.name,
+                'type': vboxEnumToString('USBControllerType',c.type)
+            })
+
+        return controllers
+    
+    """
+     * Get USB device filter
+     *
+     * @param IMachine m virtual machine instance
+     * @return array USB controller info
+     """
+    def _machineGetUSBDeviceFilters(self, m):
 
         """ @u IUSBController """
-        u = m.USBController
 
         deviceFilters = []
-        for df in vboxGetArray(u,'deviceFilters'):
+        for df in vboxGetArray(m.USBDeviceFilters,'deviceFilters'):
 
             deviceFilters.append({
                 'name' : df.name,
@@ -2983,11 +3011,7 @@ class vboxConnector(object):
                 'remote' : df.remote
             })
 
-        return {
-            'enabled' : int(u.enabled),
-            'enabledEHCI' : u.enabledEHCI,
-            'deviceFilters' : deviceFilters
-        }
+        return deviceFilters
 
     """
      * Return top-level virtual machine or snapshot information
@@ -3042,7 +3066,7 @@ class vboxConnector(object):
                 'Enabled' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled),
                 'NestedPaging' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging),
                 'LargePages' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages),
-                'Exclusive' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Exclusive),
+                'UnrestrictedExecution' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_UnrestrictedExecution),
                 'VPID' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID)
                 },
             'CpuProperties' : {
@@ -3592,11 +3616,9 @@ class vboxConnector(object):
         """ @src IMedium """
         src = self.vbox.openMedium(args['src'], vboxMgr.constants.DeviceType_HardDisk, None, None)
 
-        type = 'fixed' if args['type'] == 'fixed' else 'Standard'
-        #mv = new MediumVariant()
-        #type = mv.ValueMap[type]
+        type = [vboxMgr.constants.MediumVariant_Fixed if args['type'] == 'fixed' else vboxMgr.constants.MediumVariant_Standard]
         if args['split']:
-            type = type + mv.ValueMap['VmdkSplit2G']
+            type.append(vboxMgr.constants.MediumVariant_VmdkSplit2G)
 
         """ @progress IProgress """
         progress = src.cloneTo(target,type,None)
@@ -3722,11 +3744,9 @@ class vboxConnector(object):
     def remote_mediumCreateBaseStorage(self, args):
 
         format = args['format'].upper()
-        type = ('fixed' if args['type'] == 'fixed' else 'Standard')
-        mv = MediumVariant()
-        type = mv.ValueMap[type]
+        type = [vboxMgr.constants.MediumVariant_Fixed if args['type'] == 'fixed' else vboxMgr.constants.MediumVariant_Standard]
         if args['split']:
-            type = type + mv.ValueMap['VmdkSplit2G']
+            type.append(vboxMgr.constants.MediumVariant_VmdkSplit2G)
 
         """ @hd IMedium """
         hd = self.vbox.createHardDisk(format,args['file'])
@@ -4024,11 +4044,6 @@ class vboxConnector(object):
         # No medium
         if m is None: return None
         
-        # For fixed value
-        mv = vboxEnumList("MediumVariant")
-        variant = m.variant
-
-            
         if baseInfo:
             
             if m.deviceType == vboxMgr.constants.DeviceType_HardDisk and (m.base and m.base.id != m.id):
@@ -4054,9 +4069,8 @@ class vboxConnector(object):
         children = []
         attachedTo = []
 
-        if getChildren:
-            for c in vboxGetArray(m,'children'):
-                children.append(self._mediumGetDetails(c))
+        for c in vboxGetArray(m,'children'):
+            children.append(self._mediumGetDetails(c))
 
         for mid in vboxGetArray(m,'machineIds'):
             sids = list(m.getSnapshotIds(mid))
@@ -4066,21 +4080,26 @@ class vboxConnector(object):
             except Exception as e:
                 continue
 
-            c = len(sids)
-            for i in range(0,c):
-                if sids[i] == mid.id:
-                    del sids[i]
-                else:
+            snapshots = []
+            for i in range(0,len(sids)):
+                if sids[i] != mid.id:
                     try:
                         """ @sn ISnapshot """
                         sn = mid.findSnapshot(sids[i])
-                        sids[i] = sn.name
+                        snapshots.append(sn.name)
                         
                     except:
                         pass
 
-            attachedTo.append({'machine':mid.name,'snapshots':sids})
+            attachedTo.append({'machine':mid.name,'snapshots':snapshots})
 
+        variant = 0;
+        for v in vboxGetArray(m, 'variant'):
+            variant += v
+            
+        variant = vboxEnumToList('MediumVariant', variant)
+
+            
         return {
                 'id' : m.id,
                 'description' : m.description,
@@ -4099,9 +4118,7 @@ class vboxConnector(object):
                 'logicalSize' : (long(m.logicalSize)/1024)/1024,
                 'autoReset' : bool(m.autoReset),
                 'lastAccessError' : m.lastAccessError,
-                'variant' : long(variant),
-                'fixed' : bool((long(variant) & mv['Fixed']) > 0),
-                'split' : bool((long(variant) & mv['VmdkSplit2G']) > 0),
+                'variant' : variant,
                 'machineIds' : [],
                 'attachedTo' : attachedTo
             }
@@ -4118,6 +4135,7 @@ class vboxConnector(object):
         
         # capabilities
         mfCap = vboxEnumList('MediumFormatCapabilities')
+        
         for mf in vboxGetArray(self.vbox.systemProperties,'mediumFormats'): # @mf IMediumFormat """
             exts = mf.describeFileExtensions()
             dtypes = []
@@ -4125,8 +4143,7 @@ class vboxConnector(object):
                 dtypes.append(vboxEnumToString("DeviceType",t))
             caps = []
             for v,k in mfCap.iteritems():
-                if (k & mf.capabilities):
-                    caps.append(v)
+                caps.append(vboxEnumToString('MediumFormatCapabilities', v))
             
             mediumFormats.append({'id':mf.id,'name':mf.name,'extensions':exts[0],'deviceTypes':dtypes,'capabilities':caps})
 
@@ -5148,14 +5165,14 @@ def main(argv = sys.argv):
      ]
 
     # Delete pseudo machine states
-    vboxMgr_constant_MachineState_FirstOnline = vboxMgr.constants._Values['MachineState']['FirstOnline']
-    vboxMgr_constant_MachineState_LastOnline = vboxMgr.constants._Values['MachineState']['LastOnline']
-    vboxMgr_constant_MachineState_FirstTransient = vboxMgr.constants._Values['MachineState']['FirstTransient']
-    vboxMgr_constant_MachineState_LastTransient = vboxMgr.constants._Values['MachineState']['LastTransient']
-    del vboxMgr.constants._Values['MachineState']['FirstOnline']
-    del vboxMgr.constants._Values['MachineState']['FirstTransient']
-    del vboxMgr.constants._Values['MachineState']['LastOnline']
-    del vboxMgr.constants._Values['MachineState']['LastTransient']
+    vboxMgr_constant_MachineState_FirstOnline = vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['FirstOnline']
+    vboxMgr_constant_MachineState_LastOnline = vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['LastOnline']
+    vboxMgr_constant_MachineState_FirstTransient = vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['FirstTransient']
+    vboxMgr_constant_MachineState_LastTransient = vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['LastTransient']
+    del vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['FirstOnline']
+    del vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['FirstTransient']
+    del vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['LastOnline']
+    del vboxMgr.constants._VirtualBoxReflectionInfo__dValues['MachineState']['LastTransient']
 
     
 

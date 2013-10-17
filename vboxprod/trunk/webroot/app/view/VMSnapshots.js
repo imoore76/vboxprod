@@ -199,7 +199,7 @@ Ext.define('vcube.view.VMSnapshots.Details', {
 	
     extend: 'Ext.window.Window',
 
-    title: vcube.utils.trans('Take Snapshot of Virtual Machine','UIActionPool'),
+    title: vcube.utils.trans('Snapshot Details','UIActionPool'),
 
     icon: 'images/vbox/show_snapshot_details_16px.png',
 

@@ -200,6 +200,7 @@ class Application(threading.Thread):
         Used for progress operation to task mapping
     """
     progressOps = {}
+    progressOpsLock = threading.Lock()
     
     def __init__(self):
 
@@ -448,15 +449,9 @@ class Application(threading.Thread):
         logData['user'] = user
 
         
-        # Log task
-        task = self.logTask(logData)
 
         # Perform action and parse result
         result = self.connectorActionPool[str(connector_id)].vboxAction(action, args)
-        
-        # Failed to create task..
-        if not task:
-            return result
         
         # Get updated task entry
         try:
@@ -477,7 +472,7 @@ class Application(threading.Thread):
             
             logData['status'] = constants.TASK_STATUS['ERROR']
             
-            task.completed = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
 
             if len(result.get('errors',[])):
                 errorStrings = []
@@ -502,7 +497,8 @@ class Application(threading.Thread):
             logData['status'] = constants.TASK_STATUS['COMPLETED']
             logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
-        self.updateTask(task, logData)
+        # Log task
+        task = self.logTask(logData)
         
         
         return result

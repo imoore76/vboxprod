@@ -103,18 +103,34 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  						win.down('#ok').on('click',function(btn){
 		  							
 		  							win.setLoading(true);
+		  							
+		  							// Suspend events so that we don't get the task update before
+		  							// we tell the application to watch for it
+		  							vcube.app.suspendEvents(true);
+		  							
+		  							// Take snapshot 
 		  							vcube.utils.ajaxRequest('vbox/snapshotTake',
 		  									Ext.apply(win.down('#form').getForm().getValues(), vcube.utils.vmAjaxParams(vm.id)),
+		  									// success
 		  									function(data) {
-		  										win.setLoading(false);
-		  										if(data) {
-		  											win.close();
-		  											promise.resolve(data);
+		  										try {
+		  											
+		  											win.setLoading(false);
+		  											
+		  											if(data && data.task_id) {
+		  												vcube.app.notifyTask(data.task_id, promise);
+		  												win.close();
+		  											}
+		  											
+		  										} finally {
+		  											vcube.app.resumeEvents();		  											
 		  										}
-		  							}, function() {
-		  								win.setLoading(false);
-		  								promise.reject();
-		  							})
+			  							// failure
+			  							}, function() {
+			  								vcube.app.resumeEvents();
+			  								win.setLoading(false);
+			  								promise.reject();
+			  							});
 		  						});
 		  						win.down('#cancel').on('click',function(){
 		  							promise.reject();
@@ -384,8 +400,8 @@ Ext.define('vcube.controller.VMSnapshots', {
     snapshotTreeStore: null,
     
     sortFn: function(snNode1, snNode2) {
-    	if(snNode1.get('id') == 'current') return -1;
-    	if(snNode2.get('id') == 'current') return 1;
+    	if(snNode1.get('id') == 'current') return 1;
+    	if(snNode2.get('id') == 'current') return -1;
     	if(snNode1.get('timeStamp') > snNode2.get('timeStamp')) return -1;
     	if(snNode2.get('timeStamp') > snNode2.get('timeStamp')) return 1;
     	return 0;

@@ -97,7 +97,7 @@ Ext.define('vcube.view.VMDetails', {
 							   if(d['HWVirtExProperties'].NestedPaging) acList[acList.length] = vcube.utils.trans('Nested Paging');
 							   if(d['CpuProperties']['PAE']) acList[acList.length] = vcube.utils.trans('PAE/NX');							   
 							   if(d['HWVirtExProperties'].LargePages) acList[acList.length] = vcube.utils.trans('Large Pages');
-							   if(d['HWVirtExProperties'].Exclusive) acList[acList.length] = vcube.utils.trans('Exclusive use of the hardware virtualization extensions');
+							   if(d['HWVirtExProperties'].UnrestrictedExecution) acList[acList.length] = vcube.utils.trans('Enable unrestricted execution');
 							   if(d['HWVirtExProperties'].VPID) acList[acList.length] = vcube.utils.trans('VT-x VPID');
 							   return acList.join(', ');
 						   },
@@ -448,12 +448,19 @@ Ext.define('vcube.view.VMDetails', {
 						
 						var rows = [];
 						
-						if(d['USBController'] && d['USBController']['enabled']) {
+						var usbEnabled = false;
+						for(var i = 0; i < d.USBControllers.length; i++) {
+							if(d.USBControllers[i].type == 'OHCI') {
+								usbEnabled = true;
+								break;
+							}
+						}
+						if(usbEnabled) {
 							var tot = 0;
 							var act = 0;
-							for(var i = 0; i < d['USBController'].deviceFilters.length; i++) {
+							for(var i = 0; i < d.USBDeviceFilters.length; i++) {
 								tot++;
-								if(d['USBController'].deviceFilters[i].active) act++;
+								if(d.USBDeviceFilters[i].active) act++;
 							}
 							
 							rows[0] = {

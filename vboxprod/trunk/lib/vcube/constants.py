@@ -6,18 +6,20 @@ __all__ = ['TASK_STATUS', 'TASK_STATUS_TEXT', 'CONNECTOR_STATES','CONNECTOR_STAT
 
 TASK_STATUS = {
     'STARTED' : 0,
-    'COMPLETED' : 1,
-    'ERROR' : 2,
-    'CANCELED' : 3,
-    'INPROGRESS' : 4
+    'INPROGRESS' : 5,
+    'COMPLETED' : 100,
+    'ERROR' : 105,
+    'CANCELED' : 110
 }
+
+TASK_STATUS_FIRST_STOPPED_STATE = 100
 
 TASK_STATUS_TEXT = {
     0 : 'Started',
-    1 : 'Completed',
-    2 : 'Error',
-    3 : 'Canceled',
-    4 : 'In progress'
+    5 : 'In progress',
+    100 : 'Completed',
+    105 : 'Error',
+    110 : 'Canceled'
 }
 
 CONNECTOR_STATES = {

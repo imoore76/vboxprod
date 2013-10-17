@@ -56,6 +56,8 @@ Ext.application({
     	this.progressOps[pid] = true;
     },
     
+    version: '0.3 beta',
+    
     /* Check for progress operation completion */
     onProgressCompleted: function(event) {
     	

@@ -11,7 +11,8 @@ Ext.define('vcube.view.Viewport', {
           'vcube.view.Welcome',
           'vcube.view.GroupTabs',
           'vcube.view.VMTabs',
-          'vcube.view.ServerTabs'
+          'vcube.view.ServerTabs',
+          'vcube.view.VirtualMachinesList'
    ],
    
    layout: 'border',
@@ -49,6 +50,8 @@ Ext.define('vcube.view.Viewport', {
 			xtype: 'GroupTabs'
 		},{
 			xtype: 'VMTabs'
+		},{
+			xtype: 'VirtualMachinesList'
 		}]
 
    }]

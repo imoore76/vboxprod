@@ -24,6 +24,14 @@ Ext.define('vcube.controller.Menubar', {
         
         /* Tree events */
         this.control({
+        	'viewport > Menubar > toolbar' : {
+        		render: function(tbar) {
+        			tbar.add([
+        				{xtype:'tbfill'},
+        				'vCube ' + vcube.app.version + ' @ ' + location.hostname + ' <img src="images/vcube.png" style="width:12px;height:12px;margin-right: 4px; margin-left: 4px; display:inline-block;" />'
+        			])
+        		}
+        	},
         	'viewport > Menubar menuitem' : {
         		click: this.itemClicked
         	}

@@ -20,6 +20,9 @@ Ext.define('vcube.controller.MainPanel', {
     },{
     	selector: 'viewport > #MainPanel > VMTabs',
     	ref: 'VMTabsView'
+    },{
+    	selector: 'viewport > #MainPanel > VirtualMachinesList',
+    	ref: 'VMListsView'
     }],
     
     /* Watch for events */
@@ -40,6 +43,7 @@ Ext.define('vcube.controller.MainPanel', {
     	var groupTabs = this.getGroupTabsView();
     	var vmTabs = this.getVMTabsView();
     	var serverTabs = this.getServerTabsView();
+    	var vmList = this.getVMListsView();
     	
     	if(records.length) {
     		record = records[0];
@@ -49,6 +53,7 @@ Ext.define('vcube.controller.MainPanel', {
     		serverTabs.hide();
     		groupTabs.hide();
     		vmTabs.hide();
+    		vmList.hide();
     		welcome.show();
     		return;
 
@@ -61,6 +66,7 @@ Ext.define('vcube.controller.MainPanel', {
     		groupTabs.hide();
     		welcome.hide();
     		serverTabs.hide();
+    		vmList.hide();
     		vmTabs.show();
     		
     		
@@ -71,6 +77,7 @@ Ext.define('vcube.controller.MainPanel', {
     		welcome.hide();
     		serverTabs.hide();
     		vmTabs.hide();
+    		vmList.hide();
     		groupTabs.show();
     		
     	// Server selected
@@ -79,9 +86,19 @@ Ext.define('vcube.controller.MainPanel', {
     		welcome.hide();
     		vmTabs.hide();
     		groupTabs.hide();
+    		vmList.hide();
     		serverTabs.show();
     		    		
     		
+    	// Top VMs folder
+    	} else if(record.raw.data._type == 'vmsFolder') {
+
+    		serverTabs.hide();
+    		groupTabs.hide();
+    		vmTabs.hide();
+    		welcome.hide();
+    		vmList.show();
+
     	}
     }
     

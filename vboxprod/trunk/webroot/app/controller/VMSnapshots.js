@@ -451,7 +451,8 @@ Ext.define('vcube.controller.VMSnapshots', {
     	
     },
     
-    /* Hold ref to snapshot tree store when tab is rendered */
+    /* Hold ref to snapshot tree store when tab is rendered 
+     * and setup tooltips */
     onTabRender: function(tab) {
     	
     	var self = this;
@@ -460,11 +461,9 @@ Ext.define('vcube.controller.VMSnapshots', {
     	this.snapshotTreeStore = this.snapshotTree.getStore();
     	
     	
-    	/**
-    	 * 
-    	 * Snapshot tooltips
-    	 * 
-    	 **/
+    	/*
+    	 * Snapshot tooltips 
+    	 */
     	var snapshotTreeView = this.snapshotTree.getView();
 
     	this.snapshotTree.on('render', function(view) {

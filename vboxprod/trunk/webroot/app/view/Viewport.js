@@ -51,7 +51,9 @@ Ext.define('vcube.view.Viewport', {
 		},{
 			xtype: 'VMTabs'
 		},{
-			xtype: 'VirtualMachinesList'
+			xtype: 'VirtualMachinesList',
+			title: '',
+			icon: ''
 		}]
 
    }]

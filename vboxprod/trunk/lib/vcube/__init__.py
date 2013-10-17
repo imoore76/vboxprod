@@ -201,6 +201,7 @@ class Application(threading.Thread):
     """
     progressOps = {}
     progressOpsLock = threading.Lock()
+    progressOpsEventQueue = Queue.Queue()
     
     def __init__(self):
 
@@ -258,7 +259,7 @@ class Application(threading.Thread):
     """
        Log a task
     """
-    def logTask(self, taskData):
+    def logTask(self, taskData, suppressEvent=False):
 
         try:
             task = TaskLog()
@@ -275,11 +276,14 @@ class Application(threading.Thread):
 
             task.save()
             
-            self.pumpEvent({
-                'source' : 'vcube',
-                'eventType' : 'taskLogEntry',
-                'eventData' : dict(task._data.copy())
-            })
+            if not suppressEvent:
+                
+                self.pumpEvent({
+                    'source' : 'vcube',
+                    'eventType' : 'taskLogEntry',
+                    'eventData' : dict(task._data.copy())
+                })
+                
             return task
         
         except Exception as e:
@@ -291,7 +295,7 @@ class Application(threading.Thread):
     """
         Update a task
     """
-    def updateTask(self, task, taskData):
+    def updateTask(self, task, taskData, suppressEvent=False):
         
         try:
             task.status = taskData.get('status', constants.TASK_STATUS['COMPLETED'])
@@ -306,11 +310,12 @@ class Application(threading.Thread):
             task.save()
             
         
-            self.pumpEvent({
-                'source' : 'vcube',
-                'eventType' : 'taskLogUpdate',
-                'eventData' : dict(task._data.copy())
-            })
+            if not suppressEvent:
+                self.pumpEvent({
+                    'source' : 'vcube',
+                    'eventType' : 'taskLogUpdate',
+                    'eventData' : dict(task._data.copy())
+                })
             
             return task
         
@@ -325,9 +330,11 @@ class Application(threading.Thread):
     """
     def updateTaskProgress(self, event):
         
-        if not self.progressOps.get(event['progress'], None): return
-
+        if not self.progressOps.get(event.get('progress',''), None):
+            return
+    
         task = self.progressOps[event['progress']]
+
         
         taskData = {}
         
@@ -348,15 +355,14 @@ class Application(threading.Thread):
                 
                 status.update({'taskName':task.name,'progress':event['progress']})
                 
-                self.pumpEvent({
-                    'source' : 'vcube',
-                    'eventType' : 'ProgressCompleted',
-                    'eventData' : status
-                })
-
             finally:
+                
                 # remove from list
-                del self.progressOps[event['progress']]
+                self.progressOpsLock.acquire(True)
+                try:
+                    del self.progressOps[event['progress']]
+                finally:
+                    self.progressOpsLock.release()
 
         else:
             
@@ -448,61 +454,77 @@ class Application(threading.Thread):
         logData['connector'] = connector_id
         logData['user'] = user
 
-        
+        # Lock the progress pool if this operation may
+        # return a progress id
+        progressOpsLocked = False        
+        if getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False):
+            self.progressOpsLock.acquire(True)
+            progressOpsLocked = True
 
-        # Perform action and parse result
-        result = self.connectorActionPool[str(connector_id)].vboxAction(action, args)
-        
-        # Get updated task entry
         try:
             
-            logData.update(getattr(vboxConnector, 'remote_'+action+'_log')(args, ({} if not result.get('success', False) else result.get('responseData',{}))))
+            # Perform action and parse result
+            result = self.connectorActionPool[str(connector_id)].vboxAction(action, args)
             
-        except Exception as e:
-            traceback.print_exc()
-            logger.exception(e)
-            logData.update({
-                'name': action,
-                'details': 'Log update failed: %s' %(str(e),)
-            })
-
-        # Set status to completed if it was successful,
-        # else set to erred and append errors
-        if not result.get('success', False):
-            
-            logData['status'] = constants.TASK_STATUS['ERROR']
-            
-            logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-
-            if len(result.get('errors',[])):
-                errorStrings = []
-                for e in result.get('errors'):
-                    errorStrings.append(e.get('error','Unkonwn'))
-                logData['details'] = ' '.join(errorStrings)
-            
+            # Get updated task entry
+            try:
+                
+                logData.update(getattr(vboxConnector, 'remote_'+action+'_log')(args, ({} if not result.get('success', False) else result.get('responseData',{}))))
+                
+            except Exception as e:
+                traceback.print_exc()
+                logger.exception(e)
+                logData.update({
+                    'name': action,
+                    'details': 'Log update failed: %s' %(str(e),)
+                })
     
-        # vboxConnector method says we should look for a progress operation
-        # result and responseData contains a progress id
-        elif getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False) and type(result.get('responseData',None)) is dict and result.get('responseData',{}).get('progress',None):
+            # Set status to completed if it was successful,
+            # else set to erred and append errors
+            if not result.get('success', False):
+                
+                logData['status'] = constants.TASK_STATUS['ERROR']
+                
+                logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    
+                if len(result.get('errors',[])):
+                    errorStrings = []
+                    for e in result.get('errors'):
+                        errorStrings.append(e.get('error','Unkonwn'))
+                    logData['details'] = ' '.join(errorStrings)
+                    
+                self.logTask(logData)
+                
+        
+            # vboxConnector method says we should look for a progress operation
+            # result and responseData contains a progress id
+            elif getattr(getattr(vboxConnector, 'remote_'+action), 'progress', False) and type(result.get('responseData',None)) is dict and result.get('responseData',{}).get('progress',None):
+                
+                logData['status'] = constants.TASK_STATUS['INPROGRESS']
+                
+                # Log task
+                task = self.logTask(logData)
+    
+                # Add to progress / task pool
+                self.progressOps[result['responseData']['progress']] = task
+    
+                # Insert task id into result
+                result['responseData'].update({'task_id': task.id})
+    
+            # Task is completed
+            else:
+                logData['status'] = constants.TASK_STATUS['COMPLETED']
+                logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                
+                # Log task
+                task = self.logTask(logData)
             
-            # Add to progress / task pool
-            self.progressOps[result['responseData']['progress']] = task
-            logData['status'] = constants.TASK_STATUS['INPROGRESS']
-
-            # Insert task id into result
-            result['responseData'].update({'task_id': task.id})
-
-        # Task is completed
-        else:
-            logData['status'] = constants.TASK_STATUS['COMPLETED']
-            logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             
-        # Log task
-        task = self.logTask(logData)
-        
-        
-        return result
-        
+            return result
+
+        finally:
+            if progressOpsLocked:
+                self.progressOpsLock.release()
         
     
     """
@@ -522,10 +544,13 @@ class Application(threading.Thread):
     def onEvent(self, event):
         
         if event['eventType'] == 'progressUpdate':
+            
             """
                 Update task
             """
-            self.updateTaskProgress(event)            
+            # queue used so that self.progressOpsLock does not block
+            # processing of all events
+            self.progressOpsEventQueue.put(event)
             return False
             
         if event['eventType'] == 'ConnectorStateChanged':
@@ -823,6 +848,25 @@ class Application(threading.Thread):
             """ enabled """
             self.addConnector(connector)
         
+    """
+        Handle progress op events. This is done in its own thread
+        so that progressOpsLock does not block all events. See vboxAction()
+    """
+    def progressOpsEventThread(self):
+        
+        while self.running:
+            
+            if self.progressOpsEventQueue.empty():
+                time.sleep(1)
+            else:
+                self.progressOpsLock.acquire(True)
+                try:
+                    while not self.progressOpsEventQueue.empty():
+                        self.updateTaskProgress(self.progressOpsEventQueue.get())
+                        self.progressOpsEventQueue.task_done()
+                finally:
+                    self.progressOpsLock.release()
+                    
             
     def run(self):
         """
@@ -831,9 +875,14 @@ class Application(threading.Thread):
         
         self.running = True
         
+        # start progress event queue hander thread
+        progressOpEventRunner = threading.Thread(target=self.progressOpsEventThread)
+        progressOpEventRunner.start()
+        
         # Add connectors
         for c in list(Connector.select().where(Connector.state > -1).dicts()):
             self.addConnector(c)
+            
 
         
         while self.running:
@@ -845,6 +894,9 @@ class Application(threading.Thread):
  
         self.connectorsLock.acquire(True)
         try:
+            
+            """ join event queue runner """
+            progressOpEventRunner.join()
             
             """ Stop event listener clients """
             for cid, c in self.connectorEventListeners.iteritems():

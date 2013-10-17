@@ -229,13 +229,12 @@ Ext.define('vcube.controller.VMSummary', {
 
     /* Update VM actions */
 	updateVMActions: function(eventData) {
-		
-    	// is this tab still visible?
-    	if(!(this.controlledTabView && this.controlledTabView.isVisible())) {
-    		this.dirty = true;
-    		return;
-    	}
 
+		
+    	// If this tab is dirty, just wait
+		// until it has been redrawn
+		if(this.dirty) return;
+		
     	// Is this VM still selected
     	if(eventData && !(this.selectionItemId && eventData.machineId == this.selectionItemId))
     		return;

@@ -244,6 +244,7 @@ Ext.define('vcube.view.VMSnapshots.Details', {
 	    },{
 	    	itemId: 'details',
 	    	cls: 'snapshotDetailsSection',
+	    	anchor: '100% -200',
 	    	bodyStyle: { padding: 4 },
 	    	autoScroll: true,
 	    	height: 300

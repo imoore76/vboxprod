@@ -260,7 +260,7 @@ Ext.define('vcube.controller.XInfoTab', {
     /* Return true if this is an interesting event */
     filterEvent: function(event) {
 
-    	// If this tab's item is no longer selected, nothing to do
+    	// If the event isn't for this tab's item, there is nothing to do
     	if(event[this.eventIdAttr] != this.selectionItemId)
     		return false;
 
@@ -338,7 +338,7 @@ Ext.define('vcube.controller.XInfoTab', {
     		return;
     	}
     	
-    	// Data is no longer dirty?.. not sure about this
+    	// Data is no longer dirty
     	this.dirty = false;
     	
     	// Show loading mask

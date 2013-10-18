@@ -37,13 +37,20 @@ Ext.define('vcube.utils', {
 	/**
 	 * Send ajax request
 	 */
-    ajaxRequest: function(ajaxURL, addparams, success_callback, failure_callback, context) {
+    ajaxRequest: function(ajaxURL, addparams, options) {
     	
     	// Halt if fatal error has occurred
     	if(vcube.app.died) return;
     	
     	// Hold ref to this object
     	var self = this;
+    	
+    	// Parse options
+    	options = options|{};
+    	var success_callback = options.success;
+    	var failure_callback = options.failure;
+    	var progress_callback = options.progress;
+    	var watchTask = options.watchTask;
     	
     	// Add function to params
     	if(!addparams) addparams = {};
@@ -58,7 +65,7 @@ Ext.define('vcube.utils', {
     		params: {},
     		jsonData: addparams,
     		
-    		success: function(response){
+    		success: function(response) {
     			
     			var data = Ext.JSON.decode(response.responseText).data;
 
@@ -70,11 +77,11 @@ Ext.define('vcube.utils', {
     			if(data && data.responseData !== null) {
     				
     				// Check for a progress operation initiated by this client
-    				if(data.responseData.progress) {
-    					vcube.app.addProgress(data.responseData.progress);
+    				if(data.responseData.progress && data.responseData.task_id) {
+    					vcube.app.watchTask(data.responseData.progress);
     				}
     				
-    				promise.resolve(data.responseData, addparams, context);
+    				promise.resolve(data.responseData, addparams);
     				
     				if(success_callback) {
     					success_callback(data.responseData);    				
@@ -85,7 +92,6 @@ Ext.define('vcube.utils', {
     		},
     		failure: function(response, opts) {
     		   vcube.utils.alert("Request failed: with status code " + response.status);
-    		   console.log(response);
     		   promise.reject();
     		   if(failure_callback) failure_callback()
 		   }

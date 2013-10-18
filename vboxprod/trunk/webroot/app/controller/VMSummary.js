@@ -70,14 +70,17 @@ Ext.define('vcube.controller.VMSummary', {
     					
     					win.setLoading(true);
     					
-    					vcube.utils.ajaxRequest('vbox/machineSaveSummary',Ext.apply(btn.up('.form').getForm().getValues(), vcube.utils.vmAjaxParams(self.selectionItemId)), function(data) {
-    						if(data == true) {
-    							win.close();
-    							return;
-    						}
-    						win.setLoading(false);
-    					},function(){
-    						win.setLoading(false);
+    					vcube.utils.ajaxRequest('vbox/machineSaveSummary',Ext.apply(btn.up('.form').getForm().getValues(), vcube.utils.vmAjaxParams(self.selectionItemId)),{
+    						success: function(data) {
+	    						if(data == true) {
+	    							win.close();
+	    							return;
+	    						}
+	    						win.setLoading(false);
+	    					},
+	    					failure: function(){
+	    						win.setLoading(false);
+	    					}	
     					});    						
     				});
 

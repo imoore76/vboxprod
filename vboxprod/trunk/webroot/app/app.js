@@ -42,18 +42,17 @@ Ext.application({
     
     // Load mask created on app init
     loadMask: null,
-    
+
+    /* App Settings */
     settings : {},
     
-    /* Progress operations to watch */
-    progressOps : {},
-    
     /* Task list to watch */
-    taskList: {},
+    taskWatchList: {},
     
     /* Add progress operation to watch list */
-    addProgress: function(pid) {
-    	this.progressOps[pid] = true;
+    watchTask: function(task_id) {
+    	this.taskWatchList[task_id] = Ext.create('Ext.ux.Deferred');
+    	return this.taskWatchList[task_id];
     },
     
     version: '0.3 beta',
@@ -82,9 +81,48 @@ Ext.application({
     },
     
     /* Check for a task we wanted to be notified of */
-    onTaskUpdate: function(event) {
+    taskLogWatch: function(event) {
     	
-    	
+    	// We are watching this task
+    	if(this.taskWatchList[event.eventData.id]) {
+    		
+    		switch(event.eventData.status) {
+    		
+    			case this.constants.TASK_STATUS['STARTED']:
+    			case this.constants.TASK_STATUS['INPROGRESS']:
+    				if(event.eventData.progress) {
+    					this.taskWatchList[event.eventData.id].progressUpdate(event.eventData.progress.percent);
+    				}
+    				break;
+    		
+    			case this.constants.TASK_STATUS['COMPLETED']:
+    				// resolve
+    				this.taskWatchList[event.eventData.id].resolve();
+    				break;
+    			
+    			case this.constants.TASK_STATUS['ERROR']:
+    			
+    				vcube.utils.alert('Task `' + event.eventData.name +'` failed.<p>' + event.eventData.details+'</p>');
+    				this.taskWatchList[event.eventData.id].reject();
+    				break;
+    			
+    			case this.constants.TASK_STATUS['CANCELED']:
+    			
+    				vcube.utils.alert('Task `' + event.eventData.name  + '` was canceled.');
+    				this.taskWatchList[event.eventData.id].reject();
+    				break;
+    			
+    			default:
+    				vcube.utils.alert("Unkonwn task state " + event.eventData.status);
+    			
+    		}
+    		
+    		if (!(event.eventData.status < this.constants.TASK_STATUS_FIRST_STOPPED_STATE)) {
+	
+    			delete this.taskWatchList[event.eventData.id];
+    		}
+    		
+    	}
     	
     },
     
@@ -181,7 +219,8 @@ Ext.application({
     	
     	this.on({
     		'ConnectorUpdated': this.onConnectorUpdated,
-    		'ProgressCompleted': this.onProgressCompleted,
+    		'taskLogEntry': this.taskLogWatch,
+    		'taskLogUpdate': this.taskLogWatch,
     		scope: this
     	});
     	
@@ -215,7 +254,7 @@ Ext.application({
     		Ext.get('page-loader').remove();
     	}
 
-    	vcube.utils.ajaxRequest('app/getSession',{},function(data){
+    	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getSession')).done(function(data){
     		self.loadSession(data);
     	});
     	

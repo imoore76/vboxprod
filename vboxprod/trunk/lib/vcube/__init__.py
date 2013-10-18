@@ -330,30 +330,33 @@ class Application(threading.Thread):
     """
     def updateTaskProgress(self, event):
         
-        if not self.progressOps.get(event.get('progress',''), None):
+        if not self.progressOps.get(event.get('progress','-'), None):
             return
     
         task = self.progressOps[event['progress']]
 
         
-        taskData = {}
-        
         status = dict(event['status'].copy())
         
         if status['completed'] or status['canceled']:
         
+            taskData = {}
+            
             try:            
-                taskData['status'] = constants.TASK_STATUS['COMPLETED'] if not status['canceled'] else constants.TASK_STATUS['CANCELED']
                 
-                taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-                
-                if status.get('resultCode', None):
+                if status['canceled']:
+                    taskData['status'] = constants.TASK_STATUS['CANCELED']
+                    
+                elif status.get('resultCode', None):
                     taskData['status'] = constants.TASK_STATUS['ERROR']
                     taskData['details'] = status.get('error', taskData.get('details','Unknown error'))
+                
+                else:
+                    taskData['status'] = constants.TASK_STATUS['COMPLETED']
+                    taskData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                
                     
                 self.updateTask(task, taskData)
-                
-                status.update({'taskName':task.name,'progress':event['progress']})
                 
             finally:
                 
@@ -361,13 +364,16 @@ class Application(threading.Thread):
 
         else:
             
-            taskData['details'] = status.get('description', task.details)
-
+            status.update({
+                'progress_id' : event['progress'],
+                'connector_id' : event['connector_id']
+            })
+            
             eventTaskData = dict(task._data.copy())
-            eventTaskData.update(taskData)
-            status['progress_id'] = event['progress']
-            status['connector_id'] = event['connector_id']
-            eventTaskData['progress'] = status
+            eventTaskData.update({
+                'details':status.get('description', task.details),
+                'progress':status
+            })
             
             self.pumpEvent({
                 'source' : 'vcube',
@@ -446,8 +452,10 @@ class Application(threading.Thread):
             }
         
         # Enrich task log data
-        logData['connector'] = connector_id
-        logData['user'] = user
+        logData.update({
+            'connector' : connector_id,
+            'user' : user
+        })
 
         # Lock the progress pool if this operation may
         # return a progress id
@@ -478,10 +486,10 @@ class Application(threading.Thread):
             # else set to erred and append errors
             if not result.get('success', False):
                 
-                logData['status'] = constants.TASK_STATUS['ERROR']
+                logData.update({
+                    'status' : constants.TASK_STATUS['ERROR'],
+                })
                 
-                logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    
                 if len(result.get('errors',[])):
                     errorStrings = []
                     for e in result.get('errors'):
@@ -508,8 +516,11 @@ class Application(threading.Thread):
     
             # Task is completed
             else:
-                logData['status'] = constants.TASK_STATUS['COMPLETED']
-                logData['completed'] = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                
+                logData.update({
+                    'status' : constants.TASK_STATUS['COMPLETED'],
+                    'completed' : datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+                })
                 
                 # Log task
                 task = self.logTask(logData)

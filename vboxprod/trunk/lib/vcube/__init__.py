@@ -357,12 +357,7 @@ class Application(threading.Thread):
                 
             finally:
                 
-                # remove from list
-                self.progressOpsLock.acquire(True)
-                try:
-                    del self.progressOps[event['progress']]
-                finally:
-                    self.progressOpsLock.release()
+                del self.progressOps[event['progress']]
 
         else:
             

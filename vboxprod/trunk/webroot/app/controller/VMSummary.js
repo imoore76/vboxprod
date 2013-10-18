@@ -28,8 +28,8 @@ Ext.define('vcube.controller.VMSummary', {
     	
 		// Special case for VM actions
 		this.application.on({
-			'SessionStateChanged': this.updateVMActions,
-			'MachineStateChanged': this.updateVMActions,
+			'SessionStateChanged': this.updateVMButtons,
+			'MachineStateChanged': this.updateVMButtons,
 			scope: this
 		});
 		
@@ -39,6 +39,9 @@ Ext.define('vcube.controller.VMSummary', {
 	        	render: this.onTabRender
 	        },
 	        'viewport > #MainPanel > VMTabs > VMSummary #vmactions > button' : {
+	        	click: this.onActionButtonClick
+        	},
+	        'viewport > #MainPanel > VMTabs > VMSummary #machine > button' : {
 	        	click: this.onActionButtonClick
         	},
 	        'viewport > #MainPanel > VMTabs > VMSummary #edit' : {
@@ -125,7 +128,7 @@ Ext.define('vcube.controller.VMSummary', {
     drawSections: function(data) {
     	
     	// Update actions
-    	this.updateVMActions();
+    	this.updateVMButtons();
     	
     	// refs
     	var self = this;    	
@@ -228,7 +231,7 @@ Ext.define('vcube.controller.VMSummary', {
 
 
     /* Update VM actions */
-	updateVMActions: function(eventData) {
+	updateVMButtons: function(eventData) {
 
 		
     	// If this tab is dirty, just wait
@@ -245,6 +248,12 @@ Ext.define('vcube.controller.VMSummary', {
 			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
 			else item.disable();
 		});		
+		
+		Ext.each(this.controlledTabView.down('#machine').items.items, function(item) {
+			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
+			else item.disable();
+		});		
+
 	},
 
     

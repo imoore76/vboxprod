@@ -9,7 +9,6 @@ Ext.define('vcube.vmactions',{
 		'new':{
 			label:vcube.utils.trans('New...','UIActionPool'),
 			icon:'vm_new',
-			icon_16:'new',
 			action: function(fromGroup){
 				new vboxWizardNewVMDialog((fromGroup ? $(vboxChooser.getSelectedGroupElements()[0]).data('vmGroupPath') : '')).run();
 			}
@@ -19,7 +18,7 @@ Ext.define('vcube.vmactions',{
 		add: {
 			label:vcube.utils.trans('Add...','UIActionPool'),
 			icon:'vm_add',
-			action:function(){
+			action:function(selectionModel){
 				vboxFileBrowser($('#vboxPane').data('vboxSystemProperties').defaultMachineFolder,function(f){
 					if(!f) return;
 					var l = new vboxLoader();
@@ -40,7 +39,6 @@ Ext.define('vcube.vmactions',{
 			name : 'start',
 			label : vcube.utils.trans('Start','UIActionPool'),
 			icon : 'vm_start',
-			icon_16 : 'start',
 			action : function (selectionModel) {
 			
 				
@@ -131,12 +129,12 @@ Ext.define('vcube.vmactions',{
 					var baseMem = 0;
 					
 					// Host memory needs to be checked
-					var loadData = [vboxAjaxRequest('hostGetMeminfo')];
+					var loadData = [vcube.utils.ajaxRequest('hostGetMeminfo')];
 					
 					// Load details of each machine to get memory info
 					var vms = vboxChooser.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isPoweredOff(vms[i]) || vboxVMStates.isSaved(vms[i]))
+						if(vcube.utils.vboxVMStates.isPoweredOff(vms[i]) || vcube.utils.vboxVMStates.isSaved(vms[i]))
 							loadData[loadData.length] = vboxVMDataMediator.getVMDataCombined(vms[i].id);
 					}
 					
@@ -157,7 +155,7 @@ Ext.define('vcube.vmactions',{
 						for(var i = 1; i < arguments.length; i++) {
 					
 							// Paused VMs are already using their memory
-							if(vboxVMStates.isPaused(arguments[i])) continue;
+							if(vcube.utils.vboxVMStates.isPaused(arguments[i])) continue;
 							
 							// memory + a little bit of overhead
 							baseMem += (arguments[i].memorySize + 50);
@@ -175,7 +173,7 @@ Ext.define('vcube.vmactions',{
 								startVMs();
 							};
 							freeMem = Math.max(0,freeMem);
-							vboxConfirm('<p>The selected virtual machine(s) require(s) <b><i>approximately</b></i> ' + baseMem +
+							vcube.utils.confirm('<p>The selected virtual machine(s) require(s) <b><i>approximately</b></i> ' + baseMem +
 									'MB of memory, but your VirtualBox host only has ' + freeMem + 'MB '+
 									($('#vboxPane').data('vboxConfig').vmMemoryOffset ? ' (-'+$('#vboxPane').data('vboxConfig').vmMemoryOffset+'MB)': '') +
 									' free.</p><p>Are you sure you want to start the virtual machine(s)?</p>',buttons,vcube.utils.trans('No','QIMessageBox'));
@@ -203,8 +201,7 @@ Ext.define('vcube.vmactions',{
 		settings: {
 			label:vcube.utils.trans('Settings...','UIActionPool'),
 			icon:'vm_settings',
-			icon_16:'settings',
-			action:function(){
+			action:function(selectionModel){
 				
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
 			},
@@ -217,9 +214,8 @@ Ext.define('vcube.vmactions',{
 		clone: {
 			label:vcube.utils.trans('Clone...','UIActionPool'),
 			icon:'vm_clone',
-			icon_16:'vm_clone',
 			icon_disabled:'vm_clone_disabled',
-			action:function(){
+			action:function(selectionModel){
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
 			enabled: function (selectionModel) {
@@ -231,8 +227,7 @@ Ext.define('vcube.vmactions',{
 		refresh: {
 			label:vcube.utils.trans('Refresh','UIVMLogViewer'),
 			icon:'refresh',
-			icon_disabled:'refresh_disabled',
-			action:function(){
+			action:function(selectionModel){
 				
 				var vmid = vboxChooser.getSingleSelectedId();
 				
@@ -249,109 +244,65 @@ Ext.define('vcube.vmactions',{
 	    /** Delete / Remove a VM */
 	    remove: {
 			label:vcube.utils.trans('Remove...', 'UIActionPool'),
-			icon:'delete',
-			action:function(){
+			icon:'vm_delete',
+			action:function(selectionModel){
 	
-				///////////////////
-				// Remove VMs
-				//////////////////
-				var removeCopies = function() {
-					
-					var vmList = [];
-					var vmNames = [];
-					var vms = vcube.utils.getSelectedVMsData(selectionModel);
-					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isPoweredOff(vms[i]) && vboxChooser.vmHasUnselectedCopy(vms[i].id)) {
-							vmList[vmList.length] = vms[i].id;
-							vmNames[vmNames.length] = vms[i].name;
-						}
-					}
-	
-					if(vmList.length) {
-	
-						var rcDef = $.Deferred();
-						
-						var buttons = {};
-						buttons[vcube.utils.trans('Remove', 'UIMessageCenter')] = function() {
-							$(this).empty().remove();
-							vboxChooser.removeVMs(vmList);
-							rcDef.resolve();
-						}
-						
-						vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-						var q = vcube.utils.trans('<p>You are about to remove following virtual machine items from the machine list:</p><p><b>%1</b></p><p>Do you wish to proceed?</p>','UIMessageCenter').replace('%1',vmNames);
-						
-						vboxConfirm(q,buttons,undefined,function(){
-							rcDef.resolve();
-						});
-	
-						
-						return rcDef;					
-					}
-					
-					return true;
-	
-				}
-				
 				//////////////////
 				// Unregister VMs
 				///////////////////
-				$.when(removeCopies()).done(function() {
-				
-					var unregisterVMs = function(keepFiles, vms) {
-		
-						var vms = vcube.utils.getSelectedVMsData(selectionModel);
-						
-						for(var i = 0; i < vms.length; i++) {
-							
-							if(vboxVMStates.isPoweredOff(vms[i])) {
-		
-								// Remove each selected vm
-								$.when(vms[i].name, vboxAjaxRequest('machineRemove',
-										{'vm':vms[i].id,'delete':(keepFiles ? '0' : '1')}))
-									.done(function(vmname, d){
-										// check for progress operation
-										if(d && d.responseData && d.responseData.progress) {
-											vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){return;},'progress_delete_90px.png',
-													vcube.utils.trans('Remove the selected virtual machines', 'UIActionPool'), vmname);
-										}
-								});						
-							}
-						}				
-					};
-					var buttons = {};
-					buttons[vcube.utils.trans('Delete all files','UIMessageCenter')] = function(){
-						$(this).empty().remove();
-						unregisterVMs(false);
-					};
-					buttons[vcube.utils.trans('Remove only','UIMessageCenter')] = function(){
-						$(this).empty().remove();
-						unregisterVMs(true);
-					};
-					
-					
-					var vmNames = [];
+				var unregisterVMs = function(keepFiles, vms) {
+	
 					var vms = vcube.utils.getSelectedVMsData(selectionModel);
+					
 					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isPoweredOff(vms[i]) && !vboxChooser.vmHasUnselectedCopy(vms[i].id)) {
-							vmNames[vmNames.length] = vms[i].name;
+						
+						if(vcube.utils.vboxVMStates.isPoweredOff(vms[i])) {
+	
+							// Remove each selected vm
+							$.when(vms[i].name, vcube.utils.ajaxRequest('machineRemove',
+									{'vm':vms[i].id,'delete':(keepFiles ? '0' : '1')}))
+								.done(function(vmname, d){
+									// check for progress operation
+									if(d && d.responseData && d.responseData.progress) {
+										vboxProgress({'progress':d.responseData.progress,'persist':d.persist},function(){return;},'progress_delete_90px.png',
+												vcube.utils.trans('Remove the selected virtual machines', 'UIActionPool'), vmname);
+									}
+							});						
 						}
+					}				
+				};
+				var buttons = {};
+				buttons[vcube.utils.trans('Delete all files','UIMessageCenter')] = function(){
+					$(this).empty().remove();
+					unregisterVMs(false);
+				};
+				buttons[vcube.utils.trans('Remove only','UIMessageCenter')] = function(){
+					$(this).empty().remove();
+					unregisterVMs(true);
+				};
+				
+				
+				var vmNames = [];
+				var vms = vcube.utils.getSelectedVMsData(selectionModel);
+				for(var i = 0; i < vms.length; i++) {
+					if(vcube.utils.vboxVMStates.isPoweredOff(vms[i]) && !vboxChooser.vmHasUnselectedCopy(vms[i].id)) {
+						vmNames[vmNames.length] = vms[i].name;
 					}
+				}
+				
+				if(vmNames.length) {
+	
+					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
+					var q = vcube.utils.trans('<p>You are about to remove following virtual machines from the machine list:</p><p>%1</p><p>Would you like to delete the files containing the virtual machine from your hard disk as well? Doing this will also remove the files containing the machine\'s virtual hard disks if they are not in use by another machine.</p>','UIMessageCenter').replace('%1',vmNames);
 					
-					if(vmNames.length) {
-		
-						vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-						var q = vcube.utils.trans('<p>You are about to remove following virtual machines from the machine list:</p><p>%1</p><p>Would you like to delete the files containing the virtual machine from your hard disk as well? Doing this will also remove the files containing the machine\'s virtual hard disks if they are not in use by another machine.</p>','UIMessageCenter').replace('%1',vmNames);
-						
-						vboxConfirm(q,buttons);
-						
-					}
+					vcube.utils.confirm(q,buttons);
 					
-				});
+				}
+					
 	    	
 	    	},
 	    	enabled: function (selectionModel) {
-	    		return cube.utils.vboxVMStates.isOneRecord('PoweredOff', selectionModel.getSelection());
+	    		return vcube.utils.vboxVMStates.isOneRecord('PoweredOff', selectionModel.getSelection());
 	    	}
 	    },
 	    
@@ -359,24 +310,27 @@ Ext.define('vcube.vmactions',{
 	    discard: {
 			label:vcube.utils.trans('Discard saved state...','UIActionPool'),
 			icon:'vm_discard',
-			icon_16:'discard',
-			action:function(){
+			action:function(selectionModel){
 				
-				var buttons = {};
-				buttons[vcube.utils.trans('Discard','UIMessageCenter')] = function(){
-					$(this).empty().remove();
-	
-					var vms = vcube.utils.getSelectedVMsData(selectionModel);
-					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isSaved(vms[i])) {
-							vboxAjaxRequest('machineSetState',{'vm':vms[i].id,'state':'discardSavedState'});
+				var buttons = [{
+					text: vcube.utils.trans('Discard','UIMessageCenter'),
+					listeners: {
+						click: function(btn) {
+							btn.up('.window').close();
+							var vms = vcube.utils.getSelectedVMsData(selectionModel);
+							for(var i = 0; i < vms.length; i++) {
+								if(vcube.utils.vboxVMStates.isSaved(vms[i])) {
+									vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({},{'state':'discardSavedState'}, vcube.utils.vmAjaxParams(vms[i].id)));
+								}
+							}
 						}
 					}
-				};
+				}];
+
 				var vmNames = [];
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
-					if(vboxVMStates.isSaved(vms[i])) {
+					if(vcube.utils.vboxVMStates.isSaved(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
 					}
 				}
@@ -385,7 +339,7 @@ Ext.define('vcube.vmactions',{
 	
 					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
 					
-					vboxConfirm(vcube.utils.trans('<p>Are you sure you want to discard the saved state of the following virtual machines?</p><p><b>%1</b></p><p>This operation is equivalent to resetting or powering off the machine without doing a proper shutdown of the guest OS.</p>','UIMessageCenter').replace('%1',vmNames),buttons);
+					vcube.utils.confirm(vcube.utils.trans('<p>Are you sure you want to discard the saved state of the following virtual machines?</p><p><b>%1</b></p><p>This operation is equivalent to resetting or powering off the machine without doing a proper shutdown of the guest OS.</p>','UIMessageCenter').replace('%1',vmNames),buttons);
 				}
 			},
 			enabled:function(selectionModel){
@@ -397,12 +351,12 @@ Ext.define('vcube.vmactions',{
 	    guestAdditionsInstall : {
 	    	label: vcube.utils.trans('Install Guest Additions...','UIActionPool'),
 	    	icon: 'guesttools',
-	    	action: function(vmid, mount_only) {
+	    	action: function(selectionModel) {
 	    		
 	    		if(!vmid)
 	    			vmid = vboxChooser.getSingleSelected().id;
 	    		
-				$.when(vboxAjaxRequest('consoleGuestAdditionsInstall',{'vm':vmid,'mount_only':(mount_only ? 1 : 0)})).done(function(d){
+				$.when(vcube.utils.ajaxRequest('consoleGuestAdditionsInstall',{'vm':vmid,'mount_only':(mount_only ? 1 : 0)})).done(function(d){
 					
 					// Progress operation returned. Guest Additions are being updated.
 					if(d && d.responseData && d.responseData.progress) {
@@ -458,7 +412,7 @@ Ext.define('vcube.vmactions',{
 							$(this).remove();
 							window.open(url);
 						};
-						vboxConfirm(q,b,vcube.utils.trans('No','QIMessageBox'));
+						vcube.utils.confirm(q,b,vcube.utils.trans('No','QIMessageBox'));
 					}
 				});
 	
@@ -469,9 +423,9 @@ Ext.define('vcube.vmactions',{
 	    /** Show VM Logs */
 	    logs: {
 			label:vcube.utils.trans('Show Log...','UIActionPool'),
-			icon:'show_logs',
+			icon:'vm_show_logs',
 			icon_disabled:'show_logs_disabled',
-			action:function(){
+			action:function(selectionModel){
 	    		vboxShowLogsDialogInit(vboxChooser.getSingleSelected());
 			},
 			enabled:function(selectionModel){
@@ -482,16 +436,16 @@ Ext.define('vcube.vmactions',{
 	    /** Save the current VM State */
 		savestate: {
 			label: vcube.utils.trans('Save State', 'UIActionPool'),
-			icon: 'fd',
+			icon: 'vm_save_state',
 			stop_action: true,
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
-			action: function() {
+			action: function(selectionModel) {
 	
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
-					if(vboxVMStates.isRunning(vms[i]) || vboxVMStates.isPaused(vms[i]))
+					if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vboxVMStates.isPaused(vms[i]))
 						vcube.vmactions.powerAction('savestate','Save the machine state of the selected virtual machines', vms[i]);
 				}
 			}
@@ -500,25 +454,25 @@ Ext.define('vcube.vmactions',{
 		/** Send ACPI Power Button to VM */
 		powerbutton: {
 			label: vcube.utils.trans('ACPI Shutdown','UIActionPool'),
-			icon: 'acpi',
+			icon: 'vm_shutdown',
 			stop_action: true,
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
-			action: function() {
+			action: function(selectionModel) {
 				var buttons = {};
 				buttons[vcube.utils.trans('ACPI Shutdown','UIMessageCenter')] = function() {
 					$(this).empty().remove();
 					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isRunning(vms[i]))
+						if(vcube.utils.vboxVMStates.isRunning(vms[i]))
 							vcube.vmactions.powerAction('powerbutton','Send the ACPI Power Button press event to the virtual machine', vms[i]);		
 					}
 				};
 				var vmNames = [];
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
-					if(vboxVMStates.isRunning(vms[i])) {
+					if(vcube.utils.vboxVMStates.isRunning(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
 					}
 				}
@@ -527,7 +481,7 @@ Ext.define('vcube.vmactions',{
 	
 					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
 	
-					vboxConfirm(vcube.utils.trans("<p>Do you really want to send an ACPI shutdown signal " +
+					vcube.utils.confirm(vcube.utils.trans("<p>Do you really want to send an ACPI shutdown signal " +
 						"to the following virtual machines?</p><p><b>%1</b></p>",'UIMessageCenter').replace('%1', vmNames),buttons);
 				}
 			}
@@ -536,15 +490,14 @@ Ext.define('vcube.vmactions',{
 		/** Pause a running VM */
 		pause: {
 			label: vcube.utils.trans('Pause','UIActionPool'),
-			icon: 'pause',
-			icon_disabled: 'pause_disabled',
+			icon: 'vm_pause',
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
-			action: function() {
+			action: function(selectionModel) {
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
-					if(vboxVMStates.isRunning(vms[i]))
+					if(vcube.utils.vboxVMStates.isRunning(vms[i]))
 						vcube.vmactions.powerAction('pause','Suspend the execution of the selected virtual machines', vms[i]);
 				}
 			}
@@ -553,7 +506,7 @@ Ext.define('vcube.vmactions',{
 		/** Power off a VM */
 		powerdown: {
 			label: vcube.utils.trans('Power Off','UIActionPool'),
-			icon: 'poweroff',
+			icon: 'vm_poweroff',
 			stop_action: true,
 			enabled: function(selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
@@ -597,19 +550,19 @@ Ext.define('vcube.vmactions',{
 		/** Reset a VM */
 		reset: {
 			label: vcube.utils.trans('Reset','UIActionPool'),
-			icon: 'reset',
+			icon: 'vm_reset',
 			icon_disabled: 'reset_disabled',
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
-			action: function() {
+			action: function(selectionModel) {
 				var buttons = {};
 				buttons[vcube.utils.trans('Reset','UIActionPool')] = function() {
 					$(this).remove();
 	
 					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
-						if(vboxVMStates.isRunning(vms[i]))
+						if(vcube.utils.vboxVMStates.isRunning(vms[i]))
 							vcube.vmactions.powerAction('reset','Reset the selected virtual machines', vms[i]);
 					}
 				};
@@ -617,7 +570,7 @@ Ext.define('vcube.vmactions',{
 				var vmNames = [];
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
-					if(vboxVMStates.isRunning(vms[i])) {
+					if(vcube.utils.vboxVMStates.isRunning(vms[i])) {
 						vmNames[vmNames.length] = vms[i].name;
 					}
 				}
@@ -626,7 +579,7 @@ Ext.define('vcube.vmactions',{
 	
 					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
 	
-					vboxConfirm(vcube.utils.trans("<p>Do you really want to reset the following virtual machines?</p><p><b>%1</b></p><p>This will cause any unsaved data in applications "+
+					vcube.utils.confirm(vcube.utils.trans("<p>Do you really want to reset the following virtual machines?</p><p><b>%1</b></p><p>This will cause any unsaved data in applications "+
 							"running inside it to be lost.</p>",'UIMessageCenter').replace('%1',vmNames),buttons);
 				}
 			}
@@ -639,8 +592,7 @@ Ext.define('vcube.vmactions',{
 		stop: {
 			name: 'stop',
 			label: vcube.utils.trans('Stop','VBoxSelectorWnd'),
-			icon: 'acpi',
-			icon_disabled:'acpi_disabled',
+			icon: 'vm_shutdown',
 			menu: true,
 			action: function () { return true; /* handled by stop context menu */ },
 			enabled: function (selectionModel) {

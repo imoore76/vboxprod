@@ -303,7 +303,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 							// Preview image
 							if(data.online) {
 								var params = Ext.apply({'snapshot':snapshot.id},vcube.utils.vmAjaxParams(vm.id));
-								win.down('#preview').setValue('<img src="vbox/machineGetScreenShot?' + Ext.urlEncode(params) + '" />');
+								win.down('#preview').setValue('<a href="vbox/machineGetScreenShot?' + Ext.urlEncode(params)+'&full=1" target=_new><img src="vbox/machineGetScreenShot?' + Ext.urlEncode(params) + '" /></a>');
 							} else {
 								win.down('#preview').hide();
 							}

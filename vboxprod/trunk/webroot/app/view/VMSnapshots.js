@@ -29,7 +29,7 @@ Ext.define('vcube.view.VMSnapshots', {
 		snapshotTip: function(s) {
 			return '<strong>'+Ext.String.htmlEncode(s.name)+'</strong> ('+vcube.utils.trans((s.online ? 'online)' : 'offline)'),'VBoxSnapshotsWgt')+
 				'<p>'+ vcube.utils.dateTimeString(s.timeStamp, vcube.utils.trans('Taken at %1','VBoxSnapshotsWgt'), vcube.utils.trans('Taken on %1','VBoxSnapshotsWgt'))+'</p>' +
-				(s.description ? '<hr />' + Ext.String.htmlEncode(s.description) : '');
+				(s.description ? '<hr />' + Ext.util.Format.nl2br(Ext.String.htmlEncode(s.description)) : '');
 		},
 		
 		/* Current state tooltip */
@@ -48,7 +48,7 @@ Ext.define('vcube.view.VMSnapshots', {
 			return Ext.Object.merge({
 				'loaded' : true,
 				'text': Ext.String.format(vcube.view.VMSnapshots.snapshotTextTpl, Ext.String.htmlEncode(data.name), ''),
-				'icon': 'images/vbox/' + (data.online ? 'online' : 'offline') + '_snapshot_16px.png',
+				'icon': 'images/vbox/snapshot_' + (data.online ? 'online' : 'offline') + '_16px.png',
 				'expanded': expanded
 			},data);
 		}
@@ -58,7 +58,7 @@ Ext.define('vcube.view.VMSnapshots', {
 	
 	/* Snapshots */
 	title: 'Snapshots',
-	icon: 'images/vbox/take_snapshot_16px.png',
+	icon: 'images/vbox/snapshot_take_16px.png',
 	layout: 'fit',
 	frame: true,
 	items: [{
@@ -73,19 +73,19 @@ Ext.define('vcube.view.VMSnapshots', {
 	    	   xtype:'button',
 	    	   itemId:'takeSnapshot',
 	    	   tooltip:vcube.utils.trans('Take Snapshot...','UIActionPool').replace('...',''),
-	    	   icon:'images/vbox/take_snapshot_16px.png'
+	    	   icon:'images/vbox/snapshot_take_16px.png'
 	    	},
 	       '-',
 	       {
 	    		xtype:'button',
 	    		itemId: 'restoreSnapshot',
 	    		tooltip:vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),
-	    		icon:'images/vbox/discard_cur_state_16px.png'
+	    		icon:'images/vbox/snapshot_restore_16px.png'
 		    },{
 		    	xtype:'button',
 		    	itemId: 'deleteSnapshot',
 		    	tooltip:vcube.utils.trans('Delete Snapshot','VBoxSnapshotsWgt'),
-		    	icon:'images/vbox/delete_snapshot_16px.png'
+		    	icon:'images/vbox/snapshot_delete_16px.png'
 		    },
 		    '-',
 		    {
@@ -99,7 +99,7 @@ Ext.define('vcube.view.VMSnapshots', {
 		    	xtype:'button',
 		    	itemId: 'showSnapshot',
 		    	tooltip:vcube.utils.trans('Show Details','VBoxSnapshotsWgt'),
-		    	icon:'images/vbox/show_snapshot_details_16px.png'
+		    	icon:'images/vbox/snapshot_show_details_16px.png'
 		    }
        ]
 	}]
@@ -115,7 +115,7 @@ Ext.define('vcube.view.VMSnapshots.TakeSnapshot', {
 
     title: vcube.utils.trans('Take Snapshot of Virtual Machine','UIActionPool'),
 
-    icon:'images/vbox/take_snapshot_16px.png',
+    icon:'images/vbox/snapshot_take_16px.png',
 
     width:400,
     height: 240,
@@ -201,7 +201,7 @@ Ext.define('vcube.view.VMSnapshots.Details', {
 
     title: vcube.utils.trans('Snapshot Details','UIActionPool'),
 
-    icon: 'images/vbox/show_snapshot_details_16px.png',
+    icon: 'images/vbox/snapshot_show_details_16px.png',
 
     width:600,
     height: 600,

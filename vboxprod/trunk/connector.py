@@ -2367,8 +2367,8 @@ class vboxConnector(object):
 
             """ @progress IProgress """
             progress = getattr(session.console, state)()
-            #progressid = progressOpPool.store(progress, session)
-            progressid = progressOpPool.store(progress, None)
+
+            progressid = progressOpPool.store(progress, session)
             
             return {'progress' : progressid, 'requestedState':state}
 
@@ -2376,7 +2376,10 @@ class vboxConnector(object):
         # Just call the function
         else:
 
-            getattr(session.console, state)((True if states[state]['force'] else None))
+            if states[state].get('force',False):
+                getattr(session.console, state)(True)
+            else:
+                getattr(session.console, state)()
 
 
         # Check for ACPI button
@@ -5065,7 +5068,7 @@ class vboxProgressOpPool(threading.Thread):
                                         status['error'] = "%s (%s): %s" %(progress.errorInfo.component, progress.errorInfo.resultCode, progress.errorInfo.text)
                     
                                     try:
-                                        if session:
+                                        if session and session.state == vboxMgr.constants.SessionState_Locked:
                                             session.unlockMachine()
                                             
                                     except Exception as e:

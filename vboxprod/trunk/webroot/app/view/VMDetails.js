@@ -13,7 +13,7 @@ Ext.define('vcube.view.VMDetails', {
     title: 'Details',
     itemId: 'DetailsTab',
     cls: 'vmTabDetails',
-    icon: 'images/vbox/settings_16px.png',
+    icon: 'images/vbox/vm_settings_16px.png',
     autoScroll: true,
     layout: 'vbox',
     width: '100%',
@@ -485,7 +485,7 @@ Ext.define('vcube.view.VMDetails', {
 				 * Shared folders list
 				 */
 				sharedfolders : {
-					icon: 'shared_folder_16px.png',
+					icon: 'sf_16px.png',
 					title: vcube.utils.trans('Shared Folders', 'UIDetailsPagePrivate'),
 					settingsLink: 'SharedFolders',
 					rows: function(d) {

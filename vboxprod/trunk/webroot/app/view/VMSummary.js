@@ -19,7 +19,11 @@ Ext.define('vcube.view.VMSummary', {
 		/*
 		 * List of actions that can be performed on this vm
 		 */
-		vmactions : ['start','powerdown','pause','savestate','clone','settings'],
+		vmactions : ['start','pause','reset','savestate','discard','powerbutton','powerdown'],
+		
+		machine: ['settings','logs','clone','remove'],
+		
+		buttonDefaults: { border: true, xtype: 'button', width: '100%', margin: 2, textAlign: 'left', iconAlign: 'left' },
 
 		/*
 		 * 
@@ -222,20 +226,49 @@ Ext.define('vcube.view.VMSummary', {
     				itemId: 'sectionspane',
     				margin: '10 0 0 0'
     			}]
+			},{
+				title: 'Machine',
+    			layout: 'vbox',
+    			itemId: 'machine',
+    			margin: '0 0 0 20',
+    			bodyStyle: { background: '#fff' },
+    			border: false,
+    			frame: true,
+    			width: 200,
+    			listeners: {
+    				
+    				beforerender: function(vmactions) {
+    					
+    					Ext.each(vcube.view.VMSummary.machine, function(action, i) {
+    						
+    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
+    							
+    							itemId : action,
+    							
+    							text: vcube.vmactions[action].label.replace('...',''),
+    							
+    							icon: 'images/vbox/' +  vcube.vmactions[action].icon + '_16px.png'
+								
+    						}, vcube.view.VMSummary.buttonDefaults)));
+
+    					});
+
+    				}
+    			}
+				
     		},{
     			title: 'Actions',
     			layout: 'vbox',
     			itemId: 'vmactions',
     			margin: '0 0 0 20',
     			bodyStyle: { background: '#fff' },
-    			border: true,
+    			border: false,
+    			frame: true,
     			width: 200,
     			listeners: {
     				
     				beforerender: function(vmactions) {
     					
-    					defaults = { border: false, xtype: 'button', width: '100%', margin: 4, textAlign: 'left', iconAlign: 'left' };
-
     					Ext.each(vcube.view.VMSummary.vmactions, function(action, i) {
     						
     						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
@@ -244,9 +277,9 @@ Ext.define('vcube.view.VMSummary', {
     							
     							text: vcube.vmactions[action].label.replace('...',''),
     							
-    							icon: 'images/vbox/' + (vcube.vmactions[action].icon_16 ? vcube.vmactions[action].icon_16 : vcube.vmactions[action].icon) + '_16px.png'
+    							icon: 'images/vbox/' +  vcube.vmactions[action].icon + '_16px.png'
 								
-    						}, defaults)));
+    						}, vcube.view.VMSummary.buttonDefaults)));
 
     					});
 

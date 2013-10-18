@@ -103,7 +103,7 @@ Ext.define('vcube.view.ServerConnector', {
 			paths: {
 				tableCfg: {
 					title: vcube.utils.trans('Paths'),
-					icon: 'images/vbox/shared_folder_16px.png',
+					icon: 'images/vbox/sf_16px.png',
 					border: true,
 					width: 600,
 					bodyStyle: { background: '#fff' },

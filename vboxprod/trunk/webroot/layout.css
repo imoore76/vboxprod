@@ -86,9 +86,9 @@ body > div.modal-mask-default {
 */
 div.categoryColumn { background-repeat: no-repeat; background-size:16px 16px; width: 16px; height: 16px; display: inline-block; float: left; margin-right: 4px;}
 div.categoryColumnType0 { background-image:url(images/vbox/OSE/VirtualBox_cube_42px.png); }
-div.categoryColumnType5 { background-image:url(images/vbox/settings_16px.png); }
-div.categoryColumnType10 { background-image:url(images/vbox/poweroff_16px.png); }
-div.categoryColumnType15 { background-image:url(images/vbox/take_snapshot_16px.png); }
+div.categoryColumnType5 { background-image:url(images/vbox/vm_settings_16px.png); }
+div.categoryColumnType10 { background-image:url(images/vbox/vm_poweroff_16px.png); }
+div.categoryColumnType15 { background-image:url(images/vbox/snapshot_take_16px.png); }
 div.categoryColumnType20 { background-image:url(images/vbox/diskimage_16px.png); }
 div.categoryColumnType30 { background-image:url(images/vbox/virtualbox-vbox.png); }
 div.categoryColumnType40 { background-image:url(images/vbox/virtualbox-vmdk.png); }

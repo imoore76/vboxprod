@@ -12,27 +12,27 @@ Ext.define('vcube.view.VirtualMachinesList', {
     	xtype: 'gridpanel',
         tbar : [{
      	   'xtype':'button',
-     	   'text':'New',
-     	   'icon':'images/vbox/new_16px.png'
+     	   'text':vcube.vmactions['new'].label.replace('...',''),
+     	   'icon':'images/vbox/'+vcube.vmactions['new'].icon+'_16px.png'
         },{
      	   'xtype':'button',
-     	   'text': 'Settings',
-     	   'icon': 'images/vbox/settings_16px.png'
+     	   'text': vcube.vmactions['settings'].label.replace('...',''),
+     	  'icon':'images/vbox/'+vcube.vmactions['settings'].icon+'_16px.png'
         },{
      	   'xtype':'button',
-     	   'text': 'Start',
-     	   'icon': 'images/vbox/start_16px.png'
+     	   'text': vcube.vmactions['start'].label.replace('...',''),
+     	  'icon':'images/vbox/'+vcube.vmactions['start'].icon+'_16px.png'
         },{
      	   'xtype':'button',
-     	   'text': 'Stop',
-     	   'icon': 'images/vbox/acpi_16px.png',
+     	   'text': vcube.vmactions['stop'].label.replace('...',''),
+     	  'icon':'images/vbox/'+vcube.vmactions['stop'].icon+'_16px.png',
      		'menu' : [
-     		   {'text':'Pause','icon':'images/vbox/pause_16px.png'},
-     		   {'text':'Reset','icon':'images/vbox/reset_16px.png'},
+     		   {'text':vcube.vmactions['pause'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['pause'].icon+'_16px.png'},
+     		   {'text':vcube.vmactions['reset'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['reset'].icon+'_16px.png'},
      		   '-',
-     		   {'text':'Save State','icon':'images/vbox/save_16px.png'},
-     		   {'text':'ACPI Shutdown','icon':'images/vbox/acpi_16px.png'},
-     		   {'text':'Power Off','icon':'images/vbox/poweroff_16px.png'}
+     		   {'text':vcube.vmactions['savestate'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['savestate'].icon+'_16px.png'},
+     		   {'text':vcube.vmactions['powerbutton'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['powerbutton'].icon+'_16px.png'},
+     		   {'text':vcube.vmactions['powerdown'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['powerdown'].icon+'_16px.png'},
      		]
         },{
      	   'xtype':'button',

@@ -351,7 +351,7 @@ Ext.define('vcube.vmdatamediator', {
 			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetDetails',vcube.utils.vmAjaxParams(vmid)))
 			.fail(function(){
 			
-				vcube.vmdatamediator.promises.getVMDetails[vmid].reject();
+				vcube.vmdatamediator.promises.getVMDetails[vmid].reject('failed to get machine details');
 				vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
 			
 			}).done(function(d){
@@ -384,14 +384,16 @@ Ext.define('vcube.vmdatamediator', {
 			
 			vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = Ext.create('Ext.ux.Deferred');
 
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',vcube.utils.vmAjaxParams(vmid))).done(function(d){
-				vcube.vmdatamediator.vmRuntimeData[d.id] = d;
-				if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
-					vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolve(d);
-			}).fail(function(){
-				vcube.vmdatamediator.promises.getVMRuntimeData[vmid].reject();
-				vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = null;
-			});
+			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetRuntimeData',vcube.utils.vmAjaxParams(vmid)))
+				.done(function(d){
+					vcube.vmdatamediator.vmRuntimeData[d.id] = d;
+					if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
+						vcube.vmdatamediator.promises.getVMRuntimeData[vmid].resolve(d);
+				}).fail(function(){
+					if(vcube.vmdatamediator.promises.getVMRuntimeData[vmid])
+						vcube.vmdatamediator.promises.getVMRuntimeData[vmid].reject('failed to get machine runtime data');
+					vcube.vmdatamediator.promises.getVMRuntimeData[vmid] = null;
+				});
 
 		}		
 		return vcube.vmdatamediator.promises.getVMRuntimeData[vmid];
@@ -415,7 +417,8 @@ Ext.define('vcube.vmdatamediator', {
 		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
 			def.resolve(Ext.Object.merge({},d1,d2,d3));
 		}).fail(function(){
-			def.reject();
+			console.log("Somethign failed...");
+			def.reject('getVMDetails, runtime or getVMData failed');
 		});
 		return def;
 		
@@ -438,7 +441,7 @@ Ext.define('vcube.vmdatamediator', {
 			$('#vboxPane').trigger('vboxMachineDataChanged', [{machineId:vm.id,enrichmentData:vm}]);
 			$('#vboxPane').trigger('vboxEvents', [[{eventType:'OnMachineDataChanged',machineId:vm.id,enrichmentData:vm}]]);
 		}).fail(function(){
-			def.reject();
+			def.reject('refresh failed');
 		});
 		
 		return def;

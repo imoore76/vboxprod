@@ -5,8 +5,6 @@ Ext.define('vcube.controller.Login', {
 	
     extend: 'Ext.app.Controller',
     
-    views: ['Login'],
-    
     refs : [{
     	selector: 'Login',
     	ref: 'LoginWindow',
@@ -30,9 +28,10 @@ Ext.define('vcube.controller.Login', {
     	// only if submit buttin is enabled
     	if(this.getLoginButton().disabled) return;
     	
-    	vcube.utils.ajaxRequest('app/login',{u:this.getUsernameField().getValue(),
-    		
-    		p:this.getPasswordField().getValue()},function(data){
+    	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/login',{
+    		u:this.getUsernameField().getValue(),
+    		p:this.getPasswordField().getValue()}))
+    		.done(function(data){
     			
     			// This returns a session object wich must be valid
     			if(data && data.user && data.user.id > 0) {
@@ -42,7 +41,7 @@ Ext.define('vcube.controller.Login', {
     				vcube.utils.alert('Invalid login');
     				self.getPasswordField().setValue('').focus();
     			}
-    		});
+		});
 
     },
     

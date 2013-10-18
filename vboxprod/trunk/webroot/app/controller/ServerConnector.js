@@ -72,18 +72,17 @@ Ext.define('vcube.controller.ServerConnector', {
     					
     					win.setLoading(true);
     					
-    					vcube.utils.ajaxRequest('connectors/updateConnector',btn.up('.form').getForm().getValues(),{
-    						success: function(data) {
+    					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/updateConnector',btn.up('.form').getForm().getValues()))
+    						.done(function(data) {
 		    					
 		    						if(data == true) {
 		    							win.close();
 		    							return;
 		    						}
 		    						win.setLoading(false);
-    							},
-    						failure: function(){
+							}).fail(function(){
     							win.setLoading(false);
-    						}});
+    						});
     				});
     				
     			},

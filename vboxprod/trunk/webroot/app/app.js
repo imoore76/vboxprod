@@ -36,6 +36,8 @@ Ext.application({
                   
     ],
     
+    /* Common views */
+    views: ['common'],
     
     /* Stores */
     stores: ['Events','Tasks'],
@@ -91,7 +93,8 @@ Ext.application({
     			case this.constants.TASK_STATUS['STARTED']:
     			case this.constants.TASK_STATUS['INPROGRESS']:
     				if(event.eventData.progress) {
-    					this.taskWatchList[event.eventData.id].progressUpdate(event.eventData.progress.percent);
+    					this.taskWatchList[event.eventData.id].progressUpdate(event.eventData.progress.percent,
+    							event.eventData.progress.details);
     				}
     				break;
     		
@@ -103,13 +106,13 @@ Ext.application({
     			case this.constants.TASK_STATUS['ERROR']:
     			
     				vcube.utils.alert('Task `' + event.eventData.name +'` failed.<p>' + event.eventData.details+'</p>');
-    				this.taskWatchList[event.eventData.id].reject();
+    				this.taskWatchList[event.eventData.id].reject('task operation failed');
     				break;
     			
     			case this.constants.TASK_STATUS['CANCELED']:
     			
     				vcube.utils.alert('Task `' + event.eventData.name  + '` was canceled.');
-    				this.taskWatchList[event.eventData.id].reject();
+    				this.taskWatchList[event.eventData.id].reject('task operation was canceled');
     				break;
     			
     			default:
@@ -156,7 +159,7 @@ Ext.application({
     // Show login box
     showLogin: function() {
 
-    	Ext.create('vcube.view.Login', {id: 'login_form'}).show();
+    	Ext.create('vcube.view.common.Login', {id: 'login_form'}).show();
     	
     },
         
@@ -193,6 +196,7 @@ Ext.application({
     							if(!self.died) {
     								self.serverStore.load();
     								self.fireEvent('start');
+    								
     							}
     						});    			
     					});

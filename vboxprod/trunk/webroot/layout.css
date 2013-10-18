@@ -11,8 +11,9 @@
 }
 
 /* Progress */
+div.x-progress-bar { background-color: #00AB00; }
 div.x-grid-cell-inner div.x-progress { padding: 0px; margin: 0px }
-div.x-grid-cell-inner div.x-progress-bar { padding: 0px; margin: 0px; background: #00AB00; }
+div.x-grid-cell-inner div.x-progress-bar { padding: 0px; margin: 0px; }
 div.x-grid-cell-inner div.x-progress div { padding: 0px; margin: 0px }
 div.x-grid-cell-inner div.x-progress-text { font-size: 9px; padding: 0px; margin: 0px; }
 

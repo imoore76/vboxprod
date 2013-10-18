@@ -39,11 +39,11 @@ Ext.define ('Ext.ux.Deferred', {
 					if(!(promise instanceof Ext.ux.Deferred)) {
 						var pdata = promise;
 						promise = Ext.create('Ext.ux.Deferred');
-						promise.resolve(pdata);
+						promise.resolve.call(promise,pdata);
 					}
 			
 					promise
-						.done.call(promise, function (data) {
+						.done(function (data) {
 							counter--;
 							results[i] = data;
 					
@@ -53,7 +53,7 @@ Ext.define ('Ext.ux.Deferred', {
 								else dfd.resolve.apply(dfd, results);
 							}
 						})
-						.fail.call(promise, function (data) {
+						.fail(function (data) {
 							counter--;
 							errors[i] = data;
 							
@@ -84,6 +84,8 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	onFail: [],
 	
+	onProgress: [],
+	
 	/**
 	 * @method done
 	 * The given function will be executed when the promise is solved
@@ -92,8 +94,8 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	done: function (onDone) {
 
-		if(typeof(onDone) != 'function') return this;
-
+		console.log(this.id + " adding ondone length is " + this.onDone.length);
+		console.log(onDone);
 		if(this.state == 'resolved') {
 			onDone.apply(this, this.stateData);
 		} else {
@@ -103,6 +105,23 @@ Ext.define ('Ext.ux.Deferred', {
 		return this;
 	} ,
 	
+	progress: function(onProgress) {
+		if(this.state == 'inprogress') {
+			this.onProgress.push(onProgress);
+		}
+		return this;
+	},
+	
+	updateProgress: function() {
+		
+		var me = this;
+		
+		Ext.each(this.onProgress, function(fn) {
+			fn.apply(me, arguments);
+		});
+		
+	},
+	
 	/**
 	 * @method fail
 	 * The given function will be executed when the promise is rejected
@@ -111,8 +130,6 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	fail: function (onFail) {
 
-		if(typeof(onDone) != 'function') return this;
-		
 		if(this.state == 'rejected') {
 			onFail.apply(this, this.stateData);
 		} else {
@@ -140,12 +157,15 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	reject: function () {
 		
+		console.log("Calling reject with");
+		console.log(arguments);
+
 		var me = this;
 		this.stateData = arguments;
 		this.state = 'rejected';
 
 		Ext.each(this.onFail, function(fn) {
-			fn.apply(null, me.stateData);
+			fn.apply(me, me.stateData);
 		})
 		return me;
 		
@@ -165,7 +185,11 @@ Ext.define ('Ext.ux.Deferred', {
 		
 		var me = this;
 		
+		console.log(this.id + " Ondone is ");
+		console.log(this.onDone);
 		Ext.each(this.onDone, function(fn) {
+			console.log(me.id + " Calling ");
+			console.log(fn);
 			fn.apply(me, me.stateData);
 		})
 		return me;
@@ -176,8 +200,10 @@ Ext.define ('Ext.ux.Deferred', {
 	 * instance creation, but it doesn't. Bad EXTJS!!!!
 	 */
 	constructor: function() {
-		this.onDone = this.onFail = [];
-		this.state = this.stateData = null;
+		this.onDone = this.onFail = this.onProgress = [];
+		this.stateData = null;
+		this.state = 'inprogress';
+		this.id = new Date().getTime();
 	},
 	
 	/**

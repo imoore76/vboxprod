@@ -47,10 +47,7 @@ Ext.define('vcube.utils', {
     	
     	// Parse options
     	options = options|{};
-    	var success_callback = options.success;
-    	var failure_callback = options.failure;
-    	var progress_callback = options.progress;
-    	var watchTask = options.watchTask;
+    	var watchTask = options.watchTask|false;
     	
     	// Add function to params
     	if(!addparams) addparams = {};
@@ -74,26 +71,25 @@ Ext.define('vcube.utils', {
     			
     			
     			// Resolve or reject
-    			if(data && data.responseData !== null) {
+    			if(data && data.success && data.responseData !== null) {
     				
     				// Check for a progress operation initiated by this client
-    				if(data.responseData.progress && data.responseData.task_id) {
-    					vcube.app.watchTask(data.responseData.progress);
+    				if(data.responseData.progress && data.responseData.task_id && watchTask) {
+    					
+    					promise.resolve(vcube.app.watchTask(data.responseData.progress));
+    					return;
+    					
     				}
     				
-    				promise.resolve(data.responseData, addparams);
+    				promise.resolve(data.responseData);
     				
-    				if(success_callback) {
-    					success_callback(data.responseData);    				
-    				}
     			} else {
-    				promise.reject();
+    				promise.reject('ajax data was invalid or indicated a failure');
     			}
     		},
     		failure: function(response, opts) {
     		   vcube.utils.alert("Request failed: with status code " + response.status);
-    		   promise.reject();
-    		   if(failure_callback) failure_callback()
+    		   promise.reject('ajax request failed');
 		   }
     	});
     	

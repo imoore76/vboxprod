@@ -54,6 +54,8 @@ Ext.define('vcube.view.VMSnapshots', {
 		}
 		
 
+
+
 	},
 	
 	/* Snapshots */
@@ -61,48 +63,42 @@ Ext.define('vcube.view.VMSnapshots', {
 	icon: 'images/vbox/snapshot_take_16px.png',
 	layout: 'fit',
 	frame: true,
-	items: [{
-		xtype: 'treepanel',
-		itemId: 'snapshottree',
-		viewConfig:{
-			markDirty:false
-		},
-		rootVisible: false,
-		lines: true,
-		tbar:[{
-	    	   xtype:'button',
-	    	   itemId:'takeSnapshot',
-	    	   tooltip:vcube.utils.trans('Take Snapshot...','UIActionPool').replace('...',''),
-	    	   icon:'images/vbox/snapshot_take_16px.png'
-	    	},
-	       '-',
-	       {
-	    		xtype:'button',
-	    		itemId: 'restoreSnapshot',
-	    		tooltip:vcube.utils.trans('Restore Snapshot','VBoxSnapshotsWgt'),
-	    		icon:'images/vbox/snapshot_restore_16px.png'
-		    },{
-		    	xtype:'button',
-		    	itemId: 'deleteSnapshot',
-		    	tooltip:vcube.utils.trans('Delete Snapshot','VBoxSnapshotsWgt'),
-		    	icon:'images/vbox/snapshot_delete_16px.png'
-		    },
-		    '-',
-		    {
-		    	xtype:'button',
-		    	itemId: 'cloneSnapshot',
-		    	tooltip:vcube.utils.trans('Clone...','UIActionPool').replace('...',''),
-		    	icon:'images/vbox/vm_clone_16px.png'
-		    },
-		    '-',
-		    {
-		    	xtype:'button',
-		    	itemId: 'showSnapshot',
-		    	tooltip:vcube.utils.trans('Show Details','VBoxSnapshotsWgt'),
-		    	icon:'images/vbox/snapshot_show_details_16px.png'
-		    }
-       ]
-	}]
+
+	initComponent: function() {
+		
+		this.items = [{
+			xtype: 'treepanel',
+			itemId: 'snapshottree',
+			viewConfig:{
+				markDirty:false
+			},
+			rootVisible: false,
+			lines: true,
+			tbar:[    
+			      vcube.app.getAction('snapshots','take'),
+			      '-',
+			      vcube.app.getAction('snapshots','restore'),
+			      vcube.app.getAction('snapshots','delete'),
+			      '-',
+			      vcube.app.getAction('snapshots','clone'),
+			      '-',
+			      vcube.app.getAction('snapshots','show')
+			      ]
+		}];
+		
+		vcube.view.VMSnapshots.contextMenuItems = [
+		      vcube.app.getAction('snapshots','take'),
+		      '-',
+		      vcube.app.getAction('snapshots','restore'),
+		      vcube.app.getAction('snapshots','delete'),
+		      '-',
+		      vcube.app.getAction('snapshots','clone'),
+		      '-',
+		      vcube.app.getAction('snapshots','show'),
+	   ];
+		
+		this.callParent();
+	}
 });
 
 

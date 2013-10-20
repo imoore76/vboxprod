@@ -90,7 +90,10 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  			var ssNumber = 1; //vm.snapshotCount + 1;
 		  			var ssName = vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1', ssNumber);
 		  			
-		  			while(rootNode.findChild('name', ssName, true)) {
+		  			while(rootNode.findChildBy(function(node){
+		  				return (node.raw.name == ssName);
+		  				},this,true)) {
+		  				
 		  				ssName = vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1', ++ssNumber);
 		  			}
 
@@ -103,7 +106,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		  						win.down('#form').getForm().setValues({name:ssName});
 		  						
 		  						win.down('#ok').on('click',function(btn){
-		  							console.log("ok...");
+		  							
 		  							
 		  							win.setLoading(true);
 		  							
@@ -126,7 +129,6 @@ Ext.define('vcube.controller.VMSnapshots', {
 			  							});
 		  						});
 		  						win.down('#cancel').on('click',function(){
-		  							console.log("cancel...");
 		  							promise.reject('snapshot window closed');
 		  						});
 		  					}
@@ -156,12 +158,12 @@ Ext.define('vcube.controller.VMSnapshots', {
 					var q = '';
 					
 					// Check if the current state is modified
-					if(true || vm.currentStateModified) {
+					if(vm.currentStateModified) {
 	
 						q = vcube.utils.trans("<p>You are about to restore snapshot <nobr><b>%1</b></nobr>.</p>" +
 		                        "<p>You can create a snapshot of the current state of the virtual machine first by checking the box below; " +
 		                        "if you do not do this the current state will be permanently lost. Do you wish to proceed?</p>",'UIMessageCenter');
-						q += '<p><label><input type="checkbox" id="vboxRestoreSnapshotCreate" checked /> ' + vcube.utils.trans('Create a snapshot of the current machine state','UIMessageCenter') + '</label></p>';
+						q += '<p><label><input type="checkbox" checked /> ' + vcube.utils.trans('Create a snapshot of the current machine state','UIMessageCenter') + '</label></p>';
 						
 						var buttons = [{
 							
@@ -178,12 +180,11 @@ Ext.define('vcube.controller.VMSnapshots', {
 										
 									};
 									
-									if(document.getElementById('vboxRestoreSnapshotCreate').checked) {
+									if(Ext.select('input[type=checkbox]',btn.up('.window').getEl().dom).elements[0].checked) {
 
 										Ext.ux.Deferred.when(vcube.controller.VMSnapshots.snapshotActions.takeSnapshot.action(snapshot, vm, rootNode))
 											.done(function(sntakepromise) {
 												
-												console.log(sntakepromise);
 												// Show progress window
 			    								var pwin = Ext.create('vcube.view.common.ProgressWindow',{
 			    									operation: 'snapshotTake'
@@ -196,7 +197,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 														snrestore();
 													}).always(function(){
 														// close progress window
-														//pwin.close();
+														pwin.close();
 													})
 											});
 										
@@ -387,7 +388,7 @@ Ext.define('vcube.controller.VMSnapshots', {
         		click: this.onButtonClick
         	},
         	'viewport > #MainPanel > VMTabs > VMSnapshots > treepanel' : {
-        		selectionchange: this.updateButtons
+        		selectionchange: this.updateActions
         	}
         });
         
@@ -419,8 +420,8 @@ Ext.define('vcube.controller.VMSnapshots', {
     			this.snapshotTree.getRootNode());
     },
     
-    /* Update buttons */
-    updateButtons: function() {
+    /* Update buttons and menu items */
+    updateActions: function() {
     	
     	var self = this;
 
@@ -437,10 +438,15 @@ Ext.define('vcube.controller.VMSnapshots', {
     		
     		if(btn.xtype == 'button') {
     			
-    			if(vcube.controller.VMSnapshots.snapshotActions[btn.itemId].enabled(ss, vm))
+    			var mitem = self.itemContextMenu.down('#'+btn.itemId);
+    			
+    			if(vcube.controller.VMSnapshots.snapshotActions[btn.itemId].enabled(ss, vm)) {
     				btn.enable();
-    			else
-    				btn.disable();    			
+    				mitem.enable();
+    			} else {
+    				btn.disable();
+    				mitem.disable();
+    			}
     		}
     		
     		
@@ -460,9 +466,48 @@ Ext.define('vcube.controller.VMSnapshots', {
     	this.snapshotTree = tab.down('#snapshottree');
     	this.snapshotTreeStore = this.snapshotTree.getStore();
     	
+    	/* 
+    	 * Context menu
+    	 * 
+    	 */
+    	this.itemContextMenu = Ext.create('Ext.menu.Menu', {
+    	    renderTo: Ext.getBody(),
+    	    items: Ext.Array.map(vcube.view.VMSnapshots.contextMenuItems, function(item) {
+    	    	return Ext.apply(item, {listeners : { click: self.onButtonClick, scope: self }});
+    	    })
+    	});
+
+    	var self = this;
+    	this.snapshotTree.on('itemcontextmenu',function(t,r,i,index,e) {
+    		e.stopEvent();
+    		self.itemContextMenu.showAt(e.getXY());
+
+    	});
+
+    	this.snapshotTree.on('beforeitemcontextmenu',function(t,snapshot) {
+    		
+    		Ext.each(self.itemContextMenu.items.items, function(i){
+    			if(i.isDisabled()) i.hide();
+    			else i.show();
+    		});
+
+    		var lastXtype = null;
+			Ext.each(Ext.Array.filter(self.itemContextMenu.items.items, function(i) { return i.isVisible(); }),function(item, index, total){
+
+				var xtype = item.getXType();
+				if(item.xtype == 'menuseparator' && (lastXtype == 'menuseparator' || !lastXtype || index == (total.length-1))) {
+					item.hide();
+				} else {
+					item.show();
+				}
+				lastXtype = xtype;
+			});
+    		
+
+    	});
     	
     	/*
-    	 * Snapshot tooltips 
+    	 * Snapshot tool tips 
     	 */
     	var snapshotTreeView = this.snapshotTree.getView();
 
@@ -581,7 +626,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     	}
 
     	// Snapshot deleted
-    	if(event.snapshotId) {
+    	if(event.snapshotId && event.snapshotId != '00000000-0000-0000-0000-000000000000') {
     		
     		var removeTarget = this.snapshotTreeStore.getNodeById(event.snapshotId);
     		
@@ -668,7 +713,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     	}
     	
     	this.snapshotTree.getView().getSelectionModel().deselectAll();
-    	this.updateButtons();
+    	this.updateActions();
 
     	// Data is no longer dirty
     	this.dirty = false;

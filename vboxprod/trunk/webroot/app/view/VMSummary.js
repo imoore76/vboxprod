@@ -241,15 +241,10 @@ Ext.define('vcube.view.VMSummary', {
     					
     					Ext.each(vcube.view.VMSummary.machine, function(action, i) {
     						
-    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
-    							
-    							itemId : action,
-    							
-    							text: vcube.vmactions[action].label.replace('...',''),
-    							
-    							icon: 'images/vbox/' +  vcube.vmactions[action].icon + '_16px.png'
-								
-    						}, vcube.view.VMSummary.buttonDefaults)));
+    						/*
+    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},
+    								vcube.vmactions.toItemConfig(action, true), vcube.view.VMSummary.buttonDefaults)));
+    						*/
 
     					});
 
@@ -271,15 +266,11 @@ Ext.define('vcube.view.VMSummary', {
     					
     					Ext.each(vcube.view.VMSummary.vmactions, function(action, i) {
     						
-    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},{
-    							
-    							itemId : action,
-    							
-    							text: vcube.vmactions[action].label.replace('...',''),
-    							
-    							icon: 'images/vbox/' +  vcube.vmactions[action].icon + '_16px.png'
-								
-    						}, vcube.view.VMSummary.buttonDefaults)));
+    						/*
+    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},
+    								vcube.vmactions.toItemConfig(action, true), vcube.view.VMSummary.buttonDefaults)));
+    								
+    						*/
 
     					});
 

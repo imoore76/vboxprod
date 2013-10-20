@@ -32,6 +32,7 @@ import vcube.constants
 vboxMgr = None
 vbox = None
 vboxSubscribeEventList = []
+vboxMachineLocks = []
 
 """ Helpers """
 
@@ -439,7 +440,7 @@ def enrichEvents(eventList):
      
     # Don't leave open sessions to machines         
     finally:      
-        if session is not None:
+        if session and session.state == vboxMgr.constants.SessionState_Locked:
             session.unlockMachine()
         
     return eventList
@@ -3317,7 +3318,7 @@ class vboxConnector(object):
 
             """ @machine IMachine """
             machine = self.vbox.findMachine(args['vm'])
-            machine.lockMachine(session, vboxMgr.constants.LockType_Write)
+            machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
 
             """ @snapshot ISnapshot """
             snapshot = session.machine.findSnapshot(args['snapshot'])
@@ -3331,14 +3332,10 @@ class vboxConnector(object):
 
 
         except Exception as e:
-
-            if session:
-                try:
-                    session.unlockMachine()
-                    session = None
-                except:
-                    pass
             
+            if session and session.state == vboxMgr.constants.SessionState_Locked:
+                session.unlockMachine()
+                
             raise e
         
         return {'progress' : progressid, 'snapshotName':snapshotName}
@@ -3385,14 +3382,10 @@ class vboxConnector(object):
 
 
         except Exception as e:
-
-            if session:
-                try:
-                    session.unlockMachine()
-                    session = None
-                except:
-                    pass
-
+            
+            if session and session.state == vboxMgr.constants.SessionState_Locked:
+                session.unlockMachine()
+                
             raise e
 
         return {'progress' : progressid, 'snapshotName': snapshotName}
@@ -3428,18 +3421,18 @@ class vboxConnector(object):
 
             # Open session to machine
             session = vboxMgr.mgr.getSessionObject(self.vbox)
-            machine.lockMachine(session, (vboxMgr.constants.LockType_Write if machine.sessionState == vboxMgr.constants.SessionState_Unlocked else vboxMgr.constants.LockType_Shared))
+            machine.lockMachine(session, (vboxMgr.constants.LockType_Shared))
 
             """ @progress IProgress """
             progress = session.console.takeSnapshot(args['name'],args.get('description',''))
 
             progressid = progressOpPool.store(progress, session)
 
+
         except Exception as e:
             
-            if session:
+            if session and session.state == vboxMgr.constants.SessionState_Locked:
                 session.unlockMachine()
-                session = None
                 
             raise e
                 

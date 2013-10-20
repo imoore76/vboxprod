@@ -6,6 +6,36 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
+	 * Convert action item configuration to menu item
+	 */
+	actionToMenuItemConfig: function(actionType, item) {
+		return vcube.utils.actionToButtonConfig(actionType, item, false, true);
+	},
+	
+	/**
+	 * Convert action item to button
+	 */
+	actionToButtonConfig: function(actionType, item, labelAsTip, keepDots) {
+
+		var text = vcube.view.actions[actionType][item].label;
+		if(!keepDots) text = text.replace('...','');
+		
+		var cfg = {
+			icon: 'images/vbox/'+ vcube.view.actions[actionType][item].icon + '_16px.png',
+			itemId: 'action-'+actionType+'-'+item
+		};
+		
+		if(labelAsTip) {
+			cfg.tooltip = text;
+		} else {
+			cfg.text = text;
+		}
+		
+		return cfg;
+
+	},
+
+	/**
 	 * Determine if this is the only VM selected
 	 */
 	isThisVMSelected: function(vmid, selectionModel) {

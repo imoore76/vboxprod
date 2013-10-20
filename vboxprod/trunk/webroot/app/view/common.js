@@ -1,19 +1,8 @@
 Ext.define('vcube.view.common',{});
 
-/*
- * Configuration for progress operations
+/**
+ * Progress operation window
  */
-Ext.define('vcube.view.common.ProgressOperations',{
-	
-	singleton: true,
-
-	snapshotTake: {
-		icon: 'images/vbox/progress_snapshot_create_90px.png',
-		title: vcube.utils.trans('Take Snapshot...','UIActionPool').replace('...',''),
-	}
-	
-});
-
 Ext.define('vcube.view.common.ProgressWindow',{
 	
     extend: 'Ext.window.Window',
@@ -40,12 +29,12 @@ Ext.define('vcube.view.common.ProgressWindow',{
     
     constructor: function(options){
     
-    	if(options.operation) {
-    		var op = vcube.view.common.ProgressOperations[options.operation];
+    	if(options.actionType && options.actionName) {
+    		var op = vcube.view.actions[options.actionType][options.actionName];
     		Ext.apply(this, {
-    			progressImage: op.icon,
-    			progressText: op.title,
-    			title: op.title
+    			progressImage: op.progressImage,
+    			progressText: op.progressTitle.replace('...',''),
+    			title: op.progressTitle.replace('...','')
     		});
     	}
     	
@@ -124,6 +113,9 @@ Ext.define('vcube.view.common.ProgressWindow',{
 	
 });
 
+/**
+ * Login form
+ */
 Ext.define('vcube.view.common.Login', {
 	
 

@@ -28,6 +28,35 @@ Ext.define('vcube.view.NavTree', {
     		
     	}
     	
+    	/*,
+    	
+    	vmContextMenuItems :[
+    	    // settings
+    		vcube.utils.actionToMenuItemConfig('vm','settings'),
+    		// clone
+    		vcube.utils.actionToMenuItemConfig('vm','clone'),
+    		// remove
+    		vcube.utils.actionToMenuItemConfig('vm','remove'),
+    		'-',
+    		// start
+    		vcube.utils.actionToMenuItemConfig('vm','start'),
+    		// pause
+    		vcube.utils.actionToMenuItemConfig('vm','pause'),
+    		// reset
+    		vcube.utils.actionToMenuItemConfig('vm','reset'),
+    		// stop
+    		vcube.utils.actionToMenuItemConfig('vm','stop'),
+    		'-',
+    		// discard
+    		vcube.utils.actionToMenuItemConfig('vm','discard'),
+    		// show logs
+    		vcube.utils.actionToMenuItemConfig('vm','logs'),
+    		'-',
+    		// refresh
+    		vcube.utils.actionToMenuItemConfig('vm','refresh')
+    	]
+    	*/
+    	
     },
     
     width: 300,

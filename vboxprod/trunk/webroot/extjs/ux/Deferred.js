@@ -23,10 +23,10 @@ Ext.define ('Ext.ux.Deferred', {
 			var promises = arguments ,
 				dfd = Ext.create ('Ext.ux.Deferred') , // Master deferred object
 				counter = promises.length ,
-				results = [] ,
-				errors = [];
+				results = [];
 
 			for (var i = 0; i < promises.length; i++) {
+				results[i] = null;
 				(function (i) {
 					var promise = promises[i];
 					
@@ -37,28 +37,28 @@ Ext.define ('Ext.ux.Deferred', {
 					// If promise is not a deferred object, create one
 					// and resolve it
 					if(!(promise instanceof Ext.ux.Deferred)) {
-						var pdata = promise;
-						promise = Ext.create('Ext.ux.Deferred');
-						promise.resolve.call(promise,pdata);
+						results[i] = promise;
+						if (--counter == 0) {
+							
+							dfd.resolve.apply(dfd, results);
+						}
+						return;
 					}
 			
 					promise
 						.done(function (data) {
-							counter--;
 							results[i] = data;
 					
-							if (counter == 0) {
+							if (--counter == 0) {
 						
-								if (errors.length > 0) dfd.reject.apply(dfd, errors);
-								else dfd.resolve.apply(dfd, results);
+								dfd.resolve.apply(dfd, results);
 							}
 						})
 						.fail(function (data) {
-							counter--;
-							errors[i] = data;
+							results[i] = data;
 							
-							if (counter == 0) {
-								dfd.reject.apply (dfd, errors);
+							if (--counter == 0) {
+								dfd.reject.call (dfd, 'somthing in master failed');
 							}
 						});
 					
@@ -75,18 +75,18 @@ Ext.define ('Ext.ux.Deferred', {
 	/**
 	 * @property {Function} onDone Function called when the promise is done. Never use directly
 	 * @private
-	 */
 	onDone: [],
+	 */
 	
 	/**
 	 * @property {Function} onFail Function called when the promise is failed. Never use directly
 	 * @private
-	 */
 	onFail: [],
+	 */
 	
-	onProgress: [],
 	
 	/**
+	onProgress: [],
 	 * @method done
 	 * The given function will be executed when the promise is solved
 	 * @param {Function} onDone Function that has to be called on 'resolve' situation
@@ -94,13 +94,14 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	done: function (onDone) {
 
-		console.log(this.id + " adding ondone length is " + this.onDone.length);
-		console.log(onDone);
+		if(onDone === undefined) return this;
+		
 		if(this.state == 'resolved') {
 			onDone.apply(this, this.stateData);
 		} else {
 			this.onDone.push(onDone);
 		}
+		
 		
 		return this;
 	} ,
@@ -130,6 +131,8 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	fail: function (onFail) {
 
+		if(onFail === undefined) return this;
+		
 		if(this.state == 'rejected') {
 			onFail.apply(this, this.stateData);
 		} else {
@@ -157,8 +160,9 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	reject: function () {
 		
-		console.log("Calling reject with");
-		console.log(arguments);
+		if(this.state != 'inprogress') {
+			alert(this.id + ' ' + this.state);
+		}
 
 		var me = this;
 		this.stateData = arguments;
@@ -180,16 +184,17 @@ Ext.define ('Ext.ux.Deferred', {
 	 */
 	resolve: function () {
 		
+		if(this.state != 'inprogress') {
+			alert(this.id + ' ' + this.state);
+			console.log(arguments);
+		}
+
 		this.stateData = arguments;
 		this.state = 'resolved';
 		
 		var me = this;
 		
-		console.log(this.id + " Ondone is ");
-		console.log(this.onDone);
 		Ext.each(this.onDone, function(fn) {
-			console.log(me.id + " Calling ");
-			console.log(fn);
 			fn.apply(me, me.stateData);
 		})
 		return me;
@@ -200,10 +205,14 @@ Ext.define ('Ext.ux.Deferred', {
 	 * instance creation, but it doesn't. Bad EXTJS!!!!
 	 */
 	constructor: function() {
-		this.onDone = this.onFail = this.onProgress = [];
+		this.onDone = [];
+		this.onFail = [];
+		this.onProgress = [];
 		this.stateData = null;
 		this.state = 'inprogress';
-		this.id = new Date().getTime();
+		this.id = Ext.id() + '-' + new Date().getTime();
+		
+		this.callParent.apply(this, arguments);
 	},
 	
 	/**

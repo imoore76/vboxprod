@@ -123,11 +123,11 @@ Ext.define('vcube.controller.VMSummary', {
 
     /* When an action button is clicked */
     onActionButtonClick: function(button) {
-    	vcube.vmactions[button.itemId].action(this.navTreeSelectionModel);
+    	//vcube.vmactions[button.itemId].action(this.navTreeSelectionModel);
     },
     
     drawSections: function(data) {
-    	
+    
     	// Update actions
     	this.updateVMButtons();
     	
@@ -245,6 +245,7 @@ Ext.define('vcube.controller.VMSummary', {
 
 		var self = this;
 		
+		/*
 		Ext.each(this.controlledTabView.down('#vmactions').items.items, function(item) {
 			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
 			else item.disable();
@@ -254,6 +255,7 @@ Ext.define('vcube.controller.VMSummary', {
 			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
 			else item.disable();
 		});		
+		*/
 
 	},
 

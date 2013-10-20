@@ -10,7 +10,8 @@ Ext.define('vcube.view.VirtualMachinesList', {
     defaults: { viewConfig: { markDirty: false } },
     items: [{
     	xtype: 'gridpanel',
-        tbar : [{
+        tbar : [
+                /*{
      	   'xtype':'button',
      	   'text':vcube.vmactions['new'].label.replace('...',''),
      	   'icon':'images/vbox/'+vcube.vmactions['new'].icon+'_16px.png'
@@ -38,7 +39,8 @@ Ext.define('vcube.view.VirtualMachinesList', {
      	   'xtype':'button',
      	   'text':'Devices',
      	   'icon' : 'images/vbox/chipset_16px.png'
-        }],
+        }*/
+        ],
     	columns: [{
 	    	  header: 'Name',
 	    	  dataIndex: 'name',

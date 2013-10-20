@@ -13,18 +13,32 @@ Ext.application({
 	
 	/* Generic app items */
     name: 'vcube',
+    version: '0.3 beta',
     
     autoCreateViewport: true,
     
     /* Various utils and scripts */
     requires: ['vcube.data.reader.Json', 'vcube.data.proxy.Ajax', 'Ext.ux.Deferred',
+               
+               // Actions
+               'vcube.actions.config',
+               'vcube.actions.machine',
+               'vcube.actions.server',
+               'vcube.actions.snapshots',
+               'vcube.actions.vmgroup',
+               
                'Ext.ux.form.plugin.FieldHelpText',
                'vcube.ExtPatches.ExtZIndexManager',
-               'vcube.vmdatamediator', 'vcube.vmactions', 'vcube.eventlistener',
+               'vcube.vmdatamediator', //'vcube.vmactions', 
+               'vcube.eventlistener',
                'vcube.previewbox'],
     
     /* Controllers used by this app */
     controllers: [
+                  
+                  // Actions controller
+                  'actions',
+                  
                   // Main Views
                   'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEventsMain',
                   // VM Group tabs
@@ -42,9 +56,25 @@ Ext.application({
     /* Stores */
     stores: ['Events','Tasks'],
     
-    // Load mask created on app init
-    loadMask: null,
-
+    /* Action pool */
+    actionPool : {},
+    
+    getAction: function(type, action) {
+    	
+    	if(!this.actionPool[type]) {
+    		this.actionPool[type] = {}
+    	}
+    	
+    	if(!this.actionPool[type][action]) {
+    		this.actionPool[type][action] = Ext.create('Ext.Action', vcube.actions.config[type][action]);
+    	}
+    	return this.actionPool[type][action];
+    },
+    
+    getActions: function(type) {
+    	
+    },
+    
     /* App Settings */
     settings : {},
     
@@ -57,30 +87,6 @@ Ext.application({
     	return this.taskWatchList[task_id];
     },
     
-    version: '0.3 beta',
-    
-    /* Check for progress operation completion */
-    onProgressCompleted: function(event) {
-    	
-    	for(var i in this.progressOps) {
-    		if(typeof(i) != 'string') continue;
-
-    		if(i == event.eventData.progress) {
-    			
-    			if(event.eventData.canceled) {
-    				vcube.utils.alert('Task `' + event.eventData.taskName + '` was canceled.');
-    				
-    			} else if(event.eventData.resultCode){
-    				
-    				vcube.utils.alert('Task `' + event.eventData.taskName +'` failed.<p>' + event.eventData.error+'</p>');
-    			}
-    			
-    			delete this.progressOps[i];
-    			return;
-    		}
-    	}
-    	
-    },
     
     /* Check for a task we wanted to be notified of */
     taskLogWatch: function(event) {
@@ -129,11 +135,6 @@ Ext.application({
     	
     },
     
-    /* Notify of task update */
-    notifyTask: function(task_id, promise) {
-    	this.taskList[task_id] = promise;
-    },
-    
     
     // a fatal error has occurred, stop everything and display error
     died: false,
@@ -149,11 +150,6 @@ Ext.application({
     	vcube.eventlistener.stop();
     	vcube.vmdatamediator.stop();
     	this.fireEvent('stop');
-    },
-    
-    /* Show loading screen */
-    setLoading: function(loading) {
-    	return;
     },
     
     // Show login box

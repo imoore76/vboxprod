@@ -1,14 +1,12 @@
 /**
  * VM actions
  */
-Ext.define('vcube.vmactions',{
+Ext.define('vcube.actions.machine',{
 	
 	statics: {
 	
 		/** Invoke the new virtual machine wizard */
 		'new':{
-			label:vcube.utils.trans('New...','UIActionPool'),
-			icon:'vm_new',
 			action: function(fromGroup){
 				new vboxWizardNewVMDialog((fromGroup ? $(vboxChooser.getSelectedGroupElements()[0]).data('vmGroupPath') : '')).run();
 			}
@@ -16,8 +14,6 @@ Ext.define('vcube.vmactions',{
 		
 		/** Add a virtual machine via its settings file */
 		add: {
-			label:vcube.utils.trans('Add...','UIActionPool'),
-			icon:'vm_add',
 			action:function(selectionModel){
 				vboxFileBrowser($('#vboxPane').data('vboxSystemProperties').defaultMachineFolder,function(f){
 					if(!f) return;
@@ -36,9 +32,6 @@ Ext.define('vcube.vmactions',{
 	
 		/** Start VM */
 		start: {
-			name : 'start',
-			label : vcube.utils.trans('Start','UIActionPool'),
-			icon : 'vm_start',
 			action : function (selectionModel) {
 			
 				
@@ -199,8 +192,6 @@ Ext.define('vcube.vmactions',{
 		
 		/** Invoke VM settings dialog */
 		settings: {
-			label:vcube.utils.trans('Settings...','UIActionPool'),
-			icon:'vm_settings',
 			action:function(selectionModel){
 				
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
@@ -212,9 +203,6 @@ Ext.define('vcube.vmactions',{
 	
 		/** Clone a VM */
 		clone: {
-			label:vcube.utils.trans('Clone...','UIActionPool'),
-			icon:'vm_clone',
-			icon_disabled:'vm_clone_disabled',
 			action:function(selectionModel){
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
@@ -225,8 +213,6 @@ Ext.define('vcube.vmactions',{
 	
 		/** Refresh a VM's details */
 		refresh: {
-			label:vcube.utils.trans('Refresh','UIVMLogViewer'),
-			icon:'refresh',
 			action:function(selectionModel){
 				
 				var vmid = vboxChooser.getSingleSelectedId();
@@ -243,8 +229,6 @@ Ext.define('vcube.vmactions',{
 	    
 	    /** Delete / Remove a VM */
 	    remove: {
-			label:vcube.utils.trans('Remove...', 'UIActionPool'),
-			icon:'vm_delete',
 			action:function(selectionModel){
 	
 				//////////////////
@@ -308,9 +292,8 @@ Ext.define('vcube.vmactions',{
 	    
 	    /** Discard VM State */
 	    discard: {
-			label:vcube.utils.trans('Discard saved state...','UIActionPool'),
-			icon:'vm_discard',
-			action:function(selectionModel){
+
+	    	action:function(selectionModel){
 				
 				var buttons = [{
 					text: vcube.utils.trans('Discard','UIMessageCenter'),
@@ -349,8 +332,7 @@ Ext.define('vcube.vmactions',{
 	    
 	    /** Install Guest Additions **/
 	    guestAdditionsInstall : {
-	    	label: vcube.utils.trans('Install Guest Additions...','UIActionPool'),
-	    	icon: 'guesttools',
+
 	    	action: function(selectionModel) {
 	    		
 	    		if(!vmid)
@@ -368,7 +350,7 @@ Ext.define('vcube.vmactions',{
 								if(d.responseData.error.err != 'VBOX_E_NOT_SUPPORTED') {
 									vboxAlert({'error':vcube.utils.trans('Failed to update Guest Additions. The Guest Additions installation image will be mounted to provide a manual installation.','UIMessageCenter'),'details':d.responseData.error.err+"\n"+d.responseData.error.message});
 								}
-								vcube.vmactions['guestAdditionsInstall'].click(vmid, true);
+								vcube.actions.machine['guestAdditionsInstall'].click(vmid, true);
 								return;
 							}
 						},'progress_install_guest_additions_90px.png',vcube.utils.trans('Install Guest Additions...','UIActionPool').replace(/\./g,''));
@@ -422,9 +404,6 @@ Ext.define('vcube.vmactions',{
 	    
 	    /** Show VM Logs */
 	    logs: {
-			label:vcube.utils.trans('Show Log...','UIActionPool'),
-			icon:'vm_show_logs',
-			icon_disabled:'show_logs_disabled',
 			action:function(selectionModel){
 	    		vboxShowLogsDialogInit(vboxChooser.getSingleSelected());
 			},
@@ -435,8 +414,6 @@ Ext.define('vcube.vmactions',{
 	
 	    /** Save the current VM State */
 		savestate: {
-			label: vcube.utils.trans('Save State', 'UIActionPool'),
-			icon: 'vm_save_state',
 			stop_action: true,
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
@@ -446,15 +423,13 @@ Ext.define('vcube.vmactions',{
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vboxVMStates.isPaused(vms[i]))
-						vcube.vmactions.powerAction('savestate','Save the machine state of the selected virtual machines', vms[i]);
+						vcube.actions.machine.powerAction('savestate','Save the machine state of the selected virtual machines', vms[i]);
 				}
 			}
 		},
 	
 		/** Send ACPI Power Button to VM */
 		powerbutton: {
-			label: vcube.utils.trans('ACPI Shutdown','UIActionPool'),
-			icon: 'vm_shutdown',
 			stop_action: true,
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
@@ -466,7 +441,7 @@ Ext.define('vcube.vmactions',{
 					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vcube.utils.vboxVMStates.isRunning(vms[i]))
-							vcube.vmactions.powerAction('powerbutton','Send the ACPI Power Button press event to the virtual machine', vms[i]);		
+							vcube.actions.machine.powerAction('powerbutton','Send the ACPI Power Button press event to the virtual machine', vms[i]);		
 					}
 				};
 				var vmNames = [];
@@ -489,8 +464,7 @@ Ext.define('vcube.vmactions',{
 		
 		/** Pause a running VM */
 		pause: {
-			label: vcube.utils.trans('Pause','UIActionPool'),
-			icon: 'vm_pause',
+
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
@@ -498,15 +472,14 @@ Ext.define('vcube.vmactions',{
 				var vms = vcube.utils.getSelectedVMsData(selectionModel);
 				for(var i = 0; i < vms.length; i++) {
 					if(vcube.utils.vboxVMStates.isRunning(vms[i]))
-						vcube.vmactions.powerAction('pause','Suspend the execution of the selected virtual machines', vms[i]);
+						vcube.actions.machine.powerAction('pause','Suspend the execution of the selected virtual machines', vms[i]);
 				}
 			}
 		},
 		
 		/** Power off a VM */
 		powerdown: {
-			label: vcube.utils.trans('Power Off','UIActionPool'),
-			icon: 'vm_poweroff',
+
 			stop_action: true,
 			enabled: function(selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
@@ -520,7 +493,7 @@ Ext.define('vcube.vmactions',{
 							var vms = vcube.utils.getSelectedVMsData(selectionModel);
 							for(var i = 0; i < vms.length; i++) {
 								if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vcube.utils.vboxVMStates.isPaused(vms[i]) || vcube.utils.vboxVMStates.isStuck(vms[i]))
-									vcube.vmactions.powerAction('powerdown','Power off the selected virtual machines', vms[i]);
+									vcube.actions.machine.powerAction('powerdown','Power off the selected virtual machines', vms[i]);
 							}
 							btn.up('.window').close();
 						}
@@ -549,9 +522,7 @@ Ext.define('vcube.vmactions',{
 		
 		/** Reset a VM */
 		reset: {
-			label: vcube.utils.trans('Reset','UIActionPool'),
-			icon: 'vm_reset',
-			icon_disabled: 'reset_disabled',
+
 			enabled: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
@@ -563,7 +534,7 @@ Ext.define('vcube.vmactions',{
 					var vms = vcube.utils.getSelectedVMsData(selectionModel);
 					for(var i = 0; i < vms.length; i++) {
 						if(vcube.utils.vboxVMStates.isRunning(vms[i]))
-							vcube.vmactions.powerAction('reset','Reset the selected virtual machines', vms[i]);
+							vcube.actions.machine.powerAction('reset','Reset the selected virtual machines', vms[i]);
 					}
 				};
 				
@@ -590,9 +561,6 @@ Ext.define('vcube.vmactions',{
 	
 		/** Stop a VM */
 		stop: {
-			name: 'stop',
-			label: vcube.utils.trans('Stop','VBoxSelectorWnd'),
-			icon: 'vm_shutdown',
 			menu: true,
 			action: function () { return true; /* handled by stop context menu */ },
 			enabled: function (selectionModel) {
@@ -634,6 +602,8 @@ Ext.define('vcube.vmactions',{
 			});	
 			
 		}
+		
 	}
+	
 
 });

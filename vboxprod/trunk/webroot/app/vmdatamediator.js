@@ -417,7 +417,6 @@ Ext.define('vcube.vmdatamediator', {
 		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
 			def.resolve(Ext.Object.merge({},d1,d2,d3));
 		}).fail(function(){
-			console.log("Somethign failed...");
 			def.reject('getVMDetails, runtime or getVMData failed');
 		});
 		return def;

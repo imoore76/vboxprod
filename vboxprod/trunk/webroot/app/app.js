@@ -68,14 +68,31 @@ Ext.application({
     	if(!this.actionPool[type][action]) {
     		this.actionPool[type][action] = Ext.create('Ext.Action', {
     			text: vcube.actions.config[type][action].label,
-    			icon: vcube.actions.config[type][action].icon
+    			tooltip: vcube.actions.config[type][action].label,
+    			icon: 'images/vbox/'+vcube.actions.config[type][action].icon+'_16px.png',
+    			itemId: action
     		});
     	}
     	return this.actionPool[type][action];
     },
     
     getActions: function(type) {
-    	
+    	var actionList = [];
+    	if(type) {
+    		if(this.actionPool[type]) {
+    			for(var i in this.actionPool[type]) {
+    				if(typeof(i) == 'string')
+    					actionList.push(i);
+    			}
+    		}
+    		return actionList;
+    	}
+    	for(var type in this.actionPool) {
+    		if(typeof(type) == 'string') {
+    			actionList.push(this.getActions(type));
+    		}
+    	}
+    	return actionList;
     },
     
     /* App Settings */

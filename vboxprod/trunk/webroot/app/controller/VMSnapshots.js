@@ -379,7 +379,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 		});
 		
 		
-        /* Tab rendered */
+        
         this.control({
         	'viewport > #MainPanel > VMTabs > VMSnapshots' : {
         		render: this.onTabRender
@@ -432,28 +432,16 @@ Ext.define('vcube.controller.VMSnapshots', {
     	
     	// vm data
     	var vm = vcube.vmdatamediator.getVMData(this.selectionItemId);
-    	
-    	Ext.each(this.snapshotTree.getDockedItems('toolbar')[0].items.items, function(btn) {
-    		
-    		
-    		if(btn.xtype == 'button') {
-    			
-    			var mitem = self.itemContextMenu.down('#'+btn.itemId);
-    			
-    			if(vcube.controller.VMSnapshots.snapshotActions[btn.itemId].enabled(ss, vm)) {
-    				btn.enable();
-    				mitem.enable();
-    			} else {
-    				btn.disable();
-    				mitem.disable();
-    			}
+
+
+    	var snActions = vcube.app.getActions('snapshots');
+    	for(var i = 0; i < snActions.length; i++) {
+    		if(vcube.actions.snapshots[snActions[i]].enabled(ss, vm)) {
+    			vcube.app.getAction('snapshots',snActions[i]).enable();
+    		} else {
+    			vcube.app.getAction('snapshots',snActions[i]).disable();
     		}
-    		
-    		
-    	});
-    	
-    	return;
-    	
+    	}
     	
     },
     
@@ -721,11 +709,6 @@ Ext.define('vcube.controller.VMSnapshots', {
     	// Show loading mask
     	this.controlledTabView.setLoading(true);
     	
-    	try {
-    		//this.snapshotTree.getRootNode().removeAll(true);    		
-    	} catch (err) {
-    		
-    	}
     	this.snapshotTreeStore.getRootNode().removeAll();
     	var self = this;
     	

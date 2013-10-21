@@ -1,5 +1,5 @@
 // allow customizing window's modal mask
-Ext.define('vcube.ExtPatches.ExtZIndexManager',{
+Ext.define('vcube.ExtOverrides.ExtZIndexManager',{
     override:'Ext.ZIndexManager',
 
 

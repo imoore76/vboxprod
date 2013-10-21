@@ -13,7 +13,6 @@ Ext.define('vcube.view.VMSummary', {
     
 	alias: 'widget.VMSummary',
 	
-	
 	statics: {
 		
 		/*
@@ -235,22 +234,7 @@ Ext.define('vcube.view.VMSummary', {
     			border: false,
     			frame: true,
     			width: 200,
-    			listeners: {
-    				
-    				beforerender: function(vmactions) {
-    					
-    					Ext.each(vcube.view.VMSummary.machine, function(action, i) {
-    						
-    						/*
-    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},
-    								vcube.vmactions.toItemConfig(action, true), vcube.view.VMSummary.buttonDefaults)));
-    						*/
-
-    					});
-
-    				}
-    			}
-				
+    			defaults: { xtype: 'button' }
     		},{
     			title: 'Actions',
     			layout: 'vbox',
@@ -260,27 +244,16 @@ Ext.define('vcube.view.VMSummary', {
     			border: false,
     			frame: true,
     			width: 200,
-    			listeners: {
-    				
-    				beforerender: function(vmactions) {
-    					
-    					Ext.each(vcube.view.VMSummary.vmactions, function(action, i) {
-    						
-    						/*
-    						vmactions.add(Ext.create('Ext.Button',Ext.apply({},
-    								vcube.vmactions.toItemConfig(action, true), vcube.view.VMSummary.buttonDefaults)));
-    								
-    						*/
-
-    					});
-
-    				}
-    			}
+    			defaults: { xtype: 'button' }
     		}]
     	}]
     }]
 });
 
+
+/**
+ * Edit virtual machine summary items dialog
+ */
 Ext.define('vcube.view.VMSummary.Edit', {
 	
     extend: 'Ext.window.Window',

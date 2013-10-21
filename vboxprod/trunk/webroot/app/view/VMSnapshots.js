@@ -51,10 +51,21 @@ Ext.define('vcube.view.VMSnapshots', {
 				'icon': 'images/vbox/snapshot_' + (data.online ? 'online' : 'offline') + '_16px.png',
 				'expanded': expanded
 			},data);
-		}
+		},
 		
 
-
+		getActionItems: function() {
+			return [
+	            vcube.app.getAction('snapshots','take'),
+	            '-',
+	            vcube.app.getAction('snapshots','restore'),
+	            vcube.app.getAction('snapshots','delete'),
+	            '-',
+	            vcube.app.getAction('snapshots','clone'),
+	            '-',
+	            vcube.app.getAction('snapshots','show')			        
+	            ]
+		}
 
 	},
 	
@@ -69,33 +80,22 @@ Ext.define('vcube.view.VMSnapshots', {
 		this.items = [{
 			xtype: 'treepanel',
 			itemId: 'snapshottree',
+			tbarConfig : {
+				hideText: true
+			},
 			viewConfig:{
 				markDirty:false
 			},
 			rootVisible: false,
 			lines: true,
-			tbar:[    
-			      vcube.app.getAction('snapshots','take'),
-			      '-',
-			      vcube.app.getAction('snapshots','restore'),
-			      vcube.app.getAction('snapshots','delete'),
-			      '-',
-			      vcube.app.getAction('snapshots','clone'),
-			      '-',
-			      vcube.app.getAction('snapshots','show')
-			      ]
+			dockedItems: [{
+			    xtype: 'toolbar',
+			    dock: 'top',
+			    itemId: 'snapshottoolbar',
+			    hideButtonText: true,
+			    items: []
+			}]
 		}];
-		
-		vcube.view.VMSnapshots.contextMenuItems = [
-		      vcube.app.getAction('snapshots','take'),
-		      '-',
-		      vcube.app.getAction('snapshots','restore'),
-		      vcube.app.getAction('snapshots','delete'),
-		      '-',
-		      vcube.app.getAction('snapshots','clone'),
-		      '-',
-		      vcube.app.getAction('snapshots','show'),
-	   ];
 		
 		this.callParent();
 	}

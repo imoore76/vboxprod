@@ -28,23 +28,30 @@ Ext.application({
                'vcube.actions.vmgroup',
                
                'Ext.ux.form.plugin.FieldHelpText',
-               'vcube.ExtPatches.ExtZIndexManager',
-               'vcube.vmdatamediator', //'vcube.vmactions', 
+               'vcube.ExtOverrides.ExtZIndexManager',
+               
+               'vcube.vmdatamediator', 
                'vcube.eventlistener',
                'vcube.previewbox'],
     
     /* Controllers used by this app */
     controllers: [
                   
-                  // Actions controller
-                  'actions',
+                  // Machine ctions controller
+                  'machineactions',
+                  
+                  // Toolbar extension
+                  'ExtToolbars',
                   
                   // Main Views
                   'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEventsMain',
+                  
                   // VM Group tabs
                   'GroupTabs',
+                  
                   // Server Tabs
                   'ServerConnector', 'ServerHost', 'ServerTasksAndEvents',
+                  
                   // VM tabs
                   'VMTabs', 'VMSummary','VMDetails','VMSnapshots','VMTasksAndEvents','VMConsole'
                   
@@ -56,43 +63,32 @@ Ext.application({
     /* Stores */
     stores: ['Events','Tasks'],
     
-    /* Action pool */
+    /**
+     * Action pool and supporting functions
+     */
     actionPool : {},
-    
     getAction: function(type, action) {
-    	
-    	if(!this.actionPool[type]) {
-    		this.actionPool[type] = {}
-    	}
-    	
-    	if(!this.actionPool[type][action]) {
-    		this.actionPool[type][action] = Ext.create('Ext.Action', {
-    			text: vcube.actions.config[type][action].label,
-    			tooltip: vcube.actions.config[type][action].label,
-    			icon: 'images/vbox/'+vcube.actions.config[type][action].icon+'_16px.png',
-    			itemId: action
-    		});
-    	}
     	return this.actionPool[type][action];
     },
-    
-    getActions: function(type) {
-    	var actionList = [];
-    	if(type) {
-    		if(this.actionPool[type]) {
-    			for(var i in this.actionPool[type]) {
-    				if(typeof(i) == 'string')
-    					actionList.push(i);
-    			}
-    		}
-    		return actionList;
-    	}
-    	for(var type in this.actionPool) {
-    		if(typeof(type) == 'string') {
-    			actionList.push(this.getActions(type));
-    		}
-    	}
-    	return actionList;
+    getActionList: function(type) {
+    	return vcube.actions.config[type]['actions'];
+    },
+    populateActionPool: function() {
+    	
+    	var self = this;
+    	
+    	Ext.each(vcube.actions.config.actionTypes, function(type){
+    		self.actionPool[type] = {};
+    		Ext.each(vcube.actions.config[type]['actions'], function(action) {
+    			self.actionPool[type][action] = new Ext.Action({
+    				text: vcube.actions.config[type][action].label,
+    				icon: 'images/vbox/' + vcube.actions.config[type][action].icon + '_16px.png',
+    				itemId: action,
+    				handler: vcube.actions.config[type][action].handler
+    			});
+    		});
+    	});
+    	
     },
     
     /* App Settings */
@@ -100,7 +96,7 @@ Ext.application({
     
     /* Task list to watch */
     taskWatchList: {},
-    
+
     /* Add progress operation to watch list */
     watchTask: function(task_id) {
     	this.taskWatchList[task_id] = Ext.create('Ext.ux.Deferred');
@@ -236,6 +232,8 @@ Ext.application({
      */
     launch: function() {
 
+    	/* Populate actions */
+    	this.populateActionPool();
     	
     	this.on({
     		'ConnectorUpdated': this.onConnectorUpdated,
@@ -273,6 +271,8 @@ Ext.application({
     	if (Ext.get('page-loader')) {
     		Ext.get('page-loader').remove();
     	}
+    	
+    	this.fireEvent('init');
 
     	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getSession')).done(function(data){
     		self.loadSession(data);

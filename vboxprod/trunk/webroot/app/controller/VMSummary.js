@@ -4,6 +4,7 @@
 Ext.define('vcube.controller.VMSummary', {
 
 	extend: 'vcube.controller.XInfoTab',
+	
     
     /* Watch for events */
     init: function(){
@@ -28,8 +29,7 @@ Ext.define('vcube.controller.VMSummary', {
     	
 		// Special case for VM actions
 		this.application.on({
-			'SessionStateChanged': this.updateVMButtons,
-			'MachineStateChanged': this.updateVMButtons,
+			'init': this.addSectionsButtons,
 			scope: this
 		});
 		
@@ -39,10 +39,10 @@ Ext.define('vcube.controller.VMSummary', {
 	        	render: this.onTabRender
 	        },
 	        'viewport > #MainPanel > VMTabs > VMSummary #vmactions > button' : {
-	        	click: this.onActionButtonClick
+	        	beforerender: this.applyButtonDefaults
         	},
 	        'viewport > #MainPanel > VMTabs > VMSummary #machine > button' : {
-	        	click: this.onActionButtonClick
+	        	beforerender: this.applyButtonDefaults
         	},
 	        'viewport > #MainPanel > VMTabs > VMSummary #edit' : {
 	        	click: this.editVM
@@ -52,6 +52,24 @@ Ext.define('vcube.controller.VMSummary', {
         
         this.callParent();
         
+    },
+    
+    /* Add buttons to section */
+    addSectionsButtons: function() {
+    
+    	var self = this;
+    	Ext.each(['#machine','#vmactions'], function(id) {
+    		var panel = Ext.ComponentQuery.query('viewport > #MainPanel > VMTabs > VMSummary ' + id)[0];
+    		var actions = [];
+    		Ext.each(vcube.view.VMSummary[panel.itemId], function(action) {
+    			actions.push(vcube.app.getAction('machine',action));
+    		});
+    		panel.add(actions);
+    	});
+    },
+    
+    applyButtonDefaults: function(btn) {
+    	Ext.apply(btn, vcube.view.VMSummary.buttonDefaults);
     },
     
     /* Edit vm */
@@ -121,16 +139,8 @@ Ext.define('vcube.controller.VMSummary', {
     /* preview timers */
     previewTimers : {},
 
-    /* When an action button is clicked */
-    onActionButtonClick: function(button) {
-    	//vcube.vmactions[button.itemId].action(this.navTreeSelectionModel);
-    },
-    
     drawSections: function(data) {
     
-    	// Update actions
-    	this.updateVMButtons();
-    	
     	// refs
     	var self = this;    	
 		var vmid = data.id;
@@ -228,36 +238,7 @@ Ext.define('vcube.controller.VMSummary', {
 		    		
 
     	this.callParent(arguments);
-    },
-
-
-    /* Update VM actions */
-	updateVMButtons: function(eventData) {
-
-		
-    	// If this tab is dirty, just wait
-		// until it has been redrawn
-		if(this.dirty) return;
-		
-    	// Is this VM still selected
-    	if(eventData && !(this.selectionItemId && eventData.machineId == this.selectionItemId))
-    		return;
-
-		var self = this;
-		
-		/*
-		Ext.each(this.controlledTabView.down('#vmactions').items.items, function(item) {
-			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
-			else item.disable();
-		});		
-		
-		Ext.each(this.controlledTabView.down('#machine').items.items, function(item) {
-			if(vcube.vmactions[item.itemId].enabled(self.navTreeSelectionModel)) item.enable();
-			else item.disable();
-		});		
-		*/
-
-	},
+    }
 
     
 });

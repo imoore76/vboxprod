@@ -39,7 +39,7 @@ Ext.define('vcube.utils', {
 	 * Determine if this is the only VM selected
 	 */
 	isThisVMSelected: function(vmid, selectionModel) {
-		return (vmid && selectionModel.selected.length == 1 && selectionModel.getSelection()[0].raw.data.id == vmid);
+		return (vmid && selectionModel.selected.length == 1 && selectionModel.getSelection()[0].get('id') == vmid);
 	},
 	
 	/* Return ajax parameters that specify a VM */
@@ -56,7 +56,7 @@ Ext.define('vcube.utils', {
 		var vmList = [];
 		Ext.each(selectionModel.getSelection(), function(record) {
 			try {
-				vmList.push(vcube.vmdatamediator.getVMData(record.raw.data.id));
+				vmList.push(vcube.vmdatamediator.getVMData(record.get('id')));
 			} catch (err) {
 				// Nothing
 			}
@@ -802,7 +802,7 @@ Ext.define('vcube.utils', {
 			
 			for(var i = 0; i < vmlist.length; i++) {
 				for(var a = 0; a < states.length; a++) {
-					if(vcube.utils.vboxVMStates['is'+(states[a])](vcube.vmdatamediator.getVMData(vmlist[i].raw.data.id)))
+					if(vcube.utils.vboxVMStates['is'+(states[a])](vcube.vmdatamediator.getVMData(vmlist[i].get('id'))))
 						return true;					
 				}
 			}

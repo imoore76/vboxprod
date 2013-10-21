@@ -90,13 +90,13 @@ Ext.define('vcube.controller.NavTree', {
 
 	onMachinesRemoved: function(eventData) {
 		for(var i = 0; i < eventData.machines.length; i++) {
-			this.navTreeStore.getNodeById('vm-' + eventData.machines[i]).remove(true);
+			this.navTreeStore.getNodeById(eventData.machines[i]).remove(true);
 		}
 	},
 
 	onMachineGroupChanged: function(eventData) {
 		
-		var targetVM = this.navTreeStore.getNodeById('vm-'+ eventData.machineId);
+		var targetVM = this.navTreeStore.getNodeById(eventData.machineId);
 		
 		if(!eventData.group) eventData.group = "0";
 
@@ -111,7 +111,7 @@ Ext.define('vcube.controller.NavTree', {
 
 	onMachineDataChanged: function(eventData) {
 
-		var oldVM = this.navTreeStore.getNodeById('vm-' + eventData.machineId);
+		var oldVM = this.navTreeStore.getNodeById(eventData.machineId);
 		var newData = this.createVMNodeCfg(eventData.enrichmentData);
 		
 		for(var k in newData) {
@@ -124,7 +124,7 @@ Ext.define('vcube.controller.NavTree', {
 	
 	onMachineIconChanged: function(eventData) {
 		var vmData = vcube.vmdatamediator.getVMData(eventData.machineId);
-		this.navTreeStore.getNodeById('vm-'+ eventData.machineId).set('icon', this.vmNodeIcon(vmData));
+		this.navTreeStore.getNodeById(eventData.machineId).set('icon', this.vmNodeIcon(vmData));
 	},
 
 	onVMGroupAdded: function(eventData) {
@@ -275,7 +275,7 @@ Ext.define('vcube.controller.NavTree', {
 			leaf : true,
 			icon : this.vmNodeIcon(data),
 			iconCls : 'navTreeIcon',
-			id : 'vm-' + data.id,
+			id : data.id,
 			data : data
 		};
 

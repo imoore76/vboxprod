@@ -1,4 +1,10 @@
 /**
  * Server actions
  */
-Ext.define('vcube.actions.server',{});
+Ext.define('vcube.actions.server',{
+
+	statics: {
+		
+	}
+	
+});

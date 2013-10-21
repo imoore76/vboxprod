@@ -1,4 +1,10 @@
 /**
  * vm group actions
  */
-Ext.define('vcube.actions.vmgroup',{});
+Ext.define('vcube.actions.vmgroup',{
+	
+	statics: {
+		
+	}
+
+});

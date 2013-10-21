@@ -121,7 +121,10 @@ Ext.define('vcube.actions.snapshots',{
 											
 											// Show progress window
 		    								var pwin = Ext.create('vcube.view.common.ProgressWindow',{
-		    									operation: 'snapshotTake'
+		    									operation: {
+		    										actionType: 'snapshots',
+		    										actionName: 'take'
+		    									}
 		    								}).show();
 	
 											Ext.ux.Deferred.when(sntakepromise)

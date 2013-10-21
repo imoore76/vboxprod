@@ -30,7 +30,7 @@ Ext.define('vcube.view.common.ProgressWindow',{
     constructor: function(options){
     
     	if(options.actionType && options.actionName) {
-    		var op = vcube.view.actions[options.actionType][options.actionName];
+    		var op = vcube.actions.config[options.actionType][options.actionName];
     		Ext.apply(this, {
     			progressImage: op.progressImage,
     			progressText: op.progressTitle.replace('...',''),

@@ -16,7 +16,7 @@ Ext.define('vcube.actions.config.machine',{
 		
 	/** Invoke the new virtual machine wizard */
 	'new':{
-		label:vcube.utils.trans('New...','UIActionPool'),
+		label: vcube.utils.trans('New...','UIActionPool'),
 		icon:'vm_new'
 	},
 	

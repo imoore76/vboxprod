@@ -66,7 +66,10 @@ Ext.application({
     	}
     	
     	if(!this.actionPool[type][action]) {
-    		this.actionPool[type][action] = Ext.create('Ext.Action', vcube.actions.config[type][action]);
+    		this.actionPool[type][action] = Ext.create('Ext.Action', {
+    			text: vcube.actions.config[type][action].label,
+    			icon: vcube.actions.config[type][action].icon
+    		});
     	}
     	return this.actionPool[type][action];
     },

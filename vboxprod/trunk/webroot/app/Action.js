@@ -6,14 +6,27 @@ Ext.define('vcube.Action',{
 	iconBase: null,
 	
 	// Modify incoming components
-	addComponent : function(comp) {
+	addComponent : function(cmp) {
 		
-		// Todo - change icon size based on scale of toolbar if
 		// this is a button
-		comp.icon = this.initialConfig.icon;
-		comp.text = this.initialConfig.text;
-		comp.handler = this.initialConfig.handler;
-		comp.scope = this.initialConfig.scope;
+		if(!cmp.isAction) {
+			
+			// Change icon size based on scale of button
+			if(cmp.scale && cmp.scale != 'small') {
+				cmp.icon = 'images/vbox/' + this.iconBase +  '_' +
+					(cmp.scale == 'medium' ? '22' : '32') + 'px.png';
+				
+			} else {
+				cmp.icon = this.initialConfig.icon;				
+			}
+			
+			cmp.text = this.initialConfig.text;
+			cmp.handler = this.initialConfig.handler;
+			cmp.scope = this.initialConfig.scope;
+			
+			if(this.enabled_test) cmp.setDisabled(true);
+
+		}
 		
 		this.callParent(arguments);
 		
@@ -21,12 +34,12 @@ Ext.define('vcube.Action',{
 
     // Enable / disable action based on test
 	setEnabledTest: function() {
-		this.setDisabled(!this.enabled_test.apply(this, arguments));
+		this.setDisabled(this.enabled_test && !this.enabled_test.apply(this, arguments));
 	},
 	
 	constructor: function(config, itemId) {
 		
-		this.enabled_test = config.enabled_test||function(){return true};
+		this.enabled_test = config.enabled_test;
 		
 		config.itemId = itemId;
 		

@@ -11,35 +11,16 @@ Ext.define('vcube.view.VirtualMachinesList', {
     items: [{
     	xtype: 'gridpanel',
         tbar : [
-                /*{
-     	   'xtype':'button',
-     	   'text':vcube.vmactions['new'].label.replace('...',''),
-     	   'icon':'images/vbox/'+vcube.vmactions['new'].icon+'_16px.png'
-        },{
-     	   'xtype':'button',
-     	   'text': vcube.vmactions['settings'].label.replace('...',''),
-     	  'icon':'images/vbox/'+vcube.vmactions['settings'].icon+'_16px.png'
-        },{
-     	   'xtype':'button',
-     	   'text': vcube.vmactions['start'].label.replace('...',''),
-     	  'icon':'images/vbox/'+vcube.vmactions['start'].icon+'_16px.png'
-        },{
-     	   'xtype':'button',
-     	   'text': vcube.vmactions['stop'].label.replace('...',''),
-     	  'icon':'images/vbox/'+vcube.vmactions['stop'].icon+'_16px.png',
-     		'menu' : [
-     		   {'text':vcube.vmactions['pause'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['pause'].icon+'_16px.png'},
-     		   {'text':vcube.vmactions['reset'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['reset'].icon+'_16px.png'},
-     		   '-',
-     		   {'text':vcube.vmactions['savestate'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['savestate'].icon+'_16px.png'},
-     		   {'text':vcube.vmactions['powerbutton'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['powerbutton'].icon+'_16px.png'},
-     		   {'text':vcube.vmactions['poweroff'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['poweroff'].icon+'_16px.png'},
-     		]
-        },{
-     	   'xtype':'button',
-     	   'text':'Devices',
-     	   'icon' : 'images/vbox/chipset_16px.png'
-        }*/
+            vcube.actionpool.getAction('machine','new'),
+            '-',
+            vcube.actionpool.getAction('machine','start'),
+	   		// stop
+	   		Ext.Object.merge({},vcube.actionpool.getActionsAsBase('machine',['stop'])[0],{
+	   			menu: vcube.actionpool.getActions('machine',['savestate','powerbutton','poweroff'])
+	   		}),
+	   		'-',
+	   		vcube.actionpool.getAction('machine','settings')
+
         ],
     	columns: [{
 	    	  header: 'Name',

@@ -61,7 +61,7 @@ Ext.application({
     views: ['common'],
     
     /* Stores */
-    stores: ['Events','Tasks'],
+    stores: ['Events','Tasks','VirtualMachines'],
     
     /* App Settings */
     settings : {},

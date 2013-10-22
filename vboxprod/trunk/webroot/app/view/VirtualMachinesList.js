@@ -11,7 +11,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
     items: [{
     	xtype: 'gridpanel',
     	selModel: { mode: 'MULTI' },
-    	store: Ext.create('vcube.store.VirtualMachine'),
+    	store: Ext.create('vcube.store.VirtualMachines'),
         tbar : [
             vcube.actionpool.getAction('machine','new'),
             '-',
@@ -27,7 +27,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
     	columns: [{
 	    	  header: 'Name',
 	    	  dataIndex: 'name',
-	    	  width: 250,
+	    	  flex: 1,
 	    	  renderer: function(val,m,record) {
 	    		  if(record.get('icon')) {
 	    			  icon = record.get('icon');
@@ -41,6 +41,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
 	      },{
 	    	  header: 'State',
 	    	  dataIndex: 'state',
+	    	  width: 150,
 	    	  renderer: function(val) {
 	    		  return '<div style="display: inline-block; width: 16px; height: 16px; background: '+
 	    		  	'url(images/vbox/'+vcube.utils.vboxMachineStateIcon(val)+') no-repeat; padding-left: 19px;">' + 
@@ -57,18 +58,17 @@ Ext.define('vcube.view.VirtualMachinesList', {
 	    	  dataIndex: 'OSTypeDesc',
 	    	  width: 150
 	      },{
-	    	  header: 'Details',
-	    	  dataIndex: 'details',
-	    	  flex: 1
-	      },{
 			header: 'Memory',
-			dataIndex: 'memory'
+			dataIndex: 'memorySize',
+			width: 100,
+			renderer: function(val) {
+				return val + ' MB';
+			}
 	      },{
 			header: 'CPUs',
-			dataIndex: 'cpuCount'
-	      },{
-			header: 'Execution Cap',
-			dataIndex: 'executionCap'
+			dataIndex: 'CPUCount',
+			align: 'center',
+			width: 100
 	      }]    	
     }]
 });

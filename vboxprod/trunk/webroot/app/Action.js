@@ -6,7 +6,7 @@ Ext.define('vcube.Action',{
 	iconBase: null,
 	
 	// Modify incoming components
-	addComponent : function(comp){
+	addComponent : function(comp) {
 		
 		// Todo - change icon size based on scale of toolbar if
 		// this is a button

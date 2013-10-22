@@ -138,13 +138,13 @@ Ext.define('vcube.controller.XInfoTab', {
     	if(records.length && records[0].raw.data._type == this.selectionItemType) {
     		
     		// Update node id
-    		this.selectionNodeId = record.get('id');
+    		this.selectionNodeId = records[0].get('id');
     		
     		// Update selection item id
-    		this.selectionItemId = record.raw.data.id;
+    		this.selectionItemId = records[0].raw.data.id;
     		
     		// Populate
-    		this.populate(record.raw.data);
+    		this.populate(records[0].raw.data);
 
     	} else {
 

@@ -29,7 +29,16 @@ Ext.define('vcube.controller.machineactions', {
 			
 			// Any Virtual machine list
 			'VirtualMachinesList': {
-				selectionchange: this.onSelectionChange
+				selectionchange: this.onSelectionChange,
+				show: function(panel) {
+					
+				}
+			},
+			
+			'VirtualMachinesList > gridpanel': {
+				show: function(panel) {
+					if(!panel.getSelectionModel().getSelection().length)
+				}
 			}
         });
         

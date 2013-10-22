@@ -8,11 +8,8 @@ Ext.define('vcube.view.GroupTabs', {
     },    
     items: [{
         title: 'Group Tab 1'
-    }, {
-        title: 'Group Tab 2',
-        tabConfig: {
-            title: 'Custom Title',
-            tooltip: 'A button tooltip'
-        }
+    },{
+    	xtype: 'VirtualMachinesList',
+    	layout: 'fit'
     }]
 });

@@ -1,6 +1,28 @@
 Ext.define('vcube.grid.column',{});
 
 /*
+ * Epoc date format column.
+ */
+Ext.define('vcube.grid.column.EpocDateColumn', {
+    extend: 'Ext.grid.column.Date',
+    alias: 'widget.EpocDateColumn',
+    initComponent: function() {
+    	
+        var me = this;
+        
+        me.callParent(arguments);
+        if (!me.format) {
+            me.format = Ext.Date.defaultFormat;
+        }
+        me.renderer = function(v) {
+        	return Ext.util.Format.date(new Date(v*1000).toString(), me.format);
+        }
+    }
+});
+
+
+
+/*
  * Event severity
  */
 Ext.define('vcube.grid.column.EventSeverityColumn', {

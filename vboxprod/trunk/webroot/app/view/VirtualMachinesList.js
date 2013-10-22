@@ -10,6 +10,8 @@ Ext.define('vcube.view.VirtualMachinesList', {
     defaults: { viewConfig: { markDirty: false } },
     items: [{
     	xtype: 'gridpanel',
+    	selModel: { mode: 'MULTI' },
+    	store: Ext.create('vcube.store.VirtualMachine'),
         tbar : [
             vcube.actionpool.getAction('machine','new'),
             '-',
@@ -25,16 +27,35 @@ Ext.define('vcube.view.VirtualMachinesList', {
     	columns: [{
 	    	  header: 'Name',
 	    	  dataIndex: 'name',
-	    	  width: 300
+	    	  width: 250,
+	    	  renderer: function(val,m,record) {
+	    		  if(record.get('icon')) {
+	    			  icon = record.get('icon');
+	    		  } else {
+	    			  icon = 'images/vbox/'+vcube.utils.vboxGuestOSTypeIcon(record.get('OSTypeId'));
+	    		  }
+	    		  
+	    		  return '<img src="'+ icon + '" style="float: left; display: inline-block; height: 16px; width:16px; margin-right: 3px;" />' +
+	    		  	(record.get('sessionState') != 'Unlocked' ? '<i>'+val+'</i>' : val);
+	    	  }
 	      },{
 	    	  header: 'State',
-	    	  dataIndex: 'user'
+	    	  dataIndex: 'state',
+	    	  renderer: function(val) {
+	    		  return '<div style="display: inline-block; width: 16px; height: 16px; background: '+
+	    		  	'url(images/vbox/'+vcube.utils.vboxMachineStateIcon(val)+') no-repeat; padding-left: 19px;">' + 
+	    		  	vcube.utils.vboxVMStates.convert(val) + '</div>'; 
+	    	  }
 	      },{
 	    	  header: 'Last State Change',
-	    	  dataIndex: 'lastStateChange'
+	    	  dataIndex: 'lastStateChange',
+   			  xtype: 'EpocDateColumn',
+			  format: 'Y-m-d H:i.s',
+			  width: 150
 	      },{
 	    	  header: 'OS',
-	    	  dataIndex: 'OSTypeDesc'
+	    	  dataIndex: 'OSTypeDesc',
+	    	  width: 150
 	      },{
 	    	  header: 'Details',
 	    	  dataIndex: 'details',

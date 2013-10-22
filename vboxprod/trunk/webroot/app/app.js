@@ -43,11 +43,14 @@ Ext.application({
                   // Main Views
                   'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEventsMain',
                   
+                  // Main vm list
+                  'MainVirtualMachinesList',
+                  
                   // VM Group tabs
-                  'GroupTabs',
+                  'GroupTabs', 'GroupVirtualMachinesList',
                   
                   // Server Tabs
-                  'ServerConnector', 'ServerHost', 'ServerTasksAndEvents',
+                  'ServerConnector', 'ServerHost', 'ServerTasksAndEvents', 'ServerVirtualMachinesList',
                   
                   // VM tabs
                   'VMTabs', 'VMSummary','VMDetails','VMSnapshots','VMTasksAndEvents','VMConsole'

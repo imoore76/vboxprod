@@ -19,7 +19,8 @@ Ext.define('vcube.view.ServerTabs', {
     },{
     	xtype: 'ServerHost',
     },{
-    	xtype: 'VirtualMachinesList'
+    	xtype: 'VirtualMachinesList',
+    	layout: 'fit'
     },{
     	xtype: 'TasksAndEventsTab'
     }]

@@ -91,7 +91,7 @@ Ext.define('vcube.actions.machine',{
 					var vmsToStart = [];
 					for(var i = 0; i < vms.length; i++) {
 						try {
-							vm = vcube.vmdatamediator.getVMData(vms[i].raw.data.id)
+							vm = vcube.vmdatamediator.getVMData(vms[i].raw.id)
 						} catch(err) {
 							continue;
 						}

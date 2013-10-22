@@ -79,11 +79,11 @@ Ext.define('vcube.vmdatamediator', {
 	/**
 	 * Return all VMs' data that matches a filter
 	 */
-	getVMDataByFilter: function(filter) {
+	getVMDataByFilter: function(filter, scope) {
 		var vmList = [];
 		for(var i in vcube.vmdatamediator.vmData) {
 			if(typeof(i) != 'string') continue;
-			if(filter(vcube.vmdatamediator.vmData[i]))
+			if(filter.call(scope, vcube.vmdatamediator.vmData[i]))
 				vmList.push(vcube.vmdatamediator.vmData[i]);
 		}
 		return vmList;

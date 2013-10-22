@@ -116,7 +116,7 @@ Ext.define('vcube.actions.snapshots',{
 								
 								if(Ext.select('input[type=checkbox]',btn.up('.window').getEl().dom).elements[0].checked) {
 	
-									Ext.ux.Deferred.when(vcube.controller.VMSnapshots.snapshotActions.takeSnapshot.action(snapshot, vm, rootNode))
+									Ext.ux.Deferred.when(vcube.actions.snapshots.take.action(snapshot, vm, rootNode))
 										.done(function(sntakepromise) {
 											
 											// Show progress window

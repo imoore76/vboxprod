@@ -54,18 +54,16 @@ Ext.define('vcube.view.VMSnapshots', {
 		},
 		
 
-		getActionItems: function() {
-			return [
-	            vcube.actionpool.getAction('snapshots','take'),
-	            '-',
-	            vcube.actionpool.getAction('snapshots','restore'),
-	            vcube.actionpool.getAction('snapshots','delete'),
-	            '-',
-	            vcube.actionpool.getAction('snapshots','clone'),
-	            '-',
-	            vcube.actionpool.getAction('snapshots','show')			        
-	            ]
-		}
+		contextMenuItems: [
+            vcube.actionpool.getAction('snapshots','take'),
+            '-',
+            vcube.actionpool.getAction('snapshots','restore'),
+            vcube.actionpool.getAction('snapshots','delete'),
+            '-',
+            vcube.actionpool.getAction('snapshots','clone'),
+            '-',
+            vcube.actionpool.getAction('snapshots','show')			        
+        ]
 
 	},
 	
@@ -93,7 +91,18 @@ Ext.define('vcube.view.VMSnapshots', {
 			    dock: 'top',
 			    itemId: 'snapshottoolbar',
 			    hideButtonText: true,
-			    items: []
+			    defaults: { xtype: 'button', scale: 'medium' },
+			    items: [
+			            vcube.actionpool.getActionsAsBase('snapshots',['take'])[0],
+			            '-',
+			            vcube.actionpool.getActionsAsBase('snapshots',['restore'])[0],
+			            vcube.actionpool.getActionsAsBase('snapshots',['delete'])[0],
+			            '-',
+			            vcube.actionpool.getActionsAsBase('snapshots',['clone'])[0],
+			            '-',
+			            vcube.actionpool.getActionsAsBase('snapshots',['show'])[0]			        
+
+			            ]
 			}]
 		}];
 		

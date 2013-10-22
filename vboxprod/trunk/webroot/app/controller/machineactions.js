@@ -29,15 +29,11 @@ Ext.define('vcube.controller.machineactions', {
 			
 			// Any Virtual machine list
 			'VirtualMachinesList': {
-				selectionchange: this.onSelectionChange,
-				show: function(panel) {
-					
-				}
+				selectionchange: this.onSelectionChange
 			},
 			
 			'VirtualMachinesList > gridpanel': {
 				show: function(panel) {
-					if(!panel.getSelectionModel().getSelection().length)
 				}
 			}
         });
@@ -81,7 +77,9 @@ Ext.define('vcube.controller.machineactions', {
 		
 		if(records.length && records[0].raw.data._type == 'vm') {
 			this.onSelectionChange(selectionModel, records);
-		} 
+		} else if(this.selectedVMIds.length) {
+			this.onSelectionChange(selectionModel, []);
+		}
 	},
 	
 	/* Selection has changed, update actions and hold VM ids */

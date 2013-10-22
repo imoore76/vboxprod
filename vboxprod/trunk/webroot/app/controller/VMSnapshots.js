@@ -102,11 +102,6 @@ Ext.define('vcube.controller.VMSnapshots', {
         	'viewport > #MainPanel > VMTabs > VMSnapshots' : {
         		render: this.onTabRender
         	},
-        	/*
-        	'viewport > #MainPanel > VMTabs > VMSnapshots toolbar > button' : {
-        		click: this.onButtonClick
-        	},
-        	*/
         	'viewport > #MainPanel > VMTabs > VMSnapshots > treepanel' : {
         		selectionchange: this.updateActions
         	}
@@ -130,12 +125,12 @@ Ext.define('vcube.controller.VMSnapshots', {
     	return 0;
     },
     
-    /* When a toolbar button is clicked */
-    onButtonClick: function(btn) {
+    /* When a toolbar button or menu item is clicked */
+    onActionClick: function(btn) {
 
     	if(!this.snapshotTree.getView().getSelectionModel().selected.length)
     		return;
-    	
+
     	vcube.actions.snapshots[btn.itemId].action(
     			this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw,
     			vcube.vmdatamediator.getVMData(this.selectionItemId),
@@ -156,10 +151,9 @@ Ext.define('vcube.controller.VMSnapshots', {
     	var vm = vcube.vmdatamediator.getVMData(this.selectionItemId);
 
 
-    	var snActions = vcube.actionpool.getActionList('snapshots');
-    	for(var i = 0; i < snActions.length; i++) {
-    		vcube.actionpool.getAction('snapshots',snActions[i]).setDisabled(!vcube.actions.snapshots[snActions[i]].enabled(ss, vm));
-    	}
+    	Ext.each(vcube.actionpool.getActions('snapshots'), function(action) {
+    		action.setEnabledTest(ss, vm);
+    	});
     	
     },
     
@@ -173,24 +167,17 @@ Ext.define('vcube.controller.VMSnapshots', {
     	this.snapshotTreeStore = this.snapshotTree.getStore();
     	
         /* Setup handlers for snapshot actions */
-    	Ext.each(vcube.actions.config.snapshots.actions, function(action) {
-    		vcube.actionpool.getAction('snapshots',action).setHandler(function(){
-    			self.onButtonClick.apply(self, arguments);
-    		});
+    	Ext.each(vcube.actionpool.getActions('snapshots'), function(action) {
+    		action.setHandler(self.onActionClick, self);
     	});
 
-    	/*
-    	 * Toolbar
-    	 */
-    	tab.down('#snapshottoolbar').add(vcube.view.VMSnapshots.getActionItems());
-    	
     	/* 
     	 * Context menu
     	 * 
     	 */
     	this.itemContextMenu = Ext.create('Ext.menu.Menu', {
     	    renderTo: Ext.getBody(),
-    	    items: vcube.view.VMSnapshots.getActionItems()
+    	    items: vcube.view.VMSnapshots.contextMenuItems
     	});
 
     	var self = this;

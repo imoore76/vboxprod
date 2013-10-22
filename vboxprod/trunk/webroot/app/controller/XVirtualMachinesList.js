@@ -81,9 +81,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	
     	
     	if(!Ext.Array.contains(this.vmList, eventData.machineId)) return;
-    	
-    	console.log(this.vmStore.getById(eventData.machineId));
-    	
+    	    	
     	this.vmStore.getById(eventData.machineId).set(vcube.vmdatamediator.getVMData(eventData.machineId));
     	
     },
@@ -116,6 +114,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	} else {
     	
     		this.selectionId = null;
+    		this.vmList = [];
     	}
     	
 

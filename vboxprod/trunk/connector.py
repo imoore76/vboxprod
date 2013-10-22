@@ -74,12 +74,15 @@ def _machineGetBaseInfo(machine):
             'name' :machine.name,
             'state' : vboxEnumToString("MachineState", machine.state),
             'group_id' : machine.getExtraData(vboxConnector.groupKey),
+            'icon' : machine.getExtraData(vboxConnector.iconKey),
             'OSTypeId' : machine.OSTypeId,
             'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
             'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
             'currentStateModified': machine.currentStateModified,
             'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
-            'icon' : machine.getExtraData(vboxConnector.iconKey),
+            'CPUCount' : machine.CPUCount,
+            'memorySize' : machine.memorySize,
+            'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
             'accessible' : True
         }
         
@@ -109,7 +112,10 @@ def _machineGetBaseInfo(machine):
             'sessionState' : 'Unknown',
             'currentStateModified': True,
             'icon' : '',
+            'memorySize': 0,
             'accessible' : False,
+            'CPUCount' : 0,
+            'currentSnapshotName' : '',
             'accessError': {
                 'resultCode' : machine.accessError.resultCode,
                 'interfaceID' : machine.accessError.interfaceID,

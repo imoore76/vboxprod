@@ -132,12 +132,8 @@ Ext.define('vcube.controller.NavTree', {
 	onMachineDataChanged: function(eventData) {
 
 		var oldVM = this.navTreeStore.getNodeById(eventData.machineId);
-		var newData = this.createVMNodeCfg(eventData.enrichmentData);
+		oldVM.set(this.createVMNodeCfg(eventData.enrichmentData));
 		
-		for(var k in newData) {
-			if(typeof(k) == 'string')
-				oldVM.set(k, newData[k]);
-		}
 		oldVM.parentNode.sort(this.sortCmp, false);
 		
 	},

@@ -28,14 +28,10 @@ Ext.define('vcube.controller.machineactions', {
 			},
 			
 			// Any Virtual machine list
-			'VirtualMachinesList': {
-				selectionchange: this.onSelectionChange
-			},
-			
 			'VirtualMachinesList > gridpanel': {
-				show: function(panel) {
-				}
+				selectionchange: this.onSelectionChange
 			}
+			
         });
         
 		// Special case for VM actions
@@ -57,6 +53,7 @@ Ext.define('vcube.controller.machineactions', {
 	
 	/* On action click */
 	actionHandler: function(btn) {
+		console.log(this.selectionModel.getSelection());
 		vcube.actions.machine[btn.itemId].action(this.selectionModel, this.navTreeSelectionModel);
 	},
 	
@@ -84,9 +81,7 @@ Ext.define('vcube.controller.machineactions', {
 	
 	/* Selection has changed, update actions and hold VM ids */
 	onSelectionChange: function(selectionModel, records) {
-
 		
-		// getView() should work here, but doesn't.. not sure why
 		this.selectionModel = selectionModel;
 		
 		var vmids = [];

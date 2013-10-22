@@ -27,23 +27,10 @@ Ext.define('vcube.controller.VMSummary', {
         };
         
     	
-		// Special case for VM actions
-		this.application.on({
-			'init': this.addSectionsButtons,
-			scope: this
-		});
-		
-		
         this.control({
 	        'viewport > #MainPanel > VMTabs > VMSummary' : {
 	        	render: this.onTabRender
 	        },
-	        'viewport > #MainPanel > VMTabs > VMSummary #vmactions > button' : {
-	        	beforerender: this.applyButtonDefaults
-        	},
-	        'viewport > #MainPanel > VMTabs > VMSummary #machine > button' : {
-	        	beforerender: this.applyButtonDefaults
-        	},
 	        'viewport > #MainPanel > VMTabs > VMSummary #edit' : {
 	        	click: this.editVM
 	        }
@@ -53,25 +40,7 @@ Ext.define('vcube.controller.VMSummary', {
         this.callParent();
         
     },
-    
-    /* Add buttons to section */
-    addSectionsButtons: function() {
-    
-    	var self = this;
-    	Ext.each(['#machine','#vmactions'], function(id) {
-    		var panel = Ext.ComponentQuery.query('viewport > #MainPanel > VMTabs > VMSummary ' + id)[0];
-    		var actions = [];
-    		Ext.each(vcube.view.VMSummary[panel.itemId], function(action) {
-    			actions.push(vcube.app.getAction('machine',action));
-    		});
-    		panel.add(actions);
-    	});
-    },
-    
-    applyButtonDefaults: function(btn) {
-    	Ext.apply(btn, vcube.view.VMSummary.buttonDefaults);
-    },
-    
+
     /* Edit vm */
     editVM: function() {
     	

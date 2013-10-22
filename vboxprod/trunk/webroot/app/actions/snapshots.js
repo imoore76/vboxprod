@@ -7,7 +7,7 @@ Ext.define('vcube.actions.snapshots',{
 	
 		take: {
 			
-			enabled : function(ss, vm) {
+			enabled_test: function(ss, vm) {
 	  			
 	  			return (ss && ss.id == 'current' && !Ext.Array.contains(['RestoringSnapshot','LiveSnapshotting','DeletingSnapshot','Starting','PoweringOff'], vm.state));
 	  		},
@@ -80,7 +80,7 @@ Ext.define('vcube.actions.snapshots',{
 	  	 */
 	  	restore: {
 	  		
-	  		enabled : function(ss, vm) {
+	  		enabled_test: function(ss, vm) {
 	  			
 	  			return (ss && ss.id != 'current' && !vcube.utils.vboxVMStates.isRunning(vm) && !vcube.utils.vboxVMStates.isPaused(vm));
 	  		},
@@ -173,7 +173,7 @@ Ext.define('vcube.actions.snapshots',{
 	  	 */
 	  	'delete' : {
 	  		
-	  		enabled : function(ss, vm) {
+	  		enabled_test: function(ss, vm) {
 	  			return (ss && ss.id != 'current'); // && ss.children.length <= 1);
 	  		},
 	  		
@@ -198,7 +198,7 @@ Ext.define('vcube.actions.snapshots',{
 	  	 */
 	  	clone: {
 	  		
-	  		enabled : function(ss, vm) { 
+	  		enabled_test: function(ss, vm) { 
 	  			return (ss && !vcube.utils.vboxVMStates.isPaused(vm) && !vcube.utils.vboxVMStates.isRunning(vm));
 	  		},
 	  		action : function (ss, vm) {
@@ -213,7 +213,7 @@ Ext.define('vcube.actions.snapshots',{
 	  	 */
 	  	show: {
 	  		
-	  		enabled : function(ss, vm) {
+	  		enabled_test: function(ss, vm) {
 	  			return (ss && ss.id != 'current');
 	  		},
 	  		

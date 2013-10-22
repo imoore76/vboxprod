@@ -26,36 +26,38 @@ Ext.define('vcube.view.NavTree', {
     	 */
     	groupTip: function(group) {
     		
-    	}
+    	},
     	
-    	/*,
+    	machineContextMenuItems: [
     	
-    	vmContextMenuItems :[
     	    // settings
-    		vcube.utils.actionToMenuItemConfig('vm','settings'),
+    		vcube.actionpool.getAction('machine','settings'),
     		// clone
-    		vcube.utils.actionToMenuItemConfig('vm','clone'),
+    		vcube.actionpool.getAction('machine','clone'),
     		// remove
-    		vcube.utils.actionToMenuItemConfig('vm','remove'),
+    		vcube.actionpool.getAction('machine','remove'),
     		'-',
     		// start
-    		vcube.utils.actionToMenuItemConfig('vm','start'),
+    		vcube.actionpool.getAction('machine','start'),
     		// pause
-    		vcube.utils.actionToMenuItemConfig('vm','pause'),
+    		vcube.actionpool.getAction('machine','pause'),
     		// reset
-    		vcube.utils.actionToMenuItemConfig('vm','reset'),
+    		vcube.actionpool.getAction('machine','reset'),
     		// stop
-    		vcube.utils.actionToMenuItemConfig('vm','stop'),
+    		Ext.Object.merge({},vcube.actionpool.getActionsAsBase('machine',['stop'])[0],{
+    			menu: vcube.actionpool.getActions('machine',['savestate','powerbutton','poweroff'])
+    		}),
+    		
     		'-',
     		// discard
-    		vcube.utils.actionToMenuItemConfig('vm','discard'),
+    		vcube.actionpool.getAction('machine','discard'),
     		// show logs
-    		vcube.utils.actionToMenuItemConfig('vm','logs'),
+    		vcube.actionpool.getAction('machine','logs'),
     		'-',
     		// refresh
-    		vcube.utils.actionToMenuItemConfig('vm','refresh')
-    	]
-    	*/
+    		vcube.actionpool.getAction('machine','refresh')
+	]
+    	
     	
     },
     

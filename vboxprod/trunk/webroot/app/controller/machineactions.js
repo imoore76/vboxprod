@@ -42,10 +42,8 @@ Ext.define('vcube.controller.machineactions', {
 
 		// This is the master handler for all VM actions
 		var self = this;
-		Ext.each(vcube.actions.config['machine']['actions'], function(action) {
-			vcube.actions.config['machine'][action]['handler'] = function(){
-				self.actionHandler.apply(self, arguments);
-			}
+		Ext.each(vcube.actionpool.getActions('machine'), function(action) {
+			action.setHandler(self.actionHandler, self);
 		});
 
 		
@@ -98,8 +96,8 @@ Ext.define('vcube.controller.machineactions', {
 	updateVMActions: function() {
 		
 		var self = this;
-		Ext.each(vcube.app.getActionList('machine'),function(actionName) {
-			vcube.app.getAction('machine',actionName).setDisabled(!vcube.actions.machine[actionName].enabled || !vcube.actions.machine[actionName].enabled(self.selectionModel));
+		Ext.each(vcube.actionpool.getActionList('machine'),function(actionName) {
+			vcube.actionpool.getAction('machine',actionName).setEnabledTest(self.selectionModel);
 		});
 
 	}

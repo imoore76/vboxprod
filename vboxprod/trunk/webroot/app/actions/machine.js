@@ -185,7 +185,7 @@ Ext.define('vcube.actions.machine',{
 	
 							
 			},
-			enabled : function (selectionModel) {
+			enabled_test: function (selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Paused','PoweredOff'], selectionModel.getSelection());
 			}	
 		},
@@ -196,7 +196,7 @@ Ext.define('vcube.actions.machine',{
 				
 				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
 			},
-			enabled : function (selectionModel) {
+			enabled_test: function (selectionModel) {
 				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['Running','PoweredOff','Editable'], selectionModel.getSelection());
 			}
 		},
@@ -206,7 +206,7 @@ Ext.define('vcube.actions.machine',{
 			action:function(selectionModel){
 				new vboxWizardCloneVMDialog({vm:vboxChooser.getSingleSelected()}).run();
 			},
-			enabled: function (selectionModel) {
+			enabled_test: function (selectionModel) {
 				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['PoweredOff'], selectionModel.getSelection());
 			}
 		},
@@ -224,7 +224,7 @@ Ext.define('vcube.actions.machine',{
 				});
 				
 	    	},
-	    	enabled: function (selectionModel) {return(selectionModel.selected.length == 1);}
+	    	enabled_test: function (selectionModel) {return(selectionModel.selected.length == 1);}
 	    },
 	    
 	    /** Delete / Remove a VM */
@@ -285,7 +285,7 @@ Ext.define('vcube.actions.machine',{
 					
 	    	
 	    	},
-	    	enabled: function (selectionModel) {
+	    	enabled_test: function (selectionModel) {
 	    		return vcube.utils.vboxVMStates.isOneRecord('PoweredOff', selectionModel.getSelection());
 	    	}
 	    },
@@ -325,7 +325,7 @@ Ext.define('vcube.actions.machine',{
 					vcube.utils.confirm(vcube.utils.trans('<p>Are you sure you want to discard the saved state of the following virtual machines?</p><p><b>%1</b></p><p>This operation is equivalent to resetting or powering off the machine without doing a proper shutdown of the guest OS.</p>','UIMessageCenter').replace('%1',vmNames),buttons);
 				}
 			},
-			enabled:function(selectionModel){
+			enabled_test: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord('Saved', selectionModel.getSelection());
 			}
 	    },
@@ -407,7 +407,7 @@ Ext.define('vcube.actions.machine',{
 			action:function(selectionModel){
 	    		vboxShowLogsDialogInit(vboxChooser.getSingleSelected());
 			},
-			enabled:function(selectionModel){
+			enabled_test: function(selectionModel){
 				return (selectionModel.selected.length == 1);
 			}
 	    },
@@ -415,7 +415,7 @@ Ext.define('vcube.actions.machine',{
 	    /** Save the current VM State */
 		savestate: {
 			stop_action: true,
-			enabled: function(selectionModel){
+			enabled_test: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
 			action: function(selectionModel) {
@@ -431,7 +431,7 @@ Ext.define('vcube.actions.machine',{
 		/** Send ACPI Power Button to VM */
 		powerbutton: {
 			stop_action: true,
-			enabled: function(selectionModel){
+			enabled_test: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
 			action: function(selectionModel) {
@@ -465,7 +465,7 @@ Ext.define('vcube.actions.machine',{
 		/** Pause a running VM */
 		pause: {
 
-			enabled: function(selectionModel){
+			enabled_test: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running'], selectionModel.getSelection());
 			},
 			action: function(selectionModel) {
@@ -478,10 +478,10 @@ Ext.define('vcube.actions.machine',{
 		},
 		
 		/** Power off a VM */
-		powerdown: {
+		poweroff: {
 
 			stop_action: true,
-			enabled: function(selectionModel) {
+			enabled_test: function(selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
 			},
 			action: function(selectionModel) {
@@ -493,7 +493,7 @@ Ext.define('vcube.actions.machine',{
 							var vms = vcube.utils.getSelectedVMsData(selectionModel);
 							for(var i = 0; i < vms.length; i++) {
 								if(vcube.utils.vboxVMStates.isRunning(vms[i]) || vcube.utils.vboxVMStates.isPaused(vms[i]) || vcube.utils.vboxVMStates.isStuck(vms[i]))
-									vcube.actions.machine.powerAction('powerdown','Power off the selected virtual machines', vms[i]);
+									vcube.actions.machine.powerAction('poweroff','Power off the selected virtual machines', vms[i]);
 							}
 							btn.up('.window').close();
 						}
@@ -523,7 +523,7 @@ Ext.define('vcube.actions.machine',{
 		/** Reset a VM */
 		reset: {
 
-			enabled: function(selectionModel){
+			enabled_test: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
 			},
 			action: function(selectionModel) {
@@ -557,14 +557,13 @@ Ext.define('vcube.actions.machine',{
 		},
 		
 		/** Stop actions list */
-		stop_actions: ['savestate','powerbutton','powerdown'],
+		stop_actions: ['savestate','powerbutton','poweroff'],
 	
 		/** Stop a VM */
 		stop: {
-			menu: true,
 			action: function () { return true; /* handled by stop context menu */ },
-			enabled: function (selectionModel) {
-				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused'], selectionModel.getSelection());
+			enabled_test: function (selectionModel) {
+				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
 			}
 		},
 		
@@ -573,7 +572,7 @@ Ext.define('vcube.actions.machine',{
 			icon =null;
 			errorMsg = null;
 			switch(pa) {
-				case 'powerdown':
+				case 'poweroff':
 					fn = 'powerDown';
 					icon='progress_poweroff_90px.png';
 					break;

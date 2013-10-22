@@ -14,15 +14,6 @@ Ext.define('vcube.view.VMSummary', {
 	alias: 'widget.VMSummary',
 	
 	statics: {
-		
-		/*
-		 * List of actions that can be performed on this vm
-		 */
-		vmactions : ['start','pause','reset','savestate','discard','powerbutton','powerdown'],
-		
-		machine: ['settings','logs','clone','remove'],
-		
-		buttonDefaults: { border: true, xtype: 'button', width: '100%', margin: 2, textAlign: 'left', iconAlign: 'left' },
 
 		/*
 		 * 
@@ -234,7 +225,8 @@ Ext.define('vcube.view.VMSummary', {
     			border: false,
     			frame: true,
     			width: 200,
-    			defaults: { xtype: 'button' }
+    			defaults: { border: true, xtype: 'button', width: '100%', margin: 2, textAlign: 'left', iconAlign: 'left' },
+    			items: vcube.actionpool.getActionsAsBase('machine', ['settings','logs','clone','remove'])
     		},{
     			title: 'Actions',
     			layout: 'vbox',
@@ -243,8 +235,11 @@ Ext.define('vcube.view.VMSummary', {
     			bodyStyle: { background: '#fff' },
     			border: false,
     			frame: true,
+    			logItems: true,
+    			xtype: 'panel',
     			width: 200,
-    			defaults: { xtype: 'button' }
+    			defaults: { border: true, xtype: 'button', width: '100%', margin: 2, textAlign: 'left', iconAlign: 'left' },
+    			items: vcube.actionpool.getActionsAsBase('machine', ['start','pause','reset','savestate','discard','powerbutton','poweroff'])
     		}]
     	}]
     }]

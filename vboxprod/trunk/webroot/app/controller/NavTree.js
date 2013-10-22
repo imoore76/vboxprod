@@ -39,10 +39,30 @@ Ext.define('vcube.controller.NavTree', {
 
 		/* Tree events */
 		this.control({
+			
 			'viewport > NavTree' : {
+				
 				render: function(tv) {
+				
 					tv.getView().on('drop', this.itemDropped, this);
 					this.selectionModel = tv.getView().getSelectionModel();
+					
+			    	machineContextMenu = Ext.create('Ext.menu.Menu', {
+			    	    renderTo: Ext.getBody(),
+			    	    items: vcube.view.NavTree.machineContextMenuItems
+			    	});
+
+			    	var self = this;
+			    	tv.on('itemcontextmenu',function(t,r,i,index,e) {
+			    		e.stopEvent();
+			    		switch(r.raw.data._type) {
+			    			case 'vm':
+			    				machineContextMenu.showAt(e.getXY());
+			    			break;
+			    		}
+
+			    	});
+
 				}
 			}
 		});

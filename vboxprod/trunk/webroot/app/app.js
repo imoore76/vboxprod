@@ -21,14 +21,11 @@ Ext.application({
     requires: ['vcube.data.reader.Json', 'vcube.data.proxy.Ajax', 'Ext.ux.Deferred',
                
                // Actions
-               'vcube.actions.config',
-               'vcube.actions.machine',
-               'vcube.actions.server',
-               'vcube.actions.snapshots',
-               'vcube.actions.vmgroup',
+               'vcube.actionpool',
                
                'Ext.ux.form.plugin.FieldHelpText',
                'vcube.ExtOverrides.ExtZIndexManager',
+               //'vcube.ExtOverrides.ExtComponent',
                
                'vcube.vmdatamediator', 
                'vcube.eventlistener',
@@ -62,34 +59,6 @@ Ext.application({
     
     /* Stores */
     stores: ['Events','Tasks'],
-    
-    /**
-     * Action pool and supporting functions
-     */
-    actionPool : {},
-    getAction: function(type, action) {
-    	return this.actionPool[type][action];
-    },
-    getActionList: function(type) {
-    	return vcube.actions.config[type]['actions'];
-    },
-    populateActionPool: function() {
-    	
-    	var self = this;
-    	
-    	Ext.each(vcube.actions.config.actionTypes, function(type){
-    		self.actionPool[type] = {};
-    		Ext.each(vcube.actions.config[type]['actions'], function(action) {
-    			self.actionPool[type][action] = new Ext.Action({
-    				text: vcube.actions.config[type][action].label,
-    				icon: 'images/vbox/' + vcube.actions.config[type][action].icon + '_16px.png',
-    				itemId: action,
-    				handler: vcube.actions.config[type][action].handler
-    			});
-    		});
-    	});
-    	
-    },
     
     /* App Settings */
     settings : {},
@@ -233,7 +202,7 @@ Ext.application({
     launch: function() {
 
     	/* Populate actions */
-    	this.populateActionPool();
+    	//this.populateActionPool();
     	
     	this.on({
     		'ConnectorUpdated': this.onConnectorUpdated,
@@ -272,8 +241,6 @@ Ext.application({
     		Ext.get('page-loader').remove();
     	}
     	
-    	this.fireEvent('init');
-
     	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getSession')).done(function(data){
     		self.loadSession(data);
     	});

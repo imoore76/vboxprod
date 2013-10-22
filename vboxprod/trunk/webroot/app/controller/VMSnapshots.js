@@ -156,9 +156,9 @@ Ext.define('vcube.controller.VMSnapshots', {
     	var vm = vcube.vmdatamediator.getVMData(this.selectionItemId);
 
 
-    	var snActions = vcube.app.getActionList('snapshots');
+    	var snActions = vcube.actionpool.getActionList('snapshots');
     	for(var i = 0; i < snActions.length; i++) {
-    		vcube.app.getAction('snapshots',snActions[i]).setDisabled(!vcube.actions.snapshots[snActions[i]].enabled(ss, vm));
+    		vcube.actionpool.getAction('snapshots',snActions[i]).setDisabled(!vcube.actions.snapshots[snActions[i]].enabled(ss, vm));
     	}
     	
     },
@@ -172,10 +172,9 @@ Ext.define('vcube.controller.VMSnapshots', {
     	this.snapshotTree = tab.down('#snapshottree');
     	this.snapshotTreeStore = this.snapshotTree.getStore();
     	
-    	console.log(vcube.actions.config.snapshots.actions);
         /* Setup handlers for snapshot actions */
     	Ext.each(vcube.actions.config.snapshots.actions, function(action) {
-    		vcube.app.getAction('snapshots',action).setHandler(function(){
+    		vcube.actionpool.getAction('snapshots',action).setHandler(function(){
     			self.onButtonClick.apply(self, arguments);
     		});
     	});

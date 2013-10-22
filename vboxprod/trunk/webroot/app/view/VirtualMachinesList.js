@@ -33,7 +33,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
      		   '-',
      		   {'text':vcube.vmactions['savestate'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['savestate'].icon+'_16px.png'},
      		   {'text':vcube.vmactions['powerbutton'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['powerbutton'].icon+'_16px.png'},
-     		   {'text':vcube.vmactions['powerdown'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['powerdown'].icon+'_16px.png'},
+     		   {'text':vcube.vmactions['poweroff'].label.replace('...',''),'icon':'images/vbox/'+vcube.vmactions['poweroff'].icon+'_16px.png'},
      		]
         },{
      	   'xtype':'button',

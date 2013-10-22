@@ -56,14 +56,14 @@ Ext.define('vcube.view.VMSnapshots', {
 
 		getActionItems: function() {
 			return [
-	            vcube.app.getAction('snapshots','take'),
+	            vcube.actionpool.getAction('snapshots','take'),
 	            '-',
-	            vcube.app.getAction('snapshots','restore'),
-	            vcube.app.getAction('snapshots','delete'),
+	            vcube.actionpool.getAction('snapshots','restore'),
+	            vcube.actionpool.getAction('snapshots','delete'),
 	            '-',
-	            vcube.app.getAction('snapshots','clone'),
+	            vcube.actionpool.getAction('snapshots','clone'),
 	            '-',
-	            vcube.app.getAction('snapshots','show')			        
+	            vcube.actionpool.getAction('snapshots','show')			        
 	            ]
 		}
 

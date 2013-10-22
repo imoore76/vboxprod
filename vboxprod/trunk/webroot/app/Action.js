@@ -2,9 +2,6 @@ Ext.define('vcube.Action',{
 	
 	extend: 'Ext.Action',
 	
-	// Name of this action
-	name: null,
-	
 	// Base icon string
 	iconBase: null,
 	
@@ -22,6 +19,7 @@ Ext.define('vcube.Action',{
 		
     },
 
+    // Enable / disable action based on test
 	setEnabledTest: function() {
 		this.setDisabled(!this.enabled_test.apply(this, arguments));
 	},
@@ -29,8 +27,12 @@ Ext.define('vcube.Action',{
 	constructor: function(config, itemId) {
 		
 		this.enabled_test = config.enabled_test||function(){return true};
-		this.name = config.itemId = itemId;
+		
+		config.itemId = itemId;
+		
 		this.iconBase = config.icon;
+		
+		//
 		config.icon = 'images/vbox/' + config.icon + '_16px.png';
 
 		this.callParent(arguments);

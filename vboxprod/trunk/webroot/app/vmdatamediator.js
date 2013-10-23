@@ -159,23 +159,25 @@ Ext.define('vcube.vmdatamediator', {
 			'vboxSnapshotDeleted' : snapshotEvent,
 			'vboxSnapshotChanged' : snapshotEvent,
 			
-			// Expire all data for a VM when machine is unregistered
-			'vboxMachineRegistered' : function(eventData) {
+			// Expire all data for a VM when machines are removed
+			'MachinesRemoved' : function(eventData) {
 			
-				if(!eventData.registered) {
+					Ext.each(eventData.machines, function(vmid){
+						vcube.vmdatamediator.expireVMDetails(vmid);
+						vcube.vmdatamediator.expireVMRuntimeData(vmid);
+						delete vcube.vmdatamediator.vmData[vmid];						
+					});
 					
-					vcube.vmdatamediator.expireVMDetails(eventData.machineId);
-					vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
-					delete vcube.vmdatamediator.vmData[eventData.machineId];
-					
-				} else if(eventData.enrichmentData) {
-				    
-				    vcube.vmdatamediator.vmData[eventData.enrichmentData.id] = eventData.enrichmentData;
-	
-				}
-
 			},
-		
+
+			// Add VMs when machines are added
+			'MachinesAdded' : function(eventData) {
+				
+				Ext.each(eventData.machines, function(vm) {
+					vcube.vmdatamediator.vmData[vm.id] = vm;
+				});
+			},
+			
 			'vboxCPUChanged' : function(eventData) {
 
 				if(!vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) return;

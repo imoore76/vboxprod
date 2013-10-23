@@ -50,7 +50,6 @@ Ext.define('vcube.view.VMSummary', {
 					title: 'Session',
 					attrib: 'sessionState'
 				},{
-					/* Such a hack... */
 					title: 'OS Type',
 					renderer: function(vm) {
 						return '<img src="images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(vm.OSTypeId) +'" height=16 width=16 valign=top />&nbsp;' + vm.OSTypeDesc;

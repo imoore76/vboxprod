@@ -22,6 +22,7 @@ Ext.define('vcube.controller.ServerHost', {
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
+        	
         	if(data.state != vcube.app.constants.CONNECTOR_STATES['RUNNING']) {
         		return null;
         	}
@@ -29,16 +30,6 @@ Ext.define('vcube.controller.ServerHost', {
         };
 
     	
-		// Special case for VM actions
-        /*
-		this.application.on({
-			'SessionStateChanged': this.updateVMActions,
-			'MachineStateChanged': this.updateVMActions,
-			scope: this
-		});
-		*/
-		
-		
         this.control({
 	        'viewport > #MainPanel > ServerTabs > ServerHost' : {
 	        	render: this.onTabRender

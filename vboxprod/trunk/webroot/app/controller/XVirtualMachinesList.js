@@ -40,6 +40,8 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
 			'SessionStateChanged': this.onMachineChanged,
 			'MachineStateChanged': this.onMachineChanged,
 			'MachineDataChanged': this.onMachineChanged,
+			'MachineIconChanged': this.onMachineChanged,
+			'MachinesRemoved': this.onMachinesRemoved,
 			scope: this
 		});
     	
@@ -47,6 +49,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
 
     },
     
+    /* Set which VM list to controll */
     setControlledList: function(list) {
     	
     	this.controlledList = list;
@@ -76,7 +79,21 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
 		});
     },
     
+    /* Machines removed from vcube */
+    onMachinesRemoved: function(eventData) {
+    	if(!this.vmStore) return;
+    	var vmids = [];
+		for(var i = 0; i < eventData.machines.length; i++) {
+			this.vmStore.remove(this.vmStore.getById(eventData.machines[i]));
+			vmids.push(eventData.machines[i]);
+		}
+		this.vmList = Ext.Array.filter(this.vmList, function(vmid) {
+			return (!Ext.Array.contains(vmids, vmid));
+		});
+    },
 
+
+    /* When a machine changes */
     onMachineChanged: function(eventData) {
     	
     	

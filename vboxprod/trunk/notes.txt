@@ -1,66 +1,64 @@
 
-Info tab class
+TODO:
 
-	itemSelect - Selection changed
-		mark tab dirty
-		if type is our type, run populate
-		
-	tabShow - 
-		if this tab is dirty, run populate
-		
-	populate - Get data and populate sections
-		if this tab is not shown, do nothing
-		else the tab is no longer dirty
-		
-		
-		
-	sectionId = x
-	selectionType = server|vm|group
+	"machine" -> "vm"
 	
-	isItemSelected :function() {
-		this.navTreeSelectionModel.getSelection()[0].type == this.selectionType
-			&& id = this.selectionId
-	}
-	
-	dirty = yes/no
-	populate() = main drawing function
-	redraw() = specific sections
-	repopulateOn = ['events..']
-	
-	repopulateEvent : function() {
-		
-	}
-	#info
-		Main information stuff with template
-		
-	#sections
-		Draw sections here
-	
-
-
-NavTree
-	- already has stores and records
-	
-Data mediator
-	- don't try to track serverid, let app do this
-	
-App keeps VM list
-
-	yes - the app should be presented as a unified server. don't try to
-	do things in extjs.. it makes hard things easy and easy things impossible
-	
-	vmlist or just id -> server mapping?
-	
-	when server comes online - get list of vms
-	when server goes offline - remove list of vms
-	
-	vbox events must update internal list..
-	
-	
-	remote_hostOnlyInterfaceCreate.progress = True
-    remote_hostOnlyInterfaceCreate.log = True
+	XInfoTab calls setTab onRender instead of this.onTabRender	
+    this.control({
+        'viewport > #MainPanel > ServerTabs > ServerHost' : {
+        	render: this.onTabRender
+        }
+    });
     
-    @staticmethod
-    def remote_hostOnlyInterfaceCreate_log(args, results):
-        return { name : "Create host-only interface" }
+    Same for XTasksAndEventsTab
+    
 	
+Stores:
+
+	VM store
+	
+		read only - controlled by vmdatamediator
+		
+	Server Store
+	
+		read / write - controlled by app? 
+	
+	Group Store
+	
+		read / write - controlled by app?
+		
+	
+	Could move VM base data outside of datamediator and create
+	some sort of data controller. Then getVMData() would go away
+	and we'd just have getVMDetails and runtime data. Runtime data
+	would have to be kept for all running vms... but it gives a cleaner
+	result
+		
+		
+VMs on store record change vs individual events
+
+	SessionState change would change the store, but we may
+	not want to redraw a section
+	
+	Details for instance may only want a MachineData and
+		State change
+		
+	I guess it could subscribe to those directly
+	
+	Others are:
+	
+		Info sections - .. same as details
+			.. or this could change as well.. Execution Cap would have to be moved
+			to VM model.. this could change at runtime.. .. we could modify all the events
+			to compensate for this
+			
+			"runtimeOverlay"
+			
+		Snapshot tree ... fine..
+		
+		Nav tree - fine. not expensive to redraw
+		
+		VM list - fine. not expensive
+		
+
+Only details would need 

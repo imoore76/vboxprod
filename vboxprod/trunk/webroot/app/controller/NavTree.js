@@ -17,22 +17,7 @@ Ext.define('vcube.controller.NavTree', {
 		/* Application level events */
 		this.application.on({
 			
-			start : this.populateTree,
-			
-			MachineGroupChanged: this.onMachineGroupChanged,
-			MachineIconChanged: this.onMachineIconChanged,
-			MachineDataChanged: this.onMachineDataChanged,
-			
-			VMGroupAdded: this.onVMGroupAdded,
-			VMGroupRemoved: this.onVMGroupRemoved,
-			VMGroupUpdated: this.onVMGroupUpdated,
-			
-			ConnectorStateChanged: this.onConnectorStateChanged,
-			ConnectorUpdated: this.onConnectorUpdated,
-			
-			MachinesAdded: this.onMachinesAdded,
-			MachinesRemoved: this.onMachinesRemoved,
-			
+			start : this.populateTree,			
 			scope : this
 		
 		});
@@ -55,7 +40,7 @@ Ext.define('vcube.controller.NavTree', {
 			    	var self = this;
 			    	tv.on('itemcontextmenu',function(t,r,i,index,e) {
 			    		e.stopEvent();
-			    		switch(r.raw.data._type) {
+			    		switch(r.get('type')) {
 			    			case 'vm':
 			    				machineContextMenu.showAt(e.getXY());
 			    			break;
@@ -68,6 +53,8 @@ Ext.define('vcube.controller.NavTree', {
 		});
 		
 
+		/* Subscribe to storemanager events */
+		
 	},
 	
 	/** Common refs */
@@ -81,39 +68,6 @@ Ext.define('vcube.controller.NavTree', {
 	/*
 	 * App Events
 	 */
-	onMachinesAdded: function(eventData) {
-
-		var sortIds = {};
-		var sortList = [];
-		
-		for ( var i = 0; i < eventData.machines.length; i++) {
-
-			appendTarget = (eventData.machines[i].group_id ? this.navTreeStore.getNodeById('vmgroup-' + eventData.machines[i].group_id) : this.vmsNode);
-
-			if (!appendTarget)
-				appendTarget = this.vmsNode;
-
-			appendTarget.appendChild(appendTarget.createNode(this.createVMNodeCfg(eventData.machines[i])));
-			
-			if(!sortIds[appendTarget.id]) {
-				sortList.push(appendTarget);
-				sortIds[appendTarget.id] = true;
-			}
-
-
-		}
-		
-		for(var i = 0; i < sortList.length; i++) {
-			sortList[i].sort(this.sortCmp, false);
-		}
-	},
-
-	onMachinesRemoved: function(eventData) {
-		for(var i = 0; i < eventData.machines.length; i++) {
-			this.navTreeStore.getNodeById(eventData.machines[i]).remove(true);
-		}
-	},
-
 	onMachineGroupChanged: function(eventData) {
 		
 		var targetVM = this.navTreeStore.getNodeById(eventData.machineId);
@@ -122,6 +76,7 @@ Ext.define('vcube.controller.NavTree', {
 
 		var targetGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.group);
 		
+		// TODO add group id to vm store
 		if(!targetGroup || (eventData.group == targetGroup.raw.data.group_id)) return;
 		
 		targetGroup.appendChild(targetVM.remove(false));
@@ -129,97 +84,16 @@ Ext.define('vcube.controller.NavTree', {
 		targetGroup.sort(this.sortCmp, false);
 	},
 
-	onMachineDataChanged: function(eventData) {
-
-		var oldVM = this.navTreeStore.getNodeById(eventData.machineId);
-		oldVM.set(this.createVMNodeCfg(eventData.enrichmentData));
-		
-		oldVM.parentNode.sort(this.sortCmp, false);
-		
-	},
 	
-	onMachineIconChanged: function(eventData) {
-		var vmData = vcube.vmdatamediator.getVMData(eventData.machineId);
-		this.navTreeStore.getNodeById(eventData.machineId).set('icon', this.vmNodeIcon(vmData));
-	},
-
-	onVMGroupAdded: function(eventData) {
-		
-		appendTarget = (eventData.group.parent_id ? this.navTreeStore.getNodeById('vmgroup-'+ eventData.group.parent_id) : this.vmsNode);
-
-		if (!appendTarget)
-			appendTarget = this.vmsNode;
-
-		appendTarget.appendChild(appendTarget.createNode(this.createGroupNodeCfg(eventData.group)));
-		appendTarget.sort(this.sortCmp, false);
-
-	},
-	
-	onVMGroupRemoved: function(eventData) {
-		
-		var targetNode = this.navTreeStore.getNodeById('vmgroup-' + eventData.group_id);
-		
-		if(!targetNode) return;
-
-		if(targetNode.childNodes.length) {
-			
-			var n = targetNode.getChildAt(0);
-			do {
-				targetNode.parentNode.appendChild(n.remove());
-				n = targetNode.getChildAt(0);				
-			} while(n);
-			
-			targetNode.parentNode.sort(this.sortCmp, false);
-		}
-		
-		
-		targetNode.remove(true);
-	},
-	
-	onVMGroupUpdated: function(eventData) {
-
-		var oldGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.group.id);
-
-		var newData = this.createGroupNodeCfg(eventData.group);
-		for(var k in newData) {
-			if(typeof(k) == 'string')
-				oldGroup.set(k, newData[k]);
-		}
-		oldGroup.parentNode.sort(this.sortCmp, false);
-	},
-	
-	onConnectorStateChanged: function(eventData) {
-
-		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector_id);
-		if(!serverNode) return;
-		
-		var newServerData = Ext.Object.merge(serverNode.raw.data, {state:eventData.state, state_text: eventData.state_text});
-		
-		serverNode.set(this.createServerNodeCfg(newServerData));
-		serverNode.parentNode.sort(this.sortCmp, false);
-
-	},
-	
-	onConnectorUpdated: function(eventData) {
-
-		var serverNode = this.navTreeStore.getNodeById('server-' + eventData.connector_id);
-		if(!serverNode) return;
-		
-		var newServerData = Ext.Object.merge(serverNode.raw.data, eventData.connector);
-
-		serverNode.set(this.createServerNodeCfg(newServerData));
-		serverNode.parentNode.sort(this.sortCmp, false);
-
-	},
 	
 	/*
 	 * Sort function
 	 */
 	sortCmp: function(a, b) {
 		
-		if(a.raw.data._type == b.raw.data._type) {
-			return vcube.utils.strnatcasecmp(a.raw.data.name, b.raw.data.name);
-		} else if(a.raw.data._type == 'vm') {
+		if(a.get('type') == b.get('type')) {
+			return vcube.utils.strnatcasecmp(a.get('name'), b.get('name'));
+		} else if(a.get('type') == 'vm') {
 			return 1;
 		} else {
 			return -1;
@@ -231,11 +105,11 @@ Ext.define('vcube.controller.NavTree', {
 	 */
 	itemDropped: function (node, droppedItems, dropRec, dropPosition) {
 		
-		var targetId = (dropRec.raw.id == 'vms' ? 0 : dropRec.raw.data.id);
+		var targetId = (dropRec.get('id') == 'vmsFolder' ? 0 : dropRec.get('rawid'));
 		
 		Ext.each(droppedItems.records, function(item){
-			var itemid = item.raw.data.id;
-			if(item.raw.data._type == 'vm') {
+			var itemid = item.get('rawid');
+			if(item.get('type') == 'vm') {
 				vcube.utils.ajaxRequest('vbox/machineSetGroup',Ext.apply({'group':targetId},vcube.utils.vmAjaxParams(itemid)));
 			} else {
 				vcube.utils.ajaxRequest('vmgroups/updateGroup',{'id':itemid,'parent_id':targetId});
@@ -249,110 +123,75 @@ Ext.define('vcube.controller.NavTree', {
 	 * Data loading functions
 	 * 
 	 */
-	createServerNodeCfg : function(server) {
+	createServerNodeConfig : function(data) {
 
-		data = Ext.apply({},server);
-		
-		data._type = 'server';
-
-		return {
-			iconCls : 'navTreeIcon',
-			icon : 'images/vbox/OSE/VirtualBox_cube_42px.png',
+		return Ext.apply({
 			leaf : true,
 			allowDrag: false,
 			allowDrop: false,
-			text : Ext.String.htmlEncode(data.name)
-					+ ' (<span class="navTreeServerStatus">'
-					+ vcube.app.constants.CONNECTOR_STATES_TEXT[data.state]
-					+ '</span>)',
-			data : data,
+			
+			rawid : data.id,
+			type : 'server',
 			id : 'server-' + data.id
-		};
+		},vcube.view.NavTree.serverNodeConfig);
 		
 	},
 	
-	vmNodeIcon : function(vmData) {
-		return (vmData.icon ? vmData.icon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(vmData.OSTypeId));
+	createVMNodeConfig : function(data) {
+
+		return Ext.apply({
+			id: 'vm'-data.id,
+			rawid: data.id,
+			type: 'vm',
+			leaf: true
+		},vcube.view.NavTree.vmNodeConfig);
 	},
 	
-	createVMNodeCfg : function(vm) {
+	createGroupNodeConfig: function(data) {
 
-		data = Ext.apply({},vm);
-		
-		data._type = 'vm';
-		
-		return {
-			cls : 'navTreeVM vmState'+ data.state+ ' vmSessionState' + data.sessionState
-					+ ' vmOSType' + data.OSTypeId,
-			text : data.name,
-			/*+ '<span class="navTreeVMState">'+
-				'<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state) +
-				'" height=16 width=16 valign=top style="margin-left: 24px"/></span>',*/
-			leaf : true,
-			icon : this.vmNodeIcon(data),
-			iconCls : 'navTreeIcon',
-			id : data.id,
-			data : data
-		};
-
-	},
-	createGroupNodeCfg: function(group) {
-
-		data = Ext.apply({},group);		
-		data._type = 'vmgroup';
-		
-		return {
-			iconCls : 'navTreeIcon',
+		return Ext.apply({
 			leaf : false,
-			text : Ext.String.htmlEncode(data.name),
 			expanded: true,
 			id : 'vmgroup-' + data.id,
-			data : data
-		};
+			type: 'vmgroup',
+			rawid: data.id
+		},vcube.view.NavTree.vmGroupNodeConfig);
 
 	},
-	loadServersData : function(data) {
-
-		for ( var i = 0; i < data.length; i++) {
-			this.serversNode.appendChild(this.serversNode.createNode(this.createServerNodeCfg(data[i])));
-		}
-
-		// Expand folder
-		this.serversNode.expand()
-
+	
+	/**
+	 * Add server to Servers node
+	 */
+	addServer : function(data) {
+		this.serversNode.appendChild(this.serversNode.createNode(this.createServerNodeConfig(data)));
 	},
 
-	loadGroupsData : function(data) {
+	/**
+	 * Add a group to the VMs node
+	 */
+	addGroup : function(data) {
 
-		for ( var i = 0; i < data.length; i++) {
+		appendTarget = (data.parent_id ? this.navTreeStore.getNodeById('vmgroup-'+ data.parent_id) : this.vmsNode);
 
-			appendTarget = (data[i].parent_id ? this.navTreeStore.getNodeById('vmgroup-'+ data[i].parent_id) : this.vmsNode);
+		if (!appendTarget)
+			appendTarget = this.vmsNode;
 
-			if (!appendTarget)
-				appendTarget = this.vmsNode;
-
-			appendTarget.appendChild(appendTarget.createNode(this.createGroupNodeCfg(data[i])));
-		}
-
-		// Expand folder
-		this.vmsNode.expand();
-		
+		appendTarget.appendChild(appendTarget.createNode(this.createGroupNodeConfig(data)));		
 
 
 	},
+	
+	/**
+	 * Add a VM somewhere under the VMs node
+	 */
+	addVM : function(data) {
 
-	loadVMsData : function(data) {
+		appendTarget = (data.group_id ? this.navTreeStore.getNodeById('vmgroup-' + data.group_id) : this.vmsNode);
 
-		for ( var i = 0; i < data.length; i++) {
+		if (!appendTarget)
+			appendTarget = this.vmsNode;
 
-			appendTarget = (data[i].group_id ? this.navTreeStore.getNodeById('vmgroup-' + data[i].group_id) : this.vmsNode);
-
-			if (!appendTarget)
-				appendTarget = this.vmsNode;
-
-			appendTarget.appendChild(appendTarget.createNode(this.createVMNodeCfg(data[i])));
-
-		}
+		appendTarget.appendChild(appendTarget.createNode(this.createVMNodeConfig(data)));
 
 	},
 
@@ -371,56 +210,67 @@ Ext.define('vcube.controller.NavTree', {
 		
 
 		// Add servers folder
-		this.serversNode = this.rootNode.createNode({
-			cls : 'navTreeFolder',
+		this.serversNode = this.rootNode.createNode(Ext.apply({
 			leaf : false,
-			text : 'Servers',
 			id : 'servers',
 			allowDrag: false,
 			allowDrop: false,
-			data : {_type : 'serversFolder'}
-		});
+			type: 'serversFolder'
+		}, vcube.view.NavTree.serversNodeConfig));
+		
 		this.rootNode.appendChild(this.serversNode);
 
-		// Add virtual machines
-		this.vmsNode = this.rootNode.createNode({
-			cls : 'navTreeFolder',
+		// Add virtual machines folder
+		this.vmsNode = this.rootNode.createNode(Ext.apply({
 			leaf : false,
-			text : 'Virtual Machines',
 			id : 'vmgroup-0',
 			allowDrag: false,
-			data : { _type : 'vmsFolder'}
-		});
+			type: 'vmsFolder',
+			rawid: 'vmgroup-0'
+		}, vcube.view.NavTree.vmsNodeConfig));
+		
 		this.rootNode.appendChild(this.vmsNode);
 
 		var self = this;
-		var vboxServers = []
-
 
 		/*
 		 * 
-		 * Load all tree data
+		 * Load all tree data and subscribe to store changes
 		 * 
 		 */
 
-		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/getConnectors')).done(function(data) {
-
-			self.loadServersData(data);
-
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vmgroups/getGroups')).done(function(data) {
-
-				self.loadGroupsData(data);
-
-				self.loadVMsData(vcube.vmdatamediator.getVMList());
-				
-				self.vmsNode.sort(self.sortCmp, true);
-
-				self.navTreeView.setLoading(false);
-
-			});
-
+		
+		// Servers
+		vcube.storemanager.getStore('server').each(function(record) {
+			self.addServer(record.raw);
 		});
+		
+		this.serversNode.expand();
 
+		vcube.storemanager.getStore('server').on('add', this.onStoreRecordAdded, this, {type:'server'});
+		vcube.storemanager.getStore('server').on('remove', this.onStoreRecordRemoved, this, {type:'server'});
+		vcube.storemanager.getStore('server').on('update', this.onStoreRecordUpdated, this, {type:'server'});
+		
+		// VM Groups
+		vcube.storemanager.getStore('vmgroup').each(function(record) {
+			self.addGroup(record.raw);
+		});
+		
+		this.vmsNode.expand();
 
+		vcube.storemanager.getStore('vmgroup').on('add', this.onStoreRecordAdded, this, {type:'vmgroup'});
+		vcube.storemanager.getStore('vmgroup').on('remove', this.onStoreRecordRemoved, this, {type:'vmgroup'});
+		vcube.storemanager.getStore('vmgroup').on('update', this.onStoreRecordUpdated, this, {type:'vmgroup'});
+
+		// VMs
+		vcube.storemanager.getStore('vm').each(function(record) {
+			self.addVM(record.raw);
+		});
+		
+		vcube.storemanager.getStore('vm').on('add', this.onStoreRecordAdded, this, {type:'vm'});
+		vcube.storemanager.getStore('vm').on('remove', this.onStoreRecordRemoved, this, {type:'vm'});
+		vcube.storemanager.getStore('vm').on('update', this.onStoreRecordUpdated, this, {type:'vm'});
+		
+		
 	}
 });

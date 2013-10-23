@@ -103,21 +103,21 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     	// Subscribe to store changes?
     	if(this.updateInfoOnRecordChange) {
-    		this.getNavTreeView().getStore().on({'update':this.onRecordChanged,'scope':this});
+    		vcube.storemanager.getStore(this.selectionItemType).on({'update':this.onRecordChanged,'scope':this});
     	}
     },
     
     /* Run when record has changed */
     onRecordChanged: function(store, record) {
 
-    	if(this.selectionNodeId != record.get('id'))
+    	if(this.selectionItemId != record.get('id'))
     		return;
 
     	var inf = this.getInfoPane();
     	
     	if(!inf) return;
     	
-    	inf.update(record.raw.data);
+    	inf.update(record.raw);
     	
     },
     
@@ -126,7 +126,7 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     	if(!this.dirty) return;
     	
-    	this.populate(this.navTreeSelectionModel.getSelection()[0].raw.data);
+    	this.populate(vcube.storemanager.getStoreRecordRaw(this.selectionItemType, this.selectionItemId));
     	
     },
 
@@ -135,16 +135,17 @@ Ext.define('vcube.controller.XInfoTab', {
 
     	this.dirty = true;
 
-    	if(records.length && records[0].raw.data._type == this.selectionItemType) {
+    	if(records.length && records[0].get('type') == this.selectionItemType) {
     		
     		// Update node id
     		this.selectionNodeId = records[0].get('id');
     		
     		// Update selection item id
-    		this.selectionItemId = records[0].raw.data.id;
+    		this.selectionItemId = records[0].get('rawid');
     		
     		// Populate
-    		this.populate(records[0].raw.data);
+    		this.populate(vcube.storemanager.getStoreRecordRaw(this.selectionItemType,
+    				this.selectionItemId));
 
     	} else {
 
@@ -176,7 +177,7 @@ Ext.define('vcube.controller.XInfoTab', {
     	var self = this;
 
     	var sectionsPane = this.getSectionsPane();
-    	var recordData = this.navTreeSelectionModel.getSelection()[0].raw.data;
+    	var recordData = vcube.storemanager.getStoreRecordRaw(this.selectionItemType, this.selectionItemId);
     	
     	// Notify sections of event
     	if(notifySections.length) {
@@ -252,7 +253,7 @@ Ext.define('vcube.controller.XInfoTab', {
 
     	if(!this.filterEvent(event)) return;
     	
-    	this.populate(this.navTreeSelectionModel.getSelection()[0].raw.data);
+    	this.populate(vcube.storemanager.getStoreRecordRaw(this.selectionItemType, this.selectionItemId));
 
     	
     },

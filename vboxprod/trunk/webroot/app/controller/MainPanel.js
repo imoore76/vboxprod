@@ -46,7 +46,9 @@ Ext.define('vcube.controller.MainPanel', {
     	var vmList = this.getVMListsView();
     	
     	if(records.length) {
+    		
     		record = records[0];
+    		
     	} else {
     		
     		if(welcome.isVisible()) return;
@@ -58,48 +60,46 @@ Ext.define('vcube.controller.MainPanel', {
     		return;
 
     	}
-    		
-    	// VM selected
-    	if(record.raw.data._type == 'vm') {
-    		
-    		if(vmTabs.isVisible()) return;
-    		groupTabs.hide();
-    		welcome.hide();
-    		serverTabs.hide();
-    		vmList.hide();
-    		vmTabs.show();
-    		
-    		
-    		
-    	// Group Selected
-    	} else if(record.raw.data._type == 'vmgroup'){
-    		if(groupTabs.isVisible()) return;
-    		welcome.hide();
-    		serverTabs.hide();
-    		vmTabs.hide();
-    		vmList.hide();
-    		groupTabs.show();
-    		
-    	// Server selected
-    	} else if(record.raw.data._type == 'server') {
-    		if(serverTabs.isVisible()) return;
-    		welcome.hide();
-    		vmTabs.hide();
-    		groupTabs.hide();
-    		vmList.hide();
-    		serverTabs.show();
+    	
+    	switch(recrod.get('type')) {
+
+    		case 'vm':
+	    		if(vmTabs.isVisible()) return;
+	    		groupTabs.hide();
+	    		welcome.hide();
+	    		serverTabs.hide();
+	    		vmList.hide();
+	    		vmTabs.show();
+	    		break;
+	    	
+    		case 'vmgroup':
+    			if(groupTabs.isVisible()) return;
+    			welcome.hide();
+    			serverTabs.hide();
+    			vmTabs.hide();
+    			vmList.hide();
+    			groupTabs.show();
+	    		break;
+
+    		case 'server':
+    			if(serverTabs.isVisible()) return;
+    			welcome.hide();
+    			vmTabs.hide();
+    			groupTabs.hide();
+    			vmList.hide();
+    			serverTabs.show();
+	    		break;
+
+    		case 'vmsFolder':
+    			serverTabs.hide();
+    			groupTabs.hide();
+    			vmTabs.hide();
+    			welcome.hide();
+    			vmList.show();
+	    		break;
+    	}
     		    		
     		
-    	// Top VMs folder
-    	} else if(record.raw.data._type == 'vmsFolder') {
-
-    		serverTabs.hide();
-    		groupTabs.hide();
-    		vmTabs.hide();
-    		welcome.hide();
-    		vmList.show();
-
-    	}
     }
     
  	

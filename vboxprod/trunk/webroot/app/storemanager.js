@@ -85,11 +85,13 @@ Ext.define('vcube.storemanager',{
 	getStore: function(type) {
 		switch(type.toLowerCase()) {
 			case 'vm':
-				return this.vmStore;
+				return vcube.storemanager.vmStore;
 			case 'vmgroup':
-				return this.vmGroupStore;
+				return vcube.storemanager.vmGroupStore;
 			case 'server':
-				return this.serverStore;
+				return vcube.storemanager.serverStore;
+			default:
+				console.log("Unknown type: " + type);
 		}
 	},
 	
@@ -97,8 +99,22 @@ Ext.define('vcube.storemanager',{
 	/**
 	 * Update store if record exists
 	 */
-	updateStoreItem: function(type, id, updates) {
-		this.getStore(type).getById(id).update(updates);
+	updateStoreRecord: function(type, id, updates) {
+		return vcube.storemanager.getStore(type).getById(id).update(updates);
+	},
+	
+	/**
+	 * Get a single store record by id
+	 */
+	getStoreRecord: function(type, id) {
+		return vcube.storemanager.getStore(type).getById(id);
+	},
+	
+	/**
+	 * Get raw record data
+	 */
+	getStoreRecordRaw: function(type, id) {
+		return vcube.storemanager.getStore(type).getById(id).raw;
 	},
 	
 	/* Watch for "raw" events */
@@ -113,41 +129,66 @@ Ext.define('vcube.storemanager',{
 		 */
 		
 		var applyEnrichmentData = function(eventData) {
-			this.updateStoreItem('vm', eventData.machineId, eventData.enrichmentData)			
+			vcube.storemanager.updateStoreRecord('vm', eventData.machineId, eventData.enrichmentData)			
 		};
 		
-		// Machine events
 		vcube.app.on({
 			
-			// Server data changed
+			/*
+			 * Server / connector events
+			 */
 		    'ConnectorUpdated': function(eventData) {
-		    	this.updateStoreItem('server', eventData.connector_id, eventData.connector);
+		    	vcube.storemanager.updateStoreRecord('server', eventData.connector_id, eventData.connector);
+		    },
+		    
+		    ConnectorStateChanged: function(eventData) {
+		    	vcube.storemanager.updateStoreRecord('server', eventData.connector_id, {state:eventData.state, state_text: eventData.state_text});
 		    },
 
+		    /*
+		     * VM Group events
+		     */
+			VMGroupAdded: function(eventData) {
+				vcube.storemanager.getStore('vmgroup').add(eventData.group);
+			},
+			
+			VMGroupRemoved: function(eventData) {
+				var s = vcube.storemanager.getStore('vmgroup');
+				s.remove(s.getById(eventData));
+			},
+			
+			VMGroupUpdated: function(eventData) {
+				vcube.storemanager.updateStoreRecord('vmgroup', eventData.group.id, eventData.group);
+			},
+
+
+		    /*
+		     *	Machine events 
+		     */
 			
 			// Machine data has changed
 			'vboxMachineDataChanged' : applyEnrichmentData,
 			
-			// Snapshot changed
-			'vboxSnapshotTaken' : snapshotEvent,
-			'vboxSnapshotDeleted' : snapshotEvent,
-			'vboxSnapshotChanged' : snapshotEvent,
+			// Snapshot events
+			'vboxSnapshotTaken' : applyEnrichmentData,
+			'vboxSnapshotDeleted' : applyEnrichmentData,
+			'vboxSnapshotChanged' : applyEnrichmentData,
 
 			// Machine state change
 			'vboxMachineStateChanged' :function(eventData) {
-				this.updateStoreItem('vm', eventData.machineId, Ext.apply({'state':eventData.state},eventData.enrichmentData));					
+				vcube.storemanager.updateStoreRecord('vm', eventData.machineId, Ext.apply({'state':eventData.state},eventData.enrichmentData));					
 			},
 
 			// Session state change
 			'vboxSessionStateChanged' : function(eventData) {			
-				this.updateStoreItem('vm', eventData.machineId,{sessionState:eventData.state});
+				vcube.storemanager.updateStoreRecord('vm', eventData.machineId,{sessionState:eventData.state});
 			},
 
 			
 			// Remove vms from store
 			'MachinesRemoved' : function(eventData) {
 			
-				var vmstore = this.getStore('vm');
+				var vmstore = vcube.storemanager.getStore('vm');
 				
 				Ext.each(eventData.machines, function(vmid){
 					vmstore.remove(vmstore.getById(vmid));
@@ -157,7 +198,7 @@ Ext.define('vcube.storemanager',{
 
 			// Add VMs when machines are added
 			'MachinesAdded' : function(eventData) {
-				this.getStore('vm').add(eventData.machines);
+				vcube.storemanager.getStore('vm').add(eventData.machines);
 			},
 			
 			// Runtime CPU changed event
@@ -182,29 +223,33 @@ Ext.define('vcube.storemanager',{
 			},
 			
 			'vboxMachineGroupChanged' : function(eventData) {
-				this.updateStoreItem('vm', eventData.machineId,{group_id:eventData.group});
+				vcube.storemanager.updateStoreRecord('vm', eventData.machineId,{group_id:eventData.group});
 			},
 
 			'vboxMachineIconChanged' : function(eventData) {
-				this.updateStoreItem('vm', eventData.machineId,{icon:eventData.icon});
+				vcube.storemanager.updateStoreRecord('vm', eventData.machineId,{icon:eventData.icon});
 			},
 			
-			scope: this
+			
+			
+			scope: vcube.storemanager
 
 		});
 		
-		var loadList = 3;
+		var loadCount = 3;
 		function loaded() {
-			if(loadList-- == 0) promise.resolve();
+			if(--loadCount == 0) {
+				promise.resolve();
+			}
 		}
 		
-		this.vmStore.load({callback:function(r,o,success) {
+		vcube.storemanager.vmStore.load({callback:function(r,o,success) {
 			if(success) loaded();
 		}});
-		this.vmGroupStore.load({callback:function(r,o,success) {
+		vcube.storemanager.vmGroupStore.load({callback:function(r,o,success) {
 			if(success) loaded();
 		}});
-		this.serverStore.load({callback:function(r,o,success) {
+		vcube.storemanager.serverStore.load({callback:function(r,o,success) {
 			if(success) loaded();
 		}});
 		

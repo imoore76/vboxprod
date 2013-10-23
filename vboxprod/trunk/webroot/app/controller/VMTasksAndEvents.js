@@ -5,7 +5,7 @@ Ext.define('vcube.controller.VMTasksAndEvents', {
     extend: 'vcube.controller.XTasksAndEventsTab',
     
     
-    /* Nav tree selection data._type field */
+    /* Nav tree selection type field */
     selectionType: 'vm',
 
     /* Paramater to add to proxy */

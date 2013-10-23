@@ -28,6 +28,66 @@ Ext.define('vcube.view.NavTree', {
     		
     	},
     	
+    	/*
+    	 * Generate VM node configuration
+    	 */
+    	vmNodeConfig: function(data) {
+    		return {
+    			cls : 'navTreeVM vmState'+ data.state+ ' vmSessionState' + data.sessionState
+    					+ ' vmOSType' + data.OSTypeId,
+    			text : data.name,
+    			/*+ '<span class="navTreeVMState">'+
+    				'<img src="images/vbox/'+vcube.utils.vboxMachineStateIcon(vm.state) +
+    				'" height=16 width=16 valign=top style="margin-left: 24px"/></span>',*/
+    			icon : (data.icon ? data.icon : 'images/vbox/' + vcube.utils.vboxGuestOSTypeIcon(vmData.OSTypeId)),
+    			iconCls : 'navTreeIcon'
+    		};
+    	},
+    	
+    	/*
+    	 * Generate VM group node configuration
+    	 */
+    	vmGroupNodeConfig: function(data) {
+    		return {
+    			iconCls : 'navTreeIcon',
+    			text : Ext.String.htmlEncode(data.name)
+    		};
+    	},
+    	
+    	/*
+    	 * Generate server node config
+    	 */
+    	serverNodeConfig: function(data) {
+    		return {
+    			iconCls : 'navTreeIcon',
+    			icon : 'images/vbox/OSE/VirtualBox_cube_42px.png',
+    			text : Ext.String.htmlEncode(data.name)
+    					+ ' (<span class="navTreeServerStatus">'
+    					+ vcube.app.constants.CONNECTOR_STATES_TEXT[data.state]
+    					+ '</span>)'
+    		}
+    	},
+    	
+    	/*
+    	 * Generate "Servers" node config
+    	 */
+    	serversNodeConfig: function() {
+    		return {
+    			cls : 'navTreeFolder',
+    			text : 'Servers'    			
+    		};
+    	},
+    	
+    	/*
+    	 * Generate "Virtual Machines" node config
+    	 */
+    	vmsNodeConfig: function() {
+    		return {
+    			cls : 'navTreeFolder',
+    			text : 'Virtual Machines'		
+    		}
+    	},
+    	
     	machineContextMenuItems: [
     	
     	    // settings

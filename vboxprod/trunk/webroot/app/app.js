@@ -25,11 +25,12 @@ Ext.application({
                
                'Ext.ux.form.plugin.FieldHelpText',
                'vcube.ExtOverrides.ExtZIndexManager',
-               //'vcube.ExtOverrides.ExtComponent',
                
+               'vcube.storemanager',
                'vcube.vmdatamediator', 
-               'vcube.eventlistener',
-               'vcube.previewbox'],
+               'vcube.eventlistener'
+               //,'vcube.previewbox'
+           ],
     
     /* Controllers used by this app */
     controllers: [
@@ -135,6 +136,7 @@ Ext.application({
     
     /* Stop the application - perform cleanup */
     stop: function() {
+    	vcube.storemanager.stop();
     	vcube.eventlistener.stop();
     	vcube.vmdatamediator.stop();
     	this.fireEvent('stop');
@@ -153,9 +155,6 @@ Ext.application({
     // User session data
     session: null,
     
-    // Global server store
-    serverStore: null,
-	
     /**
      * Load session data
      */
@@ -170,33 +169,20 @@ Ext.application({
     		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getConstants')).done(function(constants){
     			
     			self.constants = constants;
+
     			
-    			self.serverStore.load({
-    				scope: this,
-    				callback: function(r,o,success) {
-    					if(!success) return;
-    					Ext.ux.Deferred.when(vcube.eventlistener.start(this.fireEvent, this)).done(function(){
-    						Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function(){
-    							if(!self.died) {
-    								self.serverStore.load();
-    								self.fireEvent('start');
-    								
-    							}
-    						});    			
-    					});
-    				}
-    			})
-    			
+    			Ext.ux.Deferred.when(vcube.storemanager.start)
+	    			.then(vcube.vmdatamediator.start)
+    				.then(vcube.eventlistener.start)
+					.then(function() {
+						self.fireEvent('start');
+					});
     		});
     		
     	} else {
     		self.showLogin();
     	}
 
-    },
-    
-    onConnectorUpdated: function(eventData) {
-    	this.serverStore.getById(eventData.connector_id).set(eventData.connector);
     },
     
     /**
@@ -208,7 +194,6 @@ Ext.application({
     	//this.populateActionPool();
     	
     	this.on({
-    		'ConnectorUpdated': this.onConnectorUpdated,
     		'taskLogEntry': this.taskLogWatch,
     		'taskLogUpdate': this.taskLogWatch,
     		scope: this
@@ -220,26 +205,6 @@ Ext.application({
     	// App ref
     	var self = this;
     	
-    	// Create server store
-    	this.serverStore = Ext.create('Ext.data.Store',{
-    		autoload: false,
-    		fields : [
-    		   {name: 'id', type: 'int'},
-    		   {name: 'name', type: 'string'},
-    		   {name: 'description', type: 'string'},
-    		   {name: 'location', type: 'string'},
-    		   {name: 'state_text', type: 'string'},
-    		   {name: 'state', type: 'int'}
-    		],
-    		proxy: {
-    			type: 'vcubeAjax',
-    			url: 'connectors/getConnectors',
-    	    	reader: {
-    	    		type: 'vcubeJsonReader'
-    	    	}
-    		}
-    	})
-
     	if (Ext.get('page-loader')) {
     		Ext.get('page-loader').remove();
     	}

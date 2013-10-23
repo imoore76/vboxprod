@@ -45,7 +45,7 @@ Ext.define('vcube.storemanager',{
 		      {name: 'id', type: 'int'},
 		      {name: 'name', type: 'string'},
 		      {name: 'description', type: 'string'},
-		      {name: 'parent_id': type: 'int'}
+		      {name: 'parent_id', type: 'int'}
 		],
 		proxy: {
 			type: 'vcubeAjax',
@@ -97,7 +97,7 @@ Ext.define('vcube.storemanager',{
 	/**
 	 * Update store if record exists
 	 */
-	updateStoreItem(type, id, updates) {
+	updateStoreItem: function(type, id, updates) {
 		this.getStore(type).getById(id).update(updates);
 	},
 	
@@ -119,6 +119,11 @@ Ext.define('vcube.storemanager',{
 		// Machine events
 		vcube.app.on({
 			
+			// Server data changed
+		    'ConnectorUpdated': function(eventData) {
+		    	this.updateStoreItem('server', eventData.connector_id, eventData.connector);
+		    },
+
 			
 			// Machine data has changed
 			'vboxMachineDataChanged' : applyEnrichmentData,
@@ -182,7 +187,9 @@ Ext.define('vcube.storemanager',{
 
 			'vboxMachineIconChanged' : function(eventData) {
 				this.updateStoreItem('vm', eventData.machineId,{icon:eventData.icon});
-			}
+			},
+			
+			scope: this
 
 		});
 		

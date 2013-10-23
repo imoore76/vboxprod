@@ -13,10 +13,6 @@ Ext.define('vcube.vmdatamediator', {
 
 	singleton: true,
 	
-	running: false,
-	
-	started: null,
-	
 	requires: ['vcube.utils'],
 	
 	/* Promises for data */
@@ -54,7 +50,6 @@ Ext.define('vcube.vmdatamediator', {
 	},
 	
 	stop: function() {
-		vcube.vmdatamediator.running = false;
 		vcube.vmdatamediator.expireAll();
 	},
 	
@@ -101,87 +96,33 @@ Ext.define('vcube.vmdatamediator', {
 		 * 
 		 */
 		
-		var snapshotEvent = function(eventData) {
-			
-			if(vcube.vmdatamediator.vmData[eventData.machineId]) {
-				
-				vcube.vmdatamediator.vmData[eventData.machineId].currentSnapshotName = eventData.enrichmentData.currentSnapshotName;
-				vcube.vmdatamediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
-				
-			}
-			if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
-				vcube.vmdatamediator.vmDetailsData[eventData.machineId].snapshotCount = eventData.enrichmentData.snapshotCount;
-		};
-		
 		// Raw event to data handlers
 		vcube.app.on({
 			
 		
-			'vboxMachineDataChanged' : function(eventData) {
-		
-				
+			'vboxMachineDataChanged' : function(eventData) {				
 				vcube.vmdatamediator.expireVMDetails(eventData.machineId);
 				vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
 				
-				if(vcube.vmdatamediator.vmData[eventData.machineId] && eventData.enrichmentData) {
-					Ext.apply(vcube.vmdatamediator.vmData[eventData.machineId], eventData.enrichmentData);
-					// $.extend doesn't seem to handle this for some reason
-					vcube.vmdatamediator.vmData[eventData.machineId].groups = eventData.enrichmentData.groups; 
-				}
-
 			},
 			// Machine state change
 			'vboxMachineStateChanged' :function(eventData) {
 
-				// Only care about it if its in our list
-				if(vcube.vmdatamediator.vmData[eventData.machineId]) {
-					
-					vcube.vmdatamediator.vmData[eventData.machineId].state = eventData.state;
-					vcube.vmdatamediator.vmData[eventData.machineId].lastStateChange = eventData.enrichmentData.lastStateChange;
-					vcube.vmdatamediator.vmData[eventData.machineId].currentStateModified = eventData.enrichmentData.currentStateModified;
-					
-					// Expire runtime data on state change
-					vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
+				// Expire runtime data on state change
+				vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
 	
-				}
-				
 			},
 
-			// Session state change
-			'vboxSessionStateChanged' : function(eventData) {
-			
-				if(vcube.vmdatamediator.vmData[eventData.machineId])
-					vcube.vmdatamediator.vmData[eventData.machineId].sessionState = eventData.state;
-			},
-
-			// Snapshot changed
-			'vboxSnapshotTaken' : snapshotEvent,
-			'vboxSnapshotDeleted' : snapshotEvent,
-			'vboxSnapshotChanged' : snapshotEvent,
-			
 			// Expire all data for a VM when machines are removed
 			'MachinesRemoved' : function(eventData) {
 			
-					Ext.each(eventData.machines, function(vmid){
-						vcube.vmdatamediator.expireVMDetails(vmid);
-						vcube.vmdatamediator.expireVMRuntimeData(vmid);
-						delete vcube.vmdatamediator.vmData[vmid];						
-					});
+				vcube.vmdatamediator.expireVMDetails(vmid);
+				vcube.vmdatamediator.expireVMRuntimeData(vmid);
 					
 			},
 
-			// Add VMs when machines are added
-			'MachinesAdded' : function(eventData) {
-				
-				Ext.each(eventData.machines, function(vm) {
-					vcube.vmdatamediator.vmData[vm.id] = vm;
-				});
-			},
-			
 			'vboxCPUChanged' : function(eventData) {
 
-				if(!vcube.vmdatamediator.vmRuntimeData[eventData.machineId]) return;
-				
 				if(eventData.enrichmentData.add) {
 					vcube.vmdatamediator.vmRuntimeData[eventData.machineId].CPUCount++;
 				} else {
@@ -197,15 +138,7 @@ Ext.define('vcube.vmdatamediator', {
 				}
 			
 			},
-		/* Storage controller of VM changed */
-		//}).on('vboxStorageControllerChanged', function() {
-			/*
-		    case 'StorageControllerChanged':
-		    	$data['machineId'] = $eventDataObject->machineId;
-		    	$data['dedupId'] .= '-'. $data['machineId'];
-		    	break;
-		    */
-			
+
 			'vboxMediumChanged' : function(eventData) {
 			
 				/* Medium attachment changed */
@@ -254,17 +187,6 @@ Ext.define('vcube.vmdatamediator', {
 
 			},
 			
-			'vboxMachineGroupChanged' : function(eventData) {
-				if(!vcube.vmdatamediator.vmData[eventData.machineId]) return
-				vcube.vmdatamediator.vmData[eventData.machineId].group_id = eventData.group				
-			},
-
-			'vboxMachineIconChanged' : function(eventData) {
-				if(!vcube.vmdatamediator.vmData[eventData.machineId]) return
-				vcube.vmdatamediator.vmData[eventData.machineId].icon = eventData.icon
-			},
-
-			
 			'vboxExtraDataChanged' : function(eventData) {
 			
 				// No vm id is a global change
@@ -296,21 +218,7 @@ Ext.define('vcube.vmdatamediator', {
 	 */
 	start: function() {
 		
-		vcube.vmdatamediator.running = true;
-		
 		vcube.vmdatamediator.watchEvents();
-		
-		vcube.vmdatamediator.started = Ext.create('Ext.ux.Deferred');
-		
-		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getVirtualMachines',{})).done(function(vmlist){
-			vcube.vmdatamediator.vmData = {};
-			for(var i = 0; i < vmlist.length; i++) {
-				vcube.vmdatamediator.vmData[vmlist[i].id] = vmlist[i]				
-			}
-			vcube.vmdatamediator.started.resolve();
-		});
-		
-		return vcube.vmdatamediator.started;
 		
 	},
 	
@@ -423,30 +331,7 @@ Ext.define('vcube.vmdatamediator', {
 		});
 		return def;
 		
-	},
-	
-	/**
-	 * Get new VM data
-	 * @param vmid {String} ID of VM to get data for
-	 * @returns {Object} promise
-	 */
-	refreshVMData : function(vmid) {
-		
-		if(!vcube.vmdatamediator.vmData[vmid]) return;
-		
-		var def = Ext.create('Ext.ux.Deferred');
-		Ext.ux.Deferred.when(vboxAjaxRequest('vboxGetMachines',{'vm':vmid})).done(function(d) {
-			vm = d[0];
-			vcube.vmdatamediator.vmData[vm.id] = vm;
-			def.resolve();
-			$('#vboxPane').trigger('vboxMachineDataChanged', [{machineId:vm.id,enrichmentData:vm}]);
-			$('#vboxPane').trigger('vboxEvents', [[{eventType:'OnMachineDataChanged',machineId:vm.id,enrichmentData:vm}]]);
-		}).fail(function(){
-			def.reject('refresh failed');
-		});
-		
-		return def;
 	}
-
+	
 });
 

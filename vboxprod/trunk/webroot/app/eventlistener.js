@@ -26,9 +26,8 @@ Ext.define('vcube.eventlistener', {
 
 	/**
 	 *  Start event listener loop
-	 *  @param {Array} vmlist - list of VM ids to subscribe to
 	 */
-	start : function(vmlist) {
+	start : function() {
 		
 		// Already started?
 		if(vcube.eventlistener.running) return;

@@ -4,7 +4,7 @@
 Ext.define('vcube.controller.GroupVirtualMachinesList', {
     extend: 'vcube.controller.XVirtualMachinesList',
     
-    /* Nav tree selection data._type field */
+    /* Nav tree selection type field */
     selectionType: 'vmgroup',
 
     /* VM record property which must match selection id */
@@ -41,7 +41,7 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
     /* Get sub vms when selection changes */
     onNavTreeSelectionChange: function(sm, records) {
     	
-    	if(records.length && records[0].raw.data._type == this.selectionType) {
+    	if(records.length && records[0].get('type') == this.selectionType) {
 
     		var vmIdList = [];
     		
@@ -49,15 +49,15 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
     		
     		function getVMChildren(node) {
     			node.eachChild(function(record){
-    				if(record.raw.data._type == 'vm') {
+    				if(record.get('type') == 'vm') {
     					vmIdList.push(record.get('id'));
-    				} else if(record.raw.data._type == 'vmgroup') {
+    				} else if(record.get('type') == 'vmgroup') {
     					vmIdList = vmIdList.concat(getVMChildren(store.getNodeById(record.get('id'))))
     				}    				
     			});
     		}
     		
-    		getVMChildren(this.getNavTreeView().getStore().getNodeById('vmgroup-' + records[0].raw.data.id));
+    		getVMChildren(this.getNavTreeView().getStore().getNodeById('vmgroup-' + records[0].get('rawid')));
     		
     		this.groupVMs = vmIdList;
     		

@@ -39,11 +39,11 @@ Ext.define('vcube.controller.VMTabs', {
     	else return;
     	
     	// Only load if VM is selected
-    	if(!record || record.raw.data._type != 'vm')
+    	if(!record || record.get('type') != 'vm')
     		return;
 
     	// Only show summary tab if this is not accessible
-    	if(vcube.vmdatamediator.getVMData(record.raw.data.id).state == 'Inaccessible') {
+    	if(vcube.storemanager.getStoreRecord('vm',record.get('rawid')).state == 'Inaccessible') {
     		this.getVMTabsView().setActiveTab(0);
     	}
 

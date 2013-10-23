@@ -4,7 +4,7 @@
 Ext.define('vcube.controller.MainVirtualMachinesList', {
     extend: 'vcube.controller.XVirtualMachinesList',
     
-    /* Nav tree selection data._type field */
+    /* Nav tree selection type field */
     selectionType: 'vmsFolder',
 
     /* VM record property which must match selection id */

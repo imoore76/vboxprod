@@ -44,10 +44,10 @@ Ext.define('vcube.controller.VMConsole', {
     	else return;
     	
     	// Only load if VM is selected
-    	if(!record || record.raw.data._type != 'vm')
+    	if(!record || record.get('type') != 'vm')
     		return;
 
-    	if(!vcube.utils.vboxVMStates.isRunning(record.raw.data)) {
+    	if(!vcube.utils.vboxVMStates.isRunning(vcube.storemanager.getStoreRecordRaw('vm', record.get('rawid')))) {
     		this.getVMConsoleView().disable();
     	} else {
     		this.getVMConsoleView().enable();

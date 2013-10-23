@@ -18,7 +18,13 @@ Ext.application({
     autoCreateViewport: true,
     
     /* Various utils and scripts */
-    requires: ['vcube.data.reader.Json', 'vcube.data.proxy.Ajax', 'Ext.ux.Deferred',
+    requires: [
+               // Custom ajax and json
+               'vcube.data.reader.Json',
+               'vcube.data.proxy.Ajax',
+               
+               // Deferred object
+               'Ext.ux.Deferred',
                
                // Actions
                'vcube.actionpool',
@@ -27,7 +33,7 @@ Ext.application({
                'vcube.ExtOverrides.ExtZIndexManager',
                
                'vcube.storemanager',
-               'vcube.vmdatamediator', 
+               'vcube.vmdatamediator',
                'vcube.eventlistener'
                //,'vcube.previewbox'
            ],

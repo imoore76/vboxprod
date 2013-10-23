@@ -56,9 +56,9 @@ Ext.define('vcube.controller.XTasksAndEventsTab', {
     	
     	this.dirty = true;
     	
-    	if(records.length && records[0].raw.data._type == this.selectionType) {
+    	if(records.length && records[0].get('type') == this.selectionType) {
 
-    		this.selectionId = records[0].raw.data.id;    		
+    		this.selectionId = records[0].get('rawid');    		
     		this.populate();
     	
     	} else {

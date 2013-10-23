@@ -4,7 +4,7 @@
 Ext.define('vcube.controller.ServerTasksAndEvents', {
     extend: 'vcube.controller.XTasksAndEventsTab',
     
-    /* Nav tree selection data._type field */
+    /* Nav tree selection type field */
     selectionType: 'server',
 
     /* Parameter to add to proxy */

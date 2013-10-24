@@ -123,6 +123,8 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	
     	this.dirty = true;
     	
+    	console.log("here 3...");
+    	
     	if(records.length && records[0].get('type') == this.selectionType) {
 
     		this.selectionId = records[0].get('rawid');    		

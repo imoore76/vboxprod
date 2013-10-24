@@ -47,7 +47,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     	win.show();
     	win.setLoading(true);
     	
-    	var values = Ext.apply({},record.raw);
+    	var values = Ext.apply({},record.getData());
     	
     	values.name = Ext.String.htmlEncode(values.name);
     	values.details = Ext.String.htmlEncode(values.details);
@@ -71,7 +71,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     	win.show();
     	win.setLoading(true);
     	
-    	var values = Ext.apply({},record.raw);
+    	var values = Ext.apply({},record.getData());
     	
     	values.name = Ext.String.htmlEncode(values.name);
     	values.details = Ext.String.htmlEncode(values.details);
@@ -134,7 +134,6 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     		this.onTaskLogEntry(event);
     		return;
     	}
-    	record.raw = event.eventData;
     	record.set({
     		'completed': event.eventData['completed'],
     		'details': event.eventData['details'],

@@ -81,21 +81,26 @@ Ext.define('vcube.storemanager',{
 	 * Update store if record exists
 	 */
 	updateStoreRecord: function(type, id, updates) {
-		vcube.storemanager.getStore(type).getById(id).set(updates);
+		vcube.storemanager.getStoreRecord(type, id).set(updates);
 	},
 	
 	/**
 	 * Get a single store record by id
 	 */
 	getStoreRecord: function(type, id) {
-		return vcube.storemanager.getStore(type).getById(id);
+		return vcube.storemanager.getStore(type).getById(String(id));
 	},
 	
 	/**
 	 * Get raw record data
 	 */
 	getStoreRecordData: function(type, id) {
-		return vcube.storemanager.getStore(type).getById(id).getData();
+		try {
+			return vcube.storemanager.getStoreRecord(type, id).getData();			
+		} catch (err) {
+			console.log(type + ' ' + id);
+			console.log(vcube.storemanager.getStore(type));
+		}
 	},
 	
 	/* Watch for "raw" events */

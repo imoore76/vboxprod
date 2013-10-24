@@ -70,20 +70,22 @@ Ext.define('vcube.grid.column.TaskDetailsColumn', {
 	renderer: function(val,m,record,ri,ci,store,view) {
 
 		// Still in progress?
-		if(record.raw.progress) {
+		if(record.get('progress')) {
 			
 			m.style = "padding: 0px;";
 			
 			var width = view.panel.columns[ci].el.dom.scrollWidth - 2;
 			
+			var progress = record.get('progress');
+			
 			return '<div class="x-progress x-progress-default">'+
 	        	'<div class="x-progress-text x-progress-text-back" style="width: ' + width + 'px;">'+
-	        	record.raw.progress.operationDescription +
+	        	progress.operationDescription +
 	        '</div>'+
-	        '<div class="x-progress-bar x-progress-bar-default" style="width:'+record.raw.progress.percent+'%">'+
+	        '<div class="x-progress-bar x-progress-bar-default" style="width:'+progress.percent+'%">'+
 	            '<div class="x-progress-text" style="width: '+width+'px;">'+
 	                '<div>'+
-	                record.raw.progress.operationDescription + 
+	                progress.operationDescription + 
 	                '</div>'+
 	            '</div>'+
 	        '</div>'+

@@ -110,7 +110,7 @@ Ext.define('vcube.controller.XInfoTab', {
     /* Run when record has changed */
     onRecordChanged: function(store, record) {
 
-    	if(this.selectionItemId != record.get('rid'))
+    	if(this.selectionItemId != record.get('rawid'))
     		return;
 
     	var inf = this.getInfoPane();

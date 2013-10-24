@@ -74,8 +74,8 @@ Ext.define('vcube.controller.machineactions', {
 		
 		if(records.length && records[0].get('type') == 'vm') {
 			this.onSelectionChange(selectionModel, records);
-		} else if(this.selectedVMIds.length) {
-			this.onSelectionChange(selectionModel, []);
+		} else {
+			this.selectedVMIds = [];
 		}
 	},
 	

@@ -41,6 +41,7 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
     /* Get sub vms when selection changes */
     onNavTreeSelectionChange: function(sm, records) {
     	
+    	console.log("here 2");
     	if(records.length && records[0].get('type') == this.selectionType) {
 
     		var vmIdList = [];
@@ -50,9 +51,9 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
     		function getVMChildren(node) {
     			node.eachChild(function(record){
     				if(record.get('type') == 'vm') {
-    					vmIdList.push(record.get('id'));
+    					vmIdList.push(record.get('rawid'));
     				} else if(record.get('type') == 'vmgroup') {
-    					vmIdList = vmIdList.concat(getVMChildren(store.getNodeById(record.get('id'))))
+    					vmIdList = vmIdList.concat(getVMChildren(store.getNodeById(record.get('rawid'))))
     				}    				
     			});
     		}
@@ -70,6 +71,7 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
     	
     	// Get all child vms of this node
     	var self = this;
+    	console.log("here 1");
     	return vcube.vmdatamediator.getVMDataByFilter(function(vm) {
     		return Ext.Array.contains(self.groupVMs, vm.id);
     	});

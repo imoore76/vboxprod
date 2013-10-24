@@ -18,7 +18,7 @@ Ext.define('vcube.store.Tasks',{
       {name: 'status', type: 'int'},
       {name: 'details', type: 'string'},
       {name: 'connector', type: 'int'},
-      {name: 'progress', type: 'object'},
+      {name: 'progress', type: 'auto'},
       {name: 'category', type: 'int'},
       {name: 'started', type: 'date', dateFormat: 'Y-m-d H:i:s'},
       {name: 'completed', type: 'date', dateFormat: 'Y-m-d H:i:s'}

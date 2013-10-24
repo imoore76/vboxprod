@@ -131,6 +131,8 @@ Ext.define('vcube.controller.XTasksAndEventsTab', {
     		return;
     	}
     	
+    	console.log("here 4...");
+    	
     	this.dirty = false;
     	
 		this.taskStore.getProxy().extraParams = this.eventStore.getProxy().extraParams = this.getRequestProperties();

@@ -91,7 +91,7 @@ Ext.define('vcube.actions.machine',{
 					var vmsToStart = [];
 					for(var i = 0; i < vms.length; i++) {
 						try {
-							vm = vcube.vmdatamediator.getVMData(vms[i].raw.id)
+							vm = vcube.storemanager.getStoreRecordData('vm',vms[i].get('id'));
 						} catch(err) {
 							continue;
 						}
@@ -369,7 +369,7 @@ Ext.define('vcube.actions.machine',{
 					// There's no CDROM drive
 					} else if(d.responseData && d.responseData.result && d.responseData.result == 'nocdrom') {
 						
-						var vm = vboxVMDataMediator.getVMData(vmid);
+						var vm = vcube.storemanager.getStoreRecordData('vm',vmid);
 						vboxAlert(vcube.utils.trans("<p>Could not insert the VirtualBox Guest Additions " +
 				                "installer CD image into the virtual machine <b>%1</b>, as the machine " +
 				                "has no CD/DVD-ROM drives. Please add a drive using the " +

@@ -77,7 +77,7 @@ Ext.define('vcube.controller.NavTree', {
 		var targetGroup = this.navTreeStore.getNodeById('vmgroup-' + eventData.group);
 		
 		// TODO add group id to vm store
-		if(!targetGroup || (eventData.group == targetGroup.raw.data.group_id)) return;
+		if(!targetGroup || (eventData.group == targetGroup.get('group_id'))) return;
 		
 		targetGroup.appendChild(targetVM.remove(false));
 		
@@ -129,22 +129,21 @@ Ext.define('vcube.controller.NavTree', {
 			leaf : true,
 			allowDrag: false,
 			allowDrop: false,
-			
 			rawid : data.id,
 			type : 'server',
 			id : 'server-' + data.id
-		},vcube.view.NavTree.serverNodeConfig);
+		},vcube.view.NavTree.serverNodeConfig(data));
 		
 	},
 	
 	createVMNodeConfig : function(data) {
 
 		return Ext.apply({
-			id: 'vm'-data.id,
+			id: data.id,
 			rawid: data.id,
 			type: 'vm',
 			leaf: true
-		},vcube.view.NavTree.vmNodeConfig);
+		},vcube.view.NavTree.vmNodeConfig(data));
 	},
 	
 	createGroupNodeConfig: function(data) {
@@ -155,7 +154,7 @@ Ext.define('vcube.controller.NavTree', {
 			id : 'vmgroup-' + data.id,
 			type: 'vmgroup',
 			rawid: data.id
-		},vcube.view.NavTree.vmGroupNodeConfig);
+		},vcube.view.NavTree.vmGroupNodeConfig(data));
 
 	},
 	
@@ -196,6 +195,27 @@ Ext.define('vcube.controller.NavTree', {
 	},
 
 
+	/** 
+	 * Records added to managed store
+	 */
+	onStoreRecordsAdded: function(store, records, index, eOpts) {
+		
+	},
+	
+	/**
+	 * Records removed from managed store
+	 */
+	onStoreRecordsRemoved: function(store, records, indexes, isMove, eOpts) {
+		
+	},
+	
+	/**
+	 * Record in store updated
+	 */
+	onStoreRecordUpdated: function( store, record, operation, modifiedFieldNames, eOpts ) {
+		if(operation != Ext.data.Model.EDIT) return;
+	},
+	
 	/* Populate navigation tree */
 	populateTree : function() {
 
@@ -216,7 +236,7 @@ Ext.define('vcube.controller.NavTree', {
 			allowDrag: false,
 			allowDrop: false,
 			type: 'serversFolder'
-		}, vcube.view.NavTree.serversNodeConfig));
+		}, vcube.view.NavTree.serversNodeConfig()));
 		
 		this.rootNode.appendChild(this.serversNode);
 
@@ -227,7 +247,7 @@ Ext.define('vcube.controller.NavTree', {
 			allowDrag: false,
 			type: 'vmsFolder',
 			rawid: 'vmgroup-0'
-		}, vcube.view.NavTree.vmsNodeConfig));
+		}, vcube.view.NavTree.vmsNodeConfig()));
 		
 		this.rootNode.appendChild(this.vmsNode);
 
@@ -242,35 +262,38 @@ Ext.define('vcube.controller.NavTree', {
 		
 		// Servers
 		vcube.storemanager.getStore('server').each(function(record) {
-			self.addServer(record.raw);
+			self.addServer(record.getData());
 		});
 		
 		this.serversNode.expand();
 
-		vcube.storemanager.getStore('server').on('add', this.onStoreRecordAdded, this, {type:'server'});
-		vcube.storemanager.getStore('server').on('remove', this.onStoreRecordRemoved, this, {type:'server'});
+		vcube.storemanager.getStore('server').on('add', this.onStoreRecordsAdded, this, {type:'server'});
+		vcube.storemanager.getStore('server').on('bulkremove', this.onStoreRecordsRemoved, this, {type:'server'});
 		vcube.storemanager.getStore('server').on('update', this.onStoreRecordUpdated, this, {type:'server'});
 		
 		// VM Groups
 		vcube.storemanager.getStore('vmgroup').each(function(record) {
-			self.addGroup(record.raw);
+			self.addGroup(record.getData());
 		});
 		
 		this.vmsNode.expand();
 
-		vcube.storemanager.getStore('vmgroup').on('add', this.onStoreRecordAdded, this, {type:'vmgroup'});
-		vcube.storemanager.getStore('vmgroup').on('remove', this.onStoreRecordRemoved, this, {type:'vmgroup'});
+		vcube.storemanager.getStore('vmgroup').on('add', this.onStoreRecordsAdded, this, {type:'vmgroup'});
+		vcube.storemanager.getStore('vmgroup').on('bulkremove', this.onStoreRecordsRemoved, this, {type:'vmgroup'});
 		vcube.storemanager.getStore('vmgroup').on('update', this.onStoreRecordUpdated, this, {type:'vmgroup'});
 
 		// VMs
 		vcube.storemanager.getStore('vm').each(function(record) {
-			self.addVM(record.raw);
+			self.addVM(record.getData());
 		});
 		
-		vcube.storemanager.getStore('vm').on('add', this.onStoreRecordAdded, this, {type:'vm'});
-		vcube.storemanager.getStore('vm').on('remove', this.onStoreRecordRemoved, this, {type:'vm'});
+		vcube.storemanager.getStore('vm').on('add', this.onStoreRecordsAdded, this, {type:'vm'});
+		vcube.storemanager.getStore('vm').on('bulkremove', this.onStoreRecordsRemoved, this, {type:'vm'});
 		vcube.storemanager.getStore('vm').on('update', this.onStoreRecordUpdated, this, {type:'vm'});
 		
 		
+		// Hide load mask
+		this.navTreeView.setLoading(false);
+
 	}
 });

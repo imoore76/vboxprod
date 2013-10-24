@@ -110,14 +110,14 @@ Ext.define('vcube.controller.XInfoTab', {
     /* Run when record has changed */
     onRecordChanged: function(store, record) {
 
-    	if(this.selectionItemId != record.get('id'))
+    	if(this.selectionItemId != record.get('rid'))
     		return;
 
     	var inf = this.getInfoPane();
     	
     	if(!inf) return;
     	
-    	inf.update(record.raw);
+    	inf.update(record.getData());
     	
     },
     
@@ -126,7 +126,7 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     	if(!this.dirty) return;
     	
-    	this.populate(vcube.storemanager.getStoreRecordRaw(this.selectionItemType, this.selectionItemId));
+    	this.populate(vcube.storemanager.getStoreRecordData(this.selectionItemType, this.selectionItemId));
     	
     },
 
@@ -144,7 +144,7 @@ Ext.define('vcube.controller.XInfoTab', {
     		this.selectionItemId = records[0].get('rawid');
     		
     		// Populate
-    		this.populate(vcube.storemanager.getStoreRecordRaw(this.selectionItemType,
+    		this.populate(vcube.storemanager.getStoreRecordData(this.selectionItemType,
     				this.selectionItemId));
 
     	} else {
@@ -177,7 +177,7 @@ Ext.define('vcube.controller.XInfoTab', {
     	var self = this;
 
     	var sectionsPane = this.getSectionsPane();
-    	var recordData = vcube.storemanager.getStoreRecordRaw(this.selectionItemType, this.selectionItemId);
+    	var recordData = vcube.storemanager.getStoreRecordData(this.selectionItemType, this.selectionItemId);
     	
     	// Notify sections of event
     	if(notifySections.length) {
@@ -253,7 +253,7 @@ Ext.define('vcube.controller.XInfoTab', {
 
     	if(!this.filterEvent(event)) return;
     	
-    	this.populate(vcube.storemanager.getStoreRecordRaw(this.selectionItemType, this.selectionItemId));
+    	this.populate(vcube.storemanager.getStoreRecordData(this.selectionItemType, this.selectionItemId));
 
     	
     },
@@ -350,8 +350,6 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     	Ext.ux.Deferred.when(this.populateData(recordData)).done(function(data) {
     	
-    		// Remove loading mask
-    		self.controlledTabView.setLoading(false);
     		
     		if(!self.controlledTabView.isVisible()) return;
 
@@ -365,14 +363,17 @@ Ext.define('vcube.controller.XInfoTab', {
     		// draw sections with data
     		self.drawSections.apply(self, [data, recordData]);
 
+    		// Remove loading mask
+    		self.controlledTabView.setLoading(false);
+
     		// batch of updates are over
     		Ext.resumeLayouts(true);
 
 
-    	}).fail(function() {
+    	}).always(function() {
     		
-    		// batch of updates are over
-    		Ext.resumeLayouts(true);
+    		// No longer loading
+    		self.controlledTabView.setLoading(false);
     		
     	});
     }

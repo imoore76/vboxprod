@@ -58,7 +58,7 @@ Ext.define('vcube.controller.ServerConnector', {
     			/* Set values when window is shown */
     			show: function(pane) {
     				
-    				var connectorData = vcube.storemanager.getStoreRecordRaw('server',this.selectionNodeId);
+    				var connectorData = vcube.storemanager.getStoreRecordData('server',this.selectionNodeId);
     				pane.down('#form').getForm().setValues(
 						Ext.Object.merge({},connectorData,{
 							state: (connectorData.state > vcube.app.constants.CONNECTOR_STATES['DISABLED'] ? vcube.app.constants.CONNECTOR_STATES['DISCONNECTED'] : connectorData.state)  

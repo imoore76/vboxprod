@@ -86,7 +86,7 @@ Ext.define('vcube.widget.PreviewBox',{
 			}
 			
 			// Get fresh VM data
-			var vm = vcube.vmdatamediator.getVMData(vmid);
+			var vm = vcube.storemanager.getStoreRecordData('vm',vmid);
 			
 			// Return if this is stale
 			if(!vm) {

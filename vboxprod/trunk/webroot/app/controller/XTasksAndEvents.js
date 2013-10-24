@@ -55,7 +55,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     		values.connector = Ext.String.htmlEncode(vcube.app.serverStore.getById(values.connector).get('name'));    		
     	} catch(err) {}
     	try {
-    		values.machine = vcube.vmdatamediator.getVMData(values.machine).name;
+    		values.machine = vcube.storemanager.getStoreRecordData('vm',values.machine).name;
     	} catch(err) {}
     	values.category = vcube.app.constants.LOG_CATEGORY_TEXT[values.category];
     	values.status = vcube.app.constants.TASK_STATUS_TEXT[values.status];
@@ -80,7 +80,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     		values.connector = Ext.String.htmlEncode(vcube.app.serverStore.getById(values.connector).get('name'));    		
     	} catch(err) {}
     	try {
-    		values.machine = vcube.vmdatamediator.getVMData(values.machine).name;
+    		values.machine = vcube.storemanager.getStoreRecordData('vm',values.machine).name;
     	} catch(err) {}
     	values.category = vcube.app.constants.LOG_CATEGORY_TEXT[values.category];
     	values.severity = vcube.app.constants.SEVERITY_TEXT[values.severity];

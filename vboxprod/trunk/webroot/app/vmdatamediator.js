@@ -44,7 +44,6 @@ Ext.define('vcube.vmdatamediator', {
 			if(typeof(i) != 'string') continue;
 			vcube.vmdatamediator.promises[i] = {};
 		}
-		vcube.vmdatamediator.vmData = null;
 		vcube.vmdatamediator.vmRuntimeData = {};
 		vcube.vmdatamediator.vmDetailsData = {};
 	},
@@ -67,7 +66,6 @@ Ext.define('vcube.vmdatamediator', {
 			return;
 		}
 		
-		return vcube.vmdatamediator.vmData[vmid];
 		
 	},
 	
@@ -247,10 +245,12 @@ Ext.define('vcube.vmdatamediator', {
 	 */
 	getVMDetails: function(vmid, forceRefresh) {
 		
+		var vmData = vcube.storemanager.getStoreRecordData('vm', vmid);
+		
 		// Data exists
 		if(vcube.vmdatamediator.vmDetailsData[vmid] && !forceRefresh) {
 			vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
-			return Ext.Object.merge({},vcube.vmdatamediator.vmDetailsData[vmid], vcube.vmdatamediator.vmData[vmid]);
+			return Ext.Object.merge({},vcube.vmdatamediator.vmDetailsData[vmid], vmData);
 		}
 		
 		// Promise does not yet exist?
@@ -316,15 +316,14 @@ Ext.define('vcube.vmdatamediator', {
 	 */
 	getVMDataCombined : function(vmid) {
 				
-		if(!vcube.vmdatamediator.vmData[vmid]) return;
-		
 		var runtime = function() { return {};};
-		if(vcube.utils.vboxVMStates.isRunning({'state':vcube.vmdatamediator.vmData[vmid].state}) || vcube.utils.vboxVMStates.isPaused({'state':vcube.vmdatamediator.vmData[vmid].state})) {
+		var vmData = vcube.storemanager.getStoreRecordData('vm',vmid);
+		if(vcube.utils.vboxVMStates.isRunning(vmData) || vcube.utils.vboxVMStates.isPaused(vmData)) {
 			runtime = vcube.vmdatamediator.getVMRuntimeData(vmid);
 		}
 		
 		var def = Ext.create('Ext.ux.Deferred');
-		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vcube.vmdatamediator.getVMData(vmid)).done(function(d1,d2,d3){
+		Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmid), runtime, vmData).done(function(d1,d2,d3){
 			def.resolve(Ext.Object.merge({},d1,d2,d3));
 		}).fail(function(){
 			def.reject('getVMDetails, runtime or getVMData failed');

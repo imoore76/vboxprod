@@ -25,7 +25,7 @@ Ext.define('vcube.actions.snapshots',{
 	  			var ssName = vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1', ssNumber);
 	  			
 	  			while(rootNode.findChildBy(function(node){
-	  				return (node.raw.name == ssName);
+	  				return (node.get('name') == ssName);
 	  				},this,true)) {
 	  				
 	  				ssName = vcube.utils.trans('Snapshot %1','VBoxSnapshotsWgt').replace('%1', ++ssNumber);

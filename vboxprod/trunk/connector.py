@@ -81,6 +81,8 @@ def _machineGetBaseInfo(machine):
             'currentStateModified': machine.currentStateModified,
             'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
             'CPUCount' : machine.CPUCount,
+            'CPUExecutionCap' : machine.CPUExecutionCap,
+            'description' : machine.description,
             'memorySize' : machine.memorySize,
             'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
             'accessible' : True
@@ -113,6 +115,8 @@ def _machineGetBaseInfo(machine):
             'currentStateModified': True,
             'icon' : '',
             'memorySize': 0,
+            'CPUExecutionCap' : 0,
+            'description' : '',
             'accessible' : False,
             'CPUCount' : 0,
             'currentSnapshotName' : '',

@@ -16,14 +16,17 @@ Ext.define('vcube.controller.VMSummary', {
     	this.selectionItemType = 'vm';
     	
     	/* Repopulate on Events*/
-    	this.repopulateOn = ['MachineDataChanged','MachineIconChanged'];
+    	this.repopulateOn = [];
+    	
+    	/* Redraw / get when record changes */
+    	this.updateInfoOnRecordChange = true;
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'machineId';
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
-        	return vcube.vmdatamediator.getVMDataCombined(data.id);
+        	return vcube.storemanager.getStoreRecordData('vm',data.id);
         };
         
     	
@@ -72,28 +75,19 @@ Ext.define('vcube.controller.VMSummary', {
     				
     				
     				/* Load data */
-    				win.setLoading(true);
+    				var data = vcube.storemanager.getStoreRecordData('vm', this.selectionItemId);
 
-    				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDataCombined(this.selectionItemId)).done(function(data){
+					if(!vcube.utils.vboxVMStates.isEditable(data)) {
+						win.down('#vmname').disable();
+					}
+
+					win.down('#form').getForm().setValues({
+						id: data.id,
+						icon: data.icon,
+						description: data.description,
+						name: data.name
+					});
     					
-    					win.setLoading(false);
-
-    					if(!vcube.utils.vboxVMStates.isEditable(data)) {
-    						win.down('#vmname').disable();
-    					}
-
-    					win.down('#form').getForm().setValues({
-    						id: data.id,
-    						icon: data.icon,
-    						description: data.description,
-    						name: data.name
-    					});
-    					
-    				
-    				}).fail(function(){
-    					win.setLoading(false);
-    				});
-    				
     			},
     			scope: this
     		}
@@ -126,7 +120,7 @@ Ext.define('vcube.controller.VMSummary', {
 
 		
 		// Draw preview and resize panel
-		vcube.previewbox.drawPreview(document.getElementById('vboxPreviewBox'), null, previewWidth, height);
+		//vcube.previewbox.drawPreview(document.getElementById('vboxPreviewBox'), null, previewWidth, height);
 		
 		
 		var __vboxDrawPreviewImg = new Image();			
@@ -166,7 +160,7 @@ Ext.define('vcube.controller.VMSummary', {
 			}
 			
 			// Get fresh VM data
-			var vm = vcube.vmdatamediator.getVMData(vmid);
+			var vm = vcube.storemanager.getStoreRecordData('vm',vmid);
 			
 			// Return if this is stale
 			if(!vm) {
@@ -177,13 +171,13 @@ Ext.define('vcube.controller.VMSummary', {
 			}
 			
 			// Canvas redraw
-			vcube.previewbox.drawPreview(document.getElementById('vboxPreviewBox'), (this.height <= 1 ? null : this), width, height);
+			//vcube.previewbox.drawPreview(document.getElementById('vboxPreviewBox'), (this.height <= 1 ? null : this), width, height);
 			
 			self.controlledTabView.down('#PreviewPanel').doLayout();
 		
 		};
 
-		if(data.accessible) {
+		if(data.state == 'Inaccessible') {
 			
 			// Update disabled? State not Running or Saved
 			if(!previewUpdateInterval || (!vcube.utils.vboxVMStates.isRunning(data) && !vcube.utils.vboxVMStates.isSaved(data))) {

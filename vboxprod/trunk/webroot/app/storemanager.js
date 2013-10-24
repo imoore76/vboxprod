@@ -20,18 +20,13 @@ Ext.define('vcube.storemanager',{
 		      {name: 'OSTypeId', type: 'string'},
 		      {name: 'lastStateChange', type: 'int'},
 		      {name: 'connector_id', type: 'int'},
+		      {name: 'accessible', type: 'boolean'},
 		      {name: 'icon', type: 'string'},
 		      {name: 'group_id', type: 'int'},
 		      {name: 'CPUCount', type: 'int'},
+		      {name: 'CPUExecutionCap', type: 'int'},
 		      {name: 'memorySize', type: 'int'}
-		],
-		proxy: {
-			type: 'vcubeAjax',
-			url: 'app/getVirtualMachines',
-	    	reader: {
-	    		type: 'vcubeJsonReader'
-	    	}
-		}
+		]
 	}),
 
 
@@ -42,18 +37,11 @@ Ext.define('vcube.storemanager',{
 		extend: 'Ext.data.Store',
 		autoload: false,
 		fields : [
-		      {name: 'id', type: 'int'},
+		      {name: 'id', type: 'string'},
 		      {name: 'name', type: 'string'},
 		      {name: 'description', type: 'string'},
 		      {name: 'parent_id', type: 'int'}
-		],
-		proxy: {
-			type: 'vcubeAjax',
-			url: 'vmgroups/getGroups',
-	    	reader: {
-	    		type: 'vcubeJsonReader'
-	    	}
-		}
+		]
 	}),
 
 
@@ -63,20 +51,13 @@ Ext.define('vcube.storemanager',{
 	serverStore: Ext.create('Ext.data.Store',{
 		autoload: false,
 		fields : [
-		   {name: 'id', type: 'int'},
+		   {name: 'id', type: 'string'},
 		   {name: 'name', type: 'string'},
 		   {name: 'description', type: 'string'},
 		   {name: 'location', type: 'string'},
 		   {name: 'state_text', type: 'string'},
 		   {name: 'state', type: 'int'}
-		],
-		proxy: {
-			type: 'vcubeAjax',
-			url: 'connectors/getConnectors',
-	    	reader: {
-	    		type: 'vcubeJsonReader'
-	    	}
-		}
+		]
 	}),
 
 	/**
@@ -100,7 +81,7 @@ Ext.define('vcube.storemanager',{
 	 * Update store if record exists
 	 */
 	updateStoreRecord: function(type, id, updates) {
-		return vcube.storemanager.getStore(type).getById(id).update(updates);
+		vcube.storemanager.getStore(type).getById(id).set(updates);
 	},
 	
 	/**
@@ -113,8 +94,8 @@ Ext.define('vcube.storemanager',{
 	/**
 	 * Get raw record data
 	 */
-	getStoreRecordRaw: function(type, id) {
-		return vcube.storemanager.getStore(type).getById(id).raw;
+	getStoreRecordData: function(type, id) {
+		return vcube.storemanager.getStore(type).getById(id).getData();
 	},
 	
 	/* Watch for "raw" events */
@@ -243,18 +224,30 @@ Ext.define('vcube.storemanager',{
 			}
 		}
 		
-		vcube.storemanager.vmStore.load({callback:function(r,o,success) {
-			if(success) loaded();
-		}});
-		vcube.storemanager.vmGroupStore.load({callback:function(r,o,success) {
-			if(success) loaded();
-		}});
-		vcube.storemanager.serverStore.load({callback:function(r,o,success) {
-			if(success) loaded();
-		}});
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('app/getVirtualMachines')).done(function(data) {
+			vcube.storemanager.vmStore.loadData(data);
+			loaded();
+		});
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vmgroups/getGroups')).done(function(data) {
+			vcube.storemanager.vmGroupStore.loadData(data);
+			loaded();
+		});
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/getConnectors')).done(function(data) {
+			vcube.storemanager.serverStore.loadData(data);
+			loaded();
+		});
 		
 		return promise;
 
+	},
+	
+	/**
+	 * "Called when application stops"
+	 */
+	stop: function() {
+		vcube.storemanager.vmStore.removeAll();
+		vcube.storemanager.vmGroupStore.removeAll();
+		vcube.storemanager.serverStore.removeAll();
 	}
 
 });

@@ -46,7 +46,7 @@ Ext.define('vcube.utils', {
 	vmAjaxParams: function(vmid) {
 		return {
 			'vm': vmid,
-			'connector': vcube.vmdatamediator.getVMData(vmid).connector_id
+			'connector': vcube.storemanager.getStoreRecordData('vm',vmid).connector_id
 		}
 	},
 	
@@ -56,7 +56,7 @@ Ext.define('vcube.utils', {
 		var vmList = [];
 		Ext.each(selectionModel.getSelection(), function(record) {
 			try {
-				vmList.push(vcube.vmdatamediator.getVMData(record.get('id')));
+				vmList.push(vcube.storemanager.getStoreRecordData('vm',record.get('id')));
 			} catch (err) {
 				// Nothing
 			}
@@ -802,7 +802,7 @@ Ext.define('vcube.utils', {
 			
 			for(var i = 0; i < vmlist.length; i++) {
 				for(var a = 0; a < states.length; a++) {
-					if(vcube.utils.vboxVMStates['is'+(states[a])](vcube.vmdatamediator.getVMData(vmlist[i].get('id'))))
+					if(vcube.utils.vboxVMStates['is'+(states[a])](vcube.storemanager.getStoreRecordData('vm',vmlist[i].get('id'))))
 						return true;					
 				}
 			}

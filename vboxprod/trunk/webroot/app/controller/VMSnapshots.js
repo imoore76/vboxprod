@@ -132,8 +132,8 @@ Ext.define('vcube.controller.VMSnapshots', {
     		return;
 
     	vcube.actions.snapshots[btn.itemId].action(
-    			this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw,
-    			vcube.vmdatamediator.getVMData(this.selectionItemId),
+    			this.snapshotTree.getView().getSelectionModel().getSelection()[0].getData(),
+    			vcube.storemanager.getStoreRecordData('vm',this.selectionItemId),
     			this.snapshotTree.getRootNode());
     },
     
@@ -145,10 +145,10 @@ Ext.define('vcube.controller.VMSnapshots', {
     	// Snapshot data
     	var ss = null;
     	if(this.snapshotTree.getView().getSelectionModel().selected.length)
-    		ss = this.snapshotTree.getView().getSelectionModel().getSelection()[0].raw;
+    		ss = this.snapshotTree.getView().getSelectionModel().getSelection()[0].getData();
     	
     	// vm data
-    	var vm = vcube.vmdatamediator.getVMData(this.selectionItemId);
+    	var vm = vcube.storemanager.getStoreRecordData('vm',this.selectionItemId);
 
 
     	Ext.each(vcube.actionpool.getActions('snapshots'), function(action) {
@@ -237,12 +237,12 @@ Ext.define('vcube.controller.VMSnapshots', {
     	            	if(record.get('id') =='current') {
 
     	            		tip.update(vcube.view.VMSnapshots.currentStateTip(
-    	            				Ext.Object.merge({'snapshotCount':(snapshotTreeView.getStore().getCount()-1)},vcube.vmdatamediator.getVMData(self.selectionItemId), record.raw)
+    	            				Ext.Object.merge({'snapshotCount':(snapshotTreeView.getStore().getCount()-1)},vcube.storemanager.getStoreRecordData('vm',self.selectionItemId), record.getData())
     	            				));
     	            		
     	            	} else {
     	            		
-    	            		tip.update(vcube.view.VMSnapshots.snapshotTip(record.raw));
+    	            		tip.update(vcube.view.VMSnapshots.snapshotTip(record.getData()));
     	            	}
     	            	
     	            }
@@ -258,7 +258,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     	
     	if(!this.filterEvent(event)) return;
     	
-    	var nodeCfg = vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({currentStateModified:true},vcube.vmdatamediator.getVMData(this.selectionItemId)));
+    	var nodeCfg = vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({currentStateModified:true},vcube.storemanager.getStoreRecordData('vm',this.selectionItemId)));
     	this.snapshotTreeStore.getNodeById('current').set(nodeCfg);
     },
     
@@ -306,12 +306,12 @@ Ext.define('vcube.controller.VMSnapshots', {
     	currentTime = Math.floor(currentTime.getTime() / 1000);
 
     	targetNode.set({
-    		'text' : vcube.controller.VMSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.raw.timeStamp, currentTime),
+    		'text' : vcube.controller.VMSnapshots.nodeTitleWithTimeString(event.enrichmentData.name, targetNode.getData().timeStamp, currentTime),
     		'name': event.enrichmentData.name,
     		'description': event.enrichmentData.description
     	});
     	
-    	Ext.apply(targetNode.raw,{name: event.enrichmentData.name, description: event.enrichmentData.description});
+    	Ext.apply(targetNode.getData(),{name: event.enrichmentData.name, description: event.enrichmentData.description});
     	
     	
     },
@@ -374,17 +374,17 @@ Ext.define('vcube.controller.VMSnapshots', {
     		
     		Ext.each(node.childNodes, function(childNode) {
     			
-    			if(childNode.raw.id == 'current') return;
+    			if(childNode.get('id') == 'current') return;
 
 
-    			if(!childNode.raw._skipTS) {
+    			if(!childNode.get('_skipTS')) {
     				
-    				minTs = Math.min(minTs,Math.max(parseInt(childNode.raw.timeStamp), 1));
+    				minTs = Math.min(minTs,Math.max(parseInt(childNode.get('timeStamp')), 1));
     				
-    				childNode.set('text', vcube.controller.VMSnapshots.nodeTitleWithTimeString(childNode.raw.name, childNode.raw.timeStamp, currentTime));
+    				childNode.set('text', vcube.controller.VMSnapshots.nodeTitleWithTimeString(childNode.get('name'), childNode.get('timeStamp'), currentTime));
     				
-    				if(currentTime - childNode.raw.timeStamp > vcube.controller.VMSnapshots.maxAge)
-    					childNode.raw._skipTS = true;
+    				if(currentTime - childNode.get('timeStamp') > vcube.controller.VMSnapshots.maxAge)
+    					childNode.set('_skipTS',true);
     			}
     			
     			updateChildren(childNode);
@@ -464,7 +464,7 @@ Ext.define('vcube.controller.VMSnapshots', {
 	    		
 	    		appendTarget.appendChild(
 					appendTarget.createNode(
-						vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({},vcube.vmdatamediator.getVMData(recordData.id), {currentSnapshotId: responseData.currentSnapshotId, currentStateModified: responseData.currentStateModified}))
+						vcube.view.VMSnapshots.currentStateNode(Ext.Object.merge({},vcube.storemanager.getStoreRecordData('vm',recordData.id), {currentSnapshotId: responseData.currentSnapshotId, currentStateModified: responseData.currentStateModified}))
 					)
 	    		);
 	    		appendTarget.expand();

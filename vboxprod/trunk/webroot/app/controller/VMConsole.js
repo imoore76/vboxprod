@@ -47,7 +47,7 @@ Ext.define('vcube.controller.VMConsole', {
     	if(!record || record.get('type') != 'vm')
     		return;
 
-    	if(!vcube.utils.vboxVMStates.isRunning(vcube.storemanager.getStoreRecordRaw('vm', record.get('rawid')))) {
+    	if(!vcube.utils.vboxVMStates.isRunning(vcube.storemanager.getStoreRecordData('vm', record.get('rawid')))) {
     		this.getVMConsoleView().disable();
     	} else {
     		this.getVMConsoleView().enable();

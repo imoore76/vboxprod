@@ -61,7 +61,7 @@ Ext.define('vcube.controller.MainPanel', {
 
     	}
     	
-    	switch(recrod.get('type')) {
+    	switch(record.get('type')) {
 
     		case 'vm':
 	    		if(vmTabs.isVisible()) return;

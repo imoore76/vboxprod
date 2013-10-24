@@ -99,7 +99,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	
     	if(!Ext.Array.contains(this.vmList, eventData.machineId)) return;
     	    	
-    	this.vmStore.getById(eventData.machineId).set(vcube.vmdatamediator.getVMData(eventData.machineId));
+    	this.vmStore.getById(eventData.machineId).set(vcube.storemanager.getStoreRecordData('vm',eventData.machineId));
     	
     },
 

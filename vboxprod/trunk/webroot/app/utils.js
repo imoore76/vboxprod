@@ -81,6 +81,27 @@ Ext.define('vcube.utils', {
 	},
 	
 	/**
+	 * Perform function on each selected VM
+	 */
+	eachSelectedVM: function(selectionModel, fn) {
+		
+		Ext.each(vcube.utils.getSelectedVMsData(selectionModel), fn);
+	},
+	
+	/**
+	 * Get selected VM names in states
+	 */
+	getSelectedVMsInStates: function(selectionModel, states, field) {
+		
+		var vmList = [];
+		vcube.utils.eachSelectedVM(selectionModel, function(vm) {
+			if(vcube.utils.vboxVMStates.is(states, vm)) vmList.push((field ? vm[field] : vm));
+		});
+		return vmList;
+		
+	},
+	
+	/**
 	 * Send ajax request
 	 */
     ajaxRequest: function(ajaxURL, addparams, options) {
@@ -821,6 +842,15 @@ Ext.define('vcube.utils', {
 					if(vcube.utils.vboxVMStates['is'+(states[a])](vcube.storemanager.getStoreRecordData('vm',vmlist[i].get('id'))))
 						return true;					
 				}
+			}
+			return false;
+		},
+		
+		/* True if vm is in states list */
+		is: function(states, vm) {
+			for(var i = 0; i < states.length; i++) {
+				if(vcube.utils.vboxVMStates['is'+(states[i])](vm))
+					return true;
 			}
 			return false;
 		},

@@ -462,13 +462,17 @@ Ext.define('vcube.actions.machine',{
 												
 												panel.setLoading(false);
 											});
+										},
+									
+										afterrender: function(panel) {
+											if(panel._vcubePanelIndex == 0) panel.fireEvent('show',panel);
 										}
+										
 									}
 								});
 							}
 							
-							var firstTab = win.down('#loglist').add(tabList)[0];
-							firstTab.fireEvent('show', firstTab);
+							win.add({xtype:'tabpanel','itemId':'loglist', items: tabList});
 							
 						}
 						win.setLoading(false);

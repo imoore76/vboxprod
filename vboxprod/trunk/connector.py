@@ -4212,20 +4212,12 @@ class vboxConnector(object):
         """ @m IMachine """
         m = self.vbox.findMachine(args['vm'])
         log = ''
-        try:
-            # Read in 8k chunks
-            while True:
-                l = m.readLog(int(args['log']),len(log),8192)
-                if not l or not len(l): break
-                log = log + l
-            
-        except Exception as ex:
-            self.errors.append((ex,traceback.format_exc()))
 
-        # Attempt to UTF-8 encode string or json_encode may choke
-        # and return an empty string
-        #if function_exists('utf8_encode'):
-        #    return utf8_encode(log)
+        # Read in 8k chunks
+        while True:
+            l = m.readLog(int(args['log']),len(log),8192)
+            if not l or not len(l): break
+            log = log + str(l)
         
         return unicode(log, "utf-8")
 

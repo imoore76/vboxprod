@@ -6,6 +6,19 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
+	 * Return base name of path
+	 */
+	 basename: function(p) {
+		var DSEP = '/';
+		if(p.indexOf('\\') > -1) DSEP = '\\'; 
+		var pos = p.lastIndexOf(DSEP); //TODO $('#vboxPane').data('vboxConfig').DSEP);
+		if(pos > -1) {
+			return p.substring((pos+1));
+		}
+		return p;
+	 },
+	 
+	/**
 	 * Convert action item configuration to menu item
 	 */
 	actionToMenuItemConfig: function(actionType, item) {
@@ -43,11 +56,14 @@ Ext.define('vcube.utils', {
 	},
 	
 	/* Return ajax parameters that specify a VM */
-	vmAjaxParams: function(vmid) {
-		return {
-			'vm': vmid,
-			'connector': vcube.storemanager.getStoreRecordData('vm',vmid).connector_id
-		}
+	vmAjaxParams: function(vm) {
+		return (Ext.isString(vm) ? {
+			'vm': vm,
+			'connector': vcube.storemanager.getStoreRecord('vm',vm).get('connector_id')
+		} : {
+			'vm': vm.id,
+			'connector': vm.connector_id
+		});
 	},
 	
 	/* Return selected VMs' data */
@@ -1232,6 +1248,5 @@ Ext.define('vcube.utils', {
 	        ++ia; ++ib;
 	    }
 	}
-
-
+	
 });

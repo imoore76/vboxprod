@@ -350,7 +350,7 @@ Ext.define('vcube.actions.machine',{
 								if(d.responseData.error.err != 'VBOX_E_NOT_SUPPORTED') {
 									vboxAlert({'error':vcube.utils.trans('Failed to update Guest Additions. The Guest Additions installation image will be mounted to provide a manual installation.','UIMessageCenter'),'details':d.responseData.error.err+"\n"+d.responseData.error.message});
 								}
-								vcube.actions.machine['guestAdditionsInstall'].click(vmid, true);
+								vcube.actions.machine['guestAdditionsInstall'].action(vmid, true);
 								return;
 							}
 						},'progress_install_guest_additions_90px.png',vcube.utils.trans('Install Guest Additions...','UIActionPool').replace(/\./g,''));
@@ -404,8 +404,83 @@ Ext.define('vcube.actions.machine',{
 	    
 	    /** Show VM Logs */
 	    logs: {
-			action:function(selectionModel){
-	    		vboxShowLogsDialogInit(vboxChooser.getSingleSelected());
+			action: function(selectionModel){
+			
+				var vm = vcube.utils.getSelectedVMsData(selectionModel)[0];
+
+				// Create window
+				var win = Ext.create('vcube.view.common.VMLogs');
+				win.setTitle(win.titleTpl.apply([vm.name]));
+				
+				/**
+				 * Populate log list
+				 */
+				function populate() {
+					
+					win.setLoading(true);
+					
+					var logList = win.down('#loglist');
+					if(logList) win.remove(logList, true);
+					
+					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetLogFilesList',vcube.utils.vmAjaxParams(vm))).done(function(data) {
+						
+						if(data.logs.length == 0) {
+							
+							win.add({'html':vcube.utils.trans('<p>No log files found. Press the <b>Refresh</b> button to rescan the log folder <nobr><b>%1</b></nobr>.</p>','UIVMLogViewer')
+								.replace('%1',data.path)});
+					
+						} else {
+							
+							win.add({xtype:'tabpanel','itemId':'loglist'});
+							
+							var tabList = [];
+							
+							for(var i = 0; i < data.logs.length; i++) {
+								
+								tabList.push({
+									
+									_vcubePanelIndex: i,
+									
+									title: vcube.utils.basename(data.logs[i]),
+									layout: 'fit',
+									defaults: { xtype: 'textareafield'},
+									listeners: {
+										
+										show: function(panel) {
+											
+											if(panel._loaded) return;
+											
+											panel.setLoading(true);
+											
+											var panelIndex = panel.initialConfig._vcubePanelIndex;
+											
+											Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineGetLogFile',Ext.apply({log:panelIndex},vcube.utils.vmAjaxParams(vm)))).done(function(log) {
+											
+												panel._loaded = true;
+												
+												panel.add({value:log});
+												
+												panel.setLoading(false);
+											});
+										}
+									}
+								});
+							}
+							
+							var firstTab = win.down('#loglist').add(tabList)[0];
+							firstTab.fireEvent('show', firstTab);
+							
+						}
+						win.setLoading(false);
+					});					
+				}
+
+				win.down('#close').on('click',function(){win.close()});
+				win.down('#refresh').on('click',function(){populate()});
+				
+				win.show();
+				populate();
+
 			},
 			enabled_test: function(selectionModel){
 				return (selectionModel.selected.length == 1);

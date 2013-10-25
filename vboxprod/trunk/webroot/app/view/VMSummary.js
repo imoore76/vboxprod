@@ -3,10 +3,6 @@
  * 
  */
 
-var previewWidth = 200;
-var previewAspectRatio = 1.6;
-var previewUpdateInterval = 3;
-
 Ext.define('vcube.view.VMSummary', {
     
 	extend: 'Ext.panel.Panel',
@@ -176,13 +172,14 @@ Ext.define('vcube.view.VMSummary', {
     		items: [{
     			title: 'Preview',
     			icon: 'images/vbox/vrdp_16px.png',
-    			itemId: 'PreviewPanel',
+    			itemId: 'PreviewMonitor',
+    			xtype: 'PreviewMonitor',
     			autoWidth: true,
     			autoHeight: true,
     			bodyStyle: {
     			    background: '#fff'
     			},
-    			html: '<div id="vboxPreviewBox" />',
+    			html: '',
     			border: true,
     			margin: '0 20 0 0',
 			},{

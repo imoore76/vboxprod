@@ -123,9 +123,9 @@ Ext.define('vcube.view.common.Login', {
 
     alias: 'widget.Login',
        
-    layout:'fit',
     title: vcube.utils.trans('Log in'),
     icon: 'images/vbox/OSE/about_16px.png',
+    layout:'fit',
     width:300,
     height: 130,
     closable: false,
@@ -164,3 +164,38 @@ Ext.define('vcube.view.common.Login', {
     }]
 
 });
+
+/**
+ * VM Log viewer
+ */
+Ext.define('vcube.view.common.VMLogs',{
+	
+	extend: 'Ext.window.Window',
+	
+	icon: 'images/vbox/vm_show_logs_16px.png',
+	
+	title: 'log viewer',
+	titleTpl: new Ext.XTemplate('{0} - Virtual Machine Log Viewer'),
+	
+	
+    layout:'fit',
+    width:600,
+    height: 450,
+    closable: true,
+    modal: true,
+    resizable: true,
+    plain: true,
+    border: false,
+
+	items: [],
+	
+	buttons: [{
+		text: vcube.utils.trans('Close','UIVMLogViewer'),
+		icon: 'images/vbox/close_16px.png',
+		itemId: 'close'
+	},{
+		text: vcube.utils.trans('Refresh','UIVMLogViewer'),
+		icon: 'images/vbox/refresh_16px.png',
+		itemId: 'refresh'
+	}]
+})

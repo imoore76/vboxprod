@@ -1,70 +1,136 @@
 /*
  * There can be only one instance of this
  */
-Ext.define('vcube.widget.PreviewBox',{
+Ext.define('vcube.widget.PreviewMonitor',{
 
 	extend: 'Ext.panel.Panel',
-	alias: 'widget.PreviewBox',
-	width: 200,
+	alias: 'widget.PreviewMonitor',
 	
 	title: 'Preview',
 	icon: 'images/vbox/vrdp_16px.png',
-	itemId: 'PreviewPanel',
+
 	autoWidth: true,
 	autoHeight: true,
 	bodyStyle: {
 	    background: '#fff'
 	},
 	border: true,
-
-	elementId: null,
 	
+	elementId: 'vcube-widget-previewbox',
+
+	/**
+	 * Apply options and hold ref to component
+	 */
 	constructor: function(options) {
+		
 		Ext.apply(this,options);
-		this.elementId = 'vcube-widget-previewbox-' + Ext.id();
-		this.html = '<div id="' + this.elementId +"' />";
+		
+		vcube.widget.PreviewMonitor.component = this;
+		
+		this.callParent(arguments);
 	},
 	
 
 	/* Hold canvas element after render */
 	listeners: {
 		
-		afterrender: function() {
-
-			vcube.widget.PreviewBox.canvasElement = document.getElementById(this.elementId);
+		afterrender: function(panel) {
 			
-			height = parseInt(vcube.widget.PreviewBox.previewWidth / vcube.widget.PreviewBox.previewAspectRatio);
-
-			vcube.widget.PreviewBox.drawPreview(this.canvasElement, null, vcube.widget.PreviewBox.previewWidth, height);
+			// Create target div and hold ref to it
+			panel.update('<div id="' + panel.elementId +'" />');
+			vcube.widget.PreviewMonitor.targetDiv = document.getElementById(panel.elementId);
+			
+			// Open preview in new window on click
+			Ext.get(panel.elementId).on('click', function() {
+				
+				if(vcube.utils.vboxVMStates.isOneRecord(['Running','Saved'],[vcube.widget.PreviewMonitor.vmrecord]))
+						window.open('vbox/machineGetScreenShot?' + Ext.urlEncode(Ext.apply({full:1},vcube.utils.vmAjaxParams(vcube.widget.PreviewMonitor.vmrecord.getData()))));
+			});
+			
+			// Context menu
+			var menu = Ext.create('Ext.menu.Menu', {
+	    	    renderTo: Ext.getBody(),
+	    	    defaults: {
+	    	    	xtype: 'menucheckitem',
+	    	    	checked: false,
+	    	    	group: 'vcubePreviewUpdateInterval',
+	    	    	checkHandler : function(item, checked) {
+	    	    		if(checked) {
+	    	    			vcube.widget.PreviewMonitor.previewUpdateInterval = item.value;
+	    	    			panel.reconfigure(vcube.widget.PreviewMonitor.vmrecord.get('id'));
+	    	    		}
+	    	    	}
+	    	    },
+	    	    items: [{
+	    	    	text: 'Every 3 seconds',
+	    	    	value: 3,
+	    	    	checked: (vcube.widget.PreviewMonitor.previewUpdateInterval == 3)
+	    	    },{
+	    	    	text: 'Every 5 seconds',
+	    	    	value: 5,
+	    	    	checked: (vcube.widget.PreviewMonitor.previewUpdateInterval == 5)
+	    	    },{
+	    	    	text: 'Every 10 seconds',
+	    	    	value: 10,
+	    	    	checked: (vcube.widget.PreviewMonitor.previewUpdateInterval == 10)
+	    	    },{
+	    	    	text: 'Every 30 seconds',
+	    	    	value: 30,
+	    	    	checked: (vcube.widget.PreviewMonitor.previewUpdateInterval == 30)
+	    	    },{
+	    	    	xtype: 'menuseparator'
+	    	    },{
+	    	    	text: 'Update disabled',
+	    	    	value: 0,
+	    	    	checked: (vcube.widget.PreviewMonitor.previewUpdateInterval == 0)
+	    	    }]
+	    	});
+			
+			Ext.get(panel.elementId).on('contextmenu',function(e) {
+	    		e.stopEvent();
+				menu.showAt(e.getXY());
+	    	});
+			
 		}
 	},
 	
 	/* Configure with VM */
-	reconfigure: function(vm) {
+	reconfigure: function(vmid) {
 		
-		vcube.widget.PreviewBox.vm = vm;
-		vcube.widget.PreviewBox.drawPreview()
+		vcube.widget.PreviewMonitor.vmrecord = vcube.storemanager.getStoreRecord('vm',vmid);
 		
-			/* Preview image from vbox */
-		vboxDrawPreviewImg : new Image(),
-		vboxDrawPreviewImg.onload : function() {
+		// Check for cached resolution
+		if(vcube.widget.PreviewMonitor.resolutionCache[vmid]) {				
+			height = vcube.widget.PreviewMonitor.resolutionCache[vmid].height;
+		} else {
+			height = parseInt(vcube.widget.PreviewMonitor.previewWidth / vcube.widget.PreviewMonitor.previewAspectRatio);
+		}
+
+		vcube.widget.PreviewMonitor.drawPreview(null, vcube.widget.PreviewMonitor.previewWidth, height);
+		
+		this.doLayout();
+
+		
+		/* Preview image from vbox */
+		vboxDrawPreviewImg = new Image();
+		vboxDrawPreviewImg.onload = function() {
 	
-			var width = vcube.widget.PreviewBox.previewWidth;
+			var width = vcube.widget.PreviewMonitor.previewWidth;
 			
-			var vmid = vcube.widget.PreviewBox.vm;
+			var vmid = vcube.widget.PreviewMonitor.vmrecord.get('id');
 			
 			// Set and cache dimensions
 			if(this.height > 0) {
 				
 				// If width != requested width, it is scaled
-				if(this.width != vcube.widget.PreviewBox.previewWidth) {
-					height = this.height * (vcube.widget.PreviewBox.previewWidth / this.width);
+				if(this.width != vcube.widget.PreviewMonitor.previewWidth) {
+					height = this.height * (vcube.widget.PreviewMonitor.previewWidth / this.width);
 				// Not scaled
 				} else {					
 					height = this.height;							
 				}
 	
-				vcube.widget.PreviewBox.resolutionCache[vmid] = {
+				vcube.widget.PreviewMonitor.resolutionCache[vmid] = {
 					'height':height
 				};
 	
@@ -72,59 +138,73 @@ Ext.define('vcube.widget.PreviewBox',{
 			} else {
 				
 				// Check for cached resolution
-				if(vcube.widget.PreviewBox.resolutionCache[vmid]) {				
-					height = vcube.widget.PreviewBox.resolutionCache[vmid].height;
+				if(vcube.widget.PreviewMonitor.resolutionCache[vmid]) {				
+					height = vcube.widget.PreviewMonitor.resolutionCache[vmid].height;
 				} else {
-					height = parseInt(width / vcube.widget.PreviewBox.previewAspectRatio);
+					height = parseInt(width / vcube.widget.PreviewMonitor.previewAspectRatio);
 				}
 				
 				// Clear interval if set
-				var timer = vcube.widget.PreviewBox.previewTimer;
+				var timer = vcube.widget.PreviewMonitor.previewTimer;
 				if(timer) window.clearInterval(timer);
-				vcube.widget.PreviewBox.previewTimer = null;
+				vcube.widget.PreviewMonitor.previewTimer = null;
 				
-			}
-			
-			// Get fresh VM data
-			var vm = vcube.storemanager.getStoreRecordData('vm',vmid);
-			
-			// Return if this is stale
-			if(!vm) {
-				var timer = vcube.widget.PreviewBox.previewTimer;
-				if(timer) window.clearInterval(timer);
-				vcube.widget.PreviewBox.previewTimer = null;
-				return;
 			}
 			
 			// Canvas redraw
-			vcube.previewbox.drawPreview(vcube.widget.PreviewBox.canvasElement, (this.height <= 1 ? null : this), width, height);
+			vcube.widget.PreviewMonitor.drawPreview((this.height <= 1 ? null : this), width, height);
+			vcube.widget.PreviewMonitor.component.doLayout();
 			
 		};
 	
-		if(data.accessible) {
+		// Update disabled? State not Running or Saved
+		if(!vcube.widget.PreviewMonitor.previewUpdateInterval || (!vcube.utils.vboxVMStates.isOneRecord(['Running','Saved'],[vcube.widget.PreviewMonitor.vmrecord]))) {
+
+			vboxDrawPreviewImg.height = 0;
+			vboxDrawPreviewImg.onload();
 			
-			// Update disabled? State not Running or Saved
-			if(!previewUpdateInterval || (!vcube.utils.vboxVMStates.isRunning(data) && !vcube.utils.vboxVMStates.isSaved(data))) {
-				__vboxDrawPreviewImg.height = 0;
-				__vboxDrawPreviewImg.onload();
-			} else {
-				// Running VMs get random numbers.
-				// Saved are based on last state change to try to let the browser cache Saved screen shots
-				var randid = data.lastStateChange;
-				if(vcube.utils.vboxVMStates.isRunning(data)) {
-					var currentTime = new Date();
-					randid = Math.floor(currentTime.getTime() / 1000);
-				}
-				__vboxDrawPreviewImg.src = 'vbox/machineGetScreenShot?width='+previewWidth+'&vm='+vmid+'&randid='+randid+'&server='+data._serverid;
+			// if an update interval exists, we know the VM must not be running or saved
+			if(vcube.widget.PreviewMonitor.previewUpdateInterval)
+				vcube.widget.PreviewMonitor.targetDiv.style.cursor = '';
+		
+		} else {
+			
+			vcube.widget.PreviewMonitor.targetDiv.style.cursor = 'pointer';
+			
+			// Running VMs get random numbers.
+			// Saved are based on last state change to try to let the browser cache Saved screen shots
+			var randid = vcube.widget.PreviewMonitor.vmrecord.get('lastStateChange');
+			if(vcube.utils.vboxVMStates.isRunning(vcube.widget.PreviewMonitor.vmrecord.getData())) {
+				
+				var currentTime = new Date();
+				randid = Math.floor(currentTime.getTime() / 1000);
 				
 			}
+			
+			
+			vboxDrawPreviewImg.src = 'vbox/machineGetScreenShot?' + Ext.urlEncode(Ext.apply({
+				'width': previewWidth,
+				'randid': randid,
+			}, vcube.utils.vmAjaxParams(vcube.widget.PreviewMonitor.vmrecord.getData())));
+			
+			
 		}
+		
 	},
 	
 
 
 	statics: {
 	
+		/* Div element where canvas will be drawn */
+		targetDiv: null,
+		
+		/* Ext component */
+		component: null,
+		
+		/* UPdate interval */
+		previewUpdateInterval: 5,
+		
 		/* Aspect ration for preview window */
 		previewAspectRatio : 1.6,
 		
@@ -140,33 +220,33 @@ Ext.define('vcube.widget.PreviewBox',{
 		_isCanvasSupported: null,
 		isCanvasSupported : function() {
 			
-			if(vcube.widget.PreviewBox._isCanvasSupported === null) {
+			if(vcube.widget.PreviewMonitor._isCanvasSupported === null) {
 				try {
 					var elem = document.createElement('canvas');			
-					vcube.widget.PreviewBox._isCanvasSupported = !!(elem && elem.getContext && elem.getContext('2d'));
+					vcube.widget.PreviewMonitor._isCanvasSupported = !!(elem && elem.getContext && elem.getContext('2d'));
 					elem = null;
 				} catch (err) {
-					vcube.widget.PreviewBox._isCanvasSupported = false;
+					vcube.widget.PreviewMonitor._isCanvasSupported = false;
 				}
 				
 			}
-			return vcube.widget.PreviewBox._isCanvasSupported;
+			return vcube.widget.PreviewMonitor._isCanvasSupported;
 		},
 		
 		/* Cache canvas images */
 		canvasCache : {},
 		
 		/* Draw preview to div */
-		drawPreview: function(targetDiv, imageObj, width, height) {
+		drawPreview: function(imageObj, width, height) {
 			
-			if(vcube.widget.PreviewBox.isCanvasSupported()) {
+			if(vcube.widget.PreviewMonitor.isCanvasSupported()) {
 				
-				targetDiv.innerHTML = '';
+				vcube.widget.PreviewMonitor.targetDiv.innerHTML = '';
 				elem = document.createElement('canvas');
-				targetDiv.appendChild(elem);
-				canvas = targetDiv.childNodes[0];
+				vcube.widget.PreviewMonitor.targetDiv.appendChild(elem);
+				canvas = vcube.widget.PreviewMonitor.targetDiv.childNodes[0];
 				
-				vcube.widget.PreviewBox.drawPreviewCanvas(canvas, imageObj, width, height);
+				vcube.widget.PreviewMonitor.drawPreviewCanvas(canvas, imageObj, width, height);
 				
 			}
 		},
@@ -213,7 +293,7 @@ Ext.define('vcube.widget.PreviewBox',{
 			ctx.save();
 			
 			// Draw and cache monitor image if it is not present
-			if(!vcube.widget.PreviewBox.canvasCache[width+'x'+height]) {
+			if(!vcube.widget.PreviewMonitor.canvasCache[width+'x'+height]) {
 				
 				var cachedCanvas = document.createElement('canvas');
 				
@@ -300,11 +380,11 @@ Ext.define('vcube.widget.PreviewBox',{
 				ctxBlur.fillStyle="rgba(255,255,255,0.3)";
 				ctxBlur.fill();
 				
-				vcube.widget.PreviewBox._stackBlurCanvasRGBA( cvs, 0, 0, rectWidth, rectHeight, 17 );
+				vcube.widget.PreviewMonitor._stackBlurCanvasRGBA( cvs, 0, 0, rectWidth, rectHeight, 17 );
 				
 				ctx.drawImage(cvs, margin+screenMargin, margin+screenMargin, rectWidth, rectHeight);
 
-				vcube.widget.PreviewBox.canvasCache[width+'x'+height] = {
+				vcube.widget.PreviewMonitor.canvasCache[width+'x'+height] = {
 						'monitor' : cachedCanvas,
 						'gloss' : cvs
 				};
@@ -312,7 +392,7 @@ Ext.define('vcube.widget.PreviewBox',{
 			}
 
 			// Draw cached monitor canvas
-			ctx.drawImage(vcube.widget.PreviewBox.canvasCache[width+'x'+height]['monitor'], 0, 0, width, height);
+			ctx.drawImage(vcube.widget.PreviewMonitor.canvasCache[width+'x'+height]['monitor'], 0, 0, width, height);
 
 			/* Screenshot */
 			if(imageObj) {
@@ -321,7 +401,7 @@ Ext.define('vcube.widget.PreviewBox',{
 			}
 
 			// Draw cached gloss canvas
-			ctx.drawImage(vcube.widget.PreviewBox.canvasCache[width+'x'+height]['gloss'], 0, 0, width, height);
+			ctx.drawImage(vcube.widget.PreviewMonitor.canvasCache[width+'x'+height]['gloss'], 0, 0, width, height);
 			
 		},
 		
@@ -474,8 +554,8 @@ Ext.define('vcube.widget.PreviewBox',{
 			
 			yw = yi = 0;
 			
-			var mul_sum = vcube.widget.PreviewBox._gloss_mul_table[radius];
-			var shg_sum = vcube.widget.PreviewBox._gloss_shg_table[radius];
+			var mul_sum = vcube.widget.PreviewMonitor._gloss_mul_table[radius];
+			var shg_sum = vcube.widget.PreviewMonitor._gloss_shg_table[radius];
 			
 			for ( y = 0; y < height; y++ )
 			{

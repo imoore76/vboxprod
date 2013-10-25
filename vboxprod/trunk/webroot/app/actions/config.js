@@ -147,7 +147,23 @@ Ext.define('vcube.actions.config.vmgroup',{
 Ext.define('vcube.actions.config.server',{
 	
 	statics : {
-		actions: []
+		
+		actions: ['new','settings','remove'],
+
+		'new':{
+			text: vcube.utils.trans('New...','UIActionPool'),
+			icon:'vm_new'
+		},
+		
+		settings: {
+			text: vcube.utils.trans('Settings...','UIActionPool'),
+			icon:'vm_settings',
+		},
+		
+		'remove': {
+			text: vcube.utils.trans('Remove...', 'UIActionPool'),
+			icon:'vm_delete'
+		}
 	}
 	
 });

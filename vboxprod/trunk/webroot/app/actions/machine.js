@@ -6,34 +6,32 @@ Ext.define('vcube.actions.machine',{
 	statics: {
 	
 		/* Common function used to confirm action and apply action to selected VMs */
-		confirmAction: function(selectionModel, states, confirmationText, buttonTexts) {
+		confirmAction: function(selectionModel, states, confirmationText, buttons) {
 			
-			var promise = Ext.create('Ext.ux.Deferred'),
-				buttons = [],
-				i=0;
-			
-			
+			// List of VM names for confirmation
 			var vmNames = vcube.utils.getSelectedVMsInStates(selectionModel, states, 'name');
 
 			if(vmNames.length) {
 
-				for(; i < buttonTexts.length; i++) {
-					buttons.push({
-						text: buttonTexts[i],
-						handler: function(btn) {
-							
+				var cbuttons = [];
+				for(var i = 0; i < buttons.length; i++) {
+					cbuttons.push({
+						text: buttons[i].text,
+						action: buttons[i].action,
+						handler: function(btn) {				
+
 							btn.up('.window').close();
-							promise.resolve(vcube.utils.getSelectedVMsInStates(selectionModel, states), i);
+							Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, states), function(vm) {
+								btn.initialConfig.action(vm);								
+							});
 							
 						}
 					});
 				}
-				vcube.utils.confirm(confirmationText.replace('%1',vmNames),buttons);
+				vcube.utils.confirm(confirmationText.replace('%1','<b>'+vmNames.join('<b/>, <b>')+'</b>'),cbuttons);
 				
 			}
 			
-			return promise;
-
 			
 		},
 		
@@ -248,56 +246,31 @@ Ext.define('vcube.actions.machine',{
 	    	
 			action:function(selectionModel) {
 	
-				Ext.ux.Deferred.when(vcube.actions.machine.confirmAction(
-						selectionModel,
-						['PoweredOff'],
-						vcube.utils.trans('<p>You are about to remove following virtual machines from the machine list:</p><p>%1</p><p>Would you like to delete the files containing the virtual machine from your hard disk as well? Doing this will also remove the files containing the machine\'s virtual hard disks if they are not in use by another machine.</p>','UIMessageCenter'),
-						[vcube.utils.trans('Delete all files','UIMessageCenter'), vcube.utils.trans('Remove only','UIMessageCenter')]))
-				
-						.done(function(vms, buttonIndex) {
-							
-							console.log(vms);
-							console.log(buttonIndex);
-							
-				});
-				return;
-				
 				//////////////////
 				// Unregister VMs
 				///////////////////
-				var unregisterVMs = function(keepFiles) {
-	
-					
-					Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['PoweredOff']), function(vm) {						
-						vcube.utils.ajaxRequest('vbox/machineRemove', Ext.apply({'delete':(keepFiles ? '0' : '1')}, vcube.utils.vmAjaxParams(vm)));
-					});
+				var unregisterVMs = function(vm, keepFiles) {	
+					vcube.utils.ajaxRequest('vbox/machineRemove', Ext.apply({'delete':(keepFiles ? '0' : '1')}, vcube.utils.vmAjaxParams(vm)));						
 				};
 				
 				var buttons = [{
 					text: vcube.utils.trans('Delete all files','UIMessageCenter'),
-					handler: function(btn) {
-						btn.up('.window').close();
-						unregisterVMs(false);
+					action: function(vm) {
+						unregisterVMs(vm, false);
 					}
 				},{
 					text: vcube.utils.trans('Remove only','UIMessageCenter'),
-					handler: function(btn) {
-						btn.up('.window').close();
-						unregisterVMs(true);
+					action: function(vm) {
+						unregisterVMs(vm, true);
 					}
 				}];
 				
-				var vmNames = vcube.utils.getSelectedVMsInStates(selectionModel, ['PoweredOff'], 'name');
-
-				if(vmNames.length) {
-	
-					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-					var q = vcube.utils.trans('<p>You are about to remove following virtual machines from the machine list:</p><p>%1</p><p>Would you like to delete the files containing the virtual machine from your hard disk as well? Doing this will also remove the files containing the machine\'s virtual hard disks if they are not in use by another machine.</p>','UIMessageCenter').replace('%1',vmNames);
-					
-					vcube.utils.confirm(q,buttons);
-					
-				}
-					
+				vcube.actions.machine.confirmAction(
+						selectionModel,
+						['PoweredOff'],
+						vcube.utils.trans('<p>You are about to remove following virtual machines from the machine list:</p><p>%1</p><p>Would you like to delete the files containing the virtual machine from your hard disk as well? Doing this will also remove the files containing the machine\'s virtual hard disks if they are not in use by another machine.</p>','UIMessageCenter'),
+						buttons);
+				
 	    	
 	    	},
 	    	enabled_test: function (selectionModel) {

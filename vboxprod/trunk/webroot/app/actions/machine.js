@@ -211,7 +211,7 @@ Ext.define('vcube.actions.machine',{
 		settings: {
 			action:function(selectionModel){
 				
-				vboxVMsettingsDialog(vboxChooser.getSingleSelectedId());
+				Ext.create('vcube.widget.SettingsDialog').show();
 			},
 			enabled_test: function (selectionModel) {
 				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['Running','PoweredOff','Editable'], selectionModel.getSelection());
@@ -515,7 +515,7 @@ Ext.define('vcube.actions.machine',{
 			action: function(selectionModel) {
 				
 				Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['Running']), function(vm) {
-					vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'pause'},vcube.utils.vmAjaxParams(vm))			
+					vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'pause'},vcube.utils.vmAjaxParams(vm)));
 				});
 			}
 		},
@@ -560,7 +560,7 @@ Ext.define('vcube.actions.machine',{
 				var buttons = [{
 					text: vcube.utils.trans('Reset','UIActionPool'),
 					action: function(vm) {
-						vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'reset'},vcube.utils.vmAjaxParams(vm))
+						vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'reset'},vcube.utils.vmAjaxParams(vm)));
 					}
 				}];
 

@@ -880,7 +880,7 @@ class vboxConnector(object):
                 session = vboxMgr.mgr.getSessionObject(self.vbox)
                 machine.lockMachine(session, vboxMgr.constants.LockType_Shared)
                     
-                screenWidth, screenHeight, bpp = session.console.display.getScreenResolution(0)
+                screenWidth, screenHeight = session.console.display.getScreenResolution(0)[0:2]
         
                 # Force screenshot width while maintaining aspect ratio
                 if args.get('width', None):
@@ -2316,32 +2316,25 @@ class vboxConnector(object):
         state = args['state']
 
         states = {
-            'powerDown' : {'result':vboxMgr.constants.MachineState_PoweredOff,'progress':True},
+            'powerDown' : {'progress':True},
             'reset' : {},
-            'saveState' : {'result':vboxMgr.constants.MachineState_Saved,'progress':True},
+            'saveState' : {'progress':True},
             'powerButton' : {'acpi':True},
             'sleepButton' : {'acpi':True},
-            'pause' : {'result':vboxMgr.constants.MachineState_Paused,'progress':False},
-            'resume' : {'result':vboxMgr.constants.MachineState_Running,'progress':False},
-            'powerUp' : {'result':vboxMgr.constants.MachineState_Running},
-            'discardSavedState' : {'result':vboxMgr.constants.MachineState_PoweredOff,'lock':vboxMgr.constants.LockType_Shared,'force':True}
+            'pause' : {'progress':False},
+            'resume' : {'progress':False},
+            'powerUp' : {},
+            'discardSavedState' : {'lock':vboxMgr.constants.LockType_Shared,'force':True}
         }
 
         # Check for valid state
-        if not states.get(state, None):
-            #throw new Exception('Invalid state: ' . state)
-            return False
+        if states.get(state, None) is None:
+            raise Exception("Invalid state %s" %(state))
 
         # Machine state
         """ @machine IMachine """
         machine = self.vbox.findMachine(vm)
         mstate = machine.state
-
-        # If state has an expected result, check
-        # that we are not already in it
-        if states[state].get('result', None):
-            if mstate == states[state]['result']:
-                return False
 
         # Special case for power up
         if state == 'powerUp' and mstate == vboxMgr.constants.MachineState_Paused:
@@ -2394,10 +2387,10 @@ class vboxConnector(object):
 
 
         # Check for ACPI button
-        if states[state].get('acpi',False) and not session.console.getPowerButtonHandled():
+        if states[state].get('acpi',False):
             session.unlockMachine()
             session = None
-            return {'requestedState':state}
+            return {'requestedState':state, 'handled': session.console.getPowerButtonHandled()}
 
 
         if not progress:

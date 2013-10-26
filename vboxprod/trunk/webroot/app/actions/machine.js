@@ -285,24 +285,17 @@ Ext.define('vcube.actions.machine',{
 				
 				var buttons = [{
 					text: vcube.utils.trans('Discard','UIMessageCenter'),
-					listeners: {
-						click: function(btn) {
-							btn.up('.window').close();
-							
-							Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['Saved'], 'id'), function(vm) {				
-								vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({},{'state':'discardSavedState'}, vcube.utils.vmAjaxParams(vm)));
-							});
-						}
+					action: function(vm) {
+						vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({},{'state':'discardSavedState'}, vcube.utils.vmAjaxParams(vm)));
 					}
 				}];
 
-				var vmNames = vcube.utils.getSelectedVMsInStates(selectionModel, ['Saved'], 'name');
-				if(vmNames.length) {
-	
-					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-					
-					vcube.utils.confirm(vcube.utils.trans('<p>Are you sure you want to discard the saved state of the following virtual machines?</p><p><b>%1</b></p><p>This operation is equivalent to resetting or powering off the machine without doing a proper shutdown of the guest OS.</p>','UIMessageCenter').replace('%1',vmNames),buttons);
-				}
+				vcube.actions.machine.confirmAction(
+						selectionModel,
+						['Saved'],
+						vcube.utils.trans('<p>Are you sure you want to discard the saved state of the following virtual machines?</p><p><b>%1</b></p><p>This operation is equivalent to resetting or powering off the machine without doing a proper shutdown of the guest OS.</p>','UIMessageCenter'),
+						buttons);
+
 			},
 			enabled_test: function(selectionModel){
 				return vcube.utils.vboxVMStates.isOneRecord('Saved', selectionModel.getSelection());
@@ -479,7 +472,8 @@ Ext.define('vcube.actions.machine',{
 			action: function(selectionModel) {
 	
 				Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['Running','Paused']), function(vm) {
-					vcube.actions.machine.powerAction('savestate','Save the machine state of the selected virtual machines', vm);					
+					
+					vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'saveState'},vcube.utils.vmAjaxParams(vm)));					
 				});
 			}
 		},
@@ -494,25 +488,21 @@ Ext.define('vcube.actions.machine',{
 				
 				var buttons = [{
 					text: vcube.utils.trans('ACPI Shutdown','UIMessageCenter'),
-					handler: function(btn) {
-
-						btn.up('.window').close();
-						
-						Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['Running']), function(vm) {
-							vcube.actions.machine.powerAction('powerbutton','Send the ACPI Power Button press event to the virtual machine', vm);		
+					action: function(vm) {
+						Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'powerButton'},vcube.utils.vmAjaxParams(vm)))).done(function(response) {
+							
+							if(!response.handled)
+								vcube.utils.trans('Failed to send the ACPI Power Button press event to the virtual machine <b>%1</b>.','UIMessageCenter');
 						});
 					}
 				}];
-
-				var vmNames = vcube.utils.getSelectedVMsInStates(selectionModel, ['Running'], 'name');
 				
-				if(vmNames.length) {
-	
-					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-	
-					vcube.utils.confirm(vcube.utils.trans("<p>Do you really want to send an ACPI shutdown signal " +
-						"to the following virtual machines?</p><p><b>%1</b></p>",'UIMessageCenter').replace('%1', vmNames),buttons);
-				}
+				vcube.actions.machine.confirmAction(
+						selectionModel,
+						['Running'],
+						vcube.utils.trans("<p>Do you really want to send an ACPI shutdown signal to the following virtual machines?</p><p><b>%1</b></p>",'UIMessageCenter'),
+						buttons);
+
 			}
 		},
 		
@@ -525,7 +515,7 @@ Ext.define('vcube.actions.machine',{
 			action: function(selectionModel) {
 				
 				Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['Running']), function(vm) {
-					vcube.actions.machine.powerAction('pause','Suspend the execution of the selected virtual machines', vm);					
+					vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'pause'},vcube.utils.vmAjaxParams(vm))			
 				});
 			}
 		},
@@ -539,30 +529,21 @@ Ext.define('vcube.actions.machine',{
 			},
 			action: function(selectionModel) {
 				
-				var validStates = ['Running','Paused','Stuck'];
-				
 				var buttons = [{
 					text: vcube.utils.trans('Power Off','UIActionPool'),
-					handler: function(btn) {
-						
-						btn.up('.window').close();
-
-						Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, validStates), function(vm) {
-							vcube.actions.machine.powerAction('poweroff','Power off the selected virtual machines', vm);
-						});
+					action: function(vm) {
+						vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'powerDown'},vcube.utils.vmAjaxParams(vm)));
 					}
 				}];
 				
-				var vmNames = vcube.utils.getSelectedVMsInStates(selectionModel, validStates, 'name');
-				
-				if(vmNames.length) {
-	
-					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-					
-					vcube.utils.confirm(vcube.utils.trans("<p>Do you really want to power off the following virtual machines?</p>" +
-							"<p><b>%1</b></p><p>This will cause any unsaved data in applications " +
-							"running inside it to be lost.</p>", 'UIMessageCenter').replace('%1', vmNames), buttons);
-				}
+				vcube.actions.machine.confirmAction(
+						selectionModel,
+						['Running','Paused','Stuck'],
+						vcube.utils.trans("<p>Do you really want to power off the following virtual machines?</p>" +
+								"<p><b>%1</b></p><p>This will cause any unsaved data in applications " +
+								"running inside it to be lost.</p>", 'UIMessageCenter'),
+						buttons);
+
 	
 			}
 		},
@@ -578,69 +559,26 @@ Ext.define('vcube.actions.machine',{
 					
 				var buttons = [{
 					text: vcube.utils.trans('Reset','UIActionPool'),
-					handler: function() {
-						Ext.each(vcube.utils.getSelectedVMsInStates(selectionModel, ['Running']), function(vm) {
-							vcube.actions.machine.powerAction('reset','Reset the selected virtual machines', vm);
-						});
+					action: function(vm) {
+						vcube.utils.ajaxRequest('vbox/machineSetState',Ext.apply({state:'reset'},vcube.utils.vmAjaxParams(vm))
 					}
 				}];
-				
-				var vmNames = vcube.utils.getSelectedVMsInStates(selectionModel, ['Running'], 'name');
-				
-				if(vmNames.length) {
-	
-					vmNames = '<b>'+vmNames.join('</b>, <b>')+'</b>';
-	
-					vcube.utils.confirm(vcube.utils.trans("<p>Do you really want to reset the following virtual machines?</p><p><b>%1</b></p><p>This will cause any unsaved data in applications "+
-							"running inside it to be lost.</p>",'UIMessageCenter').replace('%1',vmNames),buttons);
-				}
+
+				vcube.actions.machine.confirmAction(
+						selectionModel,
+						['Running','Paused'],
+						vcube.utils.trans("<p>Do you really want to reset the following virtual machines?</p><p><b>%1</b></p><p>This will cause any unsaved data in applications "+
+								"running inside it to be lost.</p>",'UIMessageCenter'),
+						buttons);
 			}
 		},
 		
-		/** Stop actions list */
-		stop_actions: ['savestate','powerbutton','poweroff'],
-	
 		/** Stop a VM */
 		stop: {
 			action: function () { return true; /* handled by stop context menu */ },
 			enabled_test: function (selectionModel) {
 				return vcube.utils.vboxVMStates.isOneRecord(['Running','Paused','Stuck'], selectionModel.getSelection());
-			}
-		},
-		
-		/** Power Action Helper function */
-		powerAction: function(pa,pt,vm){
-			icon =null;
-			errorMsg = null;
-			switch(pa) {
-				case 'poweroff':
-					fn = 'powerDown';
-					icon='progress_poweroff_90px.png';
-					break;
-				case 'powerbutton':
-					fn = 'powerButton';
-					errorMsg = vcube.utils.trans('Failed to send the ACPI Power Button press event to the virtual machine <b>%1</b>.','UIMessageCenter');
-					break;
-				case 'savestate':
-					fn = 'saveState';
-					icon='progress_state_save_90px.png';
-					break;
-				case 'pause':
-					fn = 'pause';
-					break;
-				case 'reset':
-					fn = 'reset';
-					break;
-				default:
-					return;
-			}
-			
-			Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineSetState',{'vm':vm.id,'state':fn,'connector':vm.connector_id})).fail(function(d){
-				if(errorMsg) {
-					vcube.utils.alert(errorMsg.replace('%1', vm.name));
-				}
-			});	
-			
+			}				
 		}
 		
 	}

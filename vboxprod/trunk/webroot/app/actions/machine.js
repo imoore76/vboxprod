@@ -211,7 +211,7 @@ Ext.define('vcube.actions.machine',{
 		settings: {
 			action:function(selectionModel){
 				
-				Ext.create('vcube.widget.SettingsDialog').show();
+				Ext.create('vcube.view.VMSettingsDialog').show();
 			},
 			enabled_test: function (selectionModel) {
 				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['Running','PoweredOff','Editable'], selectionModel.getSelection());

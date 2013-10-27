@@ -1,67 +1,79 @@
 /**
- * Progress operation window
+ * Settings dialog widget
  */
 Ext.define('vcube.widget.SettingsDialog',{
 
 	extend: 'Ext.window.Window',
 	alias: 'widget.SettingsDialog',
 	
-	requires: ['vcube.widget.SettingsPane'],
-	
     title: vcube.utils.trans('Settings'),
-    icon: 'images/vbox/settings_16px.png',
+    icon: 'images/vbox/vm_settings_16px.png',
     layout:'fit',
-    width:600,
-    height: 530,
+    width:700,
+    height: 460,
     closable: true,
     modal: true,
     resizable: true,
     plain: true,
     border: false,
 
-    constructor: function(options) {
-    	
-    	/*
-    	for(var i = 0; i < options.panes.length; i++) {
-    		
-    	}
-    	*/
-    	console.log(this);
-    	
-    	this.callParent(arguments);
-    	
-    },
-    
-    items: [{
+    items : [{
     	layout: {
-    	    type: 'hbox',
-    	    pack: 'start',
-    	    align: 'stretch'
+    		type: 'hbox',
+    		pack: 'start',
+    		align: 'stretch'
     	},
     	items: [{
     		itemId: 'linklist',
     		cls: 'settingsLinkList',
+    		border: false,
+    		frame: true,
     		defaults: {
     			xtype: 'button',
-    			margin: '4 0 4 0',
-    			border: false
+    			margin: '0 0 4 0',
+    			toggleGroup: 'settingsPaneSelection',
+    			border: false,
+    			textAlign: 'left',
+    			height: 24,
+    			padding: 2,
     		},
     		layout: {
     			type: 'vbox',
-    			pack: 'start'
+    			pack: 'start',
+    			align: 'stretch'
     		},
-    		items: [{text:'button1',icon:'images/vbox/cd_16px.png'}]
+    		items: []
     	},{
     		itemId: 'settingsPane',
     		flex: 1,
     		layout: 'fit',
-    		defaults : { 
-    			xtype: 'SettingsPane'
+    		padding: 4,
+    		border: false,
+    		defaults : {
+    			border: false,
+    			autoScroll: true,
+    			hidden: true,
+    			frame: true,
+    			padding: 6,
+    			defaults: {
+    				frame: true,
+    				padding: 6,
+    				layout: 'form',
+    				defaults: {
+    					labelAlign: 'right'
+    				}
+    			}
     		},
-    		items: [{
-    			title: 'Pane...'
-    		}]
+    		items: []
     	}]
+    }],
+    
+    buttons : [{
+    	text: 'Save',
+    	itemId: 'save'
+    },{
+    	text: 'Cancel',
+    	itemId: 'cancel'
     }]
-	
+    
 });

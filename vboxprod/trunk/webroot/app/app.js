@@ -47,6 +47,9 @@ Ext.application({
                   // Toolbar extension
                   'ExtToolbars',
                   
+                  // Settings dialogs
+                  'SettingsDialog',
+                  
                   // Main Views
                   'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEventsMain',
                   

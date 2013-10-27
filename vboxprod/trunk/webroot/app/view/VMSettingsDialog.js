@@ -16,10 +16,12 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				name: 'name'
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Type',
 				name: 'OSType'
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Version',
 				name: 'OSVersion'
 			}]
@@ -60,13 +62,18 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Base Memory',
-				xtype: 'SliderField'
+				xtype: 'SliderField',
+				maxValue: 4096,
+				minValue: 4,
+				valueLabel: 'MB',
+				value: 34
 			},{
 				fieldLabel: 'Boot Order',
 				xtype: 'checkbox'
 			},{
 				fieldLabel: 'Chipset',
-				xtype: 'combo'
+				xtype: 'combo',
+				editable: false,
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
@@ -90,10 +97,20 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Processor(s)',
-				xtype: 'spinnerfield'
+				xtype: 'SliderField',
+				maxValue: 4,
+				minValue: 1,
+				valueLabel: 'CPU(s)',
+				hideValueBox: true,
+				value: 2
 			},{
 				fieldLabel: 'Execution Cap',
-				xtype: 'spinnerfield'
+				xtype: 'SliderField',
+				maxValue: 100,
+				minValue: 1,
+				valueLabel: '%',
+				hideValueBox: true,
+				value: 100
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
@@ -123,7 +140,13 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			title: 'Video',
 			items: [{
 				fieldLabel: 'Video Memory',
-				xtype: 'spinnerfield'
+				xtype: 'SliderField',
+				maxValue: 128,
+				minValue: 4,
+				valueLabel: 'MB',
+				hideValueBox: true,
+				value: 64
+
 			}]
 		},{
 			title: 'Remote Display',
@@ -139,6 +162,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: 'Server Port'
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Authentication Method'				
 			},{
 				xtype: 'numberfield',
@@ -180,9 +204,11 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			boxLabel: 'Enable Audio'
 		},{
 			xtype: 'combo',
+			editable: false,
 			fieldLabel: 'Host Audio Driver'
 		},{
 			xtype: 'combo',
+			editable: false,
 			fieldLabel: 'Audio Controller'
 		}]
 	},{
@@ -198,15 +224,18 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				boxLabel: 'Enable Network Adapter'
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Attached to'
 			},{
 				xtype: 'textfield',
 				fieldLabel: 'Name'
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Adapter Type'
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Promiscuous Mode'
 			},{
 				xtype: 'fieldcontainer',
@@ -248,6 +277,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				},
 				items: [{
 					xtype: 'combo',
+					editable: false,
 					fieldLabel: 'Port Number'
 				},{
 					xtype: 'numberfield',
@@ -262,6 +292,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				}]
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Port Mode'
 			},{
 				fieldLabel: ' ',
@@ -292,6 +323,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				},
 				items: [{
 					xtype: 'combo',
+					editable: false,
 					fieldLabel: 'Port Number'
 				},{
 					xtype: 'numberfield',
@@ -306,6 +338,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				}]
 			},{
 				xtype: 'combo',
+				editable: false,
 				fieldLabel: 'Port Mode'
 			},{
 				fieldLabel: ' ',

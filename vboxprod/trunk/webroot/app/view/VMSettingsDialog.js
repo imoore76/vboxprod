@@ -60,7 +60,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Base Memory',
-				xtype: 'spinnerfield'
+				xtype: 'SliderField'
 			},{
 				fieldLabel: 'Boot Order',
 				xtype: 'checkbox'

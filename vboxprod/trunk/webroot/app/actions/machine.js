@@ -211,7 +211,18 @@ Ext.define('vcube.actions.machine',{
 		settings: {
 			action:function(selectionModel){
 				
-				Ext.create('vcube.view.VMSettingsDialog').show();
+				var sd = Ext.create('vcube.view.VMSettingsDialog');
+				sd.show();
+				
+				sd.setLoading(true);
+				
+				console.log(selectionModel.getSelection()[0].get('id'));
+				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(selectionModel.getSelection()[0].get('id'))).done(function(data) {
+					sd.down('.form').getForm().setValues(data);
+				}).always(function(){
+					sd.setLoading(false);
+				});
+				
 			},
 			enabled_test: function (selectionModel) {
 				return selectionModel.selected.length == 1 && vcube.utils.vboxVMStates.isOneRecord(['Running','PoweredOff','Editable'], selectionModel.getSelection());

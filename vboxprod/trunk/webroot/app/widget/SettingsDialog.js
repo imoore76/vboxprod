@@ -46,6 +46,7 @@ Ext.define('vcube.widget.SettingsDialog',{
     	},{
     		itemId: 'settingsPane',
     		flex: 1,
+    		xtype: 'form',
     		layout: 'fit',
     		padding: 4,
     		border: false,

@@ -6,6 +6,16 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
+	 * Format string as number
+	 */
+	toInt: function(str) {
+	
+		var rint = str.replace(/[^0-9]/g, '');
+		if(!rint) rint = 0;
+		return parseInt(rint);
+	},
+	
+	/**
 	 * Return base name of path
 	 */
 	 basename: function(p) {

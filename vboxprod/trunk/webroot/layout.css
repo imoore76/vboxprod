@@ -10,6 +10,7 @@
 	padding-left:20px
 }
 
+span.sliderTickSpacer { width: 4px; display: inline-block; }
 /* Progress */
 div.x-progress-bar { background-color: #00AB00; }
 div.x-grid-cell-inner div.x-progress { padding: 0px; margin: 0px }

@@ -98,7 +98,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			items: [{
 				fieldLabel: 'Processor(s)',
 				xtype: 'SliderField',
-				maxValue: 4,
+				maxValue: 16,
 				minValue: 1,
 				valueLabel: 'CPU(s)',
 				hideValueBox: true,

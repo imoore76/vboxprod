@@ -50,8 +50,6 @@ class dispatcher(dispatcher_parent):
                 setattr(c, attr, kwargs.get(attr))
         c.save()
 
-        pprint.pprint(dict(c._data.copy()))
-                
         vcube.getInstance().pumpEvent({
             'eventSource' : 'vcube',
             'eventType':'VMGroupUpdated',

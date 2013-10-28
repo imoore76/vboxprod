@@ -53,7 +53,6 @@ Ext.define('vcube.controller.machineactions', {
 	
 	/* On action click */
 	actionHandler: function(btn) {
-		console.log(this.selectionModel.getSelection());
 		vcube.actions.machine[btn.itemId].action(this.selectionModel, this.navTreeSelectionModel);
 	},
 	

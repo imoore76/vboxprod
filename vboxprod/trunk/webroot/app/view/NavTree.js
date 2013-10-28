@@ -130,6 +130,8 @@ Ext.define('vcube.view.NavTree', {
     	  { name: 'id', type: 'string' },
     	  { name: 'rawid', type: 'string' },
     	  { name: 'name', type: 'string' },
+    	  { name: 'group_id', type: 'string' },
+    	  { name: 'parent_id', type: 'string' },
     	  { name: 'type', type: 'string' },
     	  { name: 'text', type: 'string' },
     	  { name: 'icon', type: 'string' },

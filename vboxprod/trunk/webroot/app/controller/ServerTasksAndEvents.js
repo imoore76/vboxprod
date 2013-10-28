@@ -24,6 +24,9 @@ Ext.define('vcube.controller.ServerTasksAndEvents', {
     			render: function(panel) {
     				
     				// Reconfigure panel with unique store instance
+    				this.eventStore = null;
+    				this.taskStore = null;
+    				
     				this.eventStore = panel.down('#events').getStore();
     				this.taskStore = panel.down('#tasks').getStore();
     				

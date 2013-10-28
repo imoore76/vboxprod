@@ -23,19 +23,14 @@ Ext.define('vcube.controller.MainVirtualMachinesList', {
         	}
         });
     	
-		// Special case for VM actions
-		this.application.on({
-			'MachinesAdded': this.onMachinesAdded,
-			scope: this
-		});
-    	
-
+		// VMs added to main VM store...
+    	vcube.storemanager.getStore('vm').on('add', this.onVMStoreRecordsAdded, this);
     	
     	this.callParent(arguments);
     },
     
-    onMachinesAdded: function(eventData) {
-		this.vmStore.add(eventData.machines);
+    onVMStoreRecordsAdded: function(store, records) {
+		this.vmStore.add(records);
     }
     
 

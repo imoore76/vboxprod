@@ -21,9 +21,6 @@ Ext.define('vcube.vmdatamediator', {
 		'getVMRuntimeData':{}
 	},
 	
-	/* Holds Basic VM data */
-	vmData : null,
-	
 	/* Holds VM details */
 	vmDetailsData : {},
 	
@@ -52,36 +49,6 @@ Ext.define('vcube.vmdatamediator', {
 		vcube.vmdatamediator.expireAll();
 	},
 	
-	/**
-	 * Get basic vm data
-	 * 
-	 * @param vmid {String} ID of VM
-	 * @returns {Object} vm data
-	 */
-	getVMData: function(vmid) {
-		
-		// VMList must exist
-		if(!vcube.vmdatamediator.vmData) {
-			vcube.utils.alert('vmdatamediator: getVMData called before a VM list exists!');
-			return;
-		}
-		
-		
-	},
-	
-	/**
-	 * Return all VMs' data that matches a filter
-	 */
-	getVMDataByFilter: function(filter, scope) {
-		var vmList = [];
-		for(var i in vcube.vmdatamediator.vmData) {
-			if(typeof(i) != 'string') continue;
-			if(filter.call(scope, vcube.vmdatamediator.vmData[i]))
-				vmList.push(vcube.vmdatamediator.vmData[i]);
-		}
-		return vmList;
-		
-	},
 	
 	/**
 	 * Watch for events and update data
@@ -103,6 +70,7 @@ Ext.define('vcube.vmdatamediator', {
 				vcube.vmdatamediator.expireVMRuntimeData(eventData.machineId);
 				
 			},
+			/*
 			// Machine state change
 			'vboxMachineStateChanged' :function(eventData) {
 
@@ -118,6 +86,7 @@ Ext.define('vcube.vmdatamediator', {
 				vcube.vmdatamediator.expireVMRuntimeData(vmid);
 					
 			},
+			*/
 
 			'vboxCPUChanged' : function(eventData) {
 
@@ -188,20 +157,18 @@ Ext.define('vcube.vmdatamediator', {
 			'vboxExtraDataChanged' : function(eventData) {
 			
 				// No vm id is a global change
-				if(!eventData.machineId || !vcube.vmdatamediator.vmData[eventData.machineId]) return;
+				if(!(eventData.machineId && vcube.vmdatamediator.vmDetailsData[eventData.machineId])) return;
 				
 					switch(eventData.key) {
 		
 						// Save mounted media changes at runtime
 						case 'GUI/SaveMountedAtRuntime':
-							if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
-								vcube.vmdatamediator.vmDetailsData[eventData.machineId].GUI.SaveMountedAtRuntime = eventData.value;
+							vcube.vmdatamediator.vmDetailsData[eventData.machineId].GUI.SaveMountedAtRuntime = eventData.value;
 							break;
 							
 						// First time run
 						case 'GUI/FirstRun':
-							if(vcube.vmdatamediator.vmDetailsData[eventData.machineId])
-								vcube.vmdatamediator.vmDetailsData[eventData.machineId].GUI.FirstRun = eventData.value;
+							vcube.vmdatamediator.vmDetailsData[eventData.machineId].GUI.FirstRun = eventData.value;
 							break;
 							
 					}
@@ -217,22 +184,6 @@ Ext.define('vcube.vmdatamediator', {
 	start: function() {
 		
 		vcube.vmdatamediator.watchEvents();
-		
-	},
-	
-	/**
-	 * Return list of machines
-	 * 
-	 * @returns {Object} promise
-	 */
-	getVMList: function() {
-	
-		var vmList = [];
-		for(var i in vcube.vmdatamediator.vmData) {
-			if(typeof(i) == 'string') vmList.push(vcube.vmdatamediator.vmData[i]);
-		}
-		return vmList;
-		
 		
 	},
 	

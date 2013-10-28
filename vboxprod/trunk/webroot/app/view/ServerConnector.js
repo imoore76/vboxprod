@@ -54,7 +54,11 @@ Ext.define('vcube.view.ServerConnector', {
 				rows: function(data) {
 					
 					var rows = [], states = {},
-						vmList = vcube.vmdatamediator.getVMDataByFilter(function(vm){return vm.connector_id == data.id;});
+						vmList = [];
+					
+					vcube.storemanager.getStore('vm').each(function(record){
+						if(record.get('connector_id') == data.id) vmList.push(record.getData());
+					});
 					
 					Ext.each(vmList, function(vm) {
 						if(!states[vm.state]) states[vm.state] = 1;

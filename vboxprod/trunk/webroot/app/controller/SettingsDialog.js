@@ -59,6 +59,10 @@ Ext.define('vcube.controller.SettingsDialog', {
     	
     	var dlg = btn.up('.SettingsDialog');
     	
+    	var vals = dlg.down('.form').getForm().getValues();
+    	
+    	console.log(vals);
+    	
     	Ext.each(dlg.down('#settingsPane').items.items, function(pane) {
     		pane.fireEvent('saveSettings');
     	});

@@ -3,6 +3,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	extend: 'vcube.widget.SettingsDialog',
 	alias: 'view.VMSettingsDialog',
 	
+	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers', 'vcube.form.field.usbfilters'],
+	
 	sections: [{
 		name: 'General',
 		label:'General',
@@ -15,15 +17,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: 'Name',
 				name: 'name'
 			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Type',
-				name: 'OSType'
-			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Version',
-				name: 'OSVersion'
+				xtype: 'ostypefield',
+				name: 'OSTypeId'
 			}]
 		},{
 			title: 'Advanced',
@@ -38,12 +33,15 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},{
 				xtype: 'checkbox',
 				fieldLabel: 'Removable Media',
-				name: 'GUI/RCantRemember',
-				boxLabel: 'Remember Runtime Changes'
+				name: 'GUI.SaveMountedAtRuntime',
+				boxLabel: 'Remember Runtime Changes',
+				inputValue: "yes",
+				uncheckedValue: "no"
 			}]
 		},{
 			title: 'Description',
 			layout: 'fit',
+			name: 'description',
 			items: [{
 				xtype: 'textarea',
 				width: '100%'
@@ -62,32 +60,39 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Base Memory',
-				xtype: 'SliderField',
+				xtype: 'sliderfield',
 				maxValue: 4096,
 				minValue: 4,
 				valueLabel: 'MB',
-				value: 34
+				name: 'memorySize'
 			},{
 				fieldLabel: 'Boot Order',
-				xtype: 'BootOrderField'
+				xtype: 'bootorderfield',
+				name: 'bootOrder'
 			},{
 				fieldLabel: 'Chipset',
 				xtype: 'combo',
 				editable: false,
+				name: 'chipsetType'
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
-				boxLabel: 'Enable I/O APIC'
+				boxLabel: 'Enable I/O APIC',
+				name: 'BIOSSettings.IOAPICEnabled'
 			},{
 				xtype: 'checkbox',
 				fieldLabel: ' ',
 				labelSeparator: '',
-				boxLabel: 'Enable EFI (special OSes only)'
+				boxLabel: 'Enable EFI (special OSes only)',
+				name: 'firmwareType',
+				uncheckedValue: "BIOS",
+				inputValue: "EFI"
 			},{
 				xtype: 'checkbox',
 				fieldLabel: ' ',
 				labelSeparator: '',
-				boxLabel: 'Hardware Clock in UTC Time'
+				boxLabel: 'Hardware Clock in UTC Time',
+				name: 'RTCUseUTC'
 			}]
 		},{
 			title: 'Processor',
@@ -97,24 +102,25 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Processor(s)',
-				xtype: 'SliderField',
+				xtype: 'sliderfield',
 				maxValue: 16,
 				minValue: 1,
 				valueLabel: 'CPU(s)',
 				hideValueBox: true,
-				value: 2
+				name: 'CPUCount'
 			},{
 				fieldLabel: 'Execution Cap',
-				xtype: 'SliderField',
+				xtype: 'sliderfield',
 				maxValue: 100,
 				minValue: 1,
 				valueLabel: '%',
 				hideValueBox: true,
-				value: 100
+				name: 'CPUExecutionCap'
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
-				boxLabel: 'Enable PAE/NX'
+				boxLabel: 'Enable PAE/NX',
+				name: 'CpuProperties.PAE'
 			}]
 			
 		},{
@@ -123,12 +129,14 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: 'Hardware Virtualization',
 				labelWidth: 200,
 				xtype: 'checkbox',
-				boxLabel: 'Enable VT-x/AMD-V'
+				boxLabel: 'Enable VT-x/AMD-V',
+				name: 'HWVirtExProperties.Enabled'
 			},{
 				xtype: 'checkbox',
 				fieldLabel: ' ',
 				labelSeparator: '',
-				boxLabel: 'Enable Nested Paging'
+				boxLabel: 'Enable Nested Paging',
+				name: 'HWVirtExProperties.NestedPaging'
 			}]
 		}]
 	},{
@@ -140,12 +148,12 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			title: 'Video',
 			items: [{
 				fieldLabel: 'Video Memory',
-				xtype: 'SliderField',
+				xtype: 'sliderfield',
 				maxValue: 128,
 				minValue: 4,
 				valueLabel: 'MB',
 				hideValueBox: true,
-				value: 64
+				name: 'VRAMSize'
 
 			}]
 		},{
@@ -156,21 +164,26 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				xtype: 'checkbox',
-				boxLabel: 'Enable Server'
+				boxLabel: 'Enable Server',
+				name: 'VRDEServer.enabled'
 			},{
 				xtype: 'textfield',
-				fieldLabel: 'Server Port'
+				fieldLabel: 'Server Port',
+				name: 'VRDEServer.ports'
 			},{
 				xtype: 'combo',
 				editable: false,
-				fieldLabel: 'Authentication Method'				
+				fieldLabel: 'Authentication Method',
+				name: 'VRDEServer.authType'
 			},{
 				xtype: 'numberfield',
-				fieldLabel: 'Authentication Timeout'
+				fieldLabel: 'Authentication Timeout',
+				name: 'VRDEServer.authTimeout'
 			},{
 				xtype: 'checkbox',
 				fieldLabel: 'Extended Features',
-				boxLabel: 'Allow Multiple Connections'
+				boxLabel: 'Allow Multiple Connections',
+				name: 'VRDEServer.allowMultiConnection'
 			}]
 		}]
 	},{
@@ -201,15 +214,18 @@ Ext.define('vcube.view.VMSettingsDialog',{
 		defaults: {},
 		items: [{
 			xtype: 'checkbox',
-			boxLabel: 'Enable Audio'
+			boxLabel: 'Enable Audio',
+			name: 'audioAdapter.enabled'
 		},{
 			xtype: 'combo',
 			editable: false,
-			fieldLabel: 'Host Audio Driver'
+			fieldLabel: 'Host Audio Driver',
+			name: 'audioAdapter.audioDriver'
 		},{
 			xtype: 'combo',
 			editable: false,
-			fieldLabel: 'Audio Controller'
+			fieldLabel: 'Audio Controller',
+			name: 'audioAdapter.audioController'
 		}]
 	},{
 		name:'Network',
@@ -363,23 +379,13 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			border: true
 		},
 		items: [{
-			xtype: 'checkbox',
-			boxLabel: 'Enable USB Controller'
-		},{
-			xtype: 'checkbox',
-			boxLabel: 'Enable USB 2.0 (EHCI) Controller'
+			xtype: 'usbcontrollersfield',
+			name: 'USBControllers'
 		},{
 			title: 'USB Device Filters',
-			xtype: 'gridpanel',
-			frame: true,
-			flex: 1,
-			hideHeaders: true,
-			columns: [{
-				dataIndex: 'enabled',
-				xtype: 'checkcolumn'
-			},{
-				dataIndex: 'description'
-			}]
+			xtype: 'usbfiltersfield',
+			name: 'USBDeviceFilters',
+			flex: 1
 		}]
 	},{
 		name:'SharedFolders',

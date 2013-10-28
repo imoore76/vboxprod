@@ -6,7 +6,7 @@ Ext.define('vcube.widget.SettingsDialog',{
 	extend: 'Ext.window.Window',
 	alias: 'widget.SettingsDialog',
 	
-	requires: ['vcube.widget.SliderField', 'vcube.widget.BootOrderField'],
+	requires: ['vcube.form.field.slider', 'vcube.form.field.bootorder', 'vcube.form.Basic','vcube.form.Panel'],
 	
     title: vcube.utils.trans('Settings'),
     icon: 'images/vbox/vm_settings_16px.png',
@@ -48,7 +48,10 @@ Ext.define('vcube.widget.SettingsDialog',{
     	},{
     		itemId: 'settingsPane',
     		flex: 1,
-    		xtype: 'form',
+    		xtype: 'vcube.form.Panel',
+    		fieldDefaults: {
+    			labelAlign: 'right'
+    		},
     		layout: 'fit',
     		padding: 4,
     		border: false,
@@ -62,9 +65,9 @@ Ext.define('vcube.widget.SettingsDialog',{
     				frame: true,
     				padding: 6,
     				layout: 'form',
-    				defaults: {
-    					labelAlign: 'right'
-    				}
+    	    		fieldDefaults: {
+    	    			labelAlign: 'right'
+    	    		}
     			}
     		},
     		items: []

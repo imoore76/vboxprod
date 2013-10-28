@@ -8,9 +8,9 @@ Ext.define('vcube.utils', {
 	/**
 	 * Format string as number
 	 */
-	toInt: function(str) {
+	toInt: function(istr) {
 	
-		var rint = str.replace(/[^0-9]/g, '');
+		var rint = istr.toString().replace(/[^0-9]/g, '');
 		if(!rint) rint = 0;
 		return parseInt(rint);
 	},

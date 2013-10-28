@@ -52,10 +52,10 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     	values.name = Ext.String.htmlEncode(values.name);
     	values.details = Ext.String.htmlEncode(values.details);
     	try {
-    		values.connector = Ext.String.htmlEncode(vcube.app.serverStore.getById(values.connector).get('name'));    		
+    		values.connector = Ext.String.htmlEncode(vcube.storemanager.getStoreRecord('server',values.connector).get('name'));    		
     	} catch(err) {}
     	try {
-    		values.machine = vcube.storemanager.getStoreRecordData('vm',values.machine).name;
+    		values.machine = vcube.storemanager.getStoreRecord('vm',values.machine).get('name');
     	} catch(err) {}
     	values.category = vcube.app.constants.LOG_CATEGORY_TEXT[values.category];
     	values.status = vcube.app.constants.TASK_STATUS_TEXT[values.status];
@@ -77,10 +77,10 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     	values.details = Ext.String.htmlEncode(values.details);
 
     	try {
-    		values.connector = Ext.String.htmlEncode(vcube.app.serverStore.getById(values.connector).get('name'));    		
+    		values.connector = Ext.String.htmlEncode(vcube.storemanager.getStoreRecord('server',values.connector).get('name'));    		
     	} catch(err) {}
     	try {
-    		values.machine = vcube.storemanager.getStoreRecordData('vm',values.machine).name;
+    		values.machine = vcube.storemanager.getStoreRecord('vm',values.machine).get('name');
     	} catch(err) {}
     	values.category = vcube.app.constants.LOG_CATEGORY_TEXT[values.category];
     	values.severity = vcube.app.constants.SEVERITY_TEXT[values.severity];

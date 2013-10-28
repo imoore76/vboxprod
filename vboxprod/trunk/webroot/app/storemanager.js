@@ -7,34 +7,13 @@ Ext.define('vcube.storemanager',{
 	/**
 	 * Virtual machine store
 	 */
-	vmStore: Ext.create('Ext.data.Store',{
-		extend: 'Ext.data.Store',
-		autoload: false,
-		fields : [
-		      {name: 'id', type: 'string'},
-		      {name: 'name', type: 'string'},
-		      {name: 'description', type: 'string'},
-		      {name: 'state', type: 'string'},
-		      {name: 'sessionState', type: 'string'},
-		      {name: 'OSTypeDesc', type: 'string'},
-		      {name: 'OSTypeId', type: 'string'},
-		      {name: 'lastStateChange', type: 'int'},
-		      {name: 'connector_id', type: 'int'},
-		      {name: 'accessible', type: 'boolean'},
-		      {name: 'icon', type: 'string'},
-		      {name: 'group_id', type: 'int'},
-		      {name: 'CPUCount', type: 'int'},
-		      {name: 'CPUExecutionCap', type: 'int'},
-		      {name: 'memorySize', type: 'int'}
-		]
-	}),
+	vmStore: Ext.create('vcube.store.VirtualMachines'),
 
 
 	/**
 	 * VM Group store
 	 */
 	vmGroupStore: Ext.create('Ext.data.Store',{
-		extend: 'Ext.data.Store',
 		autoload: false,
 		fields : [
 		      {name: 'id', type: 'string'},
@@ -71,8 +50,6 @@ Ext.define('vcube.storemanager',{
 				return vcube.storemanager.vmGroupStore;
 			case 'server':
 				return vcube.storemanager.serverStore;
-			default:
-				console.log("Unknown type: " + type);
 		}
 	},
 	
@@ -100,6 +77,9 @@ Ext.define('vcube.storemanager',{
 		} catch (err) {
 			console.log(type + ' ' + id);
 			console.log(vcube.storemanager.getStore(type));
+			
+			console.log("here...");
+			
 		}
 	},
 	

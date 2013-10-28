@@ -3,6 +3,7 @@ Ext.define('vcube.store.VirtualMachines',{
 	autoload: false,
 	remoteSort: false,
 	remoteFilter: false,
+	buffered: false,
 	fields : [
 	      {name: 'id', type: 'string'},
 	      {name: 'name', type: 'string'},
@@ -13,10 +14,13 @@ Ext.define('vcube.store.VirtualMachines',{
 	      {name: 'OSTypeId', type: 'string'},
 	      {name: 'lastStateChange', type: 'int'},
 	      {name: 'connector_id', type: 'int'},
+	      {name: 'accessible', type: 'boolean'},
 	      {name: 'icon', type: 'string'},
 	      {name: 'group_id', type: 'int'},
 	      {name: 'CPUCount', type: 'int'},
+	      {name: 'CPUExecutionCap', type: 'int'},
 	      {name: 'memorySize', type: 'int'}
-	]
+	],
+	sorters: { property: 'name', direction : 'ASC' }
 });
 

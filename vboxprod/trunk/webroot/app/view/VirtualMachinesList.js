@@ -14,7 +14,7 @@ Ext.define('vcube.view.VirtualMachinesList', {
     	this.items = [{
     		xtype: 'gridpanel',
     		selModel: { mode: 'MULTI' },
-    		store: vcube.storemanager.getStore('vm'),
+    		store: Ext.create('vcube.store.VirtualMachines'),
     		tbar : [
     		        vcube.actionpool.getAction('machine','new'),
     		        '-',

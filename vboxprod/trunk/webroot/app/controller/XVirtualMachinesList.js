@@ -9,9 +9,6 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     selectionType: null,
     selectionId: null,
     
-    /* virtual machine id list */
-    vmList: [],
-    
     /* machine list store */
     vmStore: null,
     
@@ -27,7 +24,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     init: function() {
 
     	this.controlledList = null;
-    	this.vmList = [];
+    	this.vmStore = null;
 
     	this.control({
     		'viewport > NavTree' : {
@@ -35,17 +32,10 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     		}
     	});
     	
-		// Special case for VM actions
-		this.application.on({
-			'SessionStateChanged': this.onMachineChanged,
-			'MachineStateChanged': this.onMachineChanged,
-			'MachineDataChanged': this.onMachineChanged,
-			'MachineIconChanged': this.onMachineChanged,
-			'MachinesRemoved': this.onMachinesRemoved,
-			scope: this
-		});
+    	vcube.storemanager.getStore('vm').on('bulkremove', this.onVMStoreRecordsRemoved, this);
+    	vcube.storemanager.getStore('vm').on('add', this.onVMStoreRecordsAdded, this);
     	
-    	this.callParent(arguments);
+		this.callParent(arguments);
 
     },
     
@@ -56,51 +46,31 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
 		
     	this.controlledList.on({'show':this.onShow,scope:this});
     	
-    	this.vmStore = list.down('gridpanel').getStore();
+    	this.vmStore = null;
+    	this.vmStore = Ext.create('vcube.store.VirtualMachines');
+    	
+    	list.down('gridpanel').reconfigure(this.vmStore); 
 		
-    	this.vmStore.on({
-			'clear': function() {
-				this.vmList = [];
-			},
-			'add': function(store,records) {
-				var vmids = [];
-				Ext.each(records, function(r) {
-					vmids.push(r.get('id'));
-				});
-				this.vmList = vmids;
-			},
-			'remove': function(store, record) {
-				var rvmid = record.get('id');
-				this.vmList = Ext.Array.filter(this.vmList, function(vmid){
-					return (vmid != rvmid);
-				});
-			},
-			scope: this
-		});
     },
     
-    /* Machines removed from vcube */
-    onMachinesRemoved: function(eventData) {
-    	if(!this.vmStore) return;
-    	var vmids = [];
-		for(var i = 0; i < eventData.machines.length; i++) {
-			this.vmStore.remove(this.vmStore.getById(eventData.machines[i]));
-			vmids.push(eventData.machines[i]);
-		}
-		this.vmList = Ext.Array.filter(this.vmList, function(vmid) {
-			return (!Ext.Array.contains(vmids, vmid));
-		});
+    /* Machines removed from main vm store */
+    onVMStoreRecordsRemoved: function(store, records) {
+    	(this.vmStore ? this.vmStore.remove(records) : null);
     },
 
-
-    /* When a machine changes */
-    onMachineChanged: function(eventData) {
+    /* Machines added to main vm store */
+    onVMStoreRecordsAdded: function(store, records) {
     	
+    	if(!this.vmStore) return;
     	
-    	if(!Ext.Array.contains(this.vmList, eventData.machineId)) return;
-    	    	
-    	this.vmStore.getById(eventData.machineId).set(vcube.storemanager.getStoreRecordData('vm',eventData.machineId));
-    	
+    	var self = this;
+    	var recordList = [];
+    	Ext.each(records, function(record) {
+    		if(self.machineListFilter(record.getData())) {
+    			recordList.push(record);
+    		}
+    	});
+    	this.vmStore.add(recordList);
     },
 
 
@@ -123,8 +93,6 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	
     	this.dirty = true;
     	
-    	console.log("here 3...");
-    	
     	if(records.length && records[0].get('type') == this.selectionType) {
 
     		this.selectionId = records[0].get('rawid');    		
@@ -133,15 +101,22 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	} else {
     	
     		this.selectionId = null;
-    		this.vmList = [];
     	}
     	
 
     },
     
-    /* Get VM data */
-    getVMData: function() {
-    	return vcube.vmdatamediator.getVMDataByFilter(this.machineListFilter, this);
+    /* Return VM records matching filter */
+    getVMRecords: function() {
+    	
+    	var self = this;
+    	var records = [];
+    	vcube.storemanager.getStore('vm').each(function(record) {
+    		if(self.machineListFilter(record.getData()))
+    			records.push(record);
+    	});
+    	return records;
+
     },
     
     /* Populate events */
@@ -157,7 +132,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	
     	this.vmStore.removeAll();
     	
-    	this.vmStore.add(this.getVMData());
+    	this.vmStore.add(this.getVMRecords());
     	
 		
     }

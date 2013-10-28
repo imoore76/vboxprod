@@ -16,8 +16,8 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
 		ref : 'NavTreeView'
 	}],
 
-	/* vmids in this group */
-	groupVMs: [],
+	/* groupids that must match */
+	groupIds: [],
 
     /* Watch for events */
     init: function() {
@@ -31,6 +31,11 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
         	},
     	
     		'viewport > NavTree' : {
+    			render: function(panel) {
+    				panel.getStore().on('remove',this.navTreeItemRemoved, this);
+    				panel.getStore().on('insert',this.navTreeItemAdded, this);
+    				panel.getStore().on('move',this.navTreeItemMoved, this);
+    			},
     			selectionchange: this.onNavTreeSelectionChange
     		}
         });
@@ -38,44 +43,48 @@ Ext.define('vcube.controller.GroupVirtualMachinesList', {
     	this.callParent(arguments);
     },
     
+    navTreeItemRemoved: function(store, node) {
+    	console.log("Removed");
+    },
+    
+    navTreeItemAdded: function(store, records) {
+    	console.log("Added");
+    },
+    
+    navTreeItemMoved: function(node, oldParent, newParent) {
+    	console.log("Moved");
+    },
+    
     /* Get sub vms when selection changes */
     onNavTreeSelectionChange: function(sm, records) {
     	
-    	console.log("here 2");
-    	if(records.length && records[0].get('type') == this.selectionType) {
+    	if(records.length && records[0].get('type') == 'vmgroup') {
 
-    		var vmIdList = [];
+    		var groupIdList = [records[0].get('rawid')];
     		
     		var store = this.getNavTreeView().getStore();
     		
-    		function getVMChildren(node) {
-    			node.eachChild(function(record){
-    				if(record.get('type') == 'vm') {
-    					vmIdList.push(record.get('rawid'));
-    				} else if(record.get('type') == 'vmgroup') {
-    					vmIdList = vmIdList.concat(getVMChildren(store.getNodeById(record.get('rawid'))))
-    				}    				
+    		function getChildGroups(node) {
+
+    			node.eachChild(function(childNode){
+    				if(childNode.get('type') == 'vmgroup') {
+    					groupIdList.push(childNode.get('rawid'));
+    					getChildGroups(childNode);
+    				}
+    				
     			});
     		}
     		
-    		getVMChildren(this.getNavTreeView().getStore().getNodeById('vmgroup-' + records[0].get('rawid')));
-    		
-    		this.groupVMs = vmIdList;
+    		getChildGroups(this.getNavTreeView().getStore().getNodeById(records[0].get('id')));
+    		this.groupIds = groupIdList;
     		
     	}
 
     },
     
     /* vms would be any group or sub-group vms */
-    getVMData: function(vm) {
-    	
-    	// Get all child vms of this node
-    	var self = this;
-    	console.log("here 1");
-    	return vcube.vmdatamediator.getVMDataByFilter(function(vm) {
-    		return Ext.Array.contains(self.groupVMs, vm.id);
-    	});
-    	
+    machineListFilter: function(vm) {
+		return Ext.Array.contains(this.groupIds, String(vm.group_id));
     }
 
 });

@@ -116,11 +116,12 @@ Ext.define('vcube.widget.SliderField', {
     		textAlign: 'left'
     	}];
     	
-	    this.slider = this.items[0];
-	    this.spinner = this.items[1];
-	    this.valueBox = this.items[2];
 	    
 	    this.callParent(arguments);
+
+	    this.slider = this.down('slider');
+	    this.spinner = this.down('spinnerfield');
+	    this.valueBox = this.items.items[2];
 
     }
 });

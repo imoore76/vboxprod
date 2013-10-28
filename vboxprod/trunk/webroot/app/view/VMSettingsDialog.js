@@ -69,7 +69,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				value: 34
 			},{
 				fieldLabel: 'Boot Order',
-				xtype: 'checkbox'
+				xtype: 'BootOrderField'
 			},{
 				fieldLabel: 'Chipset',
 				xtype: 'combo',

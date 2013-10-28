@@ -19,9 +19,25 @@ Ext.define('vcube.widget.SliderField', {
     
     hideValueBox: false,
     
-    sliderTickTpl: new Ext.XTemplate('<div style="font-size: 7px; width: 100%; overflow: hidden; white-space: nowrap"> |<span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span>| <span class="sliderTickSpacer"> </span> </div>' +
-		'<div style="width: 100%; font-size: 11px;"><span style="float: left">{minValue} {valueLabel}</span><span style="float: right">'+
-		'{maxValue} {valueLabel}</span></div>'),
+    sliderTickTpl: new Ext.XTemplate('<div style="font-size: 7px; width: 100%;padding-left: 6px; padding-right: 6px;overflow: hidden;">'+
+    		'{[this.genTicks(values.minValue, values.maxValue)]}'+
+		'</div><div style="width: 100%; font-size: 11px; height: 14px;"><span style="float: left;">{minValue} {valueLabel}</span><span style="float: right">'+
+		'{maxValue} {valueLabel}</span></div>',{
+			genTicks: function(minValue, maxValue) {
+
+				var diff = Math.min((maxValue - minValue),40);
+				var tdw = Math.round(100 / diff);
+				
+				var divRow = [];
+		
+				for(var a = 0; a < (diff-1); a++){
+					divRow.push('<div style="height: 4px; display: inline-block; float: left; width: '+ tdw + '%; border-left: 1px solid #000;"></div>');
+				}
+				divRow.push('<div style="height: 4px; display: inline-block; float: left; width: 1px; border-left: 1px solid #000;"></div>');
+				divRow.push('<div style="height: 4px; display: inline-block; width: 1px; border-left: 1px solid #000; float: right"></div>');
+				return divRow.join('');
+			}
+		}),
     
     items: [],
     

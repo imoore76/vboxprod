@@ -1,9 +1,9 @@
-Ext.define('vcube.widget.SliderField', {
+Ext.define('vcube.form.field.slider', {
     extend: 'Ext.form.FieldContainer',
     mixins: {
         field: 'Ext.form.field.Field'
     },
-    alias: 'widget.SliderField',
+    alias: 'widget.sliderfield',
     layout: 'hbox',
     combineErrors: true,
     msgTarget: 'side',
@@ -62,6 +62,10 @@ Ext.define('vcube.widget.SliderField', {
     	this.spinner.setMinValue(vcube.utils.toInt(val));    	
     },
     
+    getSubmitValue: function() {
+    	return this.getValue();
+    },
+    
     getValue: function() {
     	return this.slider.getValue();
     },
@@ -78,6 +82,7 @@ Ext.define('vcube.widget.SliderField', {
     	this.items = [{
     		xtype: 'slider',
     		flex: 1,
+    		submitValue: false,
     		maxValue: this.maxValue,
     		minValue: this.minValue,
     		value: this.value,
@@ -92,6 +97,7 @@ Ext.define('vcube.widget.SliderField', {
     		inputWidth: 60,
     		maxValue: this.maxValue,
     		minValue: this.minValue,
+    		submitValue: false,
     		margin: '0 0 0 8',
     		value: this.value,
     		listeners: {

@@ -3104,7 +3104,7 @@ class vboxConnector(object):
             b = vboxEnumToString("DeviceType", m.getBootOrder(i + 1))
             if b == 'Null': continue
             retval.append(b)
-        return retval
+        return ','.join(retval)
 
 
     """

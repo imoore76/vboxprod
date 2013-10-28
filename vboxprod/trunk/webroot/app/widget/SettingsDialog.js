@@ -6,7 +6,7 @@ Ext.define('vcube.widget.SettingsDialog',{
 	extend: 'Ext.window.Window',
 	alias: 'widget.SettingsDialog',
 	
-	requires: ['vcube.widget.SliderField'],
+	requires: ['vcube.widget.SliderField', 'vcube.widget.BootOrderField'],
 	
     title: vcube.utils.trans('Settings'),
     icon: 'images/vbox/vm_settings_16px.png',

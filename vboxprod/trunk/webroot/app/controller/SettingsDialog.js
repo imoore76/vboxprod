@@ -51,7 +51,6 @@ Ext.define('vcube.controller.SettingsDialog', {
     		settingsPane.add(dlg.sections[i]);
     	}
     	
-    	console.log(dlg.items.items);
     },
     
     /* save settings button click */

@@ -41,8 +41,6 @@ Ext.define('vcube.form.field.serialports', {
     },
     
     setValue: function(val) {
-    	console.log("SerialPort");
-    	console.log(val);
     	
     	this._origData = val;
     	

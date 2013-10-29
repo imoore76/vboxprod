@@ -10,7 +10,6 @@ Ext.define('vcube.controller.MainVirtualMachinesList', {
     /* VM record property which must match selection id */
 	vmPropertyFilterProperty: null, // no filter
 
-    /* Watch for events */
     init: function() {
 
 
@@ -25,6 +24,9 @@ Ext.define('vcube.controller.MainVirtualMachinesList', {
     	
 		// VMs added to main VM store...
     	vcube.storemanager.getStore('vm').on('add', this.onVMStoreRecordsAdded, this);
+    	
+    	// NOTE: removal is handled by main XVirtualMachinesList because removal
+    	// is global
     	
     	this.callParent(arguments);
     },

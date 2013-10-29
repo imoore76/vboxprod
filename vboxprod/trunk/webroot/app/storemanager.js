@@ -75,10 +75,9 @@ Ext.define('vcube.storemanager',{
 		try {
 			return vcube.storemanager.getStoreRecord(type, id).getData();			
 		} catch (err) {
+			
 			console.log(type + ' ' + id);
 			console.log(vcube.storemanager.getStore(type));
-			
-			console.log("here...");
 			
 		}
 	},
@@ -136,9 +135,10 @@ Ext.define('vcube.storemanager',{
 			'vboxMachineDataChanged' : applyEnrichmentData,
 			
 			// Snapshot events
-			'vboxSnapshotTaken' : applyEnrichmentData,
-			'vboxSnapshotDeleted' : applyEnrichmentData,
-			'vboxSnapshotChanged' : applyEnrichmentData,
+			'vboxSnapshotChanged' : function(eventData) {
+				if(eventData.enrichmentData.isCurrentSnapshot)
+					vcube.storemanager.updateStoreRecord('vm', eventData.machineId, {'currentSnapshotName':eventData.enrichmentData.name});	
+			},
 
 			// Machine state change
 			'vboxMachineStateChanged' :function(eventData) {

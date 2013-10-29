@@ -182,9 +182,6 @@ Ext.define('vcube.form.field.networkadapters', {
     	
     	this._origData = val;
     	
-    	console.log("Network");
-    	console.log(val);
-    	
     	if(!val) val = [];
     	for(var i = 0; i < Math.min(val.length,this.maxAdapters); i++) {
     		var tab = this.childComponent.items.items[i];

@@ -702,6 +702,19 @@ class Application(threading.Thread):
             finally:
                 self.virtualMachinesLock.release()
             
+        elif event['eventType'] == 'SnapshotChanged':
+            """
+                Update current snapshot name if it is the
+                current snapshot
+            """
+            if event['enrichmentData']['isCurrentSnapshot']:
+                
+                self.virtualMachinesLock.acquire(True)
+                try:
+                    self.virtualMachines[event['machineId']]['currentSnapshotName'] = event['enrichmentData']['name']
+                finally:
+                    self.virtualMachinesLock.release()
+                
         """ Add to event log """        
         if event['eventType'] in vboxEventsToEventLog.events:
             self.logEvent(getattr(vboxEventsToEventLog, event['eventType'])(event))

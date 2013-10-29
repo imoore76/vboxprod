@@ -16,6 +16,7 @@ Ext.define('vcube.store.VirtualMachines',{
 	      {name: 'connector_id', type: 'int'},
 	      {name: 'accessible', type: 'boolean'},
 	      {name: 'icon', type: 'string'},
+	      {name: 'currentSnapshotName', type: 'string'},
 	      {name: 'group_id', type: 'int'},
 	      {name: 'CPUCount', type: 'int'},
 	      {name: 'CPUExecutionCap', type: 'int'},

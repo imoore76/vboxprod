@@ -86,6 +86,9 @@ Ext.define('vcube.view.VMSnapshots', {
 			},
 			rootVisible: false,
 			lines: true,
+			store: Ext.create('Ext.data.TreeStore',{
+				fields: ['name','description','timeStamp','online','_skipTS','state','leaf','expanded','text','icon']
+			}),
 			dockedItems: [{
 			    xtype: 'toolbar',
 			    dock: 'top',

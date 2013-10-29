@@ -427,7 +427,10 @@ Ext.define('vcube.actions.machine',{
 									
 									title: vcube.utils.basename(data.logs[i]),
 									layout: 'fit',
-									defaults: { xtype: 'textareafield'},
+									defaults: {
+										xtype: 'textareafield',
+										inputAttrTpl: "spellcheck='false' wrap='off' readonly='true'"
+									},
 									listeners: {
 										
 										show: function(panel) {

@@ -714,9 +714,9 @@ Ext.define('vcube.utils', {
 	 */
 	vboxStorageControllerType : function(c) {
 		switch(c) {
-		case 'LsiLogic': return 'Lsilogic';
-		case 'LsiLogicSas': return 'LsiLogic SAS';
-		case 'IntelAhci': return 'AHCI';
+			case 'LsiLogic': return 'Lsilogic';
+			case 'LsiLogicSas': return 'LsiLogic SAS';
+			case 'IntelAhci': return 'AHCI';
 		}
 		return c;
 	},
@@ -753,6 +753,17 @@ Ext.define('vcube.utils', {
 		case 'I82545EM': return 'Intel PRO/1000 MT Server (82545EM)';
 		case 'Virtio': return 'Paravirtualized Network (virtio-net)';
 		}
+	},
+	
+	/**
+	 * Network promiscuous policy mode conversion
+	 */
+	vboxNetworkPromiscPolicy: function(t) {
+		switch(t) {
+			case 'AllowNetwork': return 'Allow VMs';
+			case 'AllowAll': return 'Allow All';
+		}
+		return t
 	},
 	
 	/**
@@ -1032,6 +1043,23 @@ Ext.define('vcube.utils', {
 		return c;
 	},
 	
+	/**
+	 * Convert network attachment type
+	 */
+	vboxNetworkAttachmentType: function(v) {
+		switch(v) {
+			case 'Null': return 'Not attached';
+			case 'NAT': return 'NAT';
+			case 'NATNetwork': return 'NAT Network';
+			case 'Bridged': return 'Bridged Adapter';
+			case 'Internal': return 'Internal Network';
+			case 'HostOnly': return 'Host-only Adapter';
+			case 'Generic': return 'Generic Driver';			
+			case 'VDE': return 'VDE Adapter';
+			
+		}
+
+	},
 	
 	/**
 	 * Return the correct icon relative to images/vbox/ for the VM state.
@@ -1137,6 +1165,7 @@ Ext.define('vcube.utils', {
 			case "RedHat":          strIcon = "os_redhat.png"; break;
 			case "RedHat_64":       strIcon = "os_redhat_64.png"; break;
 			case "Turbolinux":      strIcon = "os_turbolinux.png"; break;
+			case "Turbolinux_64":      strIcon = "os_turbolinux_64.png"; break;
 			case "Ubuntu":          strIcon = "os_ubuntu.png"; break;
 			case "Ubuntu_64":       strIcon = "os_ubuntu_64.png"; break;
 			case "Xandros":         strIcon = "os_xandros.png"; break;

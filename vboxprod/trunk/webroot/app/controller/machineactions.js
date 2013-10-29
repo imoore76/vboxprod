@@ -27,9 +27,19 @@ Ext.define('vcube.controller.machineactions', {
 				selectionchange: this.onSelectionChangeNavTree
 			},
 			
-			// Any Virtual machine list
+			// Any Virtual machine list gridpanel selection change
 			'VirtualMachinesList > gridpanel': {
 				selectionchange: this.onSelectionChange
+			},
+			
+			// Any time a VM list is shown
+			'VirtualMachinesList': {
+				show: this.onMachineListShow
+			},
+			'.tabpanel > VirtualMachinesList': {
+				render: function(panel) {
+					panel.ownerCt.on('show', this.onMachineListShow, this);
+				}
 			}
 			
         });
@@ -49,6 +59,16 @@ Ext.define('vcube.controller.machineactions', {
 
 		
         
+	},
+	
+	/* A machine list is shown */
+	onMachineListShow: function(panel) {
+		
+		// fake a selection change
+		var sm = panel.down('.gridpanel').getSelectionModel();
+		this.onSelectionChange(sm, sm.getSelection());
+		
+		
 	},
 	
 	/* On action click */

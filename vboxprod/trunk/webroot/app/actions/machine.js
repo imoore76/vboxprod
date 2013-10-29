@@ -28,7 +28,7 @@ Ext.define('vcube.actions.machine',{
 						}
 					});
 				}
-				vcube.utils.confirm(confirmationText.replace('%1','<b>'+vmNames.join('<b/>, <b>')+'</b>'),cbuttons);
+				vcube.utils.confirm(confirmationText.replace('%1',('<b>'+vmNames.join('</b>, <b>')+'</b>')),cbuttons);
 				
 			}
 			
@@ -215,6 +215,16 @@ Ext.define('vcube.actions.machine',{
 				sd.show();
 				
 				sd.setLoading(true);
+				
+				var serverid = vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id');
+				
+				Ext.each(Ext.ComponentQuery.query('.field', sd), function(field) {
+					if(field.serverNotify) {
+						field.setServer(serverid);
+					} else if(field.store && field.store.isVboxEnumStore) {
+						field.store.setServer(serverid);
+					}
+				});
 				
 				console.log(selectionModel.getSelection()[0].get('id'));
 				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(selectionModel.getSelection()[0].get('id'))).done(function(data) {

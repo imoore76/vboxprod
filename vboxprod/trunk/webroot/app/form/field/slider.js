@@ -3,7 +3,7 @@ Ext.define('vcube.form.field.slider', {
     mixins: {
         field: 'Ext.form.field.Field'
     },
-    alias: 'widget.sliderfield',
+    alias: 'widget.vcubesliderfield',
     layout: 'hbox',
     combineErrors: true,
     msgTarget: 'side',

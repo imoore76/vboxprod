@@ -1847,8 +1847,22 @@ class vboxConnector(object):
     def remote_vboxGetEnumerationMap(self, args):
         
         map = vboxEnumList(args['class'])
+        
         if args.get('ValueMap', None):
             return dict(zip(map.values(), map.keys()))
+        
+        elif args.get('KeysOnly', None):
+            
+            returnList = []
+
+            # initial map
+            valmap = dict(zip(map.values(), map.keys()))
+            
+            for k in sorted(valmap):
+                returnList.append(valmap[k]) 
+            
+            return returnList
+            
         else:
             return map
         
@@ -2274,6 +2288,39 @@ class vboxConnector(object):
         }
 
     """
+     * Get all info needed to create or modify a machine on this server
+    """
+    def remote_getMachineCreationData(self, args):
+        
+        retValue = {}
+        
+        # Guest OS Types for os type selection
+        retValue['guestOStypes'] = self.remote_vboxGetGuestOSTypes(args)
+        
+        # Min / max values
+        retValue.update({
+            'minGuestRAM' : self.vbox.systemProperties.minGuestRAM,
+            'maxGuestRAM' : self.vbox.systemProperties.maxGuestRAM,
+            'minGuestVRAM' : self.vbox.systemProperties.minGuestVRAM,
+            'maxGuestVRAM' : self.vbox.systemProperties.maxGuestVRAM,
+            'minGuestCPUCount' : self.vbox.systemProperties.minGuestCPUCount,
+            'maxGuestCPUCount' : self.vbox.systemProperties.maxGuestCPUCount,
+            'networkAdapterCount' : 8, # static value for now
+            'defaultHardDiskFormat' : self.vbox.systemProperties.defaultHardDiskFormat,
+            'defaultAudioDriver' : vboxEnumToString("AudioDriverType", self.vbox.systemProperties.defaultAudioDriver),
+            'serialPortCount' : self.vbox.systemProperties.serialPortCount,
+            'parallelPortCount' : self.vbox.systemProperties.parallelPortCount
+        })
+        
+        retValue['enums'] = {}
+        for enum in ['ChipsetType','AuthType','AudioControllerType','AudioDriverType', 'NetworkAttachmentType',
+                     'NetworkAdapterType', 'NetworkAdapterPromiscModePolicy', 'PortMode']:
+            retValue['enums'][enum+'s'] = self.remote_vboxGetEnumerationMap({'class':enum,'KeysOnly':True})
+        
+        return retValue
+
+        
+    """
      * Get a list of Guest OS Types supported by this VirtualBox installation
      *
      * @param unused args
@@ -2636,7 +2683,7 @@ class vboxConnector(object):
                         'ports' : vrde.getVRDEProperty('TCP/Ports'),
                         'netAddress' : vrde.getVRDEProperty('TCP/Address'),
                         'VNCPassword' : vrde.getVRDEProperty('VNCPassword'),
-                        'authType' : vrde.authType,
+                        'authType' : vboxEnumToString("AuthType",vrde.authType),
                         'authTimeout' : vrde.authTimeout,
                         'VRDEExtPack' : vrde.VRDEExtPack
                 })
@@ -3056,7 +3103,7 @@ class vboxConnector(object):
                 'ports' : m.VRDEServer.getVRDEProperty('TCP/Ports'),
                 'netAddress' : m.VRDEServer.getVRDEProperty('TCP/Address'),
                 'VNCPassword' : m.VRDEServer.getVRDEProperty('VNCPassword'),
-                'authType' : vboxEnumToString("FirmwareType", m.VRDEServer.authType),
+                'authType' : vboxEnumToString("AuthType", m.VRDEServer.authType),
                 'authTimeout' : m.VRDEServer.authTimeout,
                 'allowMultiConnection' : m.VRDEServer.allowMultiConnection,
                 'VRDEExtPack' : m.VRDEServer.VRDEExtPack

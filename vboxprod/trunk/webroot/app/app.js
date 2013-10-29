@@ -35,7 +35,6 @@ Ext.application({
                'vcube.storemanager',
                'vcube.vmdatamediator',
                'vcube.eventlistener'
-               //,'vcube.previewbox'
            ],
     
     /* Controllers used by this app */
@@ -43,9 +42,6 @@ Ext.application({
                   
                   // Machine ctions controller
                   'machineactions',
-                  
-                  // Toolbar extension
-                  'ExtToolbars',
                   
                   // Settings dialogs
                   'SettingsDialog',

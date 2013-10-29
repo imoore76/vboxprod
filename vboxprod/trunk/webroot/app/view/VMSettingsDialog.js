@@ -62,7 +62,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Base Memory',
-				xtype: 'sliderfield',
+				xtype: 'vcubesliderfield',
 				maxValue: 4096,
 				minValue: 4,
 				valueLabel: 'MB',
@@ -75,7 +75,13 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: 'Chipset',
 				xtype: 'combo',
 				editable: false,
-				name: 'chipsetType'
+				name: 'chipsetType',
+				displayField: 'display',
+				valueField: 'value',
+				store: Ext.create('vcube.store.VboxEnums',{
+					enumClass: 'ChipsetType',
+					ignoreNull: true
+				})
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
@@ -104,7 +110,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				fieldLabel: 'Processor(s)',
-				xtype: 'sliderfield',
+				xtype: 'vcubesliderfield',
 				maxValue: 16,
 				minValue: 1,
 				valueLabel: 'CPU(s)',
@@ -112,7 +118,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				name: 'CPUCount'
 			},{
 				fieldLabel: 'Execution Cap',
-				xtype: 'sliderfield',
+				xtype: 'vcubesliderfield',
 				maxValue: 100,
 				minValue: 1,
 				valueLabel: '%',
@@ -150,7 +156,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			title: 'Video',
 			items: [{
 				fieldLabel: 'Video Memory',
-				xtype: 'sliderfield',
+				xtype: 'vcubesliderfield',
 				maxValue: 128,
 				minValue: 4,
 				valueLabel: 'MB',
@@ -176,7 +182,13 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				xtype: 'combo',
 				editable: false,
 				fieldLabel: 'Authentication Method',
-				name: 'VRDEServer.authType'
+				name: 'VRDEServer.authType',
+				displayField: 'display',
+				valueField: 'value',
+				store: Ext.create('vcube.store.VboxEnums',{
+					enumClass: 'AuthType'
+				})
+
 			},{
 				xtype: 'numberfield',
 				fieldLabel: 'Authentication Timeout',
@@ -222,12 +234,26 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			xtype: 'combo',
 			editable: false,
 			fieldLabel: 'Host Audio Driver',
-			name: 'audioAdapter.audioDriver'
+			name: 'audioAdapter.audioDriver',
+			displayField: 'display',
+			valueField: 'value',
+			lastQuery: '',
+			store: Ext.create('vcube.store.VboxEnums',{
+				enumClass: 'AudioDriverType',
+				conversionFn: vcube.utils.vboxAudioDriver
+			})
 		},{
 			xtype: 'combo',
 			editable: false,
 			fieldLabel: 'Audio Controller',
-			name: 'audioAdapter.audioController'
+			name: 'audioAdapter.audioController',
+			displayField: 'display',
+			valueField: 'value',
+			lastQuery: '',
+			store: Ext.create('vcube.store.VboxEnums',{
+				enumClass: 'AudioControllerType',
+				conversionFn: vcube.utils.vboxAudioController
+			})			
 		}]
 	},{
 		name:'Network',

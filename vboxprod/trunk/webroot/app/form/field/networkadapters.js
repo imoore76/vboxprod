@@ -13,7 +13,36 @@ Ext.define('vcube.form.field.networkadapters', {
     
     maxAdapters: 8,
     
+    server_id: null,
+    
     _origData: null,
+    
+    /* Stores */
+    networkAdapterTypeStore: Ext.create('vcube.store.VboxEnums',{
+		enumClass: 'NetworkAdapterType',
+		conversionFn: vcube.utils.vboxNetworkAdapterType,
+		ignoreNull: true
+	}),
+	
+	networkAttachmentTypeStore: Ext.create('vcube.store.VboxEnums',{
+		enumClass: 'NetworkAttachmentType',
+		conversionFn: vcube.utils.vboxNetworkAttachmentType
+	}),
+	
+	promiscPolicyModeStore: Ext.create('vcube.store.VboxEnums',{
+		enumClass: 'NetworkAdapterPromiscModePolicy',
+		conversionFn: vcube.utils.vboxNetworkPromiscPolicy,
+		ignoreNull: true
+	}),
+	
+	serverNotify: true,
+	
+	setServer: function(server_id) {
+		this.server_id = server_id;
+		this.networkAdapterTypeStore.setServer(server_id);
+		this.networkAttachmentTypeStore.setServer(server_id);
+		this.promiscPolicyModeStore.setServer(server_id);
+	},
     
     natEnginePropsEditor: Ext.create('Ext.window.Window',{
     	title: 'NAT Engine',
@@ -205,7 +234,12 @@ Ext.define('vcube.form.field.networkadapters', {
     				xtype: 'combo',
     				editable: false,
     				fieldLabel: 'Attached to',
-    				name: 'netAdapter-attachmentType-'+i
+    				name: 'netAdapter-attachmentType-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				store: this.networkAttachmentTypeStore,
+    				lastQuery: ''
+
     			},{
     				xtype: 'textfield',
     				name: 'netAdapter-name-'+i,
@@ -214,12 +248,21 @@ Ext.define('vcube.form.field.networkadapters', {
     				xtype: 'combo',
     				editable: false,
     				fieldLabel: 'Adapter Type',
-    				name: 'netAdapter-adapterType-'+i
+    				name: 'netAdapter-adapterType-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				store: this.networkAdapterTypeStore,
+    				lastQuery: ''
+
     			},{
     				xtype: 'combo',
     				editable: false,
     				fieldLabel: 'Promiscuous Mode',
-    				name: 'netAdapter-promiscModePolicy-'+i
+    				name: 'netAdapter-promiscModePolicy-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				store: this.promiscPolicyModeStore,
+    				lastQuery: ''
     			},{
     				xtype: 'fieldcontainer',
     				layout: 'hbox',
@@ -231,14 +274,29 @@ Ext.define('vcube.form.field.networkadapters', {
     					xtype: 'textfield',
     					fieldLabel: 'MAC Address',
     					name: 'netAdapter-MACAddress-'+i,
+    					itemId: 'macaddress',
     					labelAlign: 'right'
     				},{
     					xtype: 'button',
     					icon: 'images/vbox/refresh_16px.png',
-    					itemId: 'refreshmac',
     					margin: '2 0 0 0',
     					border: false,
-    					frame: false
+    					frame: false,
+    					listeners: {
+    						click: function(btn) {
+    							
+    							btn.setDisabled(true);
+    							btn.ownerCt.down('#macaddress').setDisabled(true);
+    							
+    							Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/vboxGenerateMacAddress',{connector: this.server_id})).done(function(mac){
+    								btn.ownerCt.down('#macaddress').setValue(mac);
+    							}).always(function(){
+        							btn.setDisabled(false);
+        							btn.ownerCt.down('#macaddress').setDisabled(false);
+    							});
+    						},
+    						scope: this
+    					}
     				}]
     			},{
     				fieldLabel: ' ',

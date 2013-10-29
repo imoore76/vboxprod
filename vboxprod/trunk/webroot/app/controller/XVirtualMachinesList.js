@@ -25,11 +25,28 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
 
     	this.controlledList = null;
     	this.vmStore = null;
+    	
+    	// Context menu copied from nav tree
+    	machineContextMenu = Ext.create('Ext.menu.Menu', {
+    	    renderTo: Ext.getBody(),
+    	    items: vcube.view.NavTree.machineContextMenuItems
+    	});
+
 
     	this.control({
+    		// Nav tree selection change
     		'viewport > NavTree' : {
     			selectionchange: this.onSelectionChange
-    		}
+    		},
+    		
+			// Any Virtual machine list gridpanel item context menu
+			'VirtualMachinesList > gridpanel': {
+				itemcontextmenu: function(t,r,i,index,e) {
+					e.stopEvent();
+					machineContextMenu.showAt(e.getXY());
+			    }
+			},
+
     	});
     	
     	vcube.storemanager.getStore('vm').on('bulkremove', this.onVMStoreRecordsRemoved, this);

@@ -13,6 +13,61 @@ Ext.define('vcube.form.field.ostype', {
     
     defaults: {},
     
+    ostypes: {},
+    
+    serverNotify: true,
+    
+    setServer: function(serverid) {
+    	
+    	var self = this;
+    	this.ostypes = {};
+    	
+    	Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/vboxGetGuestOSTypes',{connector:serverid})).done(function(data) {
+    		
+    		var famIdsSeen = {};
+    		var families = [];
+    		
+    		Ext.each(data, function(ostype) {
+    			
+    			// Skip if not supported
+    			if(ostype.supported) {
+    				
+    				if(!famIdsSeen[ostype.familyId]) {
+    					famIdsSeen[ostype.familyId] = true;
+    					families.push({
+    						familyId: ostype.familyId,
+    						familyDescription: ostype.familyDescription
+    					});
+    					
+    				}
+    				
+    				self.ostypes[ostype.id] = {
+    						'id': ostype.id,
+    						'description' : ostype.description,
+    						'familyId': ostype.familyId
+    				}    				
+    			}
+    			
+    		});
+    		
+    		// Populte family id store
+    		self.osFamilyIdCombo.store.loadRawData(families);
+    		
+    		// Set initial value
+    		var initVal = self.osTypeIdCombo.getValue() || 'WindowsXP';
+    		
+    		// Find family id of value
+    		self.osFamilyIdCombo.select(self.ostypes[initVal].familyId);
+    		self.osTypeIdCombo.select(initVal);
+    		
+    		
+    		
+    	});
+    	
+    	
+    },
+    
+    
     getSubmitValue: function() {
     	return this.getValue();
     },
@@ -29,6 +84,7 @@ Ext.define('vcube.form.field.ostype', {
     	
     	Ext.apply(this, options);
     	
+    	/* OS Type image */
     	this.osTypeImage = Ext.create('Ext.Img',{
 			src: 'images/vbox/blank.gif',
 			height: 32,
@@ -37,15 +93,68 @@ Ext.define('vcube.form.field.ostype', {
 
     	});
     	
+    	/* OS Family - only used for organization */
+    	this.osFamilyIdCombo = Ext.create('Ext.form.field.ComboBox',{
+			editable: false,
+			fieldLabel: 'Type',
+			labelAlign: 'right',
+			submitValue: false,
+			displayField: 'familyDescription',
+			valueField: 'familyId',
+			queryMode : 'local',
+			store: Ext.create('Ext.data.Store',{
+				fields: ['familyId', 'familyDescription']
+			}),
+			listeners: {
+				change: function(cbo, value) {
+					
+					var store = this.osTypeIdCombo.getStore();
+					
+					store.removeAll();
+					var osTypes = [];
+					
+					Ext.iterate(this.ostypes, function(k,v) {
+						if(v.familyId == value) {
+							osTypes.push({
+								id: v.id,
+								description: v.description
+							});
+						}
+					});
+					
+					store.loadRawData(osTypes);
+					this.osTypeIdCombo.select(store.first());
+					
+				},
+				scope: this
+			}
+    	});
+    	
+    	/* OS Type ID */
     	this.osTypeIdCombo = Ext.create('Ext.form.field.ComboBox',{
 			editable: false,
 			fieldLabel: 'Version',
 			itemId: 'OSTypeVersion',
 			labelAlign: 'right',
 			submitValue: false,
+			displayField: 'description',
+			valueField: 'id',
+			queryMode : 'local',
+			store: Ext.create('Ext.data.Store',{
+				fields: ['id', 'description']
+			}),
 			listeners: {
-				change: function(cbo, value) {
+				change: function(cbo, value, old) {
+					
 					this.osTypeImage.setSrc('images/vbox/'+vcube.utils.vboxGuestOSTypeIcon(value));
+					
+					// Set family combo if this is an initial selection
+					try {
+						this.osFamilyIdCombo.select(this.ostypes[value].familyId);						
+					} catch (err) {
+						
+					}
+
 				},
 				scope: this
 			}
@@ -67,15 +176,7 @@ Ext.define('vcube.form.field.ostype', {
     			defaults: {
     				labelAlign: 'right'
     			},
-    			items: [{
-					xtype: 'combo',
-					editable: false,
-					fieldLabel: 'Type',
-					submitValue: false,
-					itemId: 'OSTypeFamily'
-				},
-				this.osTypeIdCombo
-				]
+    			items: [this.osFamilyIdCombo, this.osTypeIdCombo]
     		},
     		this.osTypeImage
     		]

@@ -93,7 +93,17 @@ Ext.define('vcube.view.VMSnapshots', {
 			    xtype: 'toolbar',
 			    dock: 'top',
 			    itemId: 'snapshottoolbar',
-			    hideButtonText: true,
+			    listeners: {
+			    	// remove text and make them tooltips
+			    	afterrender: function(tbar) {
+						Ext.each(tbar.items.items,function(item) {
+							if(item.text) {
+								item.setTooltip(item.text + ' &nbsp; ');
+								item.setText('');
+							}
+						})
+			    	}
+			    },
 			    defaults: { xtype: 'button', scale: 'medium' },
 			    items: [
 			            vcube.actionpool.getActionsAsBase('snapshots',['take'])[0],

@@ -95,16 +95,16 @@ Ext.define('vcube.form.field.bootorder', {
 				         ],
 				data: [{
 					id: 'HardDisk',
-					text: vcube.utils.trans('HardDisk')
+					text: vcube.utils.vboxDevice('HardDisk')
 				},{
 					id: 'Network',
-					text: vcube.utils.trans('Network')
+					text: vcube.utils.vboxDevice('Network')
 				},{
 					id: 'Floppy',
-					text: vcube.utils.trans('Floppy')
+					text: vcube.utils.vboxDevice('Floppy')
 				},{
 					id: 'DVD',
-					text: vcube.utils.trans('CD/DVD')
+					text: vcube.utils.vboxDevice('DVD')
 				}]
 			}),
 			columns: [{

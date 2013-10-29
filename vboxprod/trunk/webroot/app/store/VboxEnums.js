@@ -53,9 +53,6 @@ Ext.define('vcube.store.VboxEnums',{
 			}];
 		}
 		
-		this.id = Ext.id();
-		
-
 		this.extraParams = {'class':options.enumClass,connector:options.server_id};
 		this.conversionFn = options.conversionFn || function(v) {return v;};
 		

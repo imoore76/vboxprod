@@ -14,11 +14,8 @@ Ext.define('vcube.controller.ServerConnector', {
     	/* Selection item type (vm|server|group) */
     	this.selectionItemType = 'server';
 
-    	/* Update info pane on these events */
-    	this.updateInfoOnRecordChange = true;
-
     	/* Repopulate on Events*/
-    	this.repopulateOn = ['ConnectorStateChanged'];
+    	this.repopulateOn = [];
     	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'connector_id';
@@ -58,7 +55,7 @@ Ext.define('vcube.controller.ServerConnector', {
     			/* Set values when window is shown */
     			show: function(pane) {
     				
-    				var connectorData = vcube.storemanager.getStoreRecordData('server',this.selectionNodeId);
+    				var connectorData = vcube.storemanager.getStoreRecordData('server',this.selectionItemId);
     				pane.down('#form').getForm().setValues(
 						Ext.Object.merge({},connectorData,{
 							state: (connectorData.state > vcube.app.constants.CONNECTOR_STATES['DISABLED'] ? vcube.app.constants.CONNECTOR_STATES['DISCONNECTED'] : connectorData.state)  
@@ -75,11 +72,13 @@ Ext.define('vcube.controller.ServerConnector', {
     					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/updateConnector',btn.up('.form').getForm().getValues()))
     						.done(function(data) {
 		    					
-		    						if(data == true) {
+		    						if(data) {
 		    							win.close();
 		    							return;
 		    						}
+		    						
 		    						win.setLoading(false);
+		    						
 							}).fail(function(){
     							win.setLoading(false);
     						});

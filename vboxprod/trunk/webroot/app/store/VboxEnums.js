@@ -32,14 +32,6 @@ Ext.define('vcube.store.VboxEnums',{
 	},
 	
 	
-	listeners: {
-		load: function(store, records) {
-			console.log("Loaded");
-			console.log(store.id);
-			console.log(records);
-		}
-	},
-	
 	proxy: {
 		type: 'vcubeAjax',
 		url: 'vbox/vboxGetEnumerationMap',

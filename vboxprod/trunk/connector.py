@@ -419,29 +419,26 @@ def enrichEvents(eventList):
                 
                 if not machine or (machine and machine.id != event['machineId']):
                     machine = vbox.findMachine(event['machineId'])
+                    
+                eventList[ek]['enrichmentData'] = {}
 
                 try:
-                    eventList[ek]['enrichmentData'] = {
-                        'currentSnapshot' : machine.currentSnapshot.id if machine.currentSnapshot else '',
-                        'currentSnapshotName' : machine.currentSnapshot.name if machine.currentSnapshot else '',
-                        'snapshotCount' : machine.snapshotCount,
-                        'currentStateModified' : machine.currentStateModified
-                    }
                     
                     if event['eventType'] == 'OnSnapshotTaken':
                         
                         snapshot = machine.findSnapshot(event['snapshotId'])
                         eventList[ek]['enrichmentData']['snapshot'] = vboxConnector._snapshotGetDetails(snapshot,False)
                         
-                    if event['eventType'] == 'OnSnapshotChanged':
+                    elif event['eventType'] == 'OnSnapshotChanged':
                         snapshot = machine.findSnapshot(event['snapshotId'])
                         eventList[ek]['enrichmentData'].update({
-                           'name': snapshot.name,
-                           'description': snapshot.description
+                            'isCurrentSnapshot' : (machine.currentSnapshot and machine.currentSnapshot.id == event['snapshotId']),
+                            'name': snapshot.name,
+                            'description': snapshot.description
                         })
         
                 except:
-                    pass
+                    traceback.print_exc()
                 
             lastMachineId = event.get('machineId',None)
             

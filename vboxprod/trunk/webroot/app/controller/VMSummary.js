@@ -20,9 +20,6 @@ Ext.define('vcube.controller.VMSummary', {
     	/* Repopulate on Events*/
     	this.repopulateOn = [];
     	
-    	/* Redraw / get when record changes */
-    	this.updateInfoOnRecordChange = true;
-    	
     	/* Repopulate event attribute */
     	this.eventIdAttr = 'machineId';
     	    	

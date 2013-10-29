@@ -57,7 +57,7 @@ Ext.define('vcube.controller.XInfoTab', {
         });
         
         
-    	/* Get redraw events from details sections */
+    	/* Get redraw events from sections */
 		var redrawEvents = {};
 		for(var i in this.sectionConfig) {
 			
@@ -101,16 +101,14 @@ Ext.define('vcube.controller.XInfoTab', {
     	this.controlledTabView.on({'show':this.onTabShow,'scope':this});
     	this.navTreeSelectionModel = this.getNavTreeView().getSelectionModel();    
     	
-    	// Subscribe to store changes?
-    	if(this.updateInfoOnRecordChange) {
-    		vcube.storemanager.getStore(this.selectionItemType).on({'update':this.onRecordChanged,'scope':this});
-    	}
+    	// Subscribe to store changes
+		vcube.storemanager.getStore(this.selectionItemType).on({'update':this.onRecordChanged,'scope':this});
     },
     
     /* Run when record has changed */
     onRecordChanged: function(store, record) {
 
-    	if(this.selectionItemId != record.get('rawid'))
+    	if(this.selectionItemId != record.get('id'))
     		return;
 
     	var inf = this.getInfoPane();

@@ -14,11 +14,7 @@ Ext.define('vcube.form.Basic', {
         var me = this;
 
         function setVal(fieldId, val) {
-        	/*
-        	console.log("Setting " + fieldId + " to ");
-        	console.log(val);
-        	*/
-        	
+
         	// Special case for multi-dimensional fields
         	if(Ext.isObject(val)) {
         		

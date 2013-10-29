@@ -84,8 +84,9 @@ Ext.define('vcube.view.VMDetails', {
 						   title: vcube.utils.trans("Boot Order"),
 						   renderer: function(d) {
 								var bo = new Array();
-								for(var i = 0; i < d['bootOrder'].length; i++) {
-									bo[i] = vcube.utils.trans(vcube.utils.vboxDevice(d['bootOrder'][i]),'VBoxGlobal');
+								var mbo = d.bootOrder.split(',');
+								for(var i = 0; i < mbo.length; i++) {
+									bo[i] = vcube.utils.trans(vcube.utils.vboxDevice(mbo[i]),'VBoxGlobal');
 								}
 								return bo.join(', ');
 						   }

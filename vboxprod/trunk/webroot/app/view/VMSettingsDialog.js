@@ -3,7 +3,9 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	extend: 'vcube.widget.SettingsDialog',
 	alias: 'view.VMSettingsDialog',
 	
-	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers', 'vcube.form.field.usbfilters'],
+	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers',
+	           'vcube.form.field.usbfilters', 'vcube.form.field.networkadapters',
+	           'vcube.form.field.serialports'],
 	
 	sections: [{
 		name: 'General',
@@ -231,95 +233,13 @@ Ext.define('vcube.view.VMSettingsDialog',{
 		name:'Network',
 		label:'Network',
 		image:'nw',
-		xtype: 'tabpanel',
-		items: [{
-			title: 'Adapter {0}',
-			layout: 'form',
-			items: [{
-				xtype: 'checkbox',
-				boxLabel: 'Enable Network Adapter'
-			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Attached to'
-			},{
-				xtype: 'textfield',
-				fieldLabel: 'Name'
-			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Adapter Type'
-			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Promiscuous Mode'
-			},{
-				xtype: 'fieldcontainer',
-				layout: 'hbox',
-				items: [{
-					xtype: 'textfield',
-					fieldLabel: 'MAC Address',
-					labelAlign: 'right'
-				},{
-					xtype: 'button',
-					icon: 'images/vbox/refresh_16px.png',
-					itemId: 'refreshmac',
-					border: false,
-					frame: false
-				}]
-			},{
-				fieldLabel: ' ',
-				labelSeparator: '',
-				xtype: 'checkbox',
-				boxLabel: 'Cable Connected'
-			}]
-		}]
+		xtype: 'networkadaptersfield',
+		name: 'networkAdapters'
 	},{
 		name:'SerialPorts',
 		label:'Serial Ports',
-		image:'serial_port',
-		xtype: 'tabpanel',
-		items: [{
-			title: 'Port {0}',
-			items: [{
-				xtype: 'checkbox',
-				boxLabel: 'Enable Serial Port'
-			},{
-				xtype: 'fieldcontainer',
-				layout: 'hbox',
-				defaults: {
-					labelAlign: 'right',
-					defaults: {}
-				},
-				items: [{
-					xtype: 'combo',
-					editable: false,
-					fieldLabel: 'Port Number'
-				},{
-					xtype: 'numberfield',
-					labelWidth: 50,
-					inputWidth: 50,
-					fieldLabel: 'IRQ'
-				},{
-					xtype: 'textfield',
-					labelWidth: 80,
-					inputWidth: 50,
-					fieldLabel: 'I/O Port'
-				}]
-			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Port Mode'
-			},{
-				fieldLabel: ' ',
-				labelSeparator: '',
-				xtype: 'checkbox',
-				boxLabel: 'Create Pipe'
-			},{
-				xtype: 'textfield',
-				fieldLabel: 'Port/File Path'
-			}]
-		}]
+		xtype: 'serialportsfield',
+		image:'serial_port'
 	},{
 		name:'ParallelPorts',
 		label:'Parallel Ports',
@@ -382,7 +302,9 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			xtype: 'usbcontrollersfield',
 			name: 'USBControllers'
 		},{
+			/*
 			title: 'USB Device Filters',
+			*/
 			xtype: 'usbfiltersfield',
 			name: 'USBDeviceFilters',
 			flex: 1

@@ -23,7 +23,7 @@ Ext.define('vcube.form.field.usbcontrollers', {
     		controllers.push({"type": "OHCI", "name": "OHCI"});
     	}
     	if(this.ehciCheckbox.getValue() == 1) {
-    		controllers.push({"type": "OHCI", "name": "EHCI"});
+    		controllers.push({"type": "EHCI", "name": "EHCI"});
     	}
     	return controllers;
     },

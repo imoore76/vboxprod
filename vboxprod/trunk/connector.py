@@ -2858,14 +2858,14 @@ class vboxConnector(object):
      * @return array of network adapter information
      """
     @staticmethod
-    def _machineGetNetworkAdapters(m, slot=False):
+    def _machineGetNetworkAdapters(m, slot=None):
 
         adapters = []
         
         if slot is not None:
             adapterRange = [slot]
         else:
-            adapterRange = range(0,7)
+            adapterRange = range(0,8)
             
         for i in adapterRange:
     
@@ -2873,10 +2873,7 @@ class vboxConnector(object):
     
             aType = vboxEnumToString('NetworkAttachmentType', n.attachmentType)
             
-            if aType == 'NAT':
-                nd = n.NATEngine
-            else:
-                 nd = None
+            nd = n.NATEngine
     
             props = n.getProperties('')
             props = dict(zip(props[0],props[1]))
@@ -2900,9 +2897,10 @@ class vboxConnector(object):
                    'DNSPassDomain' : nd.DNSPassDomain,
                    'DNSProxy' : nd.DNSProxy,
                    'DNSUseHostResolver' : nd.DNSUseHostResolver,
-                   'hostIP' : nd.hostIP} if aType == 'NAT' else {},
+                   'hostIP' : nd.hostIP,
+                   'redirects' : vboxGetArray(nd,'redirects')
+                },
                 'lineSpeed' : n.lineSpeed,
-                'redirects' : nd.getRedirects() if aType == 'Nat' else []
             })
             
         return adapters
@@ -3007,7 +3005,7 @@ class vboxConnector(object):
 
             deviceFilters.append({
                 'name' : df.name,
-                'active' : int(df.active),
+                'active' : df.active,
                 'vendorId' : df.vendorId,
                 'productId' : df.productId,
                 'revision' : df.revision,
@@ -3052,9 +3050,9 @@ class vboxConnector(object):
             'firmwareType' : vboxEnumToString("FirmwareType", m.firmwareType),
             'snapshotFolder' : m.snapshotFolder,
             'monitorCount' : m.monitorCount,
-            'pageFusionEnabled' : int(m.pageFusionEnabled),
+            'pageFusionEnabled' : m.pageFusionEnabled,
             'VRDEServer' : (None if not m.VRDEServer else {
-                'enabled' : int(m.VRDEServer.enabled),
+                'enabled' : m.VRDEServer.enabled,
                 'ports' : m.VRDEServer.getVRDEProperty('TCP/Ports'),
                 'netAddress' : m.VRDEServer.getVRDEProperty('TCP/Address'),
                 'VNCPassword' : m.VRDEServer.getVRDEProperty('VNCPassword'),
@@ -3148,7 +3146,7 @@ class vboxConnector(object):
                 p = m.getParallelPort(i)
                 ports.append({
                     'slot' : p.slot,
-                    'enabled' : int(p.enabled),
+                    'enabled' : p.enabled,
                     'IOBase' : str('0X%x'%(p.IOBase,)).upper(),
                     'IRQ' : p.IRQ,
                     'path' : p.path
@@ -3256,9 +3254,9 @@ class vboxConnector(object):
                 'port' : ma.port,
                 'device' : ma.device,
                 'type' : vboxEnumToString("DeviceType", ma.type),
-                'passthrough' : int(ma.passthrough),
-                'temporaryEject' : int(ma.temporaryEject),
-                'nonRotational' : int(ma.nonRotational)
+                'passthrough' : ma.passthrough,
+                'temporaryEject' : ma.temporaryEject,
+                'nonRotational' : ma.nonRotational
             })
 
         # sort by port then device

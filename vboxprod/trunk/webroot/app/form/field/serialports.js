@@ -53,22 +53,25 @@ Ext.define('vcube.form.field.serialports', {
     },
     
     getValue: function() {
-    	var self = this;
     	
-    	for(var i = 0; i < self._origData.length; i++) {
+    	
+    	var self = this;
+
+    	// Shorthand
+    	var origData = this.up('.window')._data[this.name];
+
+    	for(var i = 0; i < origData.length; i++) {
     		var tab = self.childComponent.items.items[i];
-    		Ext.iterate(self._origData[i], function(k,v) {
+    		Ext.iterate(origData[i], function(k,v) {
     			var f = tab.down('[name=serialPort-'+k+'-'+i+']');
     			if(f)
-    				self._origData[i][k] = Ext.isObject(self._origData[i][k]) ? Ext.Object.merge(self._origData[i][k], f.getValue()) : f.getValue();
+    				origData[i][k] = Ext.isObject(origData[i][k]) ? Ext.Object.merge(origData[i][k], f.getValue()) : f.getValue();
     		})
     	}
-    	return this._origData;
+    	return origData;
     },
     
     setValue: function(val) {
-    	
-    	this._origData = val;
     	
     	if(!val) val = [];
     	for(var i = 0; i < Math.min(val.length,this.maxPorts); i++) {

@@ -53,11 +53,13 @@ Ext.define('vcube.form.field.usbfilters', {
     		layout: 'form',
     		frame: true,
     		defaults: {
-    			xtype: 'textfield'
+    			xtype: 'textfield',
+    			labelAlign: 'right'
     		},
     		items: [{
     			fieldLabel: 'Name',
-    			name: 'name'
+    			name: 'name',
+    			allowBlank:false
     		},{
     			fieldLabel: 'Vendor ID',
     			name: 'vendorId'
@@ -95,23 +97,21 @@ Ext.define('vcube.form.field.usbfilters', {
     				   {name: 'No', value: '0'}
     				]
     			})
-    		}]
+    		}],
     		
-    	}],
-    	
-    	buttons: [{
-    		text: 'OK',
-    		itemId: 'ok'
-    	},{
-    		text: 'Cancel',
-    		listeners: {
-    			click: function(btn) {
-    				btn.up('.window').close();
+    		buttons: [{
+    			text: 'OK',
+    			itemId: 'ok',
+    			formBind: true
+    		},{
+    			text: 'Cancel',
+    			listeners: {
+    				click: function(btn) {
+    					btn.up('.window').close();
+    				}
     			}
-    		}
-    	}]
-    	
-    	
+    		}]
+    	}]    	
     },
     
     initComponent: function(options) {
@@ -222,7 +222,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			    			   var mnu = Ext.create('Ext.menu.Menu', {
 						    	    renderTo: Ext.getBody(),
 						    	    closeAction: 'destroy',
-						    	    items: [{text:'...loading..'}]
+						    	    items: [{text:'Loading ...'}]
 						    	});
 			    			   
 			    			    var coords = btn.getXY();

@@ -6,7 +6,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers',
 	           'vcube.form.field.usbfilters', 'vcube.form.field.networkadapters',
 	           'vcube.form.field.serialports', 'vcube.form.field.parallelports',
-	           'vcube.form.field.sharedfolders'],
+	           'vcube.form.field.sharedfolders', 'vcube.form.field.storage'],
 	
 	sections: [{
 		name: 'General',
@@ -202,27 +202,12 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			}]
 		}]
 	},{
-		name:'Storage',
+		name:'storageControllers',
 		label:'Storage',
-		image:'attachment',
-		defaults: {},
-		layout: {
-			type: 'border'
-		},
-		items: [{
-			title: 'Storage Tree',
-			xtype: 'treepanel',
-			rootVisible: false,
-			region: 'west',
-			width: 200,
-			split: true
-		},{
-			title: 'Attributes',
-			region: 'center',
-			split: true
-		}]
+		xtype: 'storagefield',
+		image:'attachment'
 	},{
-		name:'Audio',
+		name:'audioAdapter',
 		label:'Audio',
 		image:'sound',
 		frame: true,

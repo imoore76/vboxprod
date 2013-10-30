@@ -15,8 +15,6 @@ Ext.define('vcube.form.field.networkadapters', {
     
     server_id: null,
     
-    _origData: null,
-    
     /* Stores */
     networkAdapterTypeStore: Ext.create('vcube.store.VboxEnums',{
 		enumClass: 'NetworkAdapterType',
@@ -165,22 +163,26 @@ Ext.define('vcube.form.field.networkadapters', {
     },
     
     getValue: function() {
+    	
     	var self = this;
     	
-    	for(var i = 0; i < self._origData.length; i++) {
+    	console.log(this);
+    	
+    	// Shorthand
+    	var netData = this.up('.window')._data[this.name];
+    	
+    	for(var i = 0; i < netData.length; i++) {
     		var tab = self.childComponent.items.items[i];
-    		Ext.iterate(self._origData[i], function(k,v) {
+    		Ext.iterate(netData[i], function(k,v) {
     			var f = tab.down('[name=netAdapter-'+k+'-'+i+']');
     			if(f)
-    				self._origData[i][k] = Ext.isObject(self._origData[i][k]) ? Ext.Object.merge(self._origData[i][k], f.getValue()) : f.getValue();
+    				netData[i][k] = Ext.isObject(netData[i][k]) ? Ext.Object.merge(netData[i][k], f.getValue()) : f.getValue();
     		})
     	}
-    	return this._origData;
+    	return netData
     },
     
     setValue: function(val) {
-    	
-    	this._origData = val;
     	
     	if(!val) val = [];
     	for(var i = 0; i < Math.min(val.length,this.maxAdapters); i++) {

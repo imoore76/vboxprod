@@ -228,7 +228,7 @@ Ext.define('vcube.actions.machine',{
 				
 				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(selectionModel.getSelection()[0].get('id'))).done(function(data) {
 					sd.down('.form').getForm().setValues(data);
-					sd.fireEvent('vmDataLoaded', sd, data);
+					sd._data = data;
 				}).always(function(){
 					sd.setLoading(false);
 				});

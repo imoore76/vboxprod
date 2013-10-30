@@ -2544,9 +2544,9 @@ class vboxConnector(object):
 
             response.append({
                 'id' : d.id,
-                'vendorId' : '%04s' %(hex(d.vendorId),),
-                'productId' : '%04s' %(hex(d.productId),),
-                'revision' : '%04s' %(hex(d.revision),),
+                'vendorId' : hex(d.vendorId),
+                'productId' : hex(d.productId),
+                'revision' : hex(d.revision),
                 'manufacturer' : d.manufacturer,
                 'product' : d.product,
                 'serialNumber' : d.serialNumber,

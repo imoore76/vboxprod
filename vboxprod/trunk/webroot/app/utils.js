@@ -695,9 +695,9 @@ Ext.define('vcube.utils', {
 		 * @return {String} port name
 		 */	
 		getPortName : function(irq,port) {
-			for(var i = 0; i < vboxParallelPorts.ports.length; i++) {
-				if(vboxParallelPorts.ports[i].irq == irq && vboxParallelPorts.ports[i].port.toUpperCase() == port.toUpperCase())
-					return vboxParallelPorts.ports[i].name;
+			for(var i = 0; i < vcube.utils.vboxParallelPorts.ports.length; i++) {
+				if(vcube.utils.vboxParallelPorts.ports[i].irq == irq && vcube.utils.vboxParallelPorts.ports[i].port.toUpperCase() == port.toUpperCase())
+					return vcube.utils.vboxParallelPorts.ports[i].name;
 			}
 			return 'User-defined';
 		}

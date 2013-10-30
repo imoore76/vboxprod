@@ -1,9 +1,9 @@
-Ext.define('vcube.form.field.serialports', {
+Ext.define('vcube.form.field.parallelports', {
     extend: 'Ext.form.field.Base',
     mixins: {
         field: 'Ext.form.field.Field'
     },
-    alias: 'widget.serialportsfield',
+    alias: 'widget.parallelportsfield',
     combineErrors: true,
     border: false,
     padding: 0,
@@ -34,7 +34,7 @@ Ext.define('vcube.form.field.serialports', {
     	remoteSort: false,
     	remoteFilter: false,
     	
-    	data: vcube.utils.vboxSerialPorts.ports.concat(
+    	data: vcube.utils.vboxParallelPorts.ports.concat(
     			[{name: 'User-defined', irq: 0, port: '0x000'}])
     	
     }),
@@ -58,7 +58,7 @@ Ext.define('vcube.form.field.serialports', {
     	for(var i = 0; i < self._origData.length; i++) {
     		var tab = self.childComponent.items.items[i];
     		Ext.iterate(self._origData[i], function(k,v) {
-    			var f = tab.down('[name=serialPort-'+k+'-'+i+']');
+    			var f = tab.down('[name=parallelPort-'+k+'-'+i+']');
     			if(f)
     				self._origData[i][k] = Ext.isObject(self._origData[i][k]) ? Ext.Object.merge(self._origData[i][k], f.getValue()) : f.getValue();
     		})
@@ -75,14 +75,14 @@ Ext.define('vcube.form.field.serialports', {
     		
     		var tab = this.childComponent.items.items[i];
     		Ext.iterate(val[i], function(k, v) {
-    			var f = tab.down('[name=serialPort-'+k+'-'+i+']');
+    			var f = tab.down('[name=parallelPort-'+k+'-'+i+']');
     			if(f && f.setValue) f.setValue(v);
     		});
     		
     		var irq = tab.down('#irq').getValue();
     		var port = tab.down('#ioport').getValue();
     		
-    		tab.down('#portname').setValue(vcube.utils.vboxSerialPorts.getPortName(irq,port));
+    		tab.down('#portname').setValue(vcube.utils.vboxParallelPorts.getPortName(irq,port));
     	}
     },
     
@@ -91,7 +91,7 @@ Ext.define('vcube.form.field.serialports', {
     	Ext.apply(this, options);
     	
     	this.childComponent = Ext.create('Ext.tab.Panel',{
-    		title: 'Serial Ports',
+    		title: 'parallel Ports',
     		frame: true,
     		padding: 6,
     		layout: 'form',
@@ -118,8 +118,8 @@ Ext.define('vcube.form.field.serialports', {
     			},
     			items: [{
     				xtype: 'checkbox',
-    				boxLabel: 'Enable Serial Port',
-    				name: 'serialPort-enabled-'+i
+    				boxLabel: 'Enable parallel Port',
+    				name: 'parallelPort-enabled-'+i
     			},{
     				xtype: 'fieldcontainer',
     				layout: 'hbox',
@@ -164,14 +164,14 @@ Ext.define('vcube.form.field.serialports', {
     					inputWidth: 50,
     					fieldLabel: 'IRQ',
     					itemId: 'irq',
-    					name: 'serialPort-IRQ-'+i
+    					name: 'parallelPort-IRQ-'+i
     				},{
     					xtype: 'textfield',
     					labelWidth: 80,
     					inputWidth: 50,
     					fieldLabel: 'I/O Port',
     					itemId: 'ioport',
-    					name: 'serialPort-IOBase-'+i
+    					name: 'parallelPort-IOBase-'+i
     				}]
     			},{
     				xtype: 'combo',
@@ -181,17 +181,17 @@ Ext.define('vcube.form.field.serialports', {
     				valueField: 'value',
     				store: this.portModeStore,
     				lastQuery: '',
-    				name: 'serialPort-hostMode-'+i
+    				name: 'parallelPort-hostMode-'+i
     			},{
     				fieldLabel: ' ',
     				labelSeparator: '',
     				xtype: 'checkbox',
     				boxLabel: 'Create Pipe',
-    				name: 'serialPort-server-'+i
+    				name: 'parallelPort-server-'+i
     			},{
     				xtype: 'textfield',
     				fieldLabel: 'Port/File Path',
-    				name: 'serialPort-path-'+i
+    				name: 'parallelPort-path-'+i
     			}]
     		});
     	}

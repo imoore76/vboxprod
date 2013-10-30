@@ -44,7 +44,7 @@ Ext.define('vcube.form.field.networkadapters', {
 		this.promiscPolicyModeStore.setServer(server_id);
 	},
     
-    natEnginePropsEditor: Ext.create('Ext.window.Window',{
+    natEnginePropsEditor: {
     	title: 'NAT Engine',
     	icon: 'images/vbox/nw_16px.png',
     	height: 300,
@@ -149,7 +149,7 @@ Ext.define('vcube.form.field.networkadapters', {
     		text: 'Cancel',
     		itemId: 'cancel'
     	}]
-    }),
+    },
     
 	defaults: {
 		frame: true,
@@ -306,7 +306,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				text: 'NAT Engine',
     				listeners: {
     					click: function() {
-    						this.natEnginePropsEditor.show();
+    						Ext.create('Ext.window.Window',this.natEnginePropsEditor).show();
     					},
     					scope: this
     				}

@@ -256,18 +256,17 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			})			
 		}]
 	},{
-		name:'Network',
 		label:'Network',
 		image:'nw',
 		xtype: 'networkadaptersfield',
 		name: 'networkAdapters'
 	},{
-		name:'SerialPorts',
 		label:'Serial Ports',
 		xtype: 'serialportsfield',
-		image:'serial_port'
+		image:'serial_port',
+		name: 'serialPorts'
 	},{
-		name:'ParallelPorts',
+		name:'parallelPorts',
 		label:'Parallel Ports',
 		image:'parallel_port',
 		xtype: 'tabpanel',

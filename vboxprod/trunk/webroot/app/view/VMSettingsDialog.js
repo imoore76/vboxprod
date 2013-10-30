@@ -5,7 +5,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	
 	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers',
 	           'vcube.form.field.usbfilters', 'vcube.form.field.networkadapters',
-	           'vcube.form.field.serialports'],
+	           'vcube.form.field.serialports', 'vcube.form.field.parallelports',
+	           'vcube.form.field.sharedfolders'],
 	
 	sections: [{
 		name: 'General',
@@ -266,51 +267,10 @@ Ext.define('vcube.view.VMSettingsDialog',{
 		image:'serial_port',
 		name: 'serialPorts'
 	},{
-		name:'parallelPorts',
 		label:'Parallel Ports',
 		image:'parallel_port',
-		xtype: 'tabpanel',
-		items: [{
-			title: 'Port {0}',
-			items: [{
-				xtype: 'checkbox',
-				boxLabel: 'Enable Serial Port'
-			},{
-				xtype: 'fieldcontainer',
-				layout: 'hbox',
-				defaults: {
-					labelAlign: 'right',
-					defaults: {}
-				},
-				items: [{
-					xtype: 'combo',
-					editable: false,
-					fieldLabel: 'Port Number'
-				},{
-					xtype: 'numberfield',
-					labelWidth: 50,
-					inputWidth: 50,
-					fieldLabel: 'IRQ'
-				},{
-					xtype: 'textfield',
-					labelWidth: 80,
-					inputWidth: 50,
-					fieldLabel: 'I/O Port'
-				}]
-			},{
-				xtype: 'combo',
-				editable: false,
-				fieldLabel: 'Port Mode'
-			},{
-				fieldLabel: ' ',
-				labelSeparator: '',
-				xtype: 'checkbox',
-				boxLabel: 'Create Pipe'
-			},{
-				xtype: 'textfield',
-				fieldLabel: 'Port/File Path'
-			}]
-		}]
+		name:'parallelPorts',
+		xtype: 'parallelportsfield'
 	},{
 		name:'USB',
 		label:'USB',
@@ -335,27 +295,10 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			flex: 1
 		}]
 	},{
-		name:'SharedFolders',
+		name:'sharedFolders',
 		label:'Shared Folders',
 		image:'sf',
-		layout: 'fit',
-		items: [{
-			xtype: 'gridpanel',
-			columns: [{
-				header: 'Name',
-				dataIndex: 'name'
-			},{
-				header: 'Path',
-				dataIndex: 'path',
-				flex: 1
-			},{
-				header: 'Auto-mount',
-				dataIndex: 'automount'
-			},{
-				header: 'Access',
-				dataIndex: 'access'
-			}]
-		}]
+		xtype: 'sharedfoldersfield'
 	}]
 		
 });

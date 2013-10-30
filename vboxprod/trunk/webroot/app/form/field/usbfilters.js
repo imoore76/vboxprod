@@ -11,6 +11,12 @@ Ext.define('vcube.form.field.usbfilters', {
     msgTarget: 'side',
     submitFormat: 'c',
 
+    server_id: null,
+    
+    serverNotify: true,
+    
+    setServer: function(sid) { this.server_id = sid; },
+    
     getSubmitValue: function() {
     	return this.getValue();
     },
@@ -34,6 +40,80 @@ Ext.define('vcube.form.field.usbfilters', {
     	
     },
     
+    usbFilterDialog: {
+    	
+    	title: 'USB Filter Details',
+    	icon: 'images/vbox/vm_settings_16px.png',
+    	height: 300,
+    	width: 400,
+    	modal: true,
+    	layout: 'fit',
+    	items: [{
+    		xtype: 'form',
+    		layout: 'form',
+    		frame: true,
+    		defaults: {
+    			xtype: 'textfield'
+    		},
+    		items: [{
+    			fieldLabel: 'Name',
+    			name: 'name'
+    		},{
+    			fieldLabel: 'Vendor ID',
+    			name: 'vendorId'
+    		},{
+    			fieldLabel: 'Product ID',
+    			name: 'productId'
+    		},{
+    			fieldLabel: 'Revision',
+    			name: 'revision'
+    		},{
+    			fieldLabel: 'Manufacturer',
+    			name: 'manufacturer'
+    		},{
+    			fieldLabel: 'Product',
+    			name: 'product'
+    		},{
+    			fieldLabel: 'Serial No.',
+    			name: 'serialNumber'
+    		},{
+    			fieldLabel: 'Port',
+    			name: 'port'
+    		},{
+    			fieldLabel: 'Remote',
+    			name: 'remote',
+    			xtype: 'combo',
+    			editable: false,
+    			queryLocal: true,
+    			displayField: 'name',
+    			valueField: 'value',
+    			store: Ext.create('Ext.data.Store',{
+    				fields: ['name',{name:'value',type:'string'}],
+    				data: [
+    				   {name: 'Any', value: ''},
+    				   {name: 'Yes', value: '1'},
+    				   {name: 'No', value: '0'}
+    				]
+    			})
+    		}]
+    		
+    	}],
+    	
+    	buttons: [{
+    		text: 'OK',
+    		itemId: 'ok'
+    	},{
+    		text: 'Cancel',
+    		listeners: {
+    			click: function(btn) {
+    				btn.up('.window').close();
+    			}
+    		}
+    	}]
+    	
+    	
+    },
+    
     initComponent: function(options) {
     	
     	Ext.apply(this,options);
@@ -53,11 +133,47 @@ Ext.define('vcube.form.field.usbfilters', {
 			viewConfig: {
 				markDirty: false
 			},
-			// Selection change
+
 			listeners: {
+				
+				itemdblclick: function() {
+					this.grid.down('#btnEdit').fireEvent('click');
+				},
 				
 				selectionchange: function(sm, selected) {
 					
+					var btnUp = this.grid.down('#btnMoveUp');
+					var btnDown = this.grid.down('#btnMoveDown');
+					var btnEdit = this.grid.down('#btnEdit');
+					var btnRemove = this.grid.down('#btnRemove');
+					
+					if(!selected.length) {
+						btnUp.disable();
+						btnDown.disable();
+						btnEdit.disable();
+						btnRemove.disable();
+						return;
+					}
+					
+					btnRemove.enable();
+					btnEdit.enable();
+
+					
+					
+					switch(this.grid.getStore().indexOf(selected[0])) {
+						case 0:
+							btnUp.disable();
+							btnDown.enable();
+							break;
+						case (this.grid.getStore().getCount()-1):
+							btnUp.enable();
+							btnDown.disable();
+							break;
+						default:
+							btnUp.enable();
+							btnDown.enable();
+					}
+
 				},
 				scope: this
 			},
@@ -76,13 +192,162 @@ Ext.define('vcube.form.field.usbfilters', {
 				         ]
 			}),
 			rbar: [
-			       {itemId: 'new', icon: 'images/vbox/usb_new_16px.png'},
-			       {itemId: 'add', icon: 'images/vbox/usb_add_16px.png'},
-			       {itemId: 'edit', icon: 'images/vbox/usb_filter_edit_16px.png'},
-			       {itemId: 'remove', icon: 'images/vbox/usb_remove_16px.png'},
-			       {itemId: 'up', icon: 'images/vbox/usb_moveup_16px.png'},
-			       {itemId: 'down', icon: 'images/vbox/usb_movedown_16px.png'}
-			       ],
+			       {
+			    	   icon: 'images/vbox/usb_new_16px.png',
+			    	   listeners: {
+			    		   click: function() {
+			    			   
+			    			   var nameTpl = 'New Filter ';
+			    			   var number = this.grid.getStore().getCount();
+			    			   var name = nameTpl + number;
+			    			   
+			    			   while(this.grid.getStore().findRecord('name',name)) {
+			    				   name = nameTpl + (++number);
+			    			   }
+			    			   
+			    			   this.grid.getStore().add({'name':name,active:true});
+			    		   },
+			    		   scope: this
+			    	   }
+			    		  
+			       },
+			       {
+			    	   icon: 'images/vbox/usb_add_16px.png',
+			    	   listeners: {
+			    		   
+			    		   click: function(btn) {
+			    			   
+			    			   btn.disable();
+			    			   
+			    			   var mnu = Ext.create('Ext.menu.Menu', {
+						    	    renderTo: Ext.getBody(),
+						    	    closeAction: 'destroy',
+						    	    items: [{text:'...loading..'}]
+						    	});
+			    			   
+			    			    var coords = btn.getXY();
+			    			    coords[1] = coords[1] + btn.getHeight();
+			    				mnu.showAt(coords);
+			    				
+			    				var cleanHex = function(h) {
+			    					return h.toUpperCase().replace(/^0X/,'');
+			    				};
+			    				
+			    				var self=this;
+			    				
+			    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGetUSBDevices',{connector:this.server_id})).done(function(devs) {
+			    					
+			    					if(!mnu) return;
+			    					mnu.removeAll(true);
+			    					
+			    					for(var i = 0; i < devs.length; i++) {
+			    						
+			    						var name = (devs[i].product ? devs[i].product : 'Unknown device ') + cleanHex(devs[i].vendorId) + (devs[i].vendorId ? ':' : '') + cleanHex(devs[i].productId) + 
+			    							(devs[i].revision ? ' [' + cleanHex(devs[i].revision) + ']' : '');
+			    						
+			    						mnu.add({
+			    							text: name,
+			    							usbdata: devs[i],
+			    							listeners: {
+			    								click: function(item) {
+			    									self.grid.getStore().add(Ext.apply({},{
+			    										name: item.text,
+			    										active: true,
+			    										vendorId: item.usbdata.vendorId.replace(/^0x/,''),
+			    										productId: item.usbdata.productId.replace(/^0x/,''),
+			    										revision: item.usbdata.revision.replace(/^0x/,'')
+			    									},item.usbdata));
+			    								},
+			    								scope: self
+			    							}
+			    						});
+			    					}
+			    				}).always(function(){
+			    					btn.enable();
+			    				});
+
+			    		   },
+			    		   scope: this
+			    	   }
+			       },
+			       {
+			    	   icon: 'images/vbox/usb_filter_edit_16px.png',
+			    	   itemId: 'btnEdit',
+			    	   disabled: true,
+			    	   listeners: {
+			    		   click: function() {
+			    			   var dlg = Ext.create('Ext.window.Window',this.usbFilterDialog);
+			    			   dlg.down('.form').getForm().setValues(this.grid.getSelectionModel().getSelection()[0].getData());
+			    			   dlg.down('#ok').on('click', function(btn) {
+			    	    				
+			    	    				this.grid.getSelectionModel().getSelection()[0].set(btn.up('.window').down('.form').getForm().getValues());
+			    	    				btn.up('.window').close();
+			    	    				
+			    	    		},this);
+
+			    			   dlg.show();
+			    		   },
+			    		   scope: this
+			    	   }
+
+			       },{
+		    		   icon: 'images/vbox/usb_remove_16px.png',
+		    		   disabled: true,
+		    		   itemId: 'btnRemove',
+			    	   listeners: {
+			    		   click: function() {
+    						   
+			    			   var sm = this.grid.getSelectionModel();
+			    			   var record = this.grid.getSelectionModel().getSelection()[0];
+    						   var store = this.grid.getStore();
+    						   var index = store.indexOf(record);
+
+    						   var nextRecord = store.getAt(index+1);
+    						   if(!nextRecord) nextRecord = store.getAt(index-1);
+    						   
+    						   store.remove(record);
+    						   
+    						   if(nextRecord) sm.select(nextRecord);
+			    		   },
+			    		   scope: this
+			    	   }
+			       },{
+	    			   icon: 'images/vbox/usb_moveup_16px.png',
+	    			   itemId: 'btnMoveUp',
+	    			   disabled: true,
+			    	   listeners: {
+			    		   click: function() {
+			    			   
+    						   var record = this.grid.getSelectionModel().getSelection()[0];
+    						   var store = this.grid.getStore();
+    						   var index = store.indexOf(record);
+    						   
+    						   store.remove(record);
+    						   store.insert(index-1, record);
+    						   this.grid.getSelectionModel().select(record, false, false);
+
+			    		   },
+			    		   scope: this
+			    	   }
+			       },{
+    				   icon: 'images/vbox/usb_movedown_16px.png',
+    				   itemId: 'btnMoveDown',
+    				   disabled: true,
+    				   listeners: {
+    					   click: function() {
+    						   
+    						   var record = this.grid.getSelectionModel().getSelection()[0];
+    						   var store = this.grid.getStore();
+    						   var index = store.indexOf(record);
+    						   
+    						   store.remove(record);
+    						   store.insert(index+1, record);
+    						   this.grid.getSelectionModel().select(record, false, false);
+    						   
+    					   },
+    					   scope: this
+    				   }
+			       }],
 	       columns: [{
 	    	   dataIndex: 'active',
 	    	   xtype: 'checkcolumn',

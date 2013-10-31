@@ -20,7 +20,7 @@ Ext.define('vcube.form.field.parallelports', {
 		this.portModeStore.setServer(server_id);
 	},
 
-    portModeStore: Ext.create('vcube.store.VboxEnums',{
+    portModeStore: Ext.create('vcube.data.VboxEnumStore',{
     	enumClass: 'PortMode',
     	ignoreNull: true,
     	conversionFn: vcube.utils.vboxSerialMode

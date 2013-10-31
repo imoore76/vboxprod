@@ -13,6 +13,8 @@ Ext.define('vcube.form.field.networkadapters', {
     
     maxAdapters: 8,
     
+    natEngines: [],
+    
     server_id: null,
     
     /* Stores */
@@ -97,13 +99,15 @@ Ext.define('vcube.form.field.networkadapters', {
 					dataToLoad.push({display: item, value: item});
 				});
 				
-				console.log(self[v]);
 				self[v].loadData(dataToLoad);
 				
 			})
 		});
 	},
     
+	/**
+	 * NAT engine properties editor window config
+	 */
     natEnginePropsEditor: {
     	title: 'NAT Engine',
     	icon: 'images/vbox/nw_16px.png',
@@ -155,17 +159,33 @@ Ext.define('vcube.form.field.networkadapters', {
     			},{
     				fieldLabel: 'Host IP',
     				name: 'hostIP',
-    				inputWidth: 200
+    				inputWidth: 200,
+    				maskRe: /[\d\.]/
     			}]
     		},{
     			title: 'Port Forwarding Rules',
     			xtype: 'gridpanel',
     			frame: true,
     			layout: 'fit',
+    			plugins: [Ext.create('Ext.grid.plugin.CellEditing', {
+    		        clicksToEdit: 1
+    		    })],
+    		    viewConfig: {
+    		    	markDirty: false
+    		    },
+    			listeners: {
+    				selectionchange: function(sm, selection) {
+    					if(selection.length) {
+    						this.down('#remove').enable();
+    					} else {
+    						this.down('#remove').disable();
+    					}
+    				}
+    			},
     			store: Ext.create('Ext.data.Store',{
     				fields: [
     				   {name: 'name', type: 'string'},
-    				   {name: 'protocol', type: 'string'},
+    				   {name: 'protocol', type: 'int'},
     				   {name: 'hostip', type: 'string'},
     				   {name: 'hostport', type: 'int'},
     				   {name: 'guestip', type: 'string'},
@@ -174,30 +194,95 @@ Ext.define('vcube.form.field.networkadapters', {
     			}),
     			columns: [{
     				header: 'Name',
-    				dataindex: 'name'
+    				dataIndex: 'name',
+    				editor: {
+    					xtype: 'textfield',
+    					allowBlank: false
+    				}
     			},{
     				header: 'Protocol',
-    				dataindex: 'protocol',
-    				width: 75
+    				dataIndex: 'protocol',
+    				width: 75,
+    				renderer: function(val) {
+    					return (val ? 'TCP' : 'UDP');
+    				},
+    				editor: {
+    					xtype: 'combo',
+    					store: [
+		                    [1,'TCP'],
+		                    [0,'UDP']
+		                ],
+		                lazyRender: true,
+		                listClass: 'x-combo-list-small'
+    				}
     			},{
     				header: 'Host IP',
-    				dataindex: 'hostip'
+    				dataIndex: 'hostip',
+    				editor: {
+    					xtype: 'textfield',
+    					validator: function(ip) {
+    	    				if(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return true;
+    	    				return 'Must be a numeric IP address';
+    	    			},
+    	    			maskRe: /[\d\.]/
+
+    				}
     			},{
     				header: 'Host Port',
-    				dataindex: 'hostport',
-    				width: 75
+    				dataIndex: 'hostport',
+    				width: 75,
+    				editor: {
+    					xtype: 'numberfield',
+    	                allowBlank: false,
+    	                minValue: 0,
+    	                maxValue: 65535
+    				}
     			},{
     				header: 'Guest IP',
-    				dataindex: 'guestip'
+    				dataIndex: 'guestip',
+    				editor: {
+    					xtype: 'textfield',
+    					validator: function(ip) {
+    	    				if(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return true;
+    	    				return 'Must be a numeric IP address';
+    	    			},
+    	    			maskRe: /[\d\.]/
+
+    				}
     			},{
     				header: 'Guest Port',
-    				dataindex: 'guestport',
-    				width: 75
+    				dataIndex: 'guestport',
+    				width: 75,
+    				editor: {
+    					xtype: 'numberfield',
+    	                allowBlank: false,
+    	                minValue: 0,
+    	                maxValue: 65535
+    				}
     			}],
     			rbar: [{
-    				icon: 'images/vbox/controller_add_16px.png'
+    				icon: 'images/vbox/controller_add_16px.png',
+    				listeners: {
+    					click: function(btn) {
+    						var store = btn.ownerCt.ownerCt.getStore();
+    						var nameTpl = 'Rule ';
+    						var num = store.getCount() + 1;
+    						var name = nameTpl + (num++);
+    						while(store.findRecord('name',name)) {
+    							name = nameTpl + (num++);
+    						}
+    						store.add({'name':name});
+    					}
+    				}
     			},{
-    				icon: 'images/vbox/controller_remove_16px.png'
+    				icon: 'images/vbox/controller_remove_16px.png',
+    				itemId: 'remove',
+    				disabled: true,
+    				listeners: {
+    					click: function(btn) {
+    						btn.ownerCt.ownerCt.getStore().remove(btn.ownerCt.ownerCt.getSelectionModel().getSelection()[0]);
+    					}
+    				}
     			}]
     		}]
     	}],
@@ -207,7 +292,12 @@ Ext.define('vcube.form.field.networkadapters', {
     		itemId: 'ok'
     	},{
     		text: 'Cancel',
-    		itemId: 'cancel'
+    		itemId: 'cancel',
+    		listeners: {
+    			click: function(btn) {
+    				btn.up('.window').close();
+    			}
+    		}
     	}]
     },
     
@@ -228,18 +318,21 @@ Ext.define('vcube.form.field.networkadapters', {
     	
     	var self = this;
     	
-    	console.log(this);
-    	
     	// Shorthand
     	var netData = this.up('.window')._data[this.name];
     	
     	for(var i = 0; i < netData.length; i++) {
+    		
     		var tab = self.childComponent.items.items[i];
+    		
     		Ext.iterate(netData[i], function(k,v) {
     			var f = tab.down('[name=netAdapter-'+k+'-'+i+']');
     			if(f)
     				netData[i][k] = Ext.isObject(netData[i][k]) ? Ext.Object.merge(netData[i][k], f.getValue()) : f.getValue();
-    		})
+    		});
+    		
+    		// Add NATEngine data
+    		netData[i]['NATEngine'] = this.natEngines[i];
     	}
     	return netData
     },
@@ -253,6 +346,8 @@ Ext.define('vcube.form.field.networkadapters', {
     			var f = tab.down('[name=netAdapter-'+k+'-'+i+']');
     			if(f && f.setValue) f.setValue(v);
     		});
+    		
+    		this.natEngines[i] = val[i].NATEngine;
     	}
     },
     
@@ -351,8 +446,56 @@ Ext.define('vcube.form.field.networkadapters', {
     				itemId: 'natengine',
     				margin: '0 0 0 134',
     				listeners: {
-    					click: function() {
-    						Ext.create('Ext.window.Window',this.natEnginePropsEditor).show();
+    					
+    					click: function(btn) {
+    						
+    						var dlg = Ext.create('Ext.window.Window',this.natEnginePropsEditor);
+    						var store = dlg.down('.gridpanel').getStore();
+    						var num = btn.up('.panel').down('.checkbox').name.split('-').pop();
+    						
+    						var natEngine = this.natEngines[num];
+    						
+    						dlg.down('.form').getForm().setValues(natEngine);
+    						
+    						var redirects = [];
+    						for(var i = 0; i < natEngine.redirects.length; i++) {
+    							var redir = natEngine.redirects[i].split(',');
+    							redirects.push({
+    								name: redir[0],
+    								protocol: redir[1],
+    								hostip: redir[2],
+    								hostport: redir[3],
+    								guestip: redir[4],
+    								guestport: redir[5]
+    							});
+    						}
+    						store.loadData(redirects);
+    						
+    						dlg.down('#ok').on('click',function(btn){
+    							
+    							var redirects = [];
+    							var valid = true;
+    							store.each(function(r){
+    								
+    								if(parseInt(r.get('hostport')) == 0 || parseInt(r.get('guestport')) == 0) {
+    									vcube.utils.alert('The current port forwarding rules are not valid. None of the host or guest port values may be set to zero.');
+    									valid = false;
+    									return false;
+    								}
+    								
+    								redirects.push([r.get('name'),r.get('protocol'),r.get('hostip'),r.get('hostport'),
+    								                r.get('guestip'), r.get('guestport')].join(','));
+    							});
+    							
+    							if(!valid) return;
+    							
+    							this.natEngines[num] = dlg.down('.form').getForm().getValues();
+    							this.natEngines[num]['redirects'] = redirects;
+    							
+    							dlg.close();
+    						}, this);
+    						
+    						dlg.show();
     					},
     					scope: this
     				}

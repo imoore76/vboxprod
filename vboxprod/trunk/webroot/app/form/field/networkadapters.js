@@ -310,25 +310,51 @@ Ext.define('vcube.form.field.networkadapters', {
     						Ext.each(cboList, function(name) {
     							cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']').hide();
     						});
+    						cbo.ownerCt.down('#natengine').hide();
+    						
+    						var targetCbo = null;
     						
     						switch(val) {
     							case 'NATNetwork':
-    								cbo.ownerCt.down('[name=netAdapter-NATNetwork-'+num+']').show();
-    								return;
+    								targetCbo = cbo.ownerCt.down('[name=netAdapter-NATNetwork-'+num+']');
+    								break;
     							case 'Generic':
-    								cbo.ownerCt.down('[name=netAdapter-genericDriver-'+num+']').show();
-    								return;
+    								targetCbo = cbo.ownerCt.down('[name=netAdapter-genericDriver-'+num+']');
+    								break;
     							case 'Internal':
-    								cbo.ownerCt.down('[name=netAdapter-internalNetwork-'+num+']').show();
-    								return;
+    								targetCbo = cbo.ownerCt.down('[name=netAdapter-internalNetwork-'+num+']');
+    								break;
     							case 'HostOnly':
-    								cbo.ownerCt.down('[name=netAdapter-hostOnlyInterface-'+num+']').show();
-    								return;
+    								targetCbo = cbo.ownerCt.down('[name=netAdapter-hostOnlyInterface-'+num+']');
+    								break;
     							case 'Bridged':
-    								cbo.ownerCt.down('[name=netAdapter-bridgedInterface-'+num+']').show();
-    								return;
+    								targetCbo = cbo.ownerCt.down('[name=netAdapter-bridgedInterface-'+num+']');
+    								break;
+    							case 'NAT':
+    								cbo.ownerCt.down('#natengine').show();
+    							default:
+    								return
     						}
+    						
+    						if(!targetCbo.getValue()) {
+    							try {
+    								targetCbo.setValue(targetCbo.getStore().getAt(0).get('value'))    								
+    							} catch(err) {}
+    						}
+    						
+    						targetCbo.show();
     					}
+    				}
+    			},{
+    				xtype: 'button',
+    				text: 'NAT Engine Properties',
+    				itemId: 'natengine',
+    				margin: '0 0 0 134',
+    				listeners: {
+    					click: function() {
+    						Ext.create('Ext.window.Window',this.natEnginePropsEditor).show();
+    					},
+    					scope: this
     				}
     			},{
     				xtype: 'combo',
@@ -339,6 +365,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				displayField: 'display',
     				valueField: 'value',
     				lastQuery: '',
+    				allowBlank: false,
     				store: this.bridgedInterfacesStore
     			},{
     				xtype: 'combo',
@@ -349,6 +376,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				displayField: 'display',
     				valueField: 'value',
     				lastQuery: '',
+    				allowBlank: false,
     				store: this.hostOnlyInterfacesStore
     			},{
     				xtype: 'combo',
@@ -359,6 +387,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				displayField: 'display',
     				valueField: 'value',
     				lastQuery: '',
+    				allowBlank: false,
     				store: this.internalNetworksStore
     			},{
     				xtype: 'combo',
@@ -369,6 +398,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				displayField: 'display',
     				valueField: 'value',
     				lastQuery: '',
+    				allowBlank: false,
     				store: this.natNetworksStore
     			},{
     				xtype: 'combo',
@@ -379,6 +409,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				displayField: 'display',
     				valueField: 'value',
     				lastQuery: '',
+    				allowBlank: false,
     				store: this.genericDriversStore
     			},{
     				xtype: 'combo',
@@ -440,15 +471,6 @@ Ext.define('vcube.form.field.networkadapters', {
     				xtype: 'checkbox',
     				name: 'netAdapter-cableConnected-'+i,
     				boxLabel: 'Cable Connected'
-    			},{
-    				xtype: 'button',
-    				text: 'NAT Engine',
-    				listeners: {
-    					click: function() {
-    						Ext.create('Ext.window.Window',this.natEnginePropsEditor).show();
-    					},
-    					scope: this
-    				}
     			}]
     		});
     	}

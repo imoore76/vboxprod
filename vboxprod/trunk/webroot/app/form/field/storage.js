@@ -29,19 +29,34 @@ Ext.define('vcube.form.field.storage', {
     	return filters;
     },
     
+    
     addController: function(c) {
     	
-    	this.tree.getTreeStore().add({
+    	var child = this.tree.getRootNode().createNode({
     		text: Ext.String.htmlEncode(c.name),
-    		icon: 'images/vbox/' + c.bus.toLowerCase() + '_expand_16px.png',
-    		leaf: false
-    	})
+    		icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIcon(c.bus) + '_expand_16px.png',
+    		leaf: false,
+    		expanded: true,
+    		data: c
+    	});
+    	
+    	this.tree.getRootNode().appendChild(child);
+    	
+    	Ext.each(c.mediumAttachments, function(ma) {
+    		var maNode = child.createNode({
+    			text: vcube.utils.vboxMedia.getName(ma.medium),
+    			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIcon(ma) + '_16px.png',
+    			leaf: true,
+    			data: ma
+    		});
+    		child.appendChild(maNode);
+    	});
     },
     
     setValue: function(controllers) {
     
     	var self = this;
-    	this.tree.getTreeStore().removeAll();
+    	this.tree.getRootNode().removeAll(true);
     	
     	if(!controllers) controllers = [];
     	
@@ -61,9 +76,250 @@ Ext.define('vcube.form.field.storage', {
     		title: 'Storage Tree',
     		xtype: 'treepanel',
     		rootVisible: false,
+    		hideCollapseTool: true,
     		region: 'center',
-    		split: true    		
+    		split: true
     	});
+    	
+    	/*
+    	 *	Controller Info Panel 
+    	 */
+    	var controllerInfoPanel = Ext.create('Ext.form.Panel',{
+    		hidden: true,
+    		frame: true,
+    		layout: 'form',
+    		defaults: {
+    			labelAlign: 'right'
+    		},
+    		items: [{
+    			fieldLabel: 'Name',
+    			xtype: 'textfield',
+    			name: 'name'
+    		},{
+    			fieldLabel: 'Type',
+    			name: 'controllerType',
+    			xtype: 'combo',
+    			displayField: 'name',
+    			valueField: 'name',
+    			editable: false,
+    			store: Ext.create('Ext.data.Store',{
+    				fields: ['name'],
+	    			data: []
+    			})
+    		},{
+    			xtype: 'checkbox',
+    			fieldLabel: ' ',
+    			labelSeparator: '',
+    			boxLabel: 'Use Host I/O Cache',
+    			name: 'useHostIOCache'
+    		}]
+    	});
+    	
+
+    	/*
+    	 * Floppy disk Info panel
+    	 */
+    	var fdInfoPanel = Ext.create('vcube.form.Panel',{
+    		layout: 'form',
+    		hidden: true,
+    		frame: true,
+    		defaults: {
+    			labelAlign: 'right',
+    			xtype: 'displayfield'
+    		},
+    		items: [{
+    			fieldLabel: 'Floppy Drive',
+    			xtype: 'combo',
+    			displayField: 'name',
+    			valueField: 'value',
+    			editable: false,
+    			name: 'port',
+    			store: Ext.create('Ext.data.Store',{
+    				autoload: false,
+    				remoteSort: false,
+    				remoteFilter: false,
+    				data: [],
+    				fields: ['name', 'value']
+    			})
+    		},{
+    			fieldLabel: 'Type',
+    			name: 'medium.type'
+    		},{
+    			fieldLabel: 'Size',
+    			name: 'medium.size'
+    		},{
+    			fieldLabel: 'Location',
+    			name: 'medium.location'
+    		},{
+    			fieldLabel: 'Attached to',
+    			name: 'medium.attachedTo'
+    		}]
+    	});
+
+    	/*
+    	 * CD / DVD Info panel
+    	 */
+    	var cdInfoPanel = Ext.create('vcube.form.Panel',{
+    		layout: 'form',
+    		hidden: true,
+    		frame: true,
+    		defaults: {
+    			labelAlign: 'right',
+    			xtype: 'displayfield'
+    		},
+    		items: [{
+    			fieldLabel: 'CD/DVD Drive',
+    			xtype: 'combo',
+    			editable: false,
+    			displayField: 'name',
+    			valueField: 'value',
+    			name: 'port',
+    			store: Ext.create('Ext.data.Store',{
+    				fields: ['name', 'value'],
+    				data: [],
+    				autoload: false,
+    				remoteSort: false,
+    				remoteFilter: false
+    			})
+    		},{
+    			fieldLabel: ' ',
+    			labelSeparator: '',
+    			xtype: 'checkbox',
+    			boxLabel: 'Live CD/DVD',
+    			name: 'temporaryEject'
+    		},{
+    			fieldLabel: 'Type',
+    			name: 'medium.type'
+    		},{
+    			fieldLabel: 'Size',
+    			name: 'medium.size'
+    		},{
+    			fieldLabel: 'Location',
+    			name: 'medium.location'
+    		},{
+    			fieldLabel: 'Attached to',
+    			name: 'medium.attachedTo'
+    		}]
+    	});
+    	
+    	/*
+    	 * Hard disk info panel
+    	 */
+    	var hdInfoPanel = Ext.create('vcube.form.Panel',{
+    		layout: 'form',
+    		hidden: true,
+    		frame: true,
+    		defaults: {
+    			labelAlign: 'right',
+    			xtype: 'displayfield'
+    		},
+    		items: [{
+    			fieldLabel: 'Hard Disk',
+    			xtype: 'combo',
+    			displayField: 'name',
+    			valueField: 'value',
+    			editable: false,
+    			name: 'port',
+    			store: Ext.create('Ext.data.Store',{
+    				autoload: false,
+    				remoteSort: false,
+    				remoteFilter: false,
+    				data: [],
+    				fields: ['name', 'value']
+    			})
+    		},{
+    			fieldLabel: ' ',
+    			labelSeparator: '',
+    			boxLabel: 'Solid-state Drive',
+    			xtype: 'checkbox',
+    			name: 'nonRotational'
+    		},{
+    			fieldLabel: 'Type (Format)',
+    			name: 'medium'
+    		},{
+    			fieldLabel: 'Virtual Size',
+    			name: 'medium.logicalSize'
+    		},{
+    			fieldLabel: 'Actual Size',
+    			name: 'medium.size'
+    		},{
+    			fieldLabel: 'Details',
+    			name: 'medium.variant'
+    		},{
+    			fieldLabel: 'Location',
+    			name: 'medium.location'
+    		},{
+    			fieldLabel: 'Attached to',
+    			name: 'medium.attachedTo'
+    		}]
+    	});
+
+    	this.tree.on('selectionchange', function(tree, selection) {
+    		var self = this;
+    		Ext.each(this.attribsPanel.items.items, function(p) {
+    			p.hide();
+    		});
+    		
+    		if(!selection.length) {
+    			this.attribsPanel.items.items[0].show();
+    			return;
+    		}
+    		
+    		var targetPanel = null;
+
+    		console.log(selection[0]);
+    		
+    		// Controller
+    		if(!selection[0].get('leaf')) {
+    			
+    			targetPanel = controllerInfoPanel;
+    			
+    			// Load controller types combo
+    			var store = controllerInfoPanel.down('[name=controllerType]').store;
+    			
+    			store.removeAll(true);
+    			
+    			store.load(vcube.utils.vboxStorage.getControllerTypes(selection[0].raw.data.bus));
+    		
+    		// Medium attachment
+    		} else {
+    			
+    			switch(selection[0].raw.data.type) {
+	    			case 'Floppy':
+	    				targetPanel = fdInfoPanel;
+	    				break;
+	    			case 'DVD':
+	    				targetPanel = cdInfoPanel;
+	    				break;
+	    			default:
+	    				targetPanel = hdInfoPanel;
+    			}
+    			
+    			var store = targetPanel.down('[name=port]').getStore();
+    			store.removeAll(true);
+    			
+    			var ports = [];
+    			Ext.iterate(vcube.utils.vboxStorage[selection[0].parentNode.raw.data.bus].slots(), function(k,v) {
+    				ports.push({name: v, value: k});
+    			});
+    			store.loadData(ports);
+    			
+    			
+    		}
+    		targetPanel.getForm().setValues(selection[0].raw.data);
+    		targetPanel.show();
+    		
+    	}, this);
+    	
+    	this.attribsPanel = Ext.create('Ext.panel.Panel',{
+    		title: 'Attributes',
+    		region: 'east',
+    		width: 290,
+    		split: true,
+    		layout: 'fit',
+    		items: [ {html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers'},
+    		        controllerInfoPanel, cdInfoPanel, fdInfoPanel, hdInfoPanel]
+    	})
     	
     	this.subPanel = this.childComponent = Ext.create('Ext.panel.Panel',{
     		
@@ -73,14 +329,7 @@ Ext.define('vcube.form.field.storage', {
     		layout: {
     			type: 'border'
     		},
-    		items: [
-    		    this.tree,
-    		{
-    			title: 'Attributes',
-    			region: 'east',
-    			width: 290,
-    			split: true
-    		}]
+    		items: [this.tree, this.attribsPanel]
 
     	});
 

@@ -4096,6 +4096,7 @@ class vboxConnector(object):
                 'id' : m.id,
                 'description' : m.description,
                 'name' : m.name,
+                'location': m.location,
                 'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
                 'hostDrive' : bool(m.hostDrive),
                 'size' : long(m.size),

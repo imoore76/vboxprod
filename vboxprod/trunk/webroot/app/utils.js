@@ -704,22 +704,6 @@ Ext.define('vcube.utils', {
 		
 	},
 
-
-	/**
-	 * Storage Controller Types conversions
-	 * 
-	 * @param {String}
-	 *            c - storage controller type
-	 * @return {String} string used for translation
-	 */
-	vboxStorageControllerType : function(c) {
-		switch(c) {
-			case 'LsiLogic': return 'Lsilogic';
-			case 'LsiLogicSas': return 'LsiLogic SAS';
-			case 'IntelAhci': return 'AHCI';
-		}
-		return c;
-	},
 	
 	/**
 	 * Serial port mode conversions
@@ -915,6 +899,22 @@ Ext.define('vcube.utils', {
 	vboxStorage : {
 			
 			/**
+			 * Storage Controller Types conversions
+			 * 
+			 * @param {String}
+			 *            c - storage controller type
+			 * @return {String} string used for translation
+			 */
+			getControllerType : function(c) {
+				switch(c) {
+					case 'LsiLogic': return 'Lsilogic';
+					case 'LsiLogicSas': return 'LsiLogic SAS';
+					case 'IntelAhci': return 'AHCI';
+				}
+				return c;
+			},
+
+			/**
 			 * Return list of bus types
 			 * 
 			 * @memberOf vboxStorage
@@ -923,12 +923,36 @@ Ext.define('vcube.utils', {
 			 */
 			getBusTypes : function() {
 				var busts = [];
-				for(var i in vboxStorage) {
+				for(var i in vcube.utils.vboxStorage) {
 					if(typeof i == 'function') continue;
-					if(!vboxStorage[i].maxPortCount) continue;
+					if(!vcube.utils.vboxStorage[i].maxPortCount) continue;
 					busts[busts.length] = i;
 				}
 				return busts;
+			},
+			
+			/**
+			 * Return a list of controller types for bus
+			 */
+			getControllerTypes: function(bus) {
+				
+				var list = [];
+				Ext.each(vcube.utils.vboxStorage[bus].types, function(t) {
+					list.push({value: t, name: vcube.utils.vboxStorage.getControllerType(t)})
+				})
+				return list;
+				
+			},
+			
+			/**
+			 * Return icon for medium attachment type
+			 */
+			getMAIcon: function(ma) {
+				switch(ma.type.toLowerCase()) {
+					case 'dvd': return 'cd';
+					case 'floppy': return 'fd';
+				}
+				return 'hd';
 			},
 			
 			/**
@@ -939,7 +963,7 @@ Ext.define('vcube.utils', {
 			 * @return {String} icon name
 			 */
 			getBusIcon : function(bus) {
-				if(vboxStorage[bus].displayInherit) bus = vboxStorage[bus].displayInherit
+				if(vcube.utils.vboxStorage[bus].displayInherit) bus = vcube.utils.vboxStorage[bus].displayInherit
 				return bus.toLowerCase();
 			},
 			
@@ -947,7 +971,7 @@ Ext.define('vcube.utils', {
 				maxPortCount : 2,
 				limitOneInstance : true,
 				maxDevicesPerPortCount : 2,
-				types :['PIIX3','PIIX4','ICH6' ],
+				types :['PIIX3','PIIX4','ICH6'],
 				ignoreFlush : true,
 				slotName : function(p,d) {
 					switch(p+'-'+d) {
@@ -1070,30 +1094,27 @@ Ext.define('vcube.utils', {
 		var strIcon = "state_powered_off_16px.png";
 		var strNoIcon = "state_running_16px.png";
 		
-		switch (state)
-		{
-		case "PoweredOff": strIcon = "state_powered_off_16px.png"; break;
-		case "Saved": strIcon = "state_saved_16px.png"; break;
-		case "Teleported": strIcon = strNoIcon; break;
-		case "LiveSnapshotting": strIcon = "snapshot_online_16px.png"; break;
-		case "Aborted": strIcon = "state_aborted_16px.png"; break;
-		case "Running": strIcon = "state_running_16px.png"; break;
-		case "Paused": strIcon = "state_paused_16px.png"; break;
-		case "Stuck": strIcon = "state_stuck_16px.png"; break;
-		case "Teleporting": strIcon = strNoIcon; break;
-		case "Starting": strIcon = strNoIcon; break;
-		case "Stopping": strIcon = strNoIcon; break;
-		case "Saving": strIcon = "state_discarding_16px.png"; break;
-		case "Restoring": strIcon = "vm_settings_16px.png"; break;
-		case "TeleportingPausedVM": strIcon = strNoIcon; break;
-		case "TeleportingIn": strIcon = strNoIcon; break;
-		case "RestoringSnapshot": strIcon = "discard_cur_state_16px.png"; break;
-		case "DeletingSnapshot": strIcon = "state_discarding_16px.png"; break;
-		case "SettingUp": strIcon = strNoIcon; break;
-		case "Hosting" : strIcon = "vm_settings_16px.png"; break;
-		case "Inaccessible": strIcon = "state_aborted_16px.png"; break;
-		default:
-			break;
+		switch (state) {
+			case "PoweredOff": strIcon = "state_powered_off_16px.png"; break;
+			case "Saved": strIcon = "state_saved_16px.png"; break;
+			case "Teleported": strIcon = strNoIcon; break;
+			case "LiveSnapshotting": strIcon = "snapshot_online_16px.png"; break;
+			case "Aborted": strIcon = "state_aborted_16px.png"; break;
+			case "Running": strIcon = "state_running_16px.png"; break;
+			case "Paused": strIcon = "state_paused_16px.png"; break;
+			case "Stuck": strIcon = "state_stuck_16px.png"; break;
+			case "Teleporting": strIcon = strNoIcon; break;
+			case "Starting": strIcon = strNoIcon; break;
+			case "Stopping": strIcon = strNoIcon; break;
+			case "Saving": strIcon = "state_discarding_16px.png"; break;
+			case "Restoring": strIcon = "vm_settings_16px.png"; break;
+			case "TeleportingPausedVM": strIcon = strNoIcon; break;
+			case "TeleportingIn": strIcon = strNoIcon; break;
+			case "RestoringSnapshot": strIcon = "discard_cur_state_16px.png"; break;
+			case "DeletingSnapshot": strIcon = "state_discarding_16px.png"; break;
+			case "SettingUp": strIcon = strNoIcon; break;
+			case "Hosting" : strIcon = "vm_settings_16px.png"; break;
+			case "Inaccessible": strIcon = "state_aborted_16px.png"; break;
 		}
 		
 		return strIcon;

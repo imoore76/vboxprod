@@ -81,7 +81,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				name: 'chipsetType',
 				displayField: 'display',
 				valueField: 'value',
-				store: Ext.create('vcube.store.VboxEnums',{
+				store: Ext.create('vcube.data.VboxEnumStore',{
 					enumClass: 'ChipsetType',
 					ignoreNull: true
 				})
@@ -188,7 +188,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				name: 'VRDEServer.authType',
 				displayField: 'display',
 				valueField: 'value',
-				store: Ext.create('vcube.store.VboxEnums',{
+				store: Ext.create('vcube.data.VboxEnumStore',{
 					enumClass: 'AuthType'
 				})
 
@@ -226,7 +226,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			displayField: 'display',
 			valueField: 'value',
 			lastQuery: '',
-			store: Ext.create('vcube.store.VboxEnums',{
+			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioDriverType',
 				conversionFn: vcube.utils.vboxAudioDriver
 			})
@@ -238,7 +238,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			displayField: 'display',
 			valueField: 'value',
 			lastQuery: '',
-			store: Ext.create('vcube.store.VboxEnums',{
+			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioControllerType',
 				conversionFn: vcube.utils.vboxAudioController
 			})			

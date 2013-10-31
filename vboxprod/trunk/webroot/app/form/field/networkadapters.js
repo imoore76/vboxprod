@@ -16,30 +16,92 @@ Ext.define('vcube.form.field.networkadapters', {
     server_id: null,
     
     /* Stores */
-    networkAdapterTypeStore: Ext.create('vcube.store.VboxEnums',{
+    networkAdapterTypeStore: Ext.create('vcube.data.VboxEnumStore',{
 		enumClass: 'NetworkAdapterType',
 		conversionFn: vcube.utils.vboxNetworkAdapterType,
 		ignoreNull: true
 	}),
 	
-	networkAttachmentTypeStore: Ext.create('vcube.store.VboxEnums',{
+	networkAttachmentTypeStore: Ext.create('vcube.data.VboxEnumStore',{
 		enumClass: 'NetworkAttachmentType',
 		conversionFn: vcube.utils.vboxNetworkAttachmentType
 	}),
 	
-	promiscPolicyModeStore: Ext.create('vcube.store.VboxEnums',{
+	promiscPolicyModeStore: Ext.create('vcube.data.VboxEnumStore',{
 		enumClass: 'NetworkAdapterPromiscModePolicy',
 		conversionFn: vcube.utils.vboxNetworkPromiscPolicy,
 		ignoreNull: true
 	}),
 	
+	bridgedInterfacesStore: Ext.create('Ext.data.Store',{
+		autoload: false,
+		remoteSort: false,
+		remoteFilter: false,
+		fields: ['display','value']
+	}),
+	
+	hostOnlyInterfacesStore: Ext.create('Ext.data.Store',{
+		autoload: false,
+		remoteSort: false,
+		remoteFilter: false,
+		fields: ['display','value']
+	}),
+	
+	internalNetworksStore: Ext.create('Ext.data.Store',{
+		autoload: false,
+		remoteSort: false,
+		remoteFilter: false,
+		fields: ['display','value']
+	}),
+	
+	natNetworksStore: Ext.create('Ext.data.Store',{
+		autoload: false,
+		remoteSort: false,
+		remoteFilter: false,
+		fields: ['display','value']
+	}),
+	
+	genericDriversStore: Ext.create('Ext.data.Store',{
+		autoload: false,
+		remoteSort: false,
+		remoteFilter: false,
+		fields: ['display','value']
+	}),
+	
 	serverNotify: true,
 	
 	setServer: function(server_id) {
+		
 		this.server_id = server_id;
 		this.networkAdapterTypeStore.setServer(server_id);
 		this.networkAttachmentTypeStore.setServer(server_id);
 		this.promiscPolicyModeStore.setServer(server_id);
+		
+		var self = this;
+		
+		// Load host networking info
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGetNetworking',{connector:server_id})).done(function(data){
+			
+			var rootToStore = {
+				nics: 'bridgedInterfacesStore',
+				genericDrivers: 'genericDriversStore',
+				NATNetworks: 'natNetworksStore',
+				networks: 'internalNetworksStore',
+				hostOnlyNics: 'hostOnlyInterfacesStore'
+			};
+			
+			Ext.iterate(rootToStore, function(k,v) {
+				
+				var dataToLoad = [];
+				Ext.each(data[k], function(item) {
+					dataToLoad.push({display: item, value: item});
+				});
+				
+				console.log(self[v]);
+				self[v].loadData(dataToLoad);
+				
+			})
+		});
 	},
     
     natEnginePropsEditor: {
@@ -237,12 +299,87 @@ Ext.define('vcube.form.field.networkadapters', {
     				displayField: 'display',
     				valueField: 'value',
     				store: this.networkAttachmentTypeStore,
-    				lastQuery: ''
-
+    				lastQuery: '',
+    				listeners: {
+    					change: function(cbo, val) {
+    						
+    						var cboList = ['bridgedInterface','hostOnlyInterface','internalNetwork','NATNetwork','genericDriver'];
+    						var num = cbo.name.split('-').pop();
+    						
+    						// Hide all at first
+    						Ext.each(cboList, function(name) {
+    							cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']').hide();
+    						});
+    						
+    						switch(val) {
+    							case 'NATNetwork':
+    								cbo.ownerCt.down('[name=netAdapter-NATNetwork-'+num+']').show();
+    								return;
+    							case 'Generic':
+    								cbo.ownerCt.down('[name=netAdapter-genericDriver-'+num+']').show();
+    								return;
+    							case 'Internal':
+    								cbo.ownerCt.down('[name=netAdapter-internalNetwork-'+num+']').show();
+    								return;
+    							case 'HostOnly':
+    								cbo.ownerCt.down('[name=netAdapter-hostOnlyInterface-'+num+']').show();
+    								return;
+    							case 'Bridged':
+    								cbo.ownerCt.down('[name=netAdapter-bridgedInterface-'+num+']').show();
+    								return;
+    						}
+    					}
+    				}
     			},{
-    				xtype: 'textfield',
-    				name: 'netAdapter-name-'+i,
-    				fieldLabel: 'Name'
+    				xtype: 'combo',
+    				editable: false,
+    				hidden: true,
+    				fieldLabel: 'Name',
+    				name: 'netAdapter-bridgedInterface-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				lastQuery: '',
+    				store: this.bridgedInterfacesStore
+    			},{
+    				xtype: 'combo',
+    				editable: false,
+    				hidden: true,
+    				fieldLabel: 'Name',
+    				name: 'netAdapter-hostOnlyInterface-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				lastQuery: '',
+    				store: this.hostOnlyInterfacesStore
+    			},{
+    				xtype: 'combo',
+    				editable: true,
+    				hidden: true,
+    				fieldLabel: 'Name',
+    				name: 'netAdapter-internalNetwork-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				lastQuery: '',
+    				store: this.internalNetworksStore
+    			},{
+    				xtype: 'combo',
+    				editable: false,
+    				hidden: true,
+    				fieldLabel: 'Name',
+    				name: 'netAdapter-NATNetwork-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				lastQuery: '',
+    				store: this.natNetworksStore
+    			},{
+    				xtype: 'combo',
+    				editable: true,
+    				fieldLabel: 'Name',
+    				hidden: true,
+    				name: 'netAdapter-genericDriver-'+i,
+    				displayField: 'display',
+    				valueField: 'value',
+    				lastQuery: '',
+    				store: this.genericDriversStore
     			},{
     				xtype: 'combo',
     				editable: false,

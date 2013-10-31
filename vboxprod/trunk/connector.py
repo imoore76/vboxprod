@@ -2113,9 +2113,8 @@ class vboxConnector(object):
         genericDrivers = []
         
         """ Get host nics """
-        for d in vboxGetArray(self.vbox.host, 'networkInterfaces'):
+        for d in self.vbox.host.findHostNetworkInterfacesOfType(vboxMgr.constants.HostNetworkInterfaceType_Bridged):
             nics.append(d.name)
-
         
         """ Get internal Networks """
         networks = vboxGetArray(self.vbox,'internalNetworks')
@@ -2123,9 +2122,21 @@ class vboxConnector(object):
         """ Generic Drivers """
         genericDrivers = vboxGetArray(self.vbox,'genericNetworkDrivers')
         
+        """ NAT Networks """
+        natNetworks = []
+        for net in vboxGetArray(self.vbox,'NATNetworks'):
+            natNetworks.append(net.networkName)
+        
+        """ Host Only interfaces """
+        hostOnlyInterfaces = []
+        for d in self.vbox.host.findHostNetworkInterfacesOfType(vboxMgr.constants.HostNetworkInterfaceType_HostOnly):
+            hostOnlyInterfaces.append(d.name)
+        
         return {
             'nics' : nics,
             'networks' : networks,
+            'NATNetworks': natNetworks,
+            'hostOnlyNics': hostOnlyInterfaces,
             'genericDrivers' : genericDrivers
         }
         

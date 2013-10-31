@@ -221,7 +221,7 @@ Ext.define('vcube.actions.machine',{
 				Ext.each(Ext.ComponentQuery.query('.field', sd), function(field) {
 					if(field.serverNotify) {
 						field.setServer(serverid);
-					} else if(field.store && field.store.isVboxEnumStore) {
+					} else if(field.store && field.store.isServerStore) {
 						field.store.setServer(serverid);
 					}
 				});

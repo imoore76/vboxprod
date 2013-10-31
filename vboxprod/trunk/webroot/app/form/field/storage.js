@@ -68,6 +68,10 @@ Ext.define('vcube.form.field.storage', {
     		
     	});
     	
+    	// select first item in tree
+    	if(controllers.length)
+    		this.tree.getSelectionModel().selectRange(0,0);
+    	
     },
     
     initComponent: function(options) {
@@ -442,7 +446,7 @@ Ext.define('vcube.form.field.storage', {
     			cls: 'greyPanel',
     			border: false
     		},
-    		items: [ {html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers.'},
+    		items: [ {padding: 8, html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers.'},
     		        controllerInfoPanel, cdInfoPanel, fdInfoPanel, hdInfoPanel]
     	})
     	
@@ -474,7 +478,7 @@ Ext.define('vcube.form.field.storage', {
     					title: 'Storage Tree',
     					layout: 'fit',
     					margin: 4,
-    					items: [this.tree]    				    					
+    					items: [this.tree]			
     				}]
     			}]
     		},{

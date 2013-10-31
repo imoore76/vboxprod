@@ -198,7 +198,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			    		   click: function() {
 			    			   
 			    			   var nameTpl = 'New Filter ';
-			    			   var number = this.grid.getStore().getCount();
+			    			   var number = this.grid.getStore().getCount() + 1;
 			    			   var name = nameTpl + number;
 			    			   
 			    			   while(this.grid.getStore().findRecord('name',name)) {

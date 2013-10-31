@@ -32,23 +32,22 @@ Ext.define('vcube.form.field.storage', {
     
     addController: function(c) {
     	
-    	var child = this.tree.getRootNode().createNode({
+    	var child = this.tree.getRootNode().createNode(Ext.Object.merge({
     		text: Ext.String.htmlEncode(c.name),
     		icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIcon(c.bus) + '_expand_16px.png',
     		leaf: false,
-    		expanded: true,
-    		data: c
-    	});
+    		expanded: true
+    	}, c));
     	
     	this.tree.getRootNode().appendChild(child);
     	
     	Ext.each(c.mediumAttachments, function(ma) {
-    		var maNode = child.createNode({
+    		var maNode = child.createNode(Ext.Object.merge({
     			text: vcube.utils.vboxMedia.getName(ma.medium),
     			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIcon(ma) + '_16px.png',
-    			leaf: true,
-    			data: ma
-    		});
+    			leaf: true
+    		}, ma));
+    		
     		child.appendChild(maNode);
     	});
     },
@@ -76,9 +75,22 @@ Ext.define('vcube.form.field.storage', {
     		title: 'Storage Tree',
     		xtype: 'treepanel',
     		rootVisible: false,
-    		hideCollapseTool: true,
+    		viewConfig: {
+    			markDirty: false
+    		},
     		region: 'center',
-    		split: true
+    		split: true,
+    		
+    		store: Ext.create('Ext.data.TreeStore',{
+    			fields: ['leaf','expanded','text','icon','iconCls',
+    			         'temporaryEject',
+    			         'nonRotational',
+    			         'medium',
+    			         'slot',
+    			         'useHostIOCache',
+    			         'name',
+    			         'controllerType']
+    		})
     	});
     	
     	/*
@@ -94,7 +106,20 @@ Ext.define('vcube.form.field.storage', {
     		items: [{
     			fieldLabel: 'Name',
     			xtype: 'textfield',
-    			name: 'name'
+    			name: 'name',
+    			enableKeyEvents: true,
+    			listeners: {
+    				keyup: function(txt) {
+    					this.tree.getSelectionModel().getSelection()[0].set('text', Ext.String.htmlEncode(txt.getValue()));
+    				},
+    				change: function(txt, val) {
+    					this.tree.getSelectionModel().getSelection()[0].set({
+    						text : Ext.String.htmlEncode(val),
+    						name: val
+    					});
+    				},
+    				scope: this
+    			}
     		},{
     			fieldLabel: 'Type',
     			name: 'controllerType',
@@ -106,16 +131,35 @@ Ext.define('vcube.form.field.storage', {
     			store: Ext.create('Ext.data.Store',{
     				fields: ['name','value'],
 	    			data: []
-    			})
+    			}),
+    			listeners: {
+    				change: function(cbo, val) {
+    					this.tree.getSelectionModel().getSelection()[0].set('controllerType', val);
+    				},
+    				scope: this
+    			}
     		},{
     			xtype: 'checkbox',
     			fieldLabel: ' ',
     			labelSeparator: '',
     			boxLabel: 'Use Host I/O Cache',
-    			name: 'useHostIOCache'
+    			name: 'useHostIOCache',
+    			listeners: {
+    				change: function(cb, val) {
+    					this.tree.getSelectionModel().getSelection()[0].set('useHostIOCache', (val ? true: false));
+    				},
+    				scope: this
+    			}
     		}]
     	});
     	
+    	/* Renderer generator */
+    	function ifVal(fn) {
+    		return function(val) {
+    			if(val) return (fn ? fn(val) : val);
+    			return '--';    			
+    		}
+    	}
 
     	/*
     	 * Floppy disk Info panel
@@ -145,17 +189,20 @@ Ext.define('vcube.form.field.storage', {
     			})
     		},{
     			fieldLabel: 'Type',
-    			name: 'medium.type'
+    			name: 'medium.type',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Size',
     			name: 'medium.size',
-    			renderer: vcube.utils.bytesConvert
+    			renderer: ifVal(vcube.utils.bytesConvert)
     		},{
     			fieldLabel: 'Location',
-    			name: 'medium.location'
+    			name: 'medium.location',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Attached to',
-    			name: 'medium.attachedTo'
+    			name: 'medium.attachedTo',
+    			renderer: ifVal()
     		}]
     	});
 
@@ -193,17 +240,20 @@ Ext.define('vcube.form.field.storage', {
     			name: 'temporaryEject'
     		},{
     			fieldLabel: 'Type',
-    			name: 'medium.type'
+    			name: 'medium.type',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Size',
     			name: 'medium.size',
-    			renderer: vcube.utils.bytesConvert
+    			renderer: ifVal(vcube.utils.bytesConvert)
     		},{
     			fieldLabel: 'Location',
-    			name: 'medium.location'
+    			name: 'medium.location',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Attached to',
-    			name: 'medium.attachedTo'
+    			name: 'medium.attachedTo',
+    			renderer: ifVal()
     		}]
     	});
     	
@@ -241,27 +291,32 @@ Ext.define('vcube.form.field.storage', {
     			name: 'nonRotational'
     		},{
     			fieldLabel: 'Type (Format)',
-    			name: 'medium'
+    			name: 'medium',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Virtual Size',
     			name: 'medium.logicalSize',
-    			renderer: vcube.utils.mbytesConvert
+    			renderer: ifVal(vcube.utils.mbytesConvert)
     		},{
     			fieldLabel: 'Actual Size',
     			name: 'medium.size',
-    			renderer: vcube.utils.bytesConvert
+    			renderer: ifVal(vcube.utils.bytesConvert)
     		},{
     			fieldLabel: 'Details',
-    			name: 'medium.variant'
+    			name: 'medium.variant',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Location',
-    			name: 'medium.location'
+    			name: 'medium.location',
+    			renderer: ifVal()
     		},{
     			fieldLabel: 'Attached to',
-    			name: 'medium.attachedTo'
+    			name: 'medium.attachedTo',
+    			renderer: ifVal()
     		}]
     	});
 
+    	
     	this.tree.on('selectionchange', function(tree, selection) {
     		var self = this;
     		Ext.each(this.attribsPanel.items.items, function(p) {
@@ -275,20 +330,18 @@ Ext.define('vcube.form.field.storage', {
     		
     		var targetPanel = null;
 
-    		console.log(selection[0]);
-    		
     		// Controller
     		if(!selection[0].get('leaf')) {
     			
     			targetPanel = controllerInfoPanel;
     			
     			// Load controller types combo
-    			controllerInfoPanel.down('[name=controllerType]').getStore().loadData(vcube.utils.vboxStorage.getControllerTypes(selection[0].raw.data.bus));
+    			controllerInfoPanel.down('[name=controllerType]').getStore().loadData(vcube.utils.vboxStorage.getControllerTypes(selection[0].raw.bus));
     			
     		// Medium attachment
     		} else {
     			
-    			switch(selection[0].raw.data.type) {
+    			switch(selection[0].raw.type) {
 	    			case 'Floppy':
 	    				targetPanel = fdInfoPanel;
 	    				break;
@@ -301,21 +354,21 @@ Ext.define('vcube.form.field.storage', {
     			
     			
     			var slots = [];
-    			Ext.iterate(vcube.utils.vboxStorage[selection[0].parentNode.raw.data.bus].slots(), function(k,v) {
+    			Ext.iterate(vcube.utils.vboxStorage[selection[0].parentNode.raw.bus].slots(), function(k,v) {
     				slots.push({name: v, value: k});
     			});
     			
     			targetPanel.down('[name=slot]').getStore().loadData(slots);
 
     			// Set correct value
-    			targetPanel.down('[name=slot]').setValue(selection[0].raw.data.port + '-' + selection[0].raw.data.device);
+    			targetPanel.down('[name=slot]').setValue(selection[0].raw.port + '-' + selection[0].raw.device);
     			
     			// If there is no medium, set display fields
     			
     			
     			
     		}
-    		targetPanel.getForm().setValues(selection[0].raw.data);
+    		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].getData(),selection[0].raw));
     		targetPanel.show();
     		
     	}, this);
@@ -326,7 +379,7 @@ Ext.define('vcube.form.field.storage', {
     		width: 310,
     		split: true,
     		layout: 'fit',
-    		items: [ {html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers.'},
+    		items: [ {frame: true, html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers.'},
     		        controllerInfoPanel, cdInfoPanel, fdInfoPanel, hdInfoPanel]
     	})
     	

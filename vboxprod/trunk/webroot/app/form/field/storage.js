@@ -100,10 +100,11 @@ Ext.define('vcube.form.field.storage', {
     			name: 'controllerType',
     			xtype: 'combo',
     			displayField: 'name',
-    			valueField: 'name',
+    			valueField: 'value',
     			editable: false,
+    			lastQuery: '',
     			store: Ext.create('Ext.data.Store',{
-    				fields: ['name'],
+    				fields: ['name','value'],
 	    			data: []
     			})
     		},{
@@ -133,7 +134,8 @@ Ext.define('vcube.form.field.storage', {
     			displayField: 'name',
     			valueField: 'value',
     			editable: false,
-    			name: 'port',
+    			name: 'slot',
+    			lastQuery: '',
     			store: Ext.create('Ext.data.Store',{
     				autoload: false,
     				remoteSort: false,
@@ -146,7 +148,8 @@ Ext.define('vcube.form.field.storage', {
     			name: 'medium.type'
     		},{
     			fieldLabel: 'Size',
-    			name: 'medium.size'
+    			name: 'medium.size',
+    			renderer: vcube.utils.bytesConvert
     		},{
     			fieldLabel: 'Location',
     			name: 'medium.location'
@@ -173,7 +176,8 @@ Ext.define('vcube.form.field.storage', {
     			editable: false,
     			displayField: 'name',
     			valueField: 'value',
-    			name: 'port',
+    			name: 'slot',
+    			lastQuery: '',
     			store: Ext.create('Ext.data.Store',{
     				fields: ['name', 'value'],
     				data: [],
@@ -192,7 +196,8 @@ Ext.define('vcube.form.field.storage', {
     			name: 'medium.type'
     		},{
     			fieldLabel: 'Size',
-    			name: 'medium.size'
+    			name: 'medium.size',
+    			renderer: vcube.utils.bytesConvert
     		},{
     			fieldLabel: 'Location',
     			name: 'medium.location'
@@ -219,7 +224,8 @@ Ext.define('vcube.form.field.storage', {
     			displayField: 'name',
     			valueField: 'value',
     			editable: false,
-    			name: 'port',
+    			name: 'slot',
+    			lastQuery: '',
     			store: Ext.create('Ext.data.Store',{
     				autoload: false,
     				remoteSort: false,
@@ -238,10 +244,12 @@ Ext.define('vcube.form.field.storage', {
     			name: 'medium'
     		},{
     			fieldLabel: 'Virtual Size',
-    			name: 'medium.logicalSize'
+    			name: 'medium.logicalSize',
+    			renderer: vcube.utils.mbytesConvert
     		},{
     			fieldLabel: 'Actual Size',
-    			name: 'medium.size'
+    			name: 'medium.size',
+    			renderer: vcube.utils.bytesConvert
     		},{
     			fieldLabel: 'Details',
     			name: 'medium.variant'
@@ -275,12 +283,8 @@ Ext.define('vcube.form.field.storage', {
     			targetPanel = controllerInfoPanel;
     			
     			// Load controller types combo
-    			var store = controllerInfoPanel.down('[name=controllerType]').store;
+    			controllerInfoPanel.down('[name=controllerType]').getStore().loadData(vcube.utils.vboxStorage.getControllerTypes(selection[0].raw.data.bus));
     			
-    			store.removeAll(true);
-    			
-    			store.load(vcube.utils.vboxStorage.getControllerTypes(selection[0].raw.data.bus));
-    		
     		// Medium attachment
     		} else {
     			
@@ -295,14 +299,19 @@ Ext.define('vcube.form.field.storage', {
 	    				targetPanel = hdInfoPanel;
     			}
     			
-    			var store = targetPanel.down('[name=port]').getStore();
-    			store.removeAll(true);
     			
-    			var ports = [];
+    			var slots = [];
     			Ext.iterate(vcube.utils.vboxStorage[selection[0].parentNode.raw.data.bus].slots(), function(k,v) {
-    				ports.push({name: v, value: k});
+    				slots.push({name: v, value: k});
     			});
-    			store.loadData(ports);
+    			
+    			targetPanel.down('[name=slot]').getStore().loadData(slots);
+
+    			// Set correct value
+    			targetPanel.down('[name=slot]').setValue(selection[0].raw.data.port + '-' + selection[0].raw.data.device);
+    			
+    			// If there is no medium, set display fields
+    			
     			
     			
     		}
@@ -314,10 +323,10 @@ Ext.define('vcube.form.field.storage', {
     	this.attribsPanel = Ext.create('Ext.panel.Panel',{
     		title: 'Attributes',
     		region: 'east',
-    		width: 290,
+    		width: 310,
     		split: true,
     		layout: 'fit',
-    		items: [ {html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers'},
+    		items: [ {html: 'The Storage Tree can contain several controllers of different types. This machine currently has no controllers.'},
     		        controllerInfoPanel, cdInfoPanel, fdInfoPanel, hdInfoPanel]
     	})
     	

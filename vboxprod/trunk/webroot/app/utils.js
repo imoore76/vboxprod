@@ -897,7 +897,8 @@ Ext.define('vcube.utils', {
 	 * @namespace vboxStorage
 	 */
 	vboxStorage : {
-			
+
+		
 			/**
 			 * Storage Controller Types conversions
 			 * 
@@ -947,12 +948,24 @@ Ext.define('vcube.utils', {
 			/**
 			 * Return icon for medium attachment type
 			 */
-			getMAIcon: function(ma) {
+			getMAIconName: function(ma) {
 				switch(ma.type.toLowerCase()) {
 					case 'dvd': return 'cd';
 					case 'floppy': return 'fd';
 				}
 				return 'hd';
+			},
+			
+			/**
+			 * Return MA type text
+			 */
+			getMATypeText: function(matype) {
+				switch(matype.toLowerCase()) {
+					case 'dvd': return 'CD/DVD';
+					case 'floppy': return 'Floppy';
+				}
+				return 'Hard Disk';
+				
 			},
 			
 			/**
@@ -962,7 +975,7 @@ Ext.define('vcube.utils', {
 			 * @param {String} bus - bus type
 			 * @return {String} icon name
 			 */
-			getBusIcon : function(bus) {
+			getBusIconName : function(bus) {
 				if(vcube.utils.vboxStorage[bus].displayInherit) bus = vcube.utils.vboxStorage[bus].displayInherit
 				return bus.toLowerCase();
 			},
@@ -981,7 +994,7 @@ Ext.define('vcube.utils', {
 					case '1-1' : return (vcube.utils.trans('IDE Secondary Slave','VBoxGlobal'));
 					}
 				},
-				driveTypes : ['dvd','disk'],
+				driveTypes : ['DVD','HardDisk'],
 				slots : function() { return {
 					'0-0' : (vcube.utils.trans('IDE Primary Master','VBoxGlobal')),
 					'0-1' : (vcube.utils.trans('IDE Primary Slave','VBoxGlobal')),
@@ -994,9 +1007,10 @@ Ext.define('vcube.utils', {
 			SATA : {
 				maxPortCount : 30,
 				maxDevicesPerPortCount : 1,
+				configurablePortCount: true,
 				ignoreFlush : true,
 				types : ['IntelAhci'],
-				driveTypes : ['dvd','disk'],
+				driveTypes : ['DVD','HardDisk'],
 				slotName : function(p,d) { return vcube.utils.trans('SATA Port %1','VBoxGlobal').replace('%1',p); },
 				slots : function() {
 					var s = {};
@@ -1010,7 +1024,7 @@ Ext.define('vcube.utils', {
 			SCSI : {
 				maxPortCount : 16,
 				maxDevicesPerPortCount : 1,
-				driveTypes : ['disk'],
+				driveTypes : ['HardDisk'],
 				types : ['LsiLogic','BusLogic'],
 				ignoreFlush : true,
 				slotName : function(p,d) { return vcube.utils.trans('SCSI Port %1','VBoxGlobal').replace('%1',p); },
@@ -1026,7 +1040,7 @@ Ext.define('vcube.utils', {
 				maxPortCount : 8,
 				maxDevicesPerPortCount : 1,
 				types : ['LsiLogicSas'],
-				driveTypes : ['disk'],
+				driveTypes : ['HardDisk'],
 				slotName : function(p,d) { return vcube.utils.trans('SAS Port %1','VBoxGlobal').replace('%1',p); },
 				slots : function() {
 					var s = {};
@@ -1044,7 +1058,7 @@ Ext.define('vcube.utils', {
 				limitOneInstance : true,
 				maxDevicesPerPortCount : 2,
 				types : ['I82078'],
-				driveTypes : ['floppy'],
+				driveTypes : ['Floppy'],
 				slotName : function(p,d) { return vcube.utils.trans('Floppy Device %1','VBoxGlobal').replace('%1',d); },
 				slots : function() { return { '0-0':vcube.utils.trans('Floppy Device %1','VBoxGlobal').replace('%1','0'), '0-1' :vcube.utils.trans('Floppy Device %1','VBoxGlobal').replace('%1','1') }; }	
 			}

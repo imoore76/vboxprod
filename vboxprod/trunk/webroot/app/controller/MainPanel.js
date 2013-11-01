@@ -3,7 +3,7 @@
  */
 Ext.define('vcube.controller.MainPanel', {
     extend: 'Ext.app.Controller',
-    
+
     // View references
     refs : [{
     	selector: 'viewport > NavTree',
@@ -39,68 +39,16 @@ Ext.define('vcube.controller.MainPanel', {
     /* An selection in the tree has changed */
     onSelectionChange: function(panel, records) {
     	
-    	var welcome = this.getWelcomeView();
-    	var groupTabs = this.getGroupTabsView();
-    	var vmTabs = this.getVMTabsView();
-    	var serverTabs = this.getServerTabsView();
-    	var vmList = this.getVMListsView();
+    	if(records[0] && records[0].get('type') == this.lastItemType) return;
+    	this.lastItemType = (records[0] ? records[0].get('type') : null);
     	
-    	if(records.length) {
-    		
-    		record = records[0];
-    		
-    	} else {
-    		
-    		if(welcome.isVisible()) return;
-    		serverTabs.hide();
-    		groupTabs.hide();
-    		vmTabs.hide();
-    		vmList.hide();
-    		welcome.show();
-    		return;
-
-    	}
+    	this.getWelcomeView().setVisible(!this.lastItemType);
+    	this.getVMTabsView().setVisible(this.lastItemType == 'vm');
+    	this.getGroupTabsView().setVisible(this.lastItemType == 'vmgroup');
+    	this.getServerTabsView().setVisible(this.lastItemType == 'server');
+    	this.getVMListsView().setVisible(this.lastItemType == 'vmsFolder');
     	
-    	switch(record.get('type')) {
 
-    		case 'vm':
-	    		if(vmTabs.isVisible()) return;
-	    		groupTabs.hide();
-	    		welcome.hide();
-	    		serverTabs.hide();
-	    		vmList.hide();
-	    		vmTabs.show();
-	    		break;
-	    	
-    		case 'vmgroup':
-    			if(groupTabs.isVisible()) return;
-    			welcome.hide();
-    			serverTabs.hide();
-    			vmTabs.hide();
-    			vmList.hide();
-    			groupTabs.show();
-	    		break;
-
-    		case 'server':
-    			if(serverTabs.isVisible()) return;
-    			welcome.hide();
-    			vmTabs.hide();
-    			groupTabs.hide();
-    			vmList.hide();
-    			serverTabs.show();
-	    		break;
-
-    		case 'vmsFolder':
-    			serverTabs.hide();
-    			groupTabs.hide();
-    			vmTabs.hide();
-    			welcome.hide();
-    			vmList.show();
-	    		break;
-    	}
-    		    		
-    		
     }
-    
  	
 });

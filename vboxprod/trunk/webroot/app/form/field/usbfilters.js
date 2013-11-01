@@ -142,38 +142,13 @@ Ext.define('vcube.form.field.usbfilters', {
 				
 				selectionchange: function(sm, selected) {
 					
-					var btnUp = this.grid.down('#btnMoveUp');
-					var btnDown = this.grid.down('#btnMoveDown');
-					var btnEdit = this.grid.down('#btnEdit');
-					var btnRemove = this.grid.down('#btnRemove');
+					var index = this.grid.getStore().indexOf(selected[0]);
 					
-					if(!selected.length) {
-						btnUp.disable();
-						btnDown.disable();
-						btnEdit.disable();
-						btnRemove.disable();
-						return;
-					}
+					this.grid.down('#btnMoveUp').setDisabled(index == 0);
+					this.grid.down('#btnMoveDown').setDisabled(index == (this.grid.getStore().getCount()-1));
+					this.grid.down('#btnEdit').setDisabled(!selected.length);
+					this.grid.down('#btnRemove').setDisabled(!selected.length);
 					
-					btnRemove.enable();
-					btnEdit.enable();
-
-					
-					
-					switch(this.grid.getStore().indexOf(selected[0])) {
-						case 0:
-							btnUp.disable();
-							btnDown.enable();
-							break;
-						case (this.grid.getStore().getCount()-1):
-							btnUp.enable();
-							btnDown.disable();
-							break;
-						default:
-							btnUp.enable();
-							btnDown.enable();
-					}
-
 				},
 				scope: this
 			},
@@ -206,6 +181,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			    			   }
 			    			   
 			    			   this.grid.getStore().add({'name':name,active:true});
+			    			   this.grid.getView().focusRow(this.grid.getStore().getCount()-1);
 			    		   },
 			    		   scope: this
 			    	   }
@@ -257,6 +233,9 @@ Ext.define('vcube.form.field.usbfilters', {
 			    										productId: item.usbdata.productId.replace(/^0x/,''),
 			    										revision: item.usbdata.revision.replace(/^0x/,'')
 			    									},item.usbdata));
+			    									
+		    					    			   self.grid.getView().focusRow(self.grid.getStore().getCount()-1);
+
 			    								},
 			    								scope: self
 			    							}

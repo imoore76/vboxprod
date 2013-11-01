@@ -48,7 +48,9 @@ Ext.define('vcube.form.field.usbcontrollers', {
     		submitValue: false,
     		listeners: {
     			change: function(cb, val) {
-    				this.ehciCheckbox.setDisabled((val ? false : true));
+    				this.ehciCheckbox.setDisabled(!val);
+    				var filters = this.up('.panel').down('.usbfiltersfield').childComponent;
+    				if(filters) filters.setDisabled(!val);
     			},
     			scope: this
     		}    		

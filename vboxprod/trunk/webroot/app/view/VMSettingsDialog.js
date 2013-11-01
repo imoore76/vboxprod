@@ -141,12 +141,18 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				labelWidth: 200,
 				xtype: 'checkbox',
 				boxLabel: 'Enable VT-x/AMD-V',
-				name: 'HWVirtExProperties.Enabled'
+				name: 'HWVirtExProperties.Enabled',
+				listeners: {
+					change: function(cb, val) {
+						cb.ownerCt.down('[name=HWVirtExProperties.NestedPaging]').setDisabled(!val);
+					}
+				}
 			},{
 				xtype: 'checkbox',
 				fieldLabel: ' ',
 				labelSeparator: '',
 				boxLabel: 'Enable Nested Paging',
+				disabled: true,
 				name: 'HWVirtExProperties.NestedPaging'
 			}]
 		}]
@@ -176,7 +182,14 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			items: [{
 				xtype: 'checkbox',
 				boxLabel: 'Enable Server',
-				name: 'VRDEServer.enabled'
+				name: 'VRDEServer.enabled',
+				listeners: {
+					change: function(cb, val) {
+						Ext.each(['ports','authType','authTimeout','allowMultiConnection'], function(name){
+							cb.ownerCt.down('[name=VRDEServer.' + name + ']').setDisabled(!val);
+						});
+					}
+				}
 			},{
 				xtype: 'textfield',
 				fieldLabel: 'Server Port',
@@ -212,12 +225,19 @@ Ext.define('vcube.view.VMSettingsDialog',{
 		name:'audioAdapter',
 		label:'Audio',
 		image:'sound',
+		layout: 'form',
 		frame: true,
 		defaults: {},
 		items: [{
 			xtype: 'checkbox',
 			boxLabel: 'Enable Audio',
-			name: 'audioAdapter.enabled'
+			name: 'audioAdapter.enabled',
+			listeners: {
+				change: function(cb, val) {
+					cb.ownerCt.down('[name=audioAdapter.audioDriver]').setDisabled(!val);
+					cb.ownerCt.down('[name=audioAdapter.audioController]').setDisabled(!val);
+				}
+			}
 		},{
 			xtype: 'combo',
 			editable: false,
@@ -229,7 +249,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioDriverType',
 				conversionFn: vcube.utils.vboxAudioDriver
-			})
+			}),
+			disabled: true
 		},{
 			xtype: 'combo',
 			editable: false,
@@ -241,7 +262,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioControllerType',
 				conversionFn: vcube.utils.vboxAudioController
-			})			
+			}),
+			disabled: true
 		}]
 	},{
 		label:'Network',

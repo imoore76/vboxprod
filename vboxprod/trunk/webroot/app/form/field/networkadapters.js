@@ -213,6 +213,7 @@ Ext.define('vcube.form.field.networkadapters', {
 		                    [0,'UDP']
 		                ],
 		                lazyRender: true,
+		                editable: false,
 		                listClass: 'x-combo-list-small'
     				}
     			},{
@@ -380,12 +381,23 @@ Ext.define('vcube.form.field.networkadapters', {
     			layout: 'form',
     			defaults: {
     				labelWidth: 130,
-    				labelAlign: 'right'
+    				labelAlign: 'right',
+    				disabled: true
     			},
     			items: [{
     				xtype: 'checkbox',
     				boxLabel: 'Enable Network Adapter',
     				name: 'netAdapter-enabled-'+i,
+    				disabled: false,
+    				listeners: {
+    					change: function(cb, val) {
+    						Ext.each(cb.ownerCt.items.items, function(item){
+    							if(item.name != cb.name) {
+    								item.setDisabled(!val);
+    							}
+    						})
+    					}
+    				}
     			},{
     				xtype: 'combo',
     				editable: false,

@@ -6,7 +6,7 @@ Ext.define('vcube.form.field.storage', {
     mixins: {
         field: 'Ext.form.field.Field'
     },
-
+    
     layout: 'fit',
     combineErrors: true,
     msgTarget: 'side',
@@ -35,10 +35,14 @@ Ext.define('vcube.form.field.storage', {
     
     addController: function(c) {
     	
+    	// Remove from being available to add
+    	this.actions['add' + c.bus + 'Controller'].disable();
+    	
     	var child = this.tree.getRootNode().createNode(Ext.Object.merge({
     		text: Ext.String.htmlEncode(c.name),
-    		icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIcon(c.bus) + '_expand_16px.png',
+    		icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIconName(c.bus) + '_collapse_16px.png',
     		leaf: false,
+    		iconCls: 'storageTreeExpander',
     		expanded: true
     	}, c));
     	
@@ -47,7 +51,7 @@ Ext.define('vcube.form.field.storage', {
     	Ext.each(c.mediumAttachments, function(ma) {
     		var maNode = child.createNode(Ext.Object.merge({
     			text: vcube.utils.vboxMedia.getName(ma.medium),
-    			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIcon(ma) + '_16px.png',
+    			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName(ma) + '_16px.png',
     			leaf: true
     		}, ma));
     		
@@ -67,10 +71,23 @@ Ext.define('vcube.form.field.storage', {
     		self.addController(c);
     		
     	});
-    	
-    	// select first item in tree
-    	if(controllers.length)
+
+    	// There were controllers
+    	if(controllers.length) {
+    		
+    		// select first item in tree
     		this.tree.getSelectionModel().selectRange(0,0);
+    		
+    		// Disable add controller if we've hit the max
+    		if(controllers.length = vcube.utils.vboxStorage.getBusTypes().length) {
+    			this.actions['addController'].disable();
+    		} else {
+    			this.actions['addController'].enable();
+    		}
+    		
+    	} else {
+    		this.actions['addController'].enable();
+    	}
     	
     },
     
@@ -78,13 +95,201 @@ Ext.define('vcube.form.field.storage', {
     	
     	Ext.apply(this,options);
     	
+    	/**
+    	 * Compose actions
+    	 */
+    	var self = this;
+
+    	// Global actions
+    	this.actions = {
+    			
+    		removeController: new Ext.Action({
+    			icon: 'images/vbox/controller_remove_16px.png',
+    			text: 'Remove Controller',
+    			handler: function() {
+    				
+    			},
+	    		scope: this
+    		}),
+    		
+    		removeAttachment: new Ext.Action({
+    			icon: 'images/vbox/attachment_remove_16px.png',
+    			text: 'Remove Attachment',
+    			handler: function() {
+    				
+    			},
+    			scope: this
+    		})
+
+    	};
+    	    	
+    	
+    	// add controller actions and compose attachment types
+    	var attachmentTypes = {};
+    	var attachmentTypeActions = [];
+    	var controllerTypeActions = [];
+    	Ext.each(vcube.utils.vboxStorage.getBusTypes(), function(bus) {
+    		self.actions['add'+bus+'Controller'] = new Ext.Action({
+    			text: 'Add ' + bus + ' Controller',
+    			busType: bus,
+    			icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIconName(bus) + '_add_16px.png',
+    			handler: function(btn) {
+    				console.log(btn.busType);
+				},
+				scope: self
+    			
+    		});
+    		
+    		controllerTypeActions.push(self.actions['add'+bus+'Controller']);
+    		
+    		Ext.each(vcube.utils.vboxStorage[bus].driveTypes, function(d) {
+    			
+    			if(attachmentTypes[d]) return;
+    			attachmentTypes[d] = true;
+    			
+    			self.actions['add'+d+'Attachment'] = new Ext.Action({
+        			text: 'Add ' + vcube.utils.vboxStorage.getMATypeText(d) + (d != 'HardDisk' ? ' Device'  : ''),
+        			attachmentType: d,
+        			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName({type:d}) + '_add_16px.png',
+        			handler: function(btn) {
+        				console.log(btn.busType);
+    				},
+    				scope: self
+        			
+        		});
+    			
+    			attachmentTypeActions.push(self.actions['add'+d+'Attachment']);
+    			
+    		});
+    	});
+    	
+    	// Menus
+    	var controllerTypeActionsMenu = Ext.create('Ext.menu.Menu',{
+    		items: controllerTypeActions
+    	});
+    	
+    	var attachmentTypeActionsMenu = Ext.create('Ext.menu.Menu',{
+    		items: attachmentTypeActions
+    	});
+    	
+    	var attachmentMenu = Ext.create('Ext.menu.Menu',{
+    		items: [this.actions.removeAttachment]
+    	});
+    	
+    	var controllerMenu = Ext.create('Ext.menu.Menu',{
+    		items: attachmentTypeActions.concat(['-',this.actions.removeController])
+    	});
+    	
+    	this.actions = Ext.Object.merge(this.actions, {
+    		
+    		addController : new Ext.Action({
+    			icon: 'images/vbox/controller_add_16px.png',
+    			handler: function(btn) {
+    			    var coords = btn.getXY();
+    			    coords[1] = coords[1] + btn.getHeight();
+    			    controllerTypeActionsMenu.showAt(coords);
+    			}
+    		}),
+    		addAttachment: new Ext.Action({
+    			icon: 'images/vbox/attachment_add_16px.png',
+    			text: 'Add Attachment',
+    			handler: function(btn) {
+    			    var coords = btn.getXY();
+    			    coords[1] = coords[1] + btn.getHeight();
+    			    attachmentTypeActionsMenu.showAt(coords);
+    			}
+    		})
+    	
+    	});
+
+    	
+    	/**
+    	 * Storage tree panel
+    	 */
     	this.tree = Ext.create('Ext.tree.Panel',{
     		xtype: 'treepanel',
+    		cls: 'storageTree',
     		rootVisible: false,
     		viewConfig: {
-    			markDirty: false
+    			markDirty: false,
+    			expanderSelector: '.storageTreeExpander'
     		},    		
+    		listeners: {
+    			
+    			// Context menu for tree
+    			containercontextmenu: function(t, e) {
+		    		e.stopEvent();
+		    		controllerTypeActionsMenu.showAt(e.getXY());
+    			},
+    			
+    			// Context menu for item
+    	    	itemcontextmenu: function(t,r,i,index,e) {
+    	    		e.stopEvent();
+    	    		if(r.raw.mediumAttachments) {
+    	    			controllerMenu.showAt(e.getXY());
+    	    		} else {
+    	    			attachmentMenu.showAt(e.getXY());
+    	    		}
+
+    	    	},
+
+    			
+    			// Update actions on selection change
+    			selectionchange: function(sm, selected) {
+    				
+    				var self = this;
+    				
+    				// Disable all actions at first
+    				Ext.iterate(this.actions, function(k,v) {
+    					// add controller is handled elsewhere
+    					if(k != 'addController') v.disable();
+    				});
+
+    				// No Selection
+    				if(!selected[0]) {
+    				
+    					this.actions['addAttachment'].disable();
+    					
+					// Controller select
+    				} else if(selected[0].raw.mediumAttachments) {
+    					
+
+    					this.actions['removeController'].enable();
+    					
+    					// hide all unsupported device types
+    					Ext.each(['HardDisk','DVD','Floppy'], function(dt) {
+    						console.log(dt);
+    						console.log(self.actions);
+    						self.actions['add' + dt + 'Attachment'].setVisible(Ext.Array.contains(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, dt));
+    					});
+    					
+    					Ext.each(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, function(dt){
+							self.actions['add' + dt + 'Attachment'].enable();
+						});
+
+    					// We have not hit the max device count yet
+    					if(selected[0].childNodes.length != (vcube.utils.vboxStorage[selected[0].raw.bus].maxPortCount
+    							* vcube.utils.vboxStorage[selected[0].raw.bus].maxPortCount)) {
+    						
+    						this.actions['addAttachment'].enable();
+    						
+    						Ext.each(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, function(dt){
+    							self.actions['add' + dt + 'Attachment'].enable();
+    						});
+    					}
+    					
+    					
+    				// Medium attachment select
+    				} else {
+    					
+    					this.actions['removeAttachment'].enable();
+    				}
+    				
+    			},
+    			scope: this
+    		},
     		store: Ext.create('Ext.data.TreeStore',{
+    			
     			fields: [
     			         {name: 'leaf', type: 'boolean'},
     			         {name:'expanded', type: 'boolean'},
@@ -93,13 +298,42 @@ Ext.define('vcube.form.field.storage', {
     			         {name: 'nonRotational', type: 'boolean'},
     			         'medium',
     			         {name:'port', type: 'int'},
+    			         {name: 'portCount', type: 'int'},
     			         {name:'device', type: 'int'},
     			         'device',
     			         'medium',
     			         {name:'useHostIOCache', type: 'boolean'},
     			         'name',
-    			         'controllerType']
-    		})
+    			         'controllerType'],
+
+		         listeners: {
+	    				collapse: function(node) {
+	    					if(node.raw.bus)
+	    						node.set('icon','images/vbox/' + vcube.utils.vboxStorage.getBusIconName(node.raw.bus) + '_expand_16px.png');
+	    				},
+	    				expand: function(node) {
+	    					if(node.raw.bus)
+	    						node.set('icon','images/vbox/' + vcube.utils.vboxStorage.getBusIconName(node.raw.bus) + '_collapse_16px.png');
+	    				}
+	    			}
+
+    		}),
+			dockedItems: [{
+			    xtype: 'toolbar',
+			    dock: 'bottom',
+			    items: ['->',this.actions.addAttachment, this.actions.removeAttachment, this.actions.addController, this.actions.removeController],
+			    listeners: {
+			    	// remove text and make them tooltips
+			    	afterrender: function(tbar) {
+						Ext.each(tbar.items.items,function(item) {
+							if(item.text) {
+								item.setTooltip(item.text + ' &nbsp; ');
+								item.setText('');
+							}
+						})
+			    	}
+			    }
+    		}]
     	});
     	
     	/*
@@ -127,7 +361,7 @@ Ext.define('vcube.form.field.storage', {
     			layout: 'form',
     			defaults: {
     				labelAlign: 'right',
-    				labelWidth: 60
+    				labelWidth: 80
     			},
     			items: [{
     				fieldLabel: 'Name',
@@ -164,6 +398,12 @@ Ext.define('vcube.form.field.storage', {
     					},
     					scope: this
     				}
+    			},{
+    				xtype: 'numberfield',
+    				fieldLabel: 'Port Count',
+    				minValue: 1,
+    				maxValue: 30,
+    				name: 'portCount'
     			},{
     				xtype: 'checkbox',
     				fieldLabel: ' ',
@@ -227,7 +467,8 @@ Ext.define('vcube.form.field.storage', {
     			title: 'Attributes',
     			defaults: {
     				labelAlign: 'right',
-    				labelWidth: 60
+    				labelWidth: 60,
+    				xtype: 'displayfield'
     			},
     			items: [Ext.Object.merge({fieldLabel: 'Floppy Drive'}, slotCbo)]
     		},{
@@ -393,6 +634,26 @@ Ext.define('vcube.form.field.storage', {
     			// Load controller types combo
     			controllerInfoPanel.down('[name=controllerType]').getStore().loadData(vcube.utils.vboxStorage.getControllerTypes(selection[0].raw.bus));
     			
+    			// Setup port count
+    			if(vcube.utils.vboxStorage[selection[0].raw.bus].configurablePortCount) {
+    				
+    				var f = controllerInfoPanel.down('[name=portCount]');
+    				
+    				var maxPortNum = 0;
+    				
+    				Ext.each(selection[0].childNodes, function(node) {
+    					maxPortNum = Math.max(maxPortNum, (node.get('port')+1));
+    				});
+    				// Set min and max values
+    				f.setMinValue(maxPortNum);
+    				f.setMaxValue(vcube.utils.vboxStorage[selection[0].raw.bus].maxPortCount);
+    				f.show();
+    				
+    				
+    			} else {
+    				controllerInfoPanel.down('[name=portCount]').hide();
+    			}
+    			
     		// Medium attachment
     		} else {
     			
@@ -459,16 +720,18 @@ Ext.define('vcube.form.field.storage', {
     		layout: {
     			type: 'border'
     		},
+    		defaults: {
+    		    split: true,
+    		    layout: 'fit',
+    		    frame: false,
+    		    border: false,
+    		    cls: 'greyPanel'
+    		},
     		items: [{
     			xtype: 'panel',
     			region: 'center',
-    			cls: 'greyPanel',
-    			split: true,
     			height: 200,
     			width: 200,
-    			layout: 'fit',
-        		frame: false,
-        		border: false,
     			items: [{
     				xtype: 'panel',
     				layout: 'fit',
@@ -485,11 +748,6 @@ Ext.define('vcube.form.field.storage', {
     			xtype: 'panel',
         		region: 'east',
         		width: 310,
-        		split: true,
-        		border: false,
-        		cls: 'greyPanel',
-        		frame: false,
-        		layout: 'fit',
     			items: [this.attribsPanel]
     		}]
 

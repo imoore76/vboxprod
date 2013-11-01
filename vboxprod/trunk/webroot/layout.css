@@ -21,6 +21,13 @@ div.x-grid-cell-inner div.x-progress-text { font-size: 9px; padding: 0px; margin
 /* Grey panels in this section */
 div.greyPanel, div.greyPanel > .x-panel-body { background: rgb(241, 241, 241); }
 
+/* Hide storage tree expand / collapse */
+.storageTree .x-tree-elbow-plus, .storageTree .x-tree-elbow-end-plus {
+	display: none;
+}
+.storageTreeExpander { cursor: pointer; margin-right: 4px; }
+.storageTree tr.x-grid-row > td { padding-left: 4px; }
+
 /* VM summary info table */
 table.infoTable tr {
 	vertical-align: top;
@@ -52,7 +59,7 @@ table.infoTable td.icon img {
 	display:block;
 }
 
-/* Masks should have some opacity */
+/* Body load masks should have some opacity */
 body > div.modal-mask-default {
 
 	opacity: .7;
@@ -60,6 +67,15 @@ body > div.modal-mask-default {
 	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=70)";
 	
 }
+
+/* Gridpanel masks too */
+.x-grid .x-mask {
+	opacity: .4;
+	filter:alpha(opacity=40);
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=40)";
+	
+}
+
 
 /* Form field help text */
 .ux-form-fieldhelptext

@@ -117,12 +117,26 @@ Ext.define('vcube.form.field.serialports', {
     			layout: 'form',
     			defaults: {
     				labelAlign: 'right',
-    				submitValue: false
+    				submitValue: false,
+    				disabled: true
     			},
     			items: [{
     				xtype: 'checkbox',
     				boxLabel: 'Enable Serial Port',
-    				name: 'serialPort-enabled-'+i
+    				name: 'serialPort-enabled-'+i,
+    				disabled: false,
+    				listeners: {
+    					change: function(cb, val) {
+    						var num = cb.name.split('-').pop();
+    						Ext.each(cb.ownerCt.items.items, function(item){
+    							if(item.name != cb.name)
+    								item.setDisabled(!val);
+    						});
+    						if(!val) return;
+    						var f = cb.ownerCt.down('#portmode');
+    						f.fireEvent('change', f, f.getValue(), null);
+    					}
+    				}
     			},{
     				xtype: 'fieldcontainer',
     				layout: 'hbox',
@@ -182,9 +196,30 @@ Ext.define('vcube.form.field.serialports', {
     				fieldLabel: 'Port Mode',
     				displayField: 'display',
     				valueField: 'value',
+    				itemId: 'portmode',
     				store: this.portModeStore,
     				lastQuery: '',
-    				name: 'serialPort-hostMode-'+i
+    				name: 'serialPort-hostMode-'+i,
+    				listeners: {
+    					change: function(cbo, val) {
+    						var num = cbo.name.split('-').pop();
+    						Ext.each(['server','path'],function(name) {
+    							cbo.ownerCt.down('[name=serialPort-'+name+'-'+num+']').disable();
+    						});
+    						var enableList = [];
+    						switch(val) {
+	    						case 'HostPipe':
+	    							enableList.push('server');
+	    						case 'HostDevice':
+	    						case 'RawFile':
+	    							enableList.push('path');
+    						}
+    						Ext.each(enableList,function(name) {
+    							cbo.ownerCt.down('[name=serialPort-'+name+'-'+num+']').enable();
+    						});
+    						
+    					}
+    				}
     			},{
     				fieldLabel: ' ',
     				labelSeparator: '',

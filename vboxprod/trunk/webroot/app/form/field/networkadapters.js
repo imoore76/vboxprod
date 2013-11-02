@@ -272,7 +272,7 @@ Ext.define('vcube.form.field.networkadapters', {
     						while(store.findRecord('name',name)) {
     							name = nameTpl + (num++);
     						}
-    						store.add({'name':name});
+    						store.add({'name':name,'protocol':1});
     					}
     				}
     			},{
@@ -424,12 +424,8 @@ Ext.define('vcube.form.field.networkadapters', {
     						cbo.ownerCt.down('[name=netAdapter-promiscModePolicy-'+num+']').setDisabled(Ext.Array.contains(['Null','NAT','Generic'], val));
     						
     						var cboList = ['bridgedInterface','hostOnlyInterface','internalNetwork','NATNetwork','genericDriver'];
+
     						
-    						// Hide all at first
-    						Ext.each(cboList, function(name) {
-    							var cboItem = cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']');
-    							if(cboItem.isVisible()) cboItem.hide();
-    						});
     						if(cbo.ownerCt.down('#natengine').isVisible())
     							cbo.ownerCt.down('#natengine').hide();
     						

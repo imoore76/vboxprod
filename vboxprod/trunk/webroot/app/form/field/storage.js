@@ -33,11 +33,10 @@ Ext.define('vcube.form.field.storage', {
     
     addController: function(c) {
     	
-    	// Remove from being available to add
-    	this.actions['add' + c.bus + 'Controller'].disable();
     	
     	var child = this.tree.getRootNode().createNode(Ext.Object.merge({
-    		text: Ext.String.htmlEncode(c.name),
+    		// Extra div for preloading expand image
+    		text: Ext.String.htmlEncode(c.name) + '<div style="background: url(images/vbox/' + vcube.utils.vboxStorage.getBusIconName(c.bus) + '_expand_16px.png) no-repeat -9999px -9999px;"> </div>',
     		icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIconName(c.bus) + '_collapse_16px.png',
     		leaf: false,
     		iconCls: 'storageTreeExpander',
@@ -51,6 +50,15 @@ Ext.define('vcube.form.field.storage', {
     	Ext.each(c.mediumAttachments, function(ma) {
     		self.addMediumAttachment(child, ma);
     	});
+    	
+    	// Remove from being available to add
+    	this.actions['add' + c.bus + 'Controller'].disable();
+    	
+    	// Disable add controller if we've hit the max
+		if(this.tree.getRootNode().childNodes.length == vcube.utils.vboxStorage.getBusTypes().length) {
+			this.actions['addController'].disable();
+		}
+
     },
     
     addMediumAttachment: function(c, ma) {
@@ -72,27 +80,25 @@ Ext.define('vcube.form.field.storage', {
     	
     	if(!controllers) controllers = [];
     	
+    	this.actions['addController'].enable();
+
+    	// Enable all controllers
+    	Ext.each(vcube.utils.vboxStorage.getBusTypes(), function(bus) {
+    		self.actions['add'+bus+'Controller'].enable();
+    	});
     	Ext.each(controllers, function(c) {
     		
     		self.addController(c);
     		
     	});
 
+
     	// There were controllers
     	if(controllers.length) {
     		
     		// select first item in tree
     		this.tree.getSelectionModel().selectRange(0,0);
-    		
-    		// Disable add controller if we've hit the max
-    		if(controllers.length = vcube.utils.vboxStorage.getBusTypes().length) {
-    			this.actions['addController'].disable();
-    		} else {
-    			this.actions['addController'].enable();
-    		}
-    		
-    	} else {
-    		this.actions['addController'].enable();
+    		    		
     	}
     	
     },
@@ -264,8 +270,8 @@ Ext.define('vcube.form.field.storage', {
     				
     				// Disable all actions at first
     				Ext.iterate(this.actions, function(k,v) {
-    					// add controller is handled elsewhere
-    					if(k != 'addController') v.disable();
+    					// add controllers are handled elsewhere
+    					if(k == 'removeController' || k.indexOf('Controller') == -1) v.disable();
     				});
 
     				// No Selection
@@ -423,7 +429,14 @@ Ext.define('vcube.form.field.storage', {
     				fieldLabel: 'Port Count',
     				minValue: 1,
     				maxValue: 30,
-    				name: 'portCount'
+    				name: 'portCount',
+    				listeners: {
+    					change: function(cbo, val) {
+    						if(val >= cbo.minValue && val <= cbo.maxValue)
+    							this.tree.getSelectionModel().getSelection()[0].set('portCount', val);
+    					},
+    					scope: this
+    				},
     			},{
     				xtype: 'checkbox',
     				fieldLabel: ' ',
@@ -490,7 +503,7 @@ Ext.define('vcube.form.field.storage', {
     		},
     		items: [{
     			title: 'Attributes',
-    			labelWidth: 80,
+    			labelWidth: 90,
     			items: [Ext.Object.merge({fieldLabel: 'Floppy Drive'}, slotCbo)]
     		},{
     			title: 'Information',

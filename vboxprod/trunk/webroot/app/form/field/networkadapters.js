@@ -425,7 +425,10 @@ Ext.define('vcube.form.field.networkadapters', {
     						
     						var cboList = ['bridgedInterface','hostOnlyInterface','internalNetwork','NATNetwork','genericDriver'];
 
-    						
+    						Ext.each(cboList, function(name) {
+    							cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']').hide();
+    						});
+
     						if(cbo.ownerCt.down('#natengine').isVisible())
     							cbo.ownerCt.down('#natengine').hide();
     						

@@ -204,4 +204,3 @@ Ext.define('vcube.grid.column.LogCategoryColumn', {
 	}
 });
 
-

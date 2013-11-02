@@ -236,6 +236,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			xtype: 'checkbox',
 			boxLabel: 'Enable Audio',
 			name: 'audioAdapter.enabled',
+			disabled: false,
 			listeners: {
 				change: function(cb, val) {
 					cb.ownerCt.down('[name=audioAdapter.audioDriver]').setDisabled(!val);

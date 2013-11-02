@@ -199,6 +199,7 @@ Ext.define('vcube.form.field.bootorder', {
 	    
 	    this.callParent(arguments);
 
+	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
     },
     
     // Generates the child component markup and let Ext.form.field.Base handle the rest

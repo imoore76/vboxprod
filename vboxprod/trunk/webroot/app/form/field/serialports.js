@@ -235,6 +235,8 @@ Ext.define('vcube.form.field.serialports', {
     	}
     	
 	    this.callParent(arguments);
+	    
+	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
 
     },
     

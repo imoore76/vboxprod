@@ -78,6 +78,8 @@ Ext.define('vcube.form.field.usbcontrollers', {
     	
 	    
 	    this.callParent(arguments);
+	    
+	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
 
     },
     

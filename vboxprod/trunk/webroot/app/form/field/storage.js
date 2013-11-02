@@ -13,11 +13,9 @@ Ext.define('vcube.form.field.storage', {
     submitFormat: 'c',
     
     margin: 0,
-
-    mediaStore: Ext.create('Ext.data.Store',{
-    	fields: ['id','base']
-    }),
-
+    
+    cachedMedia: {},
+    
     getSubmitValue: function() {
     	return this.getValue();
     },
@@ -48,15 +46,23 @@ Ext.define('vcube.form.field.storage', {
     	
     	this.tree.getRootNode().appendChild(child);
     	
+    	var self = this;
+    	
     	Ext.each(c.mediumAttachments, function(ma) {
-    		var maNode = child.createNode(Ext.Object.merge({
-    			text: vcube.utils.vboxMedia.getName(ma.medium),
-    			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName(ma) + '_16px.png',
-    			leaf: true
-    		}, ma));
-    		
-    		child.appendChild(maNode);
+    		self.addMediumAttachment(child, ma);
     	});
+    },
+    
+    addMediumAttachment: function(c, ma) {
+    	
+		var maNode = c.createNode(Ext.Object.merge({
+			text: vcube.utils.vboxMedia.getName(ma.medium),
+			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName(ma) + '_16px.png',
+			leaf: true
+		}, ma));
+		
+		c.appendChild(maNode);
+    	
     },
     
     setValue: function(controllers) {
@@ -180,6 +186,12 @@ Ext.define('vcube.form.field.storage', {
     		items: attachmentTypeActions.concat(['-',this.actions.removeController])
     	});
     	
+    	// Make sure these aren't left behind
+    	this.on('destroy',function() {
+    		Ext.each([controllerTypeActionsMenu, attachmentTypeActionsMenu,
+    		          attachmentMenu, controllerMenu],function(m) { Ext.destroy(m); });
+    	});
+    	
     	this.actions = Ext.Object.merge(this.actions, {
     		
     		addController : new Ext.Action({
@@ -194,10 +206,20 @@ Ext.define('vcube.form.field.storage', {
     			icon: 'images/vbox/attachment_add_16px.png',
     			text: 'Add Attachment',
     			handler: function(btn) {
-    			    var coords = btn.getXY();
+    				
+    				// If there is only one visible item, don't show the menu
+    				// just run the item handler
+    				var bus = this.tree.getSelectionModel().getSelection()[0].raw.bus;
+    				if(vcube.utils.vboxStorage[bus].driveTypes.length == 1) {
+    					this.actions['add' + vcube.utils.vboxStorage[bus].driveTypes[0] + 'Attachment'].handler();
+    					return;
+    				}
+
+    				var coords = btn.getXY();
     			    coords[1] = coords[1] + btn.getHeight();
     			    attachmentTypeActionsMenu.showAt(coords);
-    			}
+    			},
+    			scope: this
     		})
     	
     	});
@@ -210,6 +232,7 @@ Ext.define('vcube.form.field.storage', {
     		xtype: 'treepanel',
     		cls: 'storageTree',
     		rootVisible: false,
+    		border: false,
     		viewConfig: {
     			markDirty: false,
     			expanderSelector: '.storageTreeExpander'
@@ -258,9 +281,7 @@ Ext.define('vcube.form.field.storage', {
     					
     					// hide all unsupported device types
     					Ext.each(['HardDisk','DVD','Floppy'], function(dt) {
-    						console.log(dt);
-    						console.log(self.actions);
-    						self.actions['add' + dt + 'Attachment'].setVisible(Ext.Array.contains(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, dt));
+    						self.actions['add' + dt + 'Attachment'].setHidden(!Ext.Array.contains(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, dt));
     					});
     					
     					Ext.each(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, function(dt){
@@ -269,7 +290,7 @@ Ext.define('vcube.form.field.storage', {
 
     					// We have not hit the max device count yet
     					if(selected[0].childNodes.length != (vcube.utils.vboxStorage[selected[0].raw.bus].maxPortCount
-    							* vcube.utils.vboxStorage[selected[0].raw.bus].maxPortCount)) {
+    							* vcube.utils.vboxStorage[selected[0].raw.bus].maxDevicesPerPortCount)) {
     						
     						this.actions['addAttachment'].enable();
     						
@@ -352,7 +373,6 @@ Ext.define('vcube.form.field.storage', {
     	 */
     	var controllerInfoPanel = Ext.create('vcube.form.Panel',{
     		hidden: true,
-    		layout: 'form',
     		frame: false,
     		border: false,
     		items: [{
@@ -457,26 +477,23 @@ Ext.define('vcube.form.field.storage', {
     	 * Floppy disk Info panel
     	 */
     	var fdInfoPanel = Ext.create('vcube.form.Panel',{
-    		layout: 'form',
     		hidden: true,
+    		border: false,
     		defaults: {
     			xtype: 'fieldset',
-    			layout: 'form'
+    			layout: 'form',
+				defaults: {
+					labelAlign: 'right',
+					labelWidth: 60,
+					xtype: 'displayfield'
+				}
     		},
     		items: [{
     			title: 'Attributes',
-    			defaults: {
-    				labelAlign: 'right',
-    				labelWidth: 60,
-    				xtype: 'displayfield'
-    			},
+    			labelWidth: 80,
     			items: [Ext.Object.merge({fieldLabel: 'Floppy Drive'}, slotCbo)]
     		},{
     			title: 'Information',
-    			defaults: {
-    				labelAlign: 'right',
-    				labelWidth: 80
-    			},
     			items: [{
 		        	fieldLabel: 'Type',
 		        	name: 'medium.type',
@@ -501,7 +518,6 @@ Ext.define('vcube.form.field.storage', {
     	 * CD / DVD Info panel
     	 */
     	var cdInfoPanel = Ext.create('vcube.form.Panel',{
-    		layout: 'form',
     		hidden: true,
     		border: false,
     		defaults: {
@@ -554,12 +570,11 @@ Ext.define('vcube.form.field.storage', {
     	 * Hard disk info panel
     	 */
     	var hdInfoPanel = Ext.create('vcube.form.Panel',{
-    		layout: 'form',
     		hidden: true,
     		border: false,
     		defaults: {
     			xtype: 'fieldset',
-    			layout: 'form'
+    			layout: 'form',
     		},
     		items: [{
     			title: 'Attributes',
@@ -582,7 +597,7 @@ Ext.define('vcube.form.field.storage', {
     			defaults: {
     				labelAlign: 'right',
     				xtype: 'displayfield',
-    				labelWidth: 80
+    				labelWidth: 90
     			},
     			items: [{
 	    			fieldLabel: 'Type (Format)',
@@ -724,8 +739,7 @@ Ext.define('vcube.form.field.storage', {
     		    split: true,
     		    layout: 'fit',
     		    frame: false,
-    		    border: false,
-    		    cls: 'greyPanel'
+    		    border: false
     		},
     		items: [{
     			xtype: 'panel',
@@ -736,11 +750,14 @@ Ext.define('vcube.form.field.storage', {
     				xtype: 'panel',
     				layout: 'fit',
     				cls: 'greyPanel',
+    				border: false,
     				items: [{
     					xtype: 'fieldset',
     					title: 'Storage Tree',
     					layout: 'fit',
     					margin: 4,
+    					border: true,
+    					cls: 'greyPanel',
     					items: [this.tree]			
     				}]
     			}]
@@ -748,12 +765,16 @@ Ext.define('vcube.form.field.storage', {
     			xtype: 'panel',
         		region: 'east',
         		width: 310,
+        		cls: 'greyPanel',
+        		layout: 'fit',
     			items: [this.attribsPanel]
     		}]
 
     	});
 
     	this.callParent(arguments);
+    	
+    	this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
     	
     	
     },

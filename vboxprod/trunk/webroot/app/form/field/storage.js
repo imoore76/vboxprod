@@ -30,13 +30,11 @@ Ext.define('vcube.form.field.storage', {
     	return filters;
     },
     
-    
     addController: function(c) {
     	
     	
     	var child = this.tree.getRootNode().createNode(Ext.Object.merge({
-    		// Extra div for preloading expand image
-    		text: Ext.String.htmlEncode(c.name) + '<div style="background: url(images/vbox/' + vcube.utils.vboxStorage.getBusIconName(c.bus) + '_expand_16px.png) no-repeat -9999px -9999px;"> </div>',
+    		text: c.name,
     		icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIconName(c.bus) + '_collapse_16px.png',
     		leaf: false,
     		iconCls: 'storageTreeExpander',
@@ -64,7 +62,7 @@ Ext.define('vcube.form.field.storage', {
     addMediumAttachment: function(c, ma) {
     	
 		var maNode = c.createNode(Ext.Object.merge({
-			text: vcube.utils.vboxMedia.getName(ma.medium),
+			text: ma.medium,
 			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName(ma) + '_16px.png',
 			leaf: true
 		}, ma));
@@ -238,11 +236,61 @@ Ext.define('vcube.form.field.storage', {
     		xtype: 'treepanel',
     		cls: 'storageTree',
     		rootVisible: false,
+    		hideHeaders: true,
     		border: false,
     		viewConfig: {
     			markDirty: false,
     			expanderSelector: '.storageTreeExpander'
-    		},    		
+    		},
+    		columns : [{
+                 xtype    : 'treecolumn',
+                 text     : 'Name',
+                 width    : 100,
+                 dataIndex: 'text',
+                 flex: 1,
+                 renderer: function(val,m,record) {
+                	 if(record.get('leaf')) {
+                		 return vcube.utils.vboxMedia.getName(record.get('medium'));
+                	 }
+                	 return 'Controller: ' + Ext.String.htmlEncode(val);
+                 }
+    		},{
+    			dataIndex: 'leaf',
+    			width: 100,
+    			cls: 'gridCellButtons',
+    			renderer: function(val, meta, record) {
+    				
+    				if(val) return '';
+    				
+    				var self = this;
+    				console.log(this);
+    				
+    				var id = record.internalId+'-'+Ext.id();
+    				
+    				Ext.Function.defer(function() {
+    					
+    					console.log(id);
+    					
+    					Ext.each(vcube.utils.vboxStorage[record.raw.bus].driveTypes, function(dt) {
+    						Ext.create('Ext.button.Button',{
+    							icon: self.actions['add' + dt + 'Attachment'].initialConfig.icon,
+    							baseAction: self.actions['add' + dt + 'Attachment'],
+    							margin: 0,
+    							border: 0,
+    							padding: 0,
+    							height: 16,
+    							width: 16,
+    							renderTo: document.getElementById(id)
+    						});
+    					});
+    				},1000);
+    				
+    				return '<div style="float: right" id="'+id+'"></div>';
+    				
+    			},
+    			scope: this
+    	            
+    		}],
     		listeners: {
     			
     			// Context menu for tree
@@ -394,13 +442,11 @@ Ext.define('vcube.form.field.storage', {
     				xtype: 'textfield',
     				name: 'name',
     				enableKeyEvents: true,
+    				allowBlank: false,
     				listeners: {
-    					keyup: function(txt) {
-    						this.tree.getSelectionModel().getSelection()[0].set('text', Ext.String.htmlEncode(txt.getValue()));
-    					},
     					change: function(txt, val) {
     						this.tree.getSelectionModel().getSelection()[0].set({
-    							text : Ext.String.htmlEncode(val),
+    							text : val,
     							name: val
     						});
     					},

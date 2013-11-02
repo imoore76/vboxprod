@@ -395,6 +395,10 @@ Ext.define('vcube.form.field.networkadapters', {
     							if(item.name != cb.name) {
     								item.setDisabled(!val);
     							}
+    							if(val) {
+    								var at = cb.ownerCt.down('#attachmentType');
+    								at.fireEvent('change', at, at.getValue(), null);
+    							}
     						})
     					}
     				}
@@ -403,6 +407,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				editable: false,
     				fieldLabel: 'Attached to',
     				name: 'netAdapter-attachmentType-'+i,
+    				itemId: 'attachmentType',
     				displayField: 'display',
     				valueField: 'value',
     				store: this.networkAttachmentTypeStore,
@@ -410,14 +415,23 @@ Ext.define('vcube.form.field.networkadapters', {
     				listeners: {
     					change: function(cbo, val) {
     						
-    						var cboList = ['bridgedInterface','hostOnlyInterface','internalNetwork','NATNetwork','genericDriver'];
+
+    						Ext.suspendLayouts();
+    						
     						var num = cbo.name.split('-').pop();
+    						
+    						// Enable / disable promisc policy
+    						cbo.ownerCt.down('[name=netAdapter-promiscModePolicy-'+num+']').setDisabled(Ext.Array.contains(['Null','NAT','Generic'], val));
+    						
+    						var cboList = ['bridgedInterface','hostOnlyInterface','internalNetwork','NATNetwork','genericDriver'];
     						
     						// Hide all at first
     						Ext.each(cboList, function(name) {
-    							cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']').hide();
+    							var cboItem = cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']');
+    							if(cboItem.isVisible()) cboItem.hide();
     						});
-    						cbo.ownerCt.down('#natengine').hide();
+    						if(cbo.ownerCt.down('#natengine').isVisible())
+    							cbo.ownerCt.down('#natengine').hide();
     						
     						var targetCbo = null;
     						
@@ -439,22 +453,27 @@ Ext.define('vcube.form.field.networkadapters', {
     								break;
     							case 'NAT':
     								cbo.ownerCt.down('#natengine').show();
-    							default:
-    								return
     						}
     						
-    						if(!targetCbo.getValue()) {
-    							try {
-    								targetCbo.setValue(targetCbo.getStore().getAt(0).get('value'))    								
-    							} catch(err) {}
+    						if(targetCbo) {
+    							
+	    						 if(!targetCbo.getValue()) {
+	    							try {
+	    								targetCbo.setValue(targetCbo.getStore().getAt(0).get('value'))    								
+	    							} catch(err) {}
+	    						 }
+    						
+	    						 targetCbo.show();
     						}
     						
-    						targetCbo.show();
+    			    		// batch of updates are over
+    			    		Ext.resumeLayouts(true);
+
     					}
     				}
     			},{
     				xtype: 'button',
-    				text: 'NAT Engine Properties',
+    				text: 'Configure NAT Engine',
     				itemId: 'natengine',
     				margin: '0 0 0 134',
     				listeners: {
@@ -631,6 +650,8 @@ Ext.define('vcube.form.field.networkadapters', {
     	}
     	
 	    this.callParent(arguments);
+	    
+	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
 
     },
     

@@ -23,9 +23,9 @@ div.greyPanel, div.greyPanel > .x-panel-body { background: rgb(241, 241, 241); }
 
 /* Hide storage tree expand / collapse */
 .storageTree .x-tree-elbow-plus, .storageTree .x-tree-elbow-end-plus {
-	display: none;
+	visibility: hidden;
 }
-.storageTreeExpander { cursor: pointer; margin-right: 4px; }
+.storageTreeExpander { cursor: pointer; margin-right: 4px; margin-left: -15px; }
 .storageTree tr.x-grid-row > td { padding-left: 4px; }
 
 /* VM summary info table */

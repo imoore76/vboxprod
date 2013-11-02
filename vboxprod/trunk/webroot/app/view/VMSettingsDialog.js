@@ -177,12 +177,14 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			title: 'Remote Display',
 			defaults: {
 				labelWidth: 150,
-				labelAlign: 'right'
+				labelAlign: 'right',
+				disabled: true
 			},
 			items: [{
 				xtype: 'checkbox',
 				boxLabel: 'Enable Server',
 				name: 'VRDEServer.enabled',
+				disabled: false,
 				listeners: {
 					change: function(cb, val) {
 						Ext.each(['ports','authType','authTimeout','allowMultiConnection'], function(name){
@@ -227,7 +229,9 @@ Ext.define('vcube.view.VMSettingsDialog',{
 		image:'sound',
 		layout: 'form',
 		frame: true,
-		defaults: {},
+		defaults: {
+			disabled: true
+		},
 		items: [{
 			xtype: 'checkbox',
 			boxLabel: 'Enable Audio',
@@ -249,8 +253,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioDriverType',
 				conversionFn: vcube.utils.vboxAudioDriver
-			}),
-			disabled: true
+			})
 		},{
 			xtype: 'combo',
 			editable: false,
@@ -262,8 +265,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioControllerType',
 				conversionFn: vcube.utils.vboxAudioController
-			}),
-			disabled: true
+			})
 		}]
 	},{
 		label:'Network',

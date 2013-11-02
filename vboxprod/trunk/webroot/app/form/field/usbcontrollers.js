@@ -59,6 +59,7 @@ Ext.define('vcube.form.field.usbcontrollers', {
     	this.ehciCheckbox = Ext.create('Ext.form.field.Checkbox',{
     		inputValue: 1,
     		submitValue: false,
+    		disabled: true,
     		fieldLabel: ' ',
     		labelSeparator: '',
     		labelWidth: 20,

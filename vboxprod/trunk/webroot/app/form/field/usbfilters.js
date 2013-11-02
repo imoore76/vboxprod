@@ -124,6 +124,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			title: 'USB Device Filters',
 			hideHeaders: true,
 			frame: true,
+			disabled: true,
 			columns: [{
 				dataIndex: 'active',
 				xtype: 'checkcolumn'

@@ -169,7 +169,6 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				maxValue: 128,
 				minValue: 4,
 				valueLabel: 'MB',
-				hideValueBox: true,
 				name: 'VRAMSize'
 
 			}]

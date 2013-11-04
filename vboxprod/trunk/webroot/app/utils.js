@@ -6,13 +6,20 @@ Ext.define('vcube.utils', {
 	singleton: true,
 	
 	/**
-	 * Format string as number
+	 * Format string as int
 	 */
 	toInt: function(istr) {
 	
-		var rint = istr.toString().replace(/[^0-9]/g, '');
-		if(!rint) rint = 0;
-		return parseInt(rint);
+		return parseInt(istr.toString().replace(/[^0-9]/g, '')) || 0;
+	},
+	
+	/**
+	 * Format string as float
+	 */
+	toFloat: function(istr) {
+		var base = istr.toString().split('.',2);
+		var float = vcube.utils.toInt(base[0]) + '.' + ( base[1] ? vcube.utils.toInt(base[1]) : '00');
+		return float + Ext.String.repeat('0', 2- float.split('.')[1].length);
 	},
 	
 	/**
@@ -274,12 +281,12 @@ Ext.define('vcube.utils', {
 	 * @param {String} str - size string (2 TB, 500 MB, etc..) to parse
 	 * @return {Integer} megabytes
 	 */
-	convertMbytes: function(str) {
-		str = str.replace('  ',' ');
+	convertMBString: function(str) {
+		str = str.toString().replace('  ',' ');
 		str = str.split(' ',2);
 		if(!str[1]) str[1] = vcube.utils.trans('MB','VBoxGlobal');
 		var ext = new Array(vcube.utils.trans('B','VBoxGlobal'),vcube.utils.trans('KB','VBoxGlobal'),vcube.utils.trans('MB','VBoxGlobal'),vcube.utils.trans('GB','VBoxGlobal'),vcube.utils.trans('TB','VBoxGlobal'));
-		var index = Ext.Array.indexOf(str[1],ext);
+		var index = Ext.Array.indexOf(ext,str[1]);
 		if(index == -1) index = 2;
 		switch(index) {
 			case 0:

@@ -10,7 +10,28 @@
 	padding-left:20px
 }
 
-span.sliderTickSpacer { width: 4px; display: inline-block; }
+/* Slider ticks div */
+div.sliderTicks {
+	position: relative;
+	margin:0px;
+	padding:0px;
+	border:0px;
+	border-left: 1px solid #000;
+	border-right: 1px solid #000;
+	height: 4px;	
+}
+div.sliderTicks > div {
+	border: 0px;
+	border-left: 1px solid #000;
+	width: 4px;
+	height: 4px;
+	display: inline-block;
+	padding: 0px;
+	margin: 0px;
+	position: absolute;
+	top: 0px;
+}
+
 /* Progress */
 div.x-progress-bar { background-color: #00AB00; }
 div.x-grid-cell-inner div.x-progress { padding: 0px; margin: 0px }

@@ -12,17 +12,23 @@ Ext.define('vcube.form.field.slider', {
     minValue: 2,
     maxValue: 50,
     valueLabel: 'GB',
+    valueLabelFn: null,
     
     slider: null,
     spinner: null,
     valueBox: null,
     
+    // Use bytes values
+    mbytesValue: false,
+    
     hideValueBox: false,
     
     sliderTickTpl: new Ext.XTemplate('<div style="font-size: 7px; width: 100%;padding-left: 6px; padding-right: 6px;overflow: hidden;">'+
-    		'<div id="{tickId}" />'+
-		'</div><div style="width: 100%; font-size: 11px; height: 14px;"><span style="float: left;">{minValue} {valueLabel}</span><span style="float: right">'+
-		'{maxValue} {valueLabel}</span></div>'),
+    		'<div id="slider-ticks-{sliderTplId}" class="sliderTicks" />'+
+		'</div><div style="width: 100%; font-size: 11px; height: 14px;">'+
+		'<span style="float: left;" id="slider-min-label-{sliderTplId}">{minLabel}</span>'+
+		'<span style="float: right" id="slider-max-label-{sliderTplId}">{maxLabel}</span>'+
+		'</div>'),
     
     items: [],
     
@@ -37,14 +43,29 @@ Ext.define('vcube.form.field.slider', {
     	
     },
     
+    getValueLabel: function(val) {
+    	return (this.valueLabelFn ? this.valueLabelFn(val) : val + ' ' + this.valueLabel);
+    },
+    
     setMaxValue: function(val) {
+    	
     	this.slider.setMaxValue(vcube.utils.toInt(val));
     	this.spinner.setMaxValue(vcube.utils.toInt(val));
+    	
+    	// Slider subtpl will have to be redrawn and ticks applied again
+    	Ext.getEl('slider-max-label-'+sliderTplId).update(this.getValueLabel(val));
+    	this.applyTicks(this.slider);
+    	
     },
     
     setMinValue: function(val) {
+    	
     	this.slider.setMinValue(vcube.utils.toInt(val));
-    	this.spinner.setMinValue(vcube.utils.toInt(val));    	
+    	this.spinner.setMinValue(vcube.utils.toInt(val));
+    	
+    	// Slider subtpl will have to be redrawn and ticks applied again
+    	Ext.getEl('slider-min-label-'+sliderTplId).update(this.getValueLabel(val));
+    	this.applyTicks(this.slider);
     },
     
     getSubmitValue: function() {
@@ -60,11 +81,55 @@ Ext.define('vcube.form.field.slider', {
     	this.spinner.setValue(vcube.utils.toInt(val));
     },
     
+    /* Apply ticks to slider element */
+    applyTicks: function(slider) {
+    	
+    	// Not rendered yet?
+    	var tickEl = Ext.get('slider-ticks-'+this.sliderTplId);
+    	if(!tickEl || !slider.innerEl) return;
+    	
+    	// clear content
+    	tickEl.update('');
+
+    	// set width
+    	var swidth = slider.innerEl.getWidth();
+    	if(!swidth) {
+    		// if no width has been set, there is nothing to do
+    		return;
+    	}
+    	tickEl.setWidth(swidth+1);
+
+    	// Initial ratio
+		var ratio = slider.getRatio();
+		var range = slider.getRange();
+		
+		
+		// Alter ratio so that we have at least 10px between lines
+		while(ratio < 10) {
+			ratio *= 2;
+			range = range / 2;
+		}
+		
+		for(var i = 1; i < range; i++) {	
+			var innerEl = new Ext.Element(document.createElement('div'));
+			innerEl.setStyle('left', ((ratio*i)-1) + 'px');
+			tickEl.appendChild(innerEl);
+		}
+
+    },
+    
     initComponent: function(options) {
     	
     	Ext.apply(this, options);
     	
-    	this.tickId = 'slider-ticks-' + Ext.id();
+    	this.sliderTplId = 'slider-ticks-' + Ext.id();
+    	
+    	// Bytes values 
+    	if(this.mbytesValue) {
+    		this.valueLabelFn = vcube.utils.mbytesConvert;
+    		this.valueLabelConvertFn = vcube.utils.convertMBString;
+    		this.hideValueBox = true;
+    	}
     	
     	this.items = [{
     		xtype: 'slider',
@@ -73,47 +138,63 @@ Ext.define('vcube.form.field.slider', {
     		maxValue: this.maxValue,
     		minValue: this.minValue,
     		value: this.value,
-    		afterSubTpl: this.sliderTickTpl.apply({minValue:this.minValue,maxValue:this.maxValue,valueLabel:this.valueLabel,tickId:this.tickId}),
+    		afterSubTpl: this.sliderTickTpl.apply({
+    			minLabel: this.getValueLabel(this.minValue),
+    			maxLabel: this.getValueLabel(this.maxValue),
+    			sliderTplId: this.sliderTplId
+    		}),
     		listeners: {
     			changecomplete: function(slider, newValue) {
     				slider.ownerCt.items.items[1].setValue(newValue);    			
     			},
     			resize: function(slider, width) {
-    				
-    				// Initial ratio
-    				var ratio = slider.getRatio();
-    				var range = slider.getRange(); 
-    				while(ratio < 10) {
-    					ratio *= 2;
-    					range = range / 2;
-    				}
-    				console.log(ratio);
-    				console.log(range);
-    				for(var i = slider.minValue; i < slider.maxValue; i += ratio) {
-    					console.log("Tick at " + slider.calculateThumbPosition(i));
-    				}
+    				this.applyTicks(slider);
     			},
     			scope: this
     		}
     	},{
     		xtype: 'spinnerfield',
-    		inputWidth: 60,
+    		inputWidth: (this.valueLabelFn ? 80 : 60),
     		maxValue: this.maxValue,
     		minValue: this.minValue,
     		submitValue: false,
     		margin: '0 0 0 8',
     		value: this.value,
+    		internalValue: this.value,
     		listeners: {
     			spin: function(spinner, dir) {
-    				var val = vcube.utils.toInt(spinner.getValue()) + (dir == 'up' ? 1 : -1);
+    				
+    				var val = spinner.getValue();
+    				
+    				if(this.mbytesValue) {
+    					console.log("Old val: " + val);
+    					val = vcube.utils.convertMBString(parseFloat(vcube.utils.toFloat(val)) + (dir == 'up' ? 1 : -1) +
+    							' ' + (val.split(' ')[1] || 'MB'));
+    					
+    					console.log("New val: " + val);
+    				} else {
+    					val = vcube.utils.toInt(val) + (dir == 'up' ? 1 : -1);
+    				}
+    				
     				spinner.setValue(val);
     				spinner.ownerCt.items.items[0].setValue(val);
     			},
+    			/*
     			blur: function(spinner) {
     				var val = vcube.utils.toInt(spinner.getValue());
     				spinner.setValue(val);
     				spinner.ownerCt.items.items[0].setValue(val);
-    			}
+    			},
+    			change: function(spinner, val) {
+    				if(this.mbytesValue) {
+    					console.log("Setting to " + val);
+    					console.log("String to mbytes is " + vcube.utils.convertMBString(val));
+    					console.log("Mbytes to string is " + vcube.utils.mbytesConvert(vcube.utils.convertMBString(val)));
+    					spinner.setValue(vcube.utils.mbytesConvert(vcube.utils.convertMBString(val)));
+    				}
+    			},
+    			 */
+    			scope: this
     		}
     	},{
     		html: this.valueLabel,

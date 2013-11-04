@@ -20,26 +20,9 @@ Ext.define('vcube.form.field.slider', {
     hideValueBox: false,
     
     sliderTickTpl: new Ext.XTemplate('<div style="font-size: 7px; width: 100%;padding-left: 6px; padding-right: 6px;overflow: hidden;">'+
-    		'{[this.genTicks(values.minValue, values.maxValue)]}'+
+    		'<div id="{tickId}" />'+
 		'</div><div style="width: 100%; font-size: 11px; height: 14px;"><span style="float: left;">{minValue} {valueLabel}</span><span style="float: right">'+
-		'{maxValue} {valueLabel}</span></div>',{
-			genTicks: function(minValue, maxValue) {
-
-				console.log("here...");
-				
-				var diff = Math.min((maxValue - minValue),40);
-				var tdw = Math.round(100 / diff);
-				
-				var divRow = [];
-		
-				for(var a = 0; a < (diff-1); a++){
-					divRow.push('<div style="height: 4px; display: inline-block; float: left; width: '+ tdw + '%; border-left: 1px solid #000;"></div>');
-				}
-				divRow.push('<div style="height: 4px; display: inline-block; float: left; width: 1px; border-left: 1px solid #000;"></div>');
-				divRow.push('<div style="height: 4px; display: inline-block; width: 1px; border-left: 1px solid #000; float: right"></div>');
-				return divRow.join('');
-			}
-		}),
+		'{maxValue} {valueLabel}</span></div>'),
     
     items: [],
     
@@ -81,6 +64,8 @@ Ext.define('vcube.form.field.slider', {
     	
     	Ext.apply(this, options);
     	
+    	this.tickId = 'slider-ticks-' + Ext.id();
+    	
     	this.items = [{
     		xtype: 'slider',
     		flex: 1,
@@ -88,11 +73,22 @@ Ext.define('vcube.form.field.slider', {
     		maxValue: this.maxValue,
     		minValue: this.minValue,
     		value: this.value,
-    		afterSubTpl: this.sliderTickTpl,
+    		afterSubTpl: this.sliderTickTpl.apply({minValue:this.minValue,maxValue:this.maxValue,valueLabel:this.valueLabel,tickId:this.tickId}),
     		listeners: {
     			changecomplete: function(slider, newValue) {
     				slider.ownerCt.items.items[1].setValue(newValue);    			
-    			}
+    			},
+    			resize: function(slider, width) {
+    				
+    				// Initial ratio
+    				var ratio = slider.getRatio();
+    				while(ratio < 10) {
+    					ratio *= 2;
+    				}
+    				var range = slider.getRange(); 
+    				console.log(slider.getRange());
+    			},
+    			scope: this
     		}
     	},{
     		xtype: 'spinnerfield',

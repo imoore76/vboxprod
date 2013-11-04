@@ -142,7 +142,11 @@ Ext.define('vcube.storemanager',{
 
 			// Machine state change
 			'vboxMachineStateChanged' :function(eventData) {
-				vcube.storemanager.updateStoreRecord('vm', eventData.machineId, Ext.apply({'state':eventData.state},eventData.enrichmentData));					
+				try {
+					vcube.storemanager.updateStoreRecord('vm', eventData.machineId, Ext.apply({'state':eventData.state},eventData.enrichmentData));										
+				} catch (err) {
+					// this can happen after a machine is unregistered... 
+				}
 			},
 
 			// Session state change

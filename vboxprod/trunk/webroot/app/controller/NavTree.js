@@ -229,7 +229,10 @@ Ext.define('vcube.controller.NavTree', {
 		
 		var self = this;
 		Ext.each(records, function(record) {
-			self.navTreeStore.getNodeById(nodeIdPrefix + record.get('id')).remove(true);
+			var node = self.navTreeStore.getNodeById(nodeIdPrefix + record.get('id'));
+			if(!node) return;
+			node.removeAll(true);
+			node.remove(true);
 		});
 	},
 	

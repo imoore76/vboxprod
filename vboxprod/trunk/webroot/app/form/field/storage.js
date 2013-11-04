@@ -3,6 +3,8 @@ Ext.define('vcube.form.field.storage', {
 	extend: 'Ext.form.field.Base',
     alias: 'widget.storagefield',
 
+    requires: ['vcube.widget.MediaSelectButton'],
+    
     mixins: {
         field: 'Ext.form.field.Field'
     },
@@ -11,6 +13,16 @@ Ext.define('vcube.form.field.storage', {
     combineErrors: true,
     msgTarget: 'side',
     submitFormat: 'c',
+    
+    serverNotify: true,
+    serverId: null,
+    
+    setServer: function(serverid) {
+    	var self = this;
+    	Ext.each(Ext.ComponentQuery.query('MediaSelectButton', this.attribsPanel), function(b) {
+    		b.setServer(serverid);
+    	});
+    },
     
     margin: 0,
     
@@ -64,6 +76,7 @@ Ext.define('vcube.form.field.storage', {
 		var maNode = c.createNode(Ext.Object.merge({
 			text: ma.medium,
 			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName(ma) + '_16px.png',
+			cls: 'mediumAttachment',
 			leaf: true
 		}, ma));
 		
@@ -101,6 +114,16 @@ Ext.define('vcube.form.field.storage', {
     	
     },
     
+    /**
+     * Elect next node to be selected if this one is removed
+     */
+    electNextNode: function(node) {
+    	var selectAfter = node.nextSibling;
+		if(!selectAfter) selectAfter = node.previousSibling;
+		if(!selectAfter) selectAfter = (node.parentNode.isRoot() ? null : node.parentNode);
+		return selectAfter;
+    },
+    
     initComponent: function(options) {
     	
     	Ext.apply(this,options);
@@ -118,6 +141,23 @@ Ext.define('vcube.form.field.storage', {
     			text: 'Remove Controller',
     			handler: function() {
     				
+    				var selected = this.tree.getSelectionModel().getSelection()[0];
+    				
+    				// Re-enable adding of this controller type and the global
+    				// add controller button
+    				this.actions['add' + selected.raw.bus + 'Controller'].enable();
+    				this.actions['addController'].enable();
+    				
+    				selected.removeAll(true);
+
+    				this.tree.getSelectionModel().deselectAll();
+    				
+    				var selectAfter = this.electNextNode(selected);
+    				selected.parentNode.removeChild(selected, true);
+    				
+    				if(selectAfter) 
+    					this.tree.getSelectionModel().select(selectAfter);
+    				
     			},
 	    		scope: this
     		}),
@@ -127,6 +167,16 @@ Ext.define('vcube.form.field.storage', {
     			text: 'Remove Attachment',
     			handler: function() {
     				
+    				var selected = this.tree.getSelectionModel().getSelection()[0];
+
+    				this.tree.getSelectionModel().deselectAll();
+    				
+    				var selectAfter = this.electNextNode(selected);
+    				selected.parentNode.removeChild(selected, true);
+    				
+    				if(selectAfter) 
+    					this.tree.getSelectionModel().select(selectAfter);
+
     			},
     			scope: this
     		})
@@ -544,7 +594,24 @@ Ext.define('vcube.form.field.storage', {
     		},
     		items: [{
     			title: 'Attributes',
-    			items: [Ext.Object.merge({fieldLabel: 'Floppy Drive', labelWidth: 80}, slotCbo)]
+    			items: [{
+    				xtype: 'fieldcontainer',
+    				layout: 'hbox',
+    				items: [
+    					Ext.Object.merge({labelAlign: 'right', fieldLabel: 'Floppy Drive', flex: 1, labelWidth: 80}, slotCbo),
+    					{
+    						xtype: 'MediaSelectButton',
+    						itemId: 'mediaselect',
+    						mediaType: 'fd',
+    						serverId: this.serverId,
+    						callback: function(medium) {
+    							this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
+    							fdInfoPanel.getForm().setValues({'medium':medium});
+    						},
+    						scope: this
+    					}
+    				]
+    			}]
     		},{
     			title: 'Information',
     			items: [{
@@ -583,8 +650,24 @@ Ext.define('vcube.form.field.storage', {
     				labelAlign: 'right',
     				xtype: 'displayfield'
     			},
-    			items: [Ext.Object.merge({fieldLabel: 'CD/DVD Drive'}, slotCbo)
-		        ,{
+    			items: [{
+    				xtype: 'fieldcontainer',
+    				layout: 'hbox',
+    				items: [
+    					Ext.Object.merge({labelAlign: 'right', fieldLabel: 'CD/DVD Drive', flex: 1}, slotCbo),
+    					{
+    						xtype: 'MediaSelectButton',
+    						itemId: 'mediaselect',
+    						mediaType: 'cd',
+    						serverId: this.serverId,
+    						callback: function(medium) {
+    							this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
+    							cdInfoPanel.getForm().setValues({'medium':medium});
+    						},
+    						scope: this
+    					}
+    				]
+    			},{
     				fieldLabel: ' ',
     				labelSeparator: '',
     				xtype: 'checkbox',
@@ -635,15 +718,30 @@ Ext.define('vcube.form.field.storage', {
     				labelAlign: 'right',
     				xtype: 'displayfield'
     			},
-    			items: [
-    			        Ext.Object.merge({fieldLabel: 'Hard Disk'}, slotCbo)
-    			        ,{
-    			        	fieldLabel: ' ',
-    			        	labelSeparator: '',
-    			        	boxLabel: 'Solid-state Drive',
-    			        	xtype: 'checkbox',
-    			        	name: 'nonRotational',
-    			        	listeners: cbListener
+    			items: [{
+    				xtype: 'fieldcontainer',
+    				layout: 'hbox',
+    				items: [
+    					Ext.Object.merge({labelAlign: 'right', fieldLabel: 'Hard Disk', flex: 1}, slotCbo),
+    					{
+    						xtype: 'MediaSelectButton',
+    						itemId: 'mediaselect',
+    						mediaType: 'hd',
+    						serverId: this.serverId,
+    						callback: function(medium) {
+    							this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
+    							hdInfoPanel.getForm().setValues({'medium':medium});
+    						},
+    						scope: this
+    					}
+    				]
+    			},{
+		        	fieldLabel: ' ',
+		        	labelSeparator: '',
+		        	boxLabel: 'Solid-state Drive',
+		        	xtype: 'checkbox',
+		        	name: 'nonRotational',
+		        	listeners: cbListener
 		        }]
     		},{
     			title: 'Information',
@@ -735,6 +833,8 @@ Ext.define('vcube.form.field.storage', {
 	    			default:
 	    				targetPanel = hdInfoPanel;
     			}
+    			// Update medium select
+    			targetPanel.down('#mediaselect').updateMenu(selection[0].get('medium'));
     			
     			// Get used slots
     			var usedSlots = {};

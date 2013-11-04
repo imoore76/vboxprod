@@ -733,7 +733,7 @@ class vboxConnector(object):
                 # Try to register medium.
                 for iso in checks:
                     try:
-                        gem = self.vbox.openMedium(iso,vboxMgr.constants.DeviceType_DVD, None, None)
+                        gem = self.vbox.openMedium(iso,vboxMgr.constants.DeviceType_DVD, vboxMgr.constants.AccessMode_ReadOnly, False)
                         break
                     except:
                         pass
@@ -1121,7 +1121,7 @@ class vboxConnector(object):
                                         med = md
                                         break
                             else:
-                                med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), None, None)
+                                med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
                             
                         else:
                             med = None
@@ -1549,7 +1549,7 @@ class vboxConnector(object):
                     else:
                         
                         """ @med IMedium """
-                        med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), None, None)
+                        med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
                     
                 else:
                     med = None
@@ -2097,6 +2097,30 @@ class vboxConnector(object):
             'details': "Exported %s vms" %(args['vms'].length),
             'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
+    
+    """
+     * Get a list of host CD / DVD drives
+    """
+    def remote_hostGetDVDDrives(self, args):
+        
+        drives = []
+        
+        for d in vboxGetArray(vbox.host, 'DVDDrives'):
+            drives.append(self._mediumGetDetails(d, True))
+        
+        return drives
+
+    """
+     * Get a list of host floppy drives
+    """
+    def remote_hostGetFloppyDrives(self, args):
+        
+        drives = []
+        
+        for d in vboxGetArray(vbox.host, 'floppyDrives'):
+            drives.append(self._mediumGetDetails(d, True))
+        
+        return drives
     
     """
      * Get host networking info
@@ -2732,8 +2756,9 @@ class vboxConnector(object):
 
             hds = []
             delete = machine.unregister(vboxMgr.constants.CleanupMode_DetachAllReturnHardDisksOnly )
+            pprint.pprint(delete);
             for hd in delete:
-                hds.append(self.vbox.openMedium(hd.location,vboxMgr.constants.DeviceType_HardDisk, None, None))
+                hds.append(self.vbox.openMedium(hd.location,vboxMgr.constants.DeviceType_HardDisk, vboxMgr.constants.AccessMode_ReadWrite, False))
 
             """ @progress IProgress """
             progress = machine.deleteConfig(hds)
@@ -2741,9 +2766,9 @@ class vboxConnector(object):
             global progressOpPool
             progressid = progressOpPool.store(progress)
 
-            return {'progress' : progressid, 'machine': machineName}
+            return {'progress' : progressid, 'machineName': machineName}
 
-        return {'machine': machineName}
+        return {'machineName': machineName}
     
     remote_machineRemove.progress = True
     remote_machineRemove.log = True
@@ -2863,7 +2888,7 @@ class vboxConnector(object):
                 if HDbusType == 'SATA':
                     sc.portCount = (2 if (HDbusType == DVDbusType) else 1)
                 
-                m = self.vbox.openMedium(args['disk'],vboxMgr.constants.DeviceType_HardDisk, None, None)
+                m = self.vbox.openMedium(args['disk'],vboxMgr.constants.DeviceType_HardDisk, vboxMgr.constants.AccessMode_ReadOnly, False)
 
                 session.machine.attachDevice(vboxEnumToString("StorageBus", HDbusType),0,0,vboxMgr.constants.DeviceType_HardDisk,m)
 
@@ -3627,7 +3652,7 @@ class vboxConnector(object):
     def remote_mediumResize(self, args):
 
 
-        m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk, None, None)
+        m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk, vboxMgr.constants.AccessMode_ReadWrite, False)
         mediumName = m.name
         
         """ @progress IProgress """
@@ -3666,7 +3691,7 @@ class vboxConnector(object):
         mid = target.id
 
         """ @src IMedium """
-        src = self.vbox.openMedium(args['src'], vboxMgr.constants.DeviceType_HardDisk, None, None)
+        src = self.vbox.openMedium(args['src'], vboxMgr.constants.DeviceType_HardDisk, vboxMgr.constants.AccessMode_ReadOnly, False)
 
         type = [vboxMgr.constants.MediumVariant_Fixed if args['type'] == 'fixed' else vboxMgr.constants.MediumVariant_Standard]
         if args['split']:
@@ -3703,7 +3728,7 @@ class vboxConnector(object):
         self.connect()
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk, None, None)
+        m = self.vbox.openMedium(args['medium'], vboxMgr.constants.DeviceType_HardDisk, vboxMgr.constants.AccessMode_ReadWrite, False)
         m.type = args['type']
 
         return True
@@ -3761,7 +3786,7 @@ class vboxConnector(object):
     def remote_mediumAdd(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['path'],args['type'],vboxMgr.constants.AccessMode_ReadWrite,None, None)
+        m = self.vbox.openMedium(args['path'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 
         mid = m.id
         
@@ -3831,7 +3856,7 @@ class vboxConnector(object):
     def remote_mediumRelease(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'],vboxStringToEnum("DeviceType", args['type']), None, None)
+        m = self.vbox.openMedium(args['medium'],vboxStringToEnum("DeviceType", args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
         mediumid = m.id
         mediumName = m.name
 
@@ -3923,7 +3948,7 @@ class vboxConnector(object):
     def remote_mediumRemove(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'],vboxStringToEnum('DeviceType', args.get('type', 'HardDisk')), None, None)
+        m = self.vbox.openMedium(args['medium'],vboxStringToEnum('DeviceType', args.get('type', 'HardDisk')), vboxMgr.constants.AccessMode_ReadWrite, False)
         mediumName = m.name
         
         if args.get('delete',None) and m.deviceType == vboxMgr.constants.DeviceType_HardDisk:
@@ -4071,7 +4096,7 @@ class vboxConnector(object):
             # Normal medium
             else:
                 """ @med IMedium """
-                med = self.vbox.openMedium(args['medium']['location'], vboxStringToEnum("DeviceType", args['medium']['deviceType']), None, None)
+                med = self.vbox.openMedium(args['medium']['location'], vboxStringToEnum("DeviceType", args['medium']['deviceType']), vboxMgr.constants.AccessMode_ReadOnly, False)
             
         
 

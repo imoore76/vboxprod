@@ -25,18 +25,47 @@ div.greyPanel, div.greyPanel > .x-panel-body { background: rgb(241, 241, 241); }
 .storageTree .x-tree-elbow-plus, .storageTree .x-tree-elbow-end-plus {
 	visibility: hidden;
 }
-.storageTreeExpander { cursor: pointer; margin-right: 4px; margin-left: -15px; }
+img.storageTreeExpander {
+	cursor: pointer;
+	margin: 0px 4px 0px -15px;
+	width: 16px;
+	height: 16px;
+}
+	
 .storageTree tr.x-grid-row > td { padding-left: 4px; }
 
 /* Button cells (last cell in grid) get no padding */
 .storageTree tr > td.x-grid-cell-last, .storageTree tr.x-grid-cell-focused > td.x-grid-cell-last,
 .storageTree tr.x-grid-cell-focused > td.x-grid-cell-last > div.x-grid-cell-inner, .storageTree tr > td.x-grid-cell-last > div.x-grid-cell-inner
 { padding: 0px 0px 0px 0px; }
-.storageTree tr.x-grid-cell-focused a.x-btn {
-	display: inline-block;
+
+.storageTree .buttonContainer {
+	display: none;
+}
+.storageTree tr.x-grid-row-selected .buttonContainer {
+	display: block;	
 }
 
-.storageTree a.x-btn
+.storageTree tr.x-grid-row-selected .buttonContainer {
+	display: block;
+}
+.storageTree td.x-grid-cell-first, .storageTree td.x-grid-cell-first div {
+	text-overflow: ellipsis;
+	overflow: visible;
+}
+.storageTree tr.x-grid-row-selected td.x-grid-cell-first div, x-tree-node-text {
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+.storageTree a.x-btn {
+	float: right;
+	margin: 2px 4px 0px 0px;
+	border: 0px;
+	padding: 0px;
+	height: 16px;
+	width: 16px;
+
+}
 
 /* VM summary info table */
 table.infoTable tr {

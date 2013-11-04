@@ -19,7 +19,7 @@ Ext.define('vcube.controller.ServerTasksAndEvents', {
     	
     	this.control({
     		
-        	'viewport > #MainPanel > ServerTabs > TasksAndEventsTab' : {
+        	'viewport > #MainPanel > ServerTabs > TasksAndEvents' : {
         		show: this.onShow,
     			render: function(panel) {
     				

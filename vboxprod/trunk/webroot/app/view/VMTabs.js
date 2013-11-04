@@ -15,7 +15,7 @@ Ext.define('vcube.view.VMTabs', {
                'vcube.view.VMSnapshots',
                'vcube.view.VMConsole',
                'vcube.widget.SectionTable',
-               'vcube.view.TasksAndEventsTab'
+               'vcube.view.TasksAndEvents'
              ],
 	
     defaults: {
@@ -29,7 +29,9 @@ Ext.define('vcube.view.VMTabs', {
     },{
     	xtype: 'VMSnapshots'
     },{
-    	xtype: 'TasksAndEventsTab'
+    	xtype: 'TasksAndEvents',
+        title: 'Tasks and Events',
+        icon: 'images/vbox/OSE/about_16px.png'
     },{
     	xtype: 'VMConsole'
     }]

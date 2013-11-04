@@ -68,7 +68,7 @@ class vboxEventsToEventLog:
     def SnapshotTaken(eventData):
         return {'name':'Snapshot taken',
                 'machine':eventData['machineId'],
-                'details':'Snapshot `%s` taken' %(eventData['enrichmentData'].get('currentSnapshotName'),),
+                'details':'Snapshot `%s` taken' %(eventData['enrichmentData'].get('snapshot',{}).get('name','<unknown>'),),
                 'connector': eventData['connector_id'],
                 'category' : constants.LOG_CATEGORY['SNAPSHOT']
         }

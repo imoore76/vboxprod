@@ -7,7 +7,7 @@ Ext.define('vcube.view.ServerTabs', {
 	   'vcube.view.ServerConnector',
 	   'vcube.view.ServerHost',
 	   'vcube.view.VirtualMachinesList',
-       'vcube.view.TasksAndEventsTab'
+       'vcube.view.TasksAndEvents'
      ],
 
     defaults: {
@@ -22,6 +22,8 @@ Ext.define('vcube.view.ServerTabs', {
     	xtype: 'VirtualMachinesList',
     	layout: 'fit'
     },{
-    	xtype: 'TasksAndEventsTab'
+    	xtype: 'TasksAndEvents',
+        title: 'Tasks and Events',
+        icon: 'images/vbox/OSE/about_16px.png'
     }]
 });

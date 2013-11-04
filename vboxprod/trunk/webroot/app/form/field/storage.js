@@ -144,7 +144,7 @@ Ext.define('vcube.form.field.storage', {
     			busType: bus,
     			icon: 'images/vbox/' + vcube.utils.vboxStorage.getBusIconName(bus) + '_add_16px.png',
     			handler: function(btn) {
-    				console.log(btn.busType);
+    				console.log(btn);
 				},
 				scope: self
     			
@@ -162,7 +162,7 @@ Ext.define('vcube.form.field.storage', {
         			attachmentType: d,
         			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName({type:d}) + '_add_16px.png',
         			handler: function(btn) {
-        				console.log(btn.busType);
+        				console.log(btn);
     				},
     				scope: self
         			
@@ -235,6 +235,7 @@ Ext.define('vcube.form.field.storage', {
     	this.tree = Ext.create('Ext.tree.Panel',{
     		xtype: 'treepanel',
     		cls: 'storageTree',
+    		scroll: 'vertical',
     		rootVisible: false,
     		hideHeaders: true,
     		border: false,
@@ -245,7 +246,6 @@ Ext.define('vcube.form.field.storage', {
     		columns : [{
                  xtype    : 'treecolumn',
                  text     : 'Name',
-                 width    : 100,
                  dataIndex: 'text',
                  flex: 1,
                  renderer: function(val,m,record) {
@@ -256,36 +256,30 @@ Ext.define('vcube.form.field.storage', {
                  }
     		},{
     			dataIndex: 'leaf',
-    			width: 100,
     			cls: 'gridCellButtons',
+    			width: 42,
+    			padding: '0 2 0 0',
     			renderer: function(val, meta, record) {
     				
     				if(val) return '';
     				
     				var self = this;
-    				console.log(this);
     				
     				var id = record.internalId+'-'+Ext.id();
     				
     				Ext.Function.defer(function() {
     					
-    					console.log(id);
-    					
     					Ext.each(vcube.utils.vboxStorage[record.raw.bus].driveTypes, function(dt) {
     						Ext.create('Ext.button.Button',{
     							icon: self.actions['add' + dt + 'Attachment'].initialConfig.icon,
     							baseAction: self.actions['add' + dt + 'Attachment'],
-    							margin: 0,
-    							border: 0,
-    							padding: 0,
-    							height: 16,
-    							width: 16,
+    							disabled: self.actions['add' + dt + 'Attachment'].initialConfig.disabled,
     							renderTo: document.getElementById(id)
     						});
     					});
     				},1000);
     				
-    				return '<div style="float: right" id="'+id+'"></div>';
+    				return '<div class="buttonContainer" id="'+id+'"></div>';
     				
     			},
     			scope: this
@@ -338,8 +332,9 @@ Ext.define('vcube.form.field.storage', {
     						self.actions['add' + dt + 'Attachment'].setHidden(!Ext.Array.contains(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, dt));
     					});
     					
+    					// Disable all at first
     					Ext.each(vcube.utils.vboxStorage[selected[0].raw.bus].driveTypes, function(dt){
-							self.actions['add' + dt + 'Attachment'].enable();
+							self.actions['add' + dt + 'Attachment'].disable();
 						});
 
     					// We have not hit the max device count yet
@@ -543,14 +538,13 @@ Ext.define('vcube.form.field.storage', {
     			layout: 'form',
 				defaults: {
 					labelAlign: 'right',
-					labelWidth: 60,
+					labelWidth: 80,
 					xtype: 'displayfield'
 				}
     		},
     		items: [{
     			title: 'Attributes',
-    			labelWidth: 90,
-    			items: [Ext.Object.merge({fieldLabel: 'Floppy Drive'}, slotCbo)]
+    			items: [Ext.Object.merge({fieldLabel: 'Floppy Drive', labelWidth: 80}, slotCbo)]
     		},{
     			title: 'Information',
     			items: [{

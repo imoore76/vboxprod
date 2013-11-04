@@ -1,7 +1,7 @@
 /*
  * Events and tasks controller
  */
-Ext.define('vcube.controller.TasksAndEventsMain', {
+Ext.define('vcube.controller.TasksAndEvents', {
     extend: 'vcube.controller.XTasksAndEvents',
     
     /* Store limit ? */
@@ -13,7 +13,7 @@ Ext.define('vcube.controller.TasksAndEventsMain', {
     	// Initialize stores on render of the panel
     	this.control({
     		
-    		'TasksAndEventsMain' : {
+    		'viewport > TasksAndEvents' : {
     			
     			render: function(panel) {
     				// Reconfigure panel with unique store instance

@@ -82,11 +82,16 @@ Ext.define('vcube.form.field.slider', {
     				
     				// Initial ratio
     				var ratio = slider.getRatio();
+    				var range = slider.getRange(); 
     				while(ratio < 10) {
     					ratio *= 2;
+    					range = range / 2;
     				}
-    				var range = slider.getRange(); 
-    				console.log(slider.getRange());
+    				console.log(ratio);
+    				console.log(range);
+    				for(var i = slider.minValue; i < slider.maxValue; i += ratio) {
+    					console.log("Tick at " + slider.calculateThumbPosition(i));
+    				}
     			},
     			scope: this
     		}

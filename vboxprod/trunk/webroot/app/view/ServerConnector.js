@@ -203,7 +203,10 @@ Ext.define('vcube.view.ServerConnector.AddEdit', {
     		defaultType:'textfield',
     		monitorValid:true,
     		buttonAlign:'center',
-    		
+    		layout: 'form',
+    		defaults: {
+    			labelAlign: 'right'
+    		},
     		items: [{
     			xtype: 'hidden',
     			name: 'id'

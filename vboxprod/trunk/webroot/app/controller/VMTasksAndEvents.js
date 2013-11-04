@@ -18,7 +18,7 @@ Ext.define('vcube.controller.VMTasksAndEvents', {
     init: function() {
     	
     	this.control({
-        	'viewport > #MainPanel > VMTabs > TasksAndEventsTab' : {
+        	'viewport > #MainPanel > VMTabs > TasksAndEvents' : {
         		show: this.onShow,
     			render: function(panel) {
     				

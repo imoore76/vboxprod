@@ -270,6 +270,10 @@ Ext.define('vcube.view.VMSummary.Edit', {
     		xtype: 'form',
     		itemId: 'form',
     		frame:true,
+    		layout: 'form',
+    		defaults: {
+    			labelAlign: 'right'
+    		},
     		defaultType:'textfield',
     		monitorValid:true,
     		buttonAlign:'center',

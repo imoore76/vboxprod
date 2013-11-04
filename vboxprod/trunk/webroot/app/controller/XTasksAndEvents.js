@@ -43,7 +43,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     /* On item dblclick */
     onTaskDblClick: function(grid, record) {
 
-    	var win = Ext.create('vcube.view.TasksAndEventsMain.TaskDetails');
+    	var win = Ext.create('vcube.view.TasksAndEvents.TaskDetails');
     	win.show();
     	win.setLoading(true);
     	
@@ -67,7 +67,7 @@ Ext.define('vcube.controller.XTasksAndEvents', {
     /* On item dblclick */
     onEventDblClick: function(grid, record) {
     	
-    	var win = Ext.create('vcube.view.TasksAndEventsMain.EventDetails');
+    	var win = Ext.create('vcube.view.TasksAndEvents.EventDetails');
     	win.show();
     	win.setLoading(true);
     	

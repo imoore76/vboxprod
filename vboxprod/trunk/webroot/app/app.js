@@ -47,7 +47,7 @@ Ext.application({
                   'SettingsDialog',
                   
                   // Main Views
-                  'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEventsMain',
+                  'Viewport','Login','NavTree','MainPanel','Menubar','TasksAndEvents',
                   
                   // Main vm list
                   'MainVirtualMachinesList',
@@ -56,18 +56,19 @@ Ext.application({
                   'GroupTabs', 'GroupVirtualMachinesList',
                   
                   // Server Tabs
-                  'ServerConnector', 'ServerHost', 'ServerTasksAndEvents', 'ServerVirtualMachinesList',
+                  'ServerConnector', 'ServerHost',
+                  'ServerTasksAndEvents', 
+                  'ServerVirtualMachinesList',
                   
                   // VM tabs
-                  'VMTabs', 'VMSummary','VMDetails','VMSnapshots','VMTasksAndEvents','VMConsole'
+                  'VMTabs', 'VMSummary','VMDetails','VMSnapshots','VMTasksAndEvents',
+                  'VMConsole'
                   
     ],
     
     /* Common views */
     views: ['common'],
     
-    /* Stores */
-    stores: ['Events','Tasks','VirtualMachines'],
     
     /* App Settings */
     settings : {},

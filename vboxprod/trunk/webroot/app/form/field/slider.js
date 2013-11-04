@@ -25,6 +25,8 @@ Ext.define('vcube.form.field.slider', {
 		'{maxValue} {valueLabel}</span></div>',{
 			genTicks: function(minValue, maxValue) {
 
+				console.log("here...");
+				
 				var diff = Math.min((maxValue - minValue),40);
 				var tdw = Math.round(100 / diff);
 				
@@ -86,7 +88,7 @@ Ext.define('vcube.form.field.slider', {
     		maxValue: this.maxValue,
     		minValue: this.minValue,
     		value: this.value,
-    		afterSubTpl: '<div id="' + this.getId() + '-sliderticks">' + this.sliderTickTpl.apply(this) + '</div>',
+    		afterSubTpl: this.sliderTickTpl,
     		listeners: {
     			changecomplete: function(slider, newValue) {
     				slider.ownerCt.items.items[1].setValue(newValue);    			

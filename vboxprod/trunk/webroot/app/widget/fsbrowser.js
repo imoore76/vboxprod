@@ -14,6 +14,8 @@ Ext.define('vcube.widget.fsbrowser',{
     plain: true,
     border: false,
     
+    initialPathTests: null,
+    
     buttonAlign: 'center',
 
 	
@@ -38,84 +40,48 @@ Ext.define('vcube.widget.fsbrowser',{
 	},
 	
 
-	fsObjectChosen: Ext.create('Ext.ux.Deferred'),
+	pathType: null,
+	savePath: false,
+	getLocalStorageProperty: function() {
+		this.savePath = true;
+		var prefix = '';
+		if(this.pathType) {
+			prefix = this.pathType;
+		} else {
+			prefix = this.browserType + 'RecentPath';
+		}
+		return prefix + '-' + this.serverId;
+	},
 	
-	browse: function(path) {
+	fsObjectChosen: null,
+	
+	initialPath: null,
+	
+	browse: function() {
 		
 		var self = this;
+		this.initialPathTests = [];
+		
+		if(this.initialPath) {
+			var pathCmp = '';
+			Ext.each(this.initialPath.replace(/\\/g, '/').replace(/\/\//g,'/').replace(/\/$/,'').toLowerCase().split('/'), function(p) {
+				pathCmp = String(pathCmp + '/' + p).replace('//','/');
+				self.initialPathTests.push(pathCmp);
+			});
+		}
 
 		this.show();
 		
-		var expandPath = []
-		var dsep = '/';
-		var currentPath = [];
+		this.tree.getRootNode().expand();
 		
-		if(path) {
-			dsep = (path.indexOf('\\') > -1 ? '\\' : '/');
-			expandPath = path.replace(/\\/g, '/').replace(/\/\//g,'/').split('/');
-		}
-
-		this.tree.setLoading(true);
-
-		var getNodeId = function(path) {
-			if(/^[a-zA-Z]:$/.test(path)) return path + dsep;
-			return path;
-		}
-		
-		
-		var expandNode = function(nodeId) {
-			try {				
-				console.log("Nodeid 1 " + nodeId);
-				nodeId = getNodeId(nodeId);
-				console.log("Nodeid 2 " + nodeId);
-				
-				var nextNode = self.tree.getStore().getNodeById(nodeId);
-				
-				if(!nextNode) {
-					self.tree.setLoading(false);
-					return;
-				}
-				
-				if(nextNode.get('leaf')) {
-					self.tree.getSelectionModel().select([nextNode]);
-					self.tree.getView().focusNode(nextNode);
-					self.tree.setLoading(false);
-					return;
-				}
-				
-				nextNode.expand(false, function(){
-					if(expandPath.length) {
-						currentPath.push(expandPath.shift());
-						expandNode(currentPath.join(dsep));
-					} else {
-						self.tree.getSelectionModel().select([nextNode]);
-						self.tree.getView().focusNode(nextNode);
-						self.tree.setLoading(false);
-					}
-				})
-			} catch (err) {
-				self.tree.setLoading(false);
-			}
-		}
-		
-		
-		this.tree.getRootNode().expand(false, function() {
-
-			if(expandPath.length) {
-				
-				currentPath.push(expandPath.shift());
-				expandNode(currentPath[0]);
-				
-			} else {
-				self.tree.setLoading(false);
-			}
-		});
-		
+		return this.fsObjectChosen;
 	},
 	
 	initComponent: function(options) {
 		
 		Ext.apply(this, options);
+		
+		this.fsObjectChosen = Ext.create('Ext.ux.Deferred');
 		
 		fileTypesOptions = []
 		
@@ -137,7 +103,7 @@ Ext.define('vcube.widget.fsbrowser',{
 				
 			/* Disk */
 			case 'hd':
-				this.icon = this.icon || 'images/vbox/fd_16px.png';
+				this.icon = this.icon || 'images/vbox/hd_16px.png';
 				this.title = this.title || 'Choose a virtual hard disk file...',
 				fileTypesOptions.push(this.hdFileTypes);
 				break;
@@ -149,13 +115,16 @@ Ext.define('vcube.widget.fsbrowser',{
 				
 		}
 		
+		this.initialPath = this.initialPath || vcube.app.localStore.get(this.getLocalStorageProperty());
+		
 		if(this.browserType != 'folder')
 			fileTypesOptions.push(this.allFileTypes);
 		
 		this.tree = Ext.create('Ext.tree.Panel',{
 			rootVisible: false,
 			root: {
-				expanded: false
+				expanded: false,
+				leaf: false
 			},
 			listeners: {
 				selectionchange: function(sm, selection) {
@@ -163,7 +132,11 @@ Ext.define('vcube.widget.fsbrowser',{
 				},
 				itemdblclick: function() {
 					if(!this.down('#ok').disabled)
-						this.down('#ok').fireEvent('click');
+						this.down('#ok').handler.apply(this.down('#ok'),[]);
+				},
+				afteritemexpand: function( node, index, item) {
+					var viewEl = this.tree.getView().getEl();
+					viewEl.scroll('top',(new Ext.dom.Element(item,false)).getOffsetsTo(Ext.getDom(viewEl))[1], true);
 				},
 				scope: this
 			},
@@ -182,6 +155,30 @@ Ext.define('vcube.widget.fsbrowser',{
 		        	reader: {
 		        		type: 'vcubeJsonReader'
 		        	}
+		    	},
+		    	listeners: {
+		    		
+		    		load: function(store, node, records) {
+		    			
+		    			if(!this.initialPathTests.length) return;
+		    			
+		    			var self = this;
+		    			
+		    			Ext.each(records, function(r) {
+		    				
+		    				Ext.each(self.initialPathTests, function(t) {
+		    					
+		    					if(r.get('id').replace('\\','/').toLowerCase() == t) {
+		    						
+		    						if(r.get('leaf')) self.tree.getSelectionModel().select(r);
+		    						else r.set('expanded', true);
+		    						return false;
+		    					}
+		    				})
+		    			});		    			
+		    			
+		    		},
+		    		scope: this
 		    	}
 	
 			})
@@ -194,15 +191,22 @@ Ext.define('vcube.widget.fsbrowser',{
 			itemId: 'ok',
 			disabled: true,
 			handler: function(btn) {
+				
+				var path = this.tree.getSelectionModel().getSelection()[0].get('id');
+				
+				if(this.savePath)
+					vcube.app.localStore.set(this.getLocalStorageProperty(), (this.browserType == 'folder' ? path : vcube.utils.dirname(path)));
+				
+				this.fsObjectChosen.resolve(path);
+				
 				btn.up('.window').close();
-				this.fsObjectChosen.resolve(this.tree.getSelectionModel().getSelection()[0].get('fullPath'));
 			},
 			scope: this
 		},{
 			text: 'Cancel',
 			handler: function(btn) {
-				btn.up('.window').close();
 				this.fsObjectChosen.reject();
+				btn.up('.window').close();
 			},
 			scope: this
 		}];

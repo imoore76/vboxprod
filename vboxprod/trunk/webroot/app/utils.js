@@ -35,6 +35,22 @@ Ext.define('vcube.utils', {
 		return p;
 	 },
 	 
+	 /**
+	  * Strip file name from path
+	  * @param {String} p - path
+	  * @return {String} path minus file name
+	  */
+	 dirname: function(p) {
+		 
+		var DSEP = '/';
+		if(p.indexOf('\\') > -1) DSEP = '\\'; 
+	 	var pos = p.lastIndexOf(DSEP);
+	 	if(pos > -1) {
+	 		return p.substring(0,pos);
+	 	}
+	 	return p;
+	 },
+
 	/**
 	 * Convert action item configuration to menu item
 	 */
@@ -993,6 +1009,7 @@ Ext.define('vcube.utils', {
 				maxDevicesPerPortCount : 2,
 				types :['PIIX3','PIIX4','ICH6'],
 				ignoreFlush : true,
+				useHostIOCacheDefault: true,
 				slotName : function(p,d) {
 					switch(p+'-'+d) {
 					case '0-0' : return (vcube.utils.trans('IDE Primary Master','VBoxGlobal'));
@@ -1063,6 +1080,7 @@ Ext.define('vcube.utils', {
 			Floppy : {
 				maxPortCount : 1,
 				limitOneInstance : true,
+				useHostIOCacheDefault: true,
 				maxDevicesPerPortCount : 2,
 				types : ['I82078'],
 				driveTypes : ['Floppy'],

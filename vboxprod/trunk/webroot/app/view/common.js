@@ -198,4 +198,5 @@ Ext.define('vcube.view.common.VMLogs',{
 		icon: 'images/vbox/refresh_16px.png',
 		itemId: 'refresh'
 	}]
-})
+});
+

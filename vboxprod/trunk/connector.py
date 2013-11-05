@@ -3793,16 +3793,18 @@ class vboxConnector(object):
         """ @m IMedium """
         m = self.vbox.openMedium(args['path'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 
-        mid = m.id
+        pprint.pprint(self._mediumGetDetails(m, True))
         
-        return {'id':mid}
+        return self._mediumGetDetails(m, True)
 
     remote_mediumAdd.log = True
     
     @staticmethod
     def remote_mediumAdd_log(args, results):
         return {
-            'name' : "Add medium `%s`" %(args.get(['path'])),
+            'name' : "Add medium",
+            'details' : "Added `%s`" %(args.get('path','<unknown>')),
+            'machine': '',
             'category' : vcube.constants.LOG_CATEGORY['MEDIA']
         }
 

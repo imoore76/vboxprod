@@ -226,3 +226,15 @@ div.severityColuumn4 { background: #00f; }
     background-color: #ccc;
     opacity: 1.0;
 }
+
+/* file types */
+.filetype-file { background: url(../images/file.png) left top no-repeat; }
+.filetype-vmdk { background: url(../images/vbox/virtualbox-vmdk.png) 0px 1px no-repeat; }
+.filetype-vdi  { background: url(../images/vbox/virtualbox-vdi.png) 0px 1px no-repeat; }
+.filetype-vhd  { background: url(../images/vbox/virtualbox-vhd.png) 0px 1px no-repeat; }
+.filetype-hdd { background: url(../images/vbox/virtualbox-hdd.png) 0px 1px no-repeat; }
+.filetype-ovf { background: url(../images/vbox/virtualbox-ovf.png) 0px 1px no-repeat; }
+.filetype-ova { background: url(../images/vbox/virtualbox-ova.png) 0px 1px no-repeat; }
+.filetype-iso, .filetype-cdr, .filetype-dmg { background: url(../images/vbox/cd_16px.png) 0px 1px no-repeat; }
+.filetype-img, .filetype-ima, .filetype-dsk, .filetype-vfd { background: url(../images/vbox/fd_16px.png) 0px 1px no-repeat; }
+.filetype-vbox, .filetype-xml { background: url(../images/vbox/virtualbox-vbox.png) 0px 1px no-repeat; }

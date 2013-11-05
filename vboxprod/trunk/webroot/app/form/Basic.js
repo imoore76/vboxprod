@@ -9,14 +9,14 @@ Ext.define('vcube.form.Basic', {
     
     setValues: function(values) {
     	
-    	console.log(values);
-    	
         var me = this;
 
+        Ext.suspendLayouts();
+        
         function setVal(fieldId, val) {
 
         	// Special case for multi-dimensional fields
-        	if(Ext.isObject(val)) {
+        	if(val && Ext.isObject(val)) {
         		
         		Ext.iterate(val, function(fid, v) {
         			setVal(fieldId + '.' + fid, v);
@@ -32,6 +32,7 @@ Ext.define('vcube.form.Basic', {
             }
         }
 
+        
         if (Ext.isArray(values)) {
             // array of objects
             Ext.each(values, function(val) {
@@ -41,6 +42,9 @@ Ext.define('vcube.form.Basic', {
             // object hash
             Ext.iterate(values, setVal);
         }
+        
+        Ext.resumeLayouts(true);
+        
         return this;
     }
 

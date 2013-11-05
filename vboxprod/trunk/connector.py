@@ -12,6 +12,11 @@ import json
 
 import pprint
 
+try:
+    import win32api
+except:
+    pass
+
 import logging, logging.config
 logging.config.fileConfig("logging.conf")
 logger = logging.getLogger('connector')
@@ -3995,6 +4000,72 @@ class vboxConnector(object):
         
         return mlist
 
+    """
+     *
+     * Filesystem browser
+     *
+    """
+    def remote_fsbrowser(self, args):
+        
+        pathList = []
+        
+        pprint.pprint(args)
+        
+        if args.get('path','root') == 'root':
+            
+            """ Drive list """
+            if self.vbox.host.operatingSystem.lower().find('windows') > -1:
+                for d in win32api.GetLogicalDriveStrings().split('\000')[:-1]:
+                    pathList.append({
+                        'leaf': False,
+                        'text': d,
+                        'fullPath': d
+                    })
+        
+                return pathList
+            
+            else:
+                return [{
+                    'leaf': False,
+                    'text': '/',
+                    'fullPath': '/'
+                }]
+        
+        
+        for f in os.listdir(args['path']):
+            
+            fullPath = str(args.get('path') + self.getDsep() + f).replace(self.getDsep()+self.getDsep(), self.getDsep())
+            
+            leaf = os.path.isfile(fullPath)
+            
+            if leaf:
+                try:
+                    ext = f.split('.')[-1].lower()
+                except:
+                    ext = ''
+            else:
+                ext = 'folder'
+                
+            if args.get('fileTypes', None) and leaf:
+
+                try:
+                    if not ext in args.get('fileTypes'):
+                        continue
+                except:
+                    continue
+            elif not args.get('fileTypes', None) and leaf:
+                continue
+
+            pathList.append({
+                'leaf': leaf,
+                'text': os.path.basename(f),
+                'iconCls' : 'filetype-%s' %(ext,),
+                'fullPath': fullPath
+            })
+         
+        pprint.pprint(pathList)
+        return pathList
+    
     """
      * Get a list of recent media paths
      *

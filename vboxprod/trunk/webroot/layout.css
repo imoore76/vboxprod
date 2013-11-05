@@ -119,7 +119,7 @@ table.infoTable td.icon img {
 	display:block;
 }
 
-/* Body load masks should have some opacity */
+/* Body modal load masks should have some opacity */
 body > div.modal-mask-default {
 
 	opacity: .7;
@@ -223,8 +223,11 @@ div.severityColuumn4 { background: #00f; }
 .vboxSnapshotOnline, .vboxSnapshotOnline.x-grid-tree-node-expanded { background-image:url(images/vbox/online_snapshot_16px.png) }
 .x-mask, .x-mask.x-mask-gray
 {
+	opacity: .4;
+	filter:alpha(opacity=40);
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=40)";
+	
     background-color: #ccc;
-    opacity: 1.0;
 }
 
 /* file types */

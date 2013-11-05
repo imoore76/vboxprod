@@ -82,7 +82,6 @@ Ext.application({
     	return this.taskWatchList[task_id];
     },
     
-    
     /* Check for a task we wanted to be notified of */
     taskLogWatch: function(event) {
     	
@@ -130,6 +129,32 @@ Ext.application({
     	
     },
     
+    // Convenience store to hold various client settings
+    localStore: {
+    	
+    	get: function(id) {
+    		try {
+    			return vcube.app.localStore.store.getById(id).get('value');    			
+    		} catch (err) {
+    			return null;
+    		}
+    	},
+    	
+    	set: function(id, val) {
+    		var record = vcube.app.localStore.store.getById(id) || vcube.app.localStore.store.add({'id':id})[0];
+    		record.set('value',val);
+    	},
+    	
+    	store: Ext.create('Ext.data.Store',{
+	    	autoLoad: true,
+	    	autoSync: true,
+	    	fields: ['id','value'],
+	        proxy: {
+	            type: 'localstorage',
+	            id: 'vcube-local'
+	        }
+    	})
+    },
     
     // a fatal error has occurred, stop everything and display error
     died: false,
@@ -154,7 +179,12 @@ Ext.application({
     	Ext.create('vcube.view.common.Login', {id: 'login_form'}).show();
     	
     },
-        
+    
+    // Show loading screen on viewport
+    setLoading: function(loading) {
+    	Ext.ComponentQuery.query('viewport')[0].setLoading(loading);
+    },
+    
     // Constants
     constants: null,
     
@@ -207,6 +237,8 @@ Ext.application({
     	
     	// Create some shortcuts
     	vcube.app = this;
+    	
+
     	
     	// App ref
     	var self = this;

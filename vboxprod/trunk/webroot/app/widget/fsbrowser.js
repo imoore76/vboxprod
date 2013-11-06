@@ -65,7 +65,7 @@ Ext.define('vcube.widget.fsbrowser',{
 		if(this.initialPath) {
 			var pathCmp = '';
 			Ext.each(this.initialPath.replace(/\\/g, '/').replace(/\/\//g,'/').replace(/\/$/,'').toLowerCase().split('/'), function(p) {
-				pathCmp = String(pathCmp + '/' + p).replace('//','/');
+				pathCmp = (/^[a-z]:$/.test(p) ? p : String(pathCmp + '/' + p).replace('//','/'));
 				self.initialPathTests.push(pathCmp);
 			});
 		}
@@ -115,7 +115,7 @@ Ext.define('vcube.widget.fsbrowser',{
 				
 		}
 		
-		this.initialPath = this.initialPath || vcube.app.localStore.get(this.getLocalStorageProperty());
+		this.initialPath = this.initialPath || vcube.app.localConfig.get(this.getLocalStorageProperty());
 		
 		if(this.browserType != 'folder')
 			fileTypesOptions.push(this.allFileTypes);
@@ -132,7 +132,7 @@ Ext.define('vcube.widget.fsbrowser',{
 				},
 				itemdblclick: function() {
 					if(!this.down('#ok').disabled)
-						this.down('#ok').handler.apply(this.down('#ok'),[]);
+						this.down('#ok').handler.call(this, this.down('#ok'));
 				},
 				afteritemexpand: function( node, index, item) {
 					var viewEl = this.tree.getView().getEl();
@@ -168,10 +168,11 @@ Ext.define('vcube.widget.fsbrowser',{
 		    				
 		    				Ext.each(self.initialPathTests, function(t) {
 		    					
-		    					if(r.get('id').replace('\\','/').toLowerCase() == t) {
+		    					if(r.get('id').replace(/\\/g,'/').replace(/\/$/,'').toLowerCase() == t) {
 		    						
 		    						if(r.get('leaf')) self.tree.getSelectionModel().select(r);
 		    						else r.set('expanded', true);
+		    						
 		    						return false;
 		    					}
 		    				})
@@ -194,8 +195,9 @@ Ext.define('vcube.widget.fsbrowser',{
 				
 				var path = this.tree.getSelectionModel().getSelection()[0].get('id');
 				
-				if(this.savePath)
-					vcube.app.localStore.set(this.getLocalStorageProperty(), (this.browserType == 'folder' ? path : vcube.utils.dirname(path)));
+				if(this.savePath) {
+					vcube.app.localConfig.set(this.getLocalStorageProperty(), (this.browserType == 'folder' ? path : vcube.utils.dirname(path)));
+				}
 				
 				this.fsObjectChosen.resolve(path);
 				

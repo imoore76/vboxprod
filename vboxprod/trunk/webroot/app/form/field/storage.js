@@ -437,7 +437,8 @@ Ext.define('vcube.form.field.storage', {
     				// just run the item handler
     				var bus = this.tree.getSelectionModel().getSelection()[0].raw.bus;
     				if(vcube.utils.vboxStorage[bus].driveTypes.length == 1) {
-    					this.actions['add' + vcube.utils.vboxStorage[bus].driveTypes[0] + 'Attachment'].handler();
+    					var action = this.actions['add' + (vcube.utils.vboxStorage[bus].driveTypes[0]) + 'Attachment'].initialConfig;
+    					action.handler(action);
     					return;
     				}
 

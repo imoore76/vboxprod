@@ -130,30 +130,20 @@ Ext.application({
     },
     
     // Convenience store to hold various client settings
-    localStore: {
+    localConfig: {
     	
     	get: function(id) {
-    		try {
-    			return vcube.app.localStore.store.getById(id).get('value');    			
-    		} catch (err) {
-    			return null;
-    		}
+    		return Ext.decode(localStorage.getItem(id), true);
     	},
     	
     	set: function(id, val) {
-    		var record = vcube.app.localStore.store.getById(id) || vcube.app.localStore.store.add({'id':id})[0];
-    		record.set('value',val);
+    		localStorage.setItem(id, Ext.encode(val));
     	},
     	
-    	store: Ext.create('Ext.data.Store',{
-	    	autoLoad: true,
-	    	autoSync: true,
-	    	fields: ['id','value'],
-	        proxy: {
-	            type: 'localstorage',
-	            id: 'vcube-local'
-	        }
-    	})
+    	remove: function(id) {
+    		localStorage.removeItem(id);
+    	}
+    	
     },
     
     // a fatal error has occurred, stop everything and display error

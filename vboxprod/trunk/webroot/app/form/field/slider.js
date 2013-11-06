@@ -176,24 +176,22 @@ Ext.define('vcube.form.field.slider', {
     					val = vcube.utils.toInt(val) + (dir == 'up' ? 1 : -1);
     				}
     				
+    				// Respect min / max values
+    				val = Math.max(Math.min(val, spinner.maxValue), spinner.minValue);
+    				    				
     				spinner.setValue(val);
     				spinner.ownerCt.items.items[0].setValue(val);
     			},
-    			/*
     			blur: function(spinner) {
+
     				var val = vcube.utils.toInt(spinner.getValue());
+    				
+    				// Respect min / max values
+    				val = Math.max(Math.min(val, spinner.maxValue), spinner.minValue);
+    				
     				spinner.setValue(val);
     				spinner.ownerCt.items.items[0].setValue(val);
     			},
-    			change: function(spinner, val) {
-    				if(this.mbytesValue) {
-    					console.log("Setting to " + val);
-    					console.log("String to mbytes is " + vcube.utils.convertMBString(val));
-    					console.log("Mbytes to string is " + vcube.utils.mbytesConvert(vcube.utils.convertMBString(val)));
-    					spinner.setValue(vcube.utils.mbytesConvert(vcube.utils.convertMBString(val)));
-    				}
-    			},
-    			 */
     			scope: this
     		}
     	},{

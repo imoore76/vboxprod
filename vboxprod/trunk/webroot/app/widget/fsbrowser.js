@@ -68,6 +68,8 @@ Ext.define('vcube.widget.fsbrowser',{
 				pathCmp = (/^[a-z]:$/.test(p) ? p : String(pathCmp + '/' + p).replace('//','/'));
 				self.initialPathTests.push(pathCmp);
 			});
+			
+			console.log(this.initialPathTests);
 		}
 
 		this.show();
@@ -78,8 +80,6 @@ Ext.define('vcube.widget.fsbrowser',{
 	},
 	
 	initComponent: function(options) {
-		
-		Ext.apply(this, options);
 		
 		this.fsObjectChosen = Ext.create('Ext.ux.Deferred');
 		
@@ -116,6 +116,7 @@ Ext.define('vcube.widget.fsbrowser',{
 		}
 		
 		this.initialPath = this.initialPath || vcube.app.localConfig.get(this.getLocalStorageProperty());
+		
 		
 		if(this.browserType != 'folder')
 			fileTypesOptions.push(this.allFileTypes);

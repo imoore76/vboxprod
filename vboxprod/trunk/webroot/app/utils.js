@@ -26,6 +26,7 @@ Ext.define('vcube.utils', {
 	 * Return base name of path
 	 */
 	 basename: function(p) {
+		p = String(p);
 		var DSEP = '/';
 		if(p.indexOf('\\') > -1) DSEP = '\\'; 
 		var pos = p.lastIndexOf(DSEP); //TODO $('#vboxPane').data('vboxConfig').DSEP);
@@ -42,6 +43,7 @@ Ext.define('vcube.utils', {
 	  */
 	 dirname: function(p) {
 		 
+		p = String(p);
 		var DSEP = '/';
 		if(p.indexOf('\\') > -1) DSEP = '\\'; 
 	 	var pos = p.lastIndexOf(DSEP);

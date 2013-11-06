@@ -2,9 +2,15 @@ Ext.define('vcube.form.field.sharedfolders', {
 
 	extend: 'Ext.form.field.Base',
     alias: 'widget.sharedfoldersfield',
+    
+    requires: ['vcube.widget.selectfolder'],
 
     mixins: {
         field: 'Ext.form.field.Field'
+    },
+    
+    statics: {
+    	recentSharedFoldersStoreOtherPath: 'Other ...'
     },
 
     layout: 'fit',
@@ -12,73 +18,89 @@ Ext.define('vcube.form.field.sharedfolders', {
     msgTarget: 'side',
     submitFormat: 'c',
     
-    margin: 0,
-
-    sharedFolderDialog: {
+    serverId: null,
+    serverNotify: true,
+    setServer: function(serverId) {
     	
-    	title: 'Add Share',
-    	icon: 'images/vbox/vm_settings_16px.png',
-    	height: 200,
-    	width: 500,
-    	modal: true,
-    	layout: 'fit',
-    	items: [{
-    		xtype: 'form',
-    		layout: 'form',
-    		frame: true,
-    		defaults: {
-    			xtype: 'textfield',
-    			labelAlign: 'right'
-    		},
-    		items: [{
-    			fieldLabel: 'Folder Path',
-    			name: 'hostPath',
-    			allowBlank:false
-    		},{
-    			fieldLabel: 'Folder Name',
-    			name: 'name',
-    			allowBlank:false
-    		},{
-    			xtype: 'checkbox',
-    			fieldLabel: ' ',
-    			labelSeparator: '',
-    			boxLabel: 'Read-only',
-    			name: 'writable',
-    			itemId: 'writable'
-    		},{
-    			xtype: 'checkbox',
-    			fieldLabel: ' ',
-    			labelSeparator: '',
-    			boxLabel: 'Auto-mount',
-    			name: 'autoMount',
-    			inputValue: 1
-    		},{
-    			xtype: 'checkbox',
-    			fieldLabel: ' ',
-    			labelSeparator: '',
-    			boxLabel: 'Make Permanent',
-    			inputValue: 'machine',
-    			itemId: 'makePermanent',
-    			name: 'type'
-    		}],
-    		
-    		buttons: [{
-    			text: 'OK',
-    			itemId: 'ok',
-    			formBind: true
-    		},{
-    			text: 'Cancel',
-    			listeners: {
-    				click: function(btn) {
-    					btn.up('.window').close();
-    				}
-    			}
-    		}]
-
-    	}]
-		
-
+    	this.serverId = serverId;
+    	
+    	// Set up recent shared folders store
+    	this.recentSharedFoldersStore.setProxy({
+	        type: 'localstorage',
+	        id  : 'recent-shared-folders-' + serverId
+	    });
+    	this.recentSharedFoldersStore.load(function(records, operation, success) {
+    	    console.log('loaded records');
+    	    console.log(records);
+    	});
+    	this.recentSharedFoldersStore.add({path:vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath});
+    	
+    	
     },
+    
+    margin: 0,
+    
+    recentSharedFoldersStore: Ext.create('Ext.data.Store',{
+		fields: ['id','path'],
+		autoload: false,
+		sortOnLoad: true,
+		remoteSort: false,
+		buffered: false,
+		autoSync: true,
+		sorters: [{
+	        sorterFn: function(o1, o2){
+	        	if(o1.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) return 1;
+	        	if(o2.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) return -1;
+	        	return vcube.utils.strnatcasecmp(o1.get('path'), o2.get('path'));
+	        }
+	    }],
+		listeners: {
+			// proxy should handle this, but does not appear to
+			remove: function(store, record, isMove) {
+				if(isMove) return;
+				//store.getProxy().
+			},
+			beforesync: function(rhash) {
+				
+				console.log("SYncing with ");
+				console.log(rhash);
+				return;
+				for(var i = 0; i < rhash.create.length; i++) {
+					if(rhash.create[i].data.path == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath)
+						rhash.create[i].phantom = false;
+					else
+						rhash.create[i].phantom = true;
+				}
+				
+				console.log("BEfore sync");
+				console.log(rhash.create);
+				/*
+				rhash.create = Ext.Array.filter(rhash.create, function(r) {
+					return r.data.path != vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath;
+				});
+				*/
+			},
+			add: function(store, records) {
+				
+				// Trim store and sync
+				if(store.getCount() > 5) {
+					console.log("Trimming...from " + store.getCount());
+					store.remove({
+						start: 5,
+						end: store.getCount()-1
+					});
+					//store.sync();
+				}
+
+				console.log("Should be trimmed");
+				console.log(store.data.items.length);
+				console.log(store.getCount());
+				console.log(store);
+				
+			}
+		}
+    }),
+
 
     getSubmitValue: function() {
     	return this.getValue();
@@ -99,7 +121,7 @@ Ext.define('vcube.form.field.sharedfolders', {
     	store.removeAll();
     	
     	if(!val) val = [];
-    	store.add(val);
+    	store.loadData(val);
     	
     },
     
@@ -107,6 +129,135 @@ Ext.define('vcube.form.field.sharedfolders', {
     	
     	Ext.apply(this,options);
     	
+    	console.log("Store:");
+    	console.log(this.recentSharedFoldersStore);
+    	
+        this.sharedFolderDialog = {
+        	
+        	title: 'Add Share',
+        	icon: 'images/vbox/vm_settings_16px.png',
+        	height: 200,
+        	width: 500,
+        	modal: true,
+        	layout: 'fit',
+        	items: [{
+        		xtype: 'form',
+        		layout: 'form',
+        		listeners: {
+        			validitychange: function(frm, valid) {
+        				frm.owner.up('.window').down('#ok').setDisabled(!valid);
+        			}
+        		},
+        		frame: true,
+        		defaults: {
+        			xtype: 'textfield',
+        			labelAlign: 'right'
+        		},
+        		items: [{
+    				fieldLabel: 'Folder Path',
+        			xtype: 'combo',
+    				name: 'hostPath',
+    				allowBlank:false,
+    				editable: true,
+    				store: this.recentSharedFoldersStore,
+    				displayField: 'path',
+    				valueField: 'path',
+    				lastQuery: '',
+    				queryMode: 'local',
+    				listConfig: {
+    			        getInnerTpl: function() {
+    			            // here you place the images in your combo
+    			            return '<div><tpl if="path==\'' + vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath +'\'">'+
+    			                      '<img src="images/vbox/select_file_16px.png" align="left">&nbsp;&nbsp;'+
+    			                      '</tpl>{path}</div>';
+    			        }
+    			    },
+    				listeners: {
+    					
+    					change: function(cbo, val, oldVal) {
+    						
+    						// "Other ... browse for folder 
+    						if(val == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) {
+    							
+    							console.log(oldVal);
+    							
+    				    		var browser = Ext.create('vcube.widget.fsbrowser',{
+    				    			browserType: 'folder',
+    				    			serverId: this.serverId,
+    				    			title: 'Select folder...',
+    				    			initialPath: (oldVal ? oldVal : null)
+    				    		});
+    				    		
+    				    		Ext.ux.Deferred.when(browser.browse()).done(function(f) {
+    				    			cbo.setValue(f);
+    				    		});
+
+    							cbo.setValue(oldVal);
+    							return;
+    						}
+    						
+    						var text = vcube.utils.basename(val);
+    						
+    						// Windows drive letter
+    						if(/^[a-z]:[\\|\/]?$/i.test(val)) {
+    							text = String(val[0] + '_DRIVE').toUpperCase();
+    							// root folder
+    						} else if(val == '/') {
+    							text = 'root';
+    						} else if(!text) {
+    							text = val.replace(/\\|\//g, '');
+    						}
+    						cbo.up('.form').down('[name=name]').setValue(text);
+    					},
+    					scope: this
+    				}
+    			},{
+        			fieldLabel: 'Folder Name',
+        			name: 'name',
+        			allowBlank:false
+        		},{
+        			xtype: 'checkbox',
+        			fieldLabel: ' ',
+        			labelSeparator: '',
+        			boxLabel: 'Read-only',
+        			name: 'writable',
+        			itemId: 'writable'
+        		},{
+        			xtype: 'checkbox',
+        			fieldLabel: ' ',
+        			labelSeparator: '',
+        			boxLabel: 'Auto-mount',
+        			name: 'autoMount',
+        			inputValue: 1
+        		},{
+        			xtype: 'checkbox',
+        			fieldLabel: ' ',
+        			labelSeparator: '',
+        			boxLabel: 'Make Permanent',
+        			inputValue: 'machine',
+        			itemId: 'makePermanent',
+        			name: 'type'
+        		}]
+        		
+        	}],
+        	
+    		buttons: [{
+    			text: 'OK',
+    			itemId: 'ok',
+    			disabled: true
+    		},{
+    			text: 'Cancel',
+    			listeners: {
+    				click: function(btn) {
+    					btn.up('.window').close();
+    				}
+    			}
+    		}]
+
+    		
+
+        };
+        
     	this.grid = this.childComponent = Ext.create('Ext.grid.Panel',{
     		
     		title: 'Shared Folders',
@@ -175,7 +326,56 @@ Ext.define('vcube.form.field.sharedfolders', {
 				     sorterFn: function(a, b) {
 				    	 return vcube.utils.strnatcasecmp(a.data.name, b.data.name);
 				    }
-		         }]
+		         }],
+		         listeners: {
+		        	 
+	        	 	add: function(store, records) {
+	        	 	
+	        	 		var sfstore = this.recentSharedFoldersStore;
+	        	 		
+	        	 		console.log("In add...");
+	        	 		console.log(records);
+	        	 		for(var i = 0; i < records.length; i++) {
+	        	 			
+	        	 			console.log(records[i]);
+	        	 			// Add to recent list
+	        	 			var sfrecord = sfstore.findExact('path',records[i].get('hostPath'));
+	        	 			
+	        	 			// Doesn't exist.. adding
+	        	 			if(sfrecord == -1) {
+	        	 				
+	        	 				console.log("About to add..")
+	        	 				sfstore.add({path:records[i].get('hostPath')});
+	        	 				//sfstore.sync();
+	        	 			}
+	        	 		}
+	        	 		
+	        	 		console.log(this.recentSharedFoldersStore);
+	        	 	},
+	        	 	
+	        	 	update: function(store, record, op, fields) {
+	        	 		
+	        	 		if(op != Ext.data.Model.EDIT) return;
+	        	 		
+	        	 		if(!Ext.Array.contains(fields, 'hostPath')) return;
+	        	 		
+	        	 		var sfstore = this.recentSharedFoldersStore;
+	        	 		
+        	 			// Add to recent list
+        	 			var sfrecord = sfstore.findExact('path',record.get('hostPath'));
+        	 			        	 			
+        	 			if(sfrecord == -1) {
+        	 				        	 				
+        	 				sfstore.add({path:record.get('hostPath')});
+        	 				//sfstore.sync();
+
+        	 			}
+
+        	 			
+	        	 	},
+	        	 	
+	        	 	scope: this
+		         }
 			}),
 			dockedItems: [{
 			    xtype: 'toolbar',
@@ -217,7 +417,8 @@ Ext.define('vcube.form.field.sharedfolders', {
 			        	listeners: {
 			        		click: function() {
 			        			
-			        			var dlg = Ext.create('Ext.window.Window',Ext.apply({title:'Edit Share'}, this.sharedFolderDialog));
+			        			var dlg = Ext.create('Ext.window.Window',this.sharedFolderDialog);
+			        			dlg.title = 'Edit Share';
 			        			
 			        			if(!vcube.utils.vboxVMStates.isRunning(vcube.storemanager.getStoreRecord('vm',this.up('.window')._data.id)))
 			        				dlg.down('#makePermanent').hide();

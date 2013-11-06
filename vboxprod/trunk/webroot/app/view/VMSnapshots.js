@@ -165,6 +165,11 @@ Ext.define('vcube.view.VMSnapshots.TakeSnapshot', {
 			margin: 10
 		},{			
 			flex: 1,
+			layout: 'form',
+			defaults: {
+				labelAlign: 'top',
+				labelSeperator: ''
+			},
 			bodyStyle: { background: 'transparent' },
 			border: false,
 			items: [{
@@ -236,6 +241,10 @@ Ext.define('vcube.view.VMSnapshots.Details', {
 	    frame:true,
 	    xtype: 'form',
 	    itemId: 'form',
+	    layout: 'form',
+	    defaults: {
+	    	labelAlign: 'right'
+	    },
 	    monitorValid:true,
 	    buttonAlign:'center',
 	    items: [{
@@ -260,12 +269,20 @@ Ext.define('vcube.view.VMSnapshots.Details', {
 	    	name: 'description',
 	    	anchor: '100%'
 	    },{
-	    	itemId: 'details',
-	    	cls: 'snapshotDetailsSection',
-	    	anchor: '100% -200',
-	    	bodyStyle: { padding: 4 },
-	    	autoScroll: true,
-	    	height: 300
+	    	xtype: 'panel',
+	    	layout: 'fit',
+	    	border: false,
+	    	frame: false,
+	    	items: [{
+	    		xtype: 'panel',
+	    		itemId: 'details',
+	    		cls: 'snapshotDetailsSection',
+	    		/*anchor: '100% -200',*/
+	    		bodyStyle: { padding: 4 },
+	    		margin: 4,
+	    		autoScroll: true,
+	    		height: 300	    		
+	    	}]
 	    }],
 	    
 	    buttons:[{ 

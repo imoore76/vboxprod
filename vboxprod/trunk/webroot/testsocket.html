@@ -13,11 +13,9 @@
         
        	<script src="extjs/ext-all-dev.js" type='text/javascript'></script>
 
-		<!--        	
-       	<script src="extjs/ux/Deferred.js" type='text/javascript'></script>
+      	
        	<script type="text/javascript" src="lib/web-socket-js/swfobject.js"></script>
 		<script type="text/javascript" src="lib/web-socket-js/web_socket.js"></script>
-		-->
 		<link rel="stylesheet" type="text/css" href="extjs/resources/css/ext-all-gray.css"/>
         
 
@@ -28,42 +26,8 @@
 WEB_SOCKET_DEBUG = true
 WEB_SOCKET_SWF_LOCATION = "lib/web-socket-js/WebSocketMain.swf";
 
-var gp = null;
-function waitUntil() {
-	if(gp) return gp;
-	gp = Ext.create('Ext.ux.Deferred');
-	window.setTimeout(function(){gp.resolve('asdf');},3000);
-	return gp;
-}
-function testDeferred() {
-	return;
-	Ext.ux.Deferred.when(waitUntil()).done(function(d){
-		console.log("here1 adsf with " + d);
-	});
-	Ext.ux.Deferred.when(waitUntil()).done(function(d){
-		console.log("here2 with " + d);
-	});
-	
-	window.setTimeout(function(){
-		Ext.ux.Deferred.when(waitUntil()).done(function(d){
-			console.log("Here3 with " + d);
-		});
-	}, 5000);
-}
-function printOut() {
-	for(var i = 0; i < arguments.length; i++) {
-		console.log("args");
-		console.log(arguments[i]);
-	}
-	console.log(arguments);
-}
 function getEvents() {
 	
-	var stuff = ['I','Just','want','this'];
-	
-	 printOut.apply(null, stuff);
-	 
-	 return;
 	  // Write your code in the same way as for native WebSocket:
 	  var ws = new WebSocket("ws://" + location.host + "/eventStream");
 	  ws.onmessage = function(e) {
@@ -97,7 +61,7 @@ function doProgress() {
 
 </script>
 </head>
-<body onload="doProgress()">
+<body onload="getEvents()">
 
 
 <div id='nono' style='width:500px'>

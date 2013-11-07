@@ -11,16 +11,10 @@ flash_policy = """
 """
     Flash policy request
 """
-class RPCRequestHandler(SocketServer.BaseRequestHandler):
+class PolicyRequestHandler(SocketServer.BaseRequestHandler):
 
-    def handle(self):
-        # Create file object from socket so that
-        # we can just call readline
-        self.file = self.request.makefile()
-
-        request = self.file.readline()
-        
-        self.send(flash_policy)
+    def handle(self):        
+        self.request.sendall(flash_policy)
 
 """
     Flash policy server
@@ -32,20 +26,17 @@ class FlashPolicyServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 server_thread = None
 server = None
 
-def start(ip="0.0.0.0",port=8433):
+def start(ip="0.0.0.0",port=843):
     
-    return
-
     global server_thread, server
     
     # Port 0 means to select an arbitrary unused port
-    server = FlashPolicyServer((ip, port), RPCRequestHandler)
+    server = FlashPolicyServer((ip, port), PolicyRequestHandler)
 
-        # Start a thread with the server -- that thread will then start one
+    # Start a thread with the server -- that thread will then start one
     # more thread for each request
     server_thread = threading.Thread(target=server.serve_forever)
-    # Exit the server thread when the main thread terminates
-    server_thread.daemon = True
+    
     server_thread.start()
 
 def stop():

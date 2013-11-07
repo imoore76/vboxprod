@@ -6,6 +6,9 @@
  * @copyright Copyright (C) 2010-2013 Ian Moore (imoore76 at yahoo dot com)
  */
 
+window.WEB_SOCKET_DEBUG = true
+window.WEB_SOCKET_SWF_LOCATION = "lib/web-socket-js/WebSocketMain.swf";
+
 /**
  * vcube.eventlistener
  * 
@@ -36,9 +39,6 @@ Ext.define('vcube.eventlistener', {
 		
 		var started = Ext.create('Ext.ux.Deferred');
 		
-		window.WEB_SOCKET_DEBUG = false
-		window.WEB_SOCKET_SWF_LOCATION = "lib/web-socket-js/WebSocketMain.swf";
-
 		vcube.eventlistener.ws = new WebSocket("ws://" + location.host + "/eventStream");
 		vcube.eventlistener.ws.onmessage = function(e) {
 			

@@ -33,6 +33,7 @@ Ext.define('vcube.form.field.sharedfolders', {
     	    console.log('loaded records');
     	    console.log(records);
     	});
+    	this.recentSharedFoldersStore.removeAll();
     	this.recentSharedFoldersStore.add({path:vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath});
     	
     	
@@ -61,20 +62,23 @@ Ext.define('vcube.form.field.sharedfolders', {
 				//store.getProxy().
 			},
 			beforesync: function(rhash) {
+
+				removeAt = -1;
 				
-				console.log("SYncing with ");
-				console.log(rhash);
-				return;
-				for(var i = 0; i < rhash.create.length; i++) {
-					if(rhash.create[i].data.path == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath)
-						rhash.create[i].phantom = false;
-					else
-						rhash.create[i].phantom = true;
+				if(rhash.create) {
+					
+					for(var i = 0; i < rhash.create.length; i++) {
+						if(rhash.create[i].data.path == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath)
+							removeAt = i;
+					}
+					
+					if(removeAt > -1)
+						rhash.create.splice(removeAt)
 				}
 				
-				console.log("BEfore sync");
-				console.log(rhash.create);
 				/*
+				console.log("Before sync");
+				console.log(rhash);
 				rhash.create = Ext.Array.filter(rhash.create, function(r) {
 					return r.data.path != vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath;
 				});
@@ -82,14 +86,24 @@ Ext.define('vcube.form.field.sharedfolders', {
 			},
 			add: function(store, records) {
 				
+				store.sort();
+
+				var maxTries = 11;
+				
 				// Trim store and sync
-				if(store.getCount() > 5) {
-					console.log("Trimming...from " + store.getCount());
-					store.remove({
-						start: 5,
-						end: store.getCount()-1
-					});
-					//store.sync();
+				var otherOffset = 0;
+				while(store.getCount() > 5 && otherOffset < store.getCount()) {
+					console.log("Still high..");
+					console.log(store.getCount());
+					console.log(store.getCount()-1-otherOffset);
+					var r = store.getAt(store.getCount()-1-otherOffset);
+					if(r.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) {
+						otherOffset++;
+						continue;
+					}
+					otherOffset = 0;
+					console.log("Removing "  + r.get('path'));
+					store.remove(r);
 				}
 
 				console.log("Should be trimmed");
@@ -163,7 +177,6 @@ Ext.define('vcube.form.field.sharedfolders', {
     				displayField: 'path',
     				valueField: 'path',
     				lastQuery: '',
-    				queryMode: 'local',
     				listConfig: {
     			        getInnerTpl: function() {
     			            // here you place the images in your combo
@@ -196,7 +209,7 @@ Ext.define('vcube.form.field.sharedfolders', {
     							return;
     						}
     						
-    						var text = vcube.utils.basename(val);
+    						var text = vcube.utils.basename(val.replace(/[\\|\/]$/,''));
     						
     						// Windows drive letter
     						if(/^[a-z]:[\\|\/]?$/i.test(val)) {

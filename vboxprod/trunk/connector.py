@@ -425,7 +425,11 @@ def enrichEvents(eventList):
                 if not machine or (machine and machine.id != event['machineId']):
                     machine = vbox.findMachine(event['machineId'])
                     
-                eventList[ek]['enrichmentData'] = {}
+                # Some snapshot operations need to know what the current snapshot
+                # id is
+                eventList[ek]['enrichmentData'] = {
+                    'currentSnapshot': (machine.currentSnapshot.id if machine.currentSnapshot else None)
+                }
 
                 try:
                     

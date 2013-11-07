@@ -1,4 +1,4 @@
-import sys, os, signal, pprint
+import sys, os, signal, pprint, traceback
 
 import json
 import threading
@@ -113,14 +113,25 @@ def main(argv = sys.argv):
 
 
     # Start application
-    vcube.start()
+    try:
+        vcube.start()
+        vcube.getInstance().addEventHandler(pumpEvent)
+    except Exception as e:
+        print "Error starting vCube: %s" %(e,)
+        traceback.print_exc()
+        return
+        
     
-    # Emit
-    vcube.getInstance().addEventHandler(pumpEvent)
 
 
     # Flash policy server to allow flash
-    flash_policy_server.start()
+    try:
+        flash_policy_server.start()
+    except Exception as e:
+        print "Error starting Flash Policy Server: %s" %(e,)
+        traceback.print_exc()
+        vcube.stop()
+        return
 
     def cleanup():
     
@@ -131,8 +142,15 @@ def main(argv = sys.argv):
     cherrypy.engine.subscribe('stop', cleanup)
     
     # Start web thread
-    webserver = WebServerThread()    
-    webserver.start()
+    try:
+        webserver = WebServerThread()    
+        webserver.start()
+    except Exception as e:
+        print "Error starting Web Server: %s" %(e,)
+        traceback.print_exc()
+        cleanup()
+        return
+
     
     import signal
     def stop_sigint(signal, frame):

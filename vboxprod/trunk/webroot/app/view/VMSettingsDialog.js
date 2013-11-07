@@ -24,6 +24,10 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},{
 				xtype: 'ostypefield',
 				name: 'OSTypeId'
+			},{
+				xtype: 'textfield',
+				fieldLabel: 'icon',
+				name: 'icon'
 			}]
 		},{
 			title: 'Advanced',

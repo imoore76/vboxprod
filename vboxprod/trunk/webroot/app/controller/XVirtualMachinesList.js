@@ -27,26 +27,19 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	this.vmStore = null;
     	
     	// Context menu copied from nav tree
-    	machineContextMenu = Ext.create('Ext.menu.Menu', {
-    	    renderTo: Ext.getBody(),
-    	    items: vcube.view.NavTree.machineContextMenuItems
-    	});
+    	if(!this.machineContextMenu)
+	    	this.machineContextMenu = Ext.create('Ext.menu.Menu', {
+	    	    renderTo: Ext.getBody(),
+	    	    items: vcube.view.NavTree.machineContextMenuItems
+	    	});
 
 
     	this.control({
     		// Nav tree selection change
     		'viewport > NavTree' : {
     			selectionchange: this.onSelectionChange
-    		},
+    		}
     		
-			// Any Virtual machine list gridpanel item context menu
-			'VirtualMachinesList > gridpanel': {
-				itemcontextmenu: function(t,r,i,index,e) {
-					e.stopEvent();
-					machineContextMenu.showAt(e.getXY());
-			    }
-			},
-
     	});
     	
     	vcube.storemanager.getStore('vm').on('bulkremove', this.onVMStoreRecordsRemoved, this);
@@ -56,7 +49,7 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
 
     },
     
-    /* Set which VM list to controll */
+    /* Set which VM list to control */
     setControlledList: function(list) {
     	
     	this.controlledList = list;
@@ -66,7 +59,24 @@ Ext.define('vcube.controller.XVirtualMachinesList', {
     	this.vmStore = null;
     	this.vmStore = Ext.create('vcube.store.VirtualMachines');
     	
-    	list.down('gridpanel').reconfigure(this.vmStore); 
+    	var grid = list.down('gridpanel');
+    	
+    	grid.reconfigure(this.vmStore); 
+    	
+		grid.on({
+			// Any Virtual machine list gridpanel item context menu
+			itemcontextmenu: function(grid,r,i,index,e) {
+				e.stopEvent();
+				this.machineContextMenu.showAt(e.getXY());
+		    },
+		    // show settings on dblclick
+		    itemdblclick: function(grid,r,i,index,e) {
+		    	if(vcube.actions.machine.settings.enabled_test(grid.getSelectionModel()))
+		    		vcube.actions.machine.settings.action(grid.getSelectionModel())
+		    },
+		    scope: this
+		});
+
 		
     },
     

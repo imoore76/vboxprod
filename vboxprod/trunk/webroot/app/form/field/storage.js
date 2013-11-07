@@ -29,13 +29,14 @@ Ext.define('vcube.form.field.storage', {
     
     statics: {
     	
-    	browseMedia: function(mediaType, serverId, initialPath) {
+    	browseMedia: function(mediaType, serverId, initialPathO) {
     		
     		var promise = Ext.create('Ext.ux.Deferred');
     		
     		var browser = Ext.create('vcube.widget.fsbrowser',{
     			browserType: mediaType,
-    			serverId: serverId
+    			serverId: serverId,
+    			initialPath: initialPathO
     		});
     		
     		var vboxMediaType = 'HardDisk';
@@ -1156,8 +1157,15 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 		if(this.mediaType != 'hd') this.loadDrives();
 	},
 	
+	browseLocation: null,
+	
 	updateMenu: function(media) {
 		var empty = this.menu.down('#empty');
+		if(media && media.location && !media.hostDrive) {
+			this.browseLocation = media.location;
+		} else {
+			this.browseLocation = null;
+		}
 		if(!empty) return;
 		empty.setDisabled(!media);
 	},
@@ -1166,7 +1174,7 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 		
 		var self = this;
 		
-		Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(this.mediaType, this.serverId)).done(function(data){
+		Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(this.mediaType, this.serverId, this.browseLocation)).done(function(data){
 			self.callback.call(self.scope, data);
 		});
 		

@@ -10,7 +10,15 @@ Ext.define('vcube.form.field.sharedfolders', {
     },
     
     statics: {
+    	
     	recentSharedFoldersStoreOtherPath: 'Other ...'
+    		/*,
+    	
+    	sfStoreSortFn: function(o1, o2){
+        	if(o1.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) return 1;
+        	if(o2.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) return -1;
+        	return vcube.utils.strnatcasecmp(o1.get('path'), o2.get('path'));
+        }*/
     },
 
     layout: 'fit',
@@ -29,91 +37,27 @@ Ext.define('vcube.form.field.sharedfolders', {
 	        type: 'localstorage',
 	        id  : 'recent-shared-folders-' + serverId
 	    });
-    	this.recentSharedFoldersStore.load(function(records, operation, success) {
-    	    console.log('loaded records');
-    	    console.log(records);
-    	});
-    	this.recentSharedFoldersStore.removeAll();
-    	this.recentSharedFoldersStore.add({path:vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath});
     	
+    	var otherFound = false;
+    	this.recentSharedFoldersStore.load(function(records, operation, success) {
+			Ext.each(records, function(r) {
+				if(r.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) {
+					otherFound = true;
+					return false;
+				}
+			});
+    	});
+
+    	
+    	if(!otherFound)
+    		this.recentSharedFoldersStore.add({path:vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath});
     	
     },
     
     margin: 0,
     
-    recentSharedFoldersStore: Ext.create('Ext.data.Store',{
-		fields: ['id','path'],
-		autoload: false,
-		sortOnLoad: true,
-		remoteSort: false,
-		buffered: false,
-		autoSync: true,
-		sorters: [{
-	        sorterFn: function(o1, o2){
-	        	if(o1.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) return 1;
-	        	if(o2.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) return -1;
-	        	return vcube.utils.strnatcasecmp(o1.get('path'), o2.get('path'));
-	        }
-	    }],
-		listeners: {
-			// proxy should handle this, but does not appear to
-			remove: function(store, record, isMove) {
-				if(isMove) return;
-				//store.getProxy().
-			},
-			beforesync: function(rhash) {
-
-				removeAt = -1;
-				
-				if(rhash.create) {
-					
-					for(var i = 0; i < rhash.create.length; i++) {
-						if(rhash.create[i].data.path == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath)
-							removeAt = i;
-					}
-					
-					if(removeAt > -1)
-						rhash.create.splice(removeAt)
-				}
-				
-				/*
-				console.log("Before sync");
-				console.log(rhash);
-				rhash.create = Ext.Array.filter(rhash.create, function(r) {
-					return r.data.path != vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath;
-				});
-				*/
-			},
-			add: function(store, records) {
-				
-				store.sort();
-
-				var maxTries = 11;
-				
-				// Trim store and sync
-				var otherOffset = 0;
-				while(store.getCount() > 5 && otherOffset < store.getCount()) {
-					console.log("Still high..");
-					console.log(store.getCount());
-					console.log(store.getCount()-1-otherOffset);
-					var r = store.getAt(store.getCount()-1-otherOffset);
-					if(r.get('path') == vcube.form.field.sharedfolders.recentSharedFoldersStoreOtherPath) {
-						otherOffset++;
-						continue;
-					}
-					otherOffset = 0;
-					console.log("Removing "  + r.get('path'));
-					store.remove(r);
-				}
-
-				console.log("Should be trimmed");
-				console.log(store.data.items.length);
-				console.log(store.getCount());
-				console.log(store);
-				
-			}
-		}
-    }),
+    
+    recentSharedFoldersStore: null,
 
 
     getSubmitValue: function() {
@@ -143,8 +87,26 @@ Ext.define('vcube.form.field.sharedfolders', {
     	
     	Ext.apply(this,options);
     	
-    	console.log("Store:");
-    	console.log(this.recentSharedFoldersStore);
+    	
+    	this.recentSharedFoldersStore: Ext.create('Ext.data.Store',{
+    		fields: ['id','path'],
+    		autoload: false,
+    		sortOnLoad: true,
+    		remoteSort: false,
+    		buffered: false,
+    		autoSync: true,
+    		sorters: [{
+    	        sorterFn: vcube.form.field.sharedfolders.sfStoreSortFn
+    	    }],
+    		listeners: {
+    			add: function(store, records) {				
+    				store.sort(vcube.form.field.sharedfolders.sfStoreSortFn);
+    			},
+    			load: function(store) {
+    				store.sort(vcube.form.field.sharedfolders.sfStoreSortFn);
+    			}
+    		}
+        });
     	
         this.sharedFolderDialog = {
         	

@@ -281,7 +281,15 @@ Ext.define('vcube.form.field.networkadapters', {
     				disabled: true,
     				listeners: {
     					click: function(btn) {
-    						btn.ownerCt.ownerCt.getStore().remove(btn.ownerCt.ownerCt.getSelectionModel().getSelection()[0]);
+    						var selection = btn.ownerCt.ownerCt.getSelectionModel().getSelection()[0];
+    						var store = btn.ownerCt.ownerCt.getStore();
+    						var idx = store.indexOf(selection);
+    						
+    						btn.ownerCt.ownerCt.getStore().remove(selection);
+    						
+    						if(idx >= store.getCount()) idx--;
+    						if(idx >= 0)
+    							btn.ownerCt.ownerCt.getSelectionModel().select(idx);
     					}
     				}
     			}]

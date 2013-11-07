@@ -1200,6 +1200,7 @@ Ext.define('vcube.utils', {
 			case "Windows8":        strIcon = "os_win8.png"; break;
 			case "Windows81_64":
 			case "Windows8_64":     strIcon = "os_win8_64.png"; break;
+			case "WindowsNT_64":
 			case "WindowsNT":       strIcon = "os_win_other.png"; break;
 			case "Windows2012_64":	strIcon = "os_win2k12_64.png"; break;
 			case "OS2Warp3":        strIcon = "os_os2warp3.png"; break;

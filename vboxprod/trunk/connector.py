@@ -4042,7 +4042,7 @@ class vboxConnector(object):
             
             fullPath = str(args.get('path') + self.getDsep() + f).replace(self.getDsep()+self.getDsep(), self.getDsep())
             
-            leaf = os.path.isfile(fullPath)
+            leaf = not os.path.isdir(fullPath)
             
             if leaf:
                 try:

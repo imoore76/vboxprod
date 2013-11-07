@@ -43,9 +43,9 @@ Ext.define('vcube.widget.fsbrowser',{
 	pathType: null,
 	savePath: false,
 	getLocalStorageProperty: function() {
-		this.savePath = true;
 		var prefix = '';
 		if(this.pathType) {
+			this.savePath = true;
 			prefix = this.pathType;
 		} else {
 			prefix = this.browserType + 'RecentPath';
@@ -56,6 +56,7 @@ Ext.define('vcube.widget.fsbrowser',{
 	fsObjectChosen: null,
 	
 	initialPath: null,
+	defaultPath: null,
 	
 	browse: function() {
 		
@@ -69,7 +70,6 @@ Ext.define('vcube.widget.fsbrowser',{
 				self.initialPathTests.push(pathCmp);
 			});
 			
-			console.log(this.initialPathTests);
 		}
 
 		this.show();
@@ -79,9 +79,11 @@ Ext.define('vcube.widget.fsbrowser',{
 		return this.fsObjectChosen;
 	},
 	
+	
 	initComponent: function(options) {
 		
 		this.fsObjectChosen = Ext.create('Ext.ux.Deferred');
+		
 		
 		fileTypesOptions = []
 		
@@ -91,6 +93,7 @@ Ext.define('vcube.widget.fsbrowser',{
 			case 'cd':
 				this.icon = this.icon || 'images/vbox/cd_16px.png';
 				this.title = this.title || 'Choose a virtual CD/DVD disk file...',
+				this.savePath = true;
 				fileTypesOptions.push(this.cdFileTypes); 
 				break;
 				
@@ -98,6 +101,7 @@ Ext.define('vcube.widget.fsbrowser',{
 			case 'fd':
 				this.icon = this.icon || 'images/vbox/fd_16px.png';
 				this.title = this.title || 'Choose a virtual floppy disk file...',
+				this.savePath = true;
 				fileTypesOptions.push(this.fdFileTypes);
 				break;
 				
@@ -105,6 +109,7 @@ Ext.define('vcube.widget.fsbrowser',{
 			case 'hd':
 				this.icon = this.icon || 'images/vbox/hd_16px.png';
 				this.title = this.title || 'Choose a virtual hard disk file...',
+				this.savePath = true;
 				fileTypesOptions.push(this.hdFileTypes);
 				break;
 				
@@ -115,8 +120,7 @@ Ext.define('vcube.widget.fsbrowser',{
 				
 		}
 		
-		this.initialPath = this.initialPath || vcube.app.localConfig.get(this.getLocalStorageProperty());
-		
+		this.initialPath = this.initialPath || vcube.app.localConfig.get(this.getLocalStorageProperty()) || this.defaultPath;
 		
 		if(this.browserType != 'folder')
 			fileTypesOptions.push(this.allFileTypes);
@@ -169,7 +173,7 @@ Ext.define('vcube.widget.fsbrowser',{
 		    				
 		    				Ext.each(self.initialPathTests, function(t) {
 		    					
-		    					if(r.get('id').replace(/\\/g,'/').replace(/\/$/,'').toLowerCase() == t) {
+		    					if(r.get('id').replace(/\\/g,'/').replace(/(?:.)\/$/,'').toLowerCase() == t) {
 		    						
 		    						if(r.get('leaf')) self.tree.getSelectionModel().select(r);
 		    						else r.set('expanded', true);

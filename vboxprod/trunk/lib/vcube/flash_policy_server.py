@@ -26,13 +26,13 @@ class FlashPolicyServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 server_thread = None
 server = None
 
-def start(ip="0.0.0.0",port=843):
+def start(ip="0.0.0.0",port=8843):
     
     global server_thread, server
     
     # Port 0 means to select an arbitrary unused port
     server = FlashPolicyServer((ip, port), PolicyRequestHandler)
-
+    
     # Start a thread with the server -- that thread will then start one
     # more thread for each request
     server_thread = threading.Thread(target=server.serve_forever)

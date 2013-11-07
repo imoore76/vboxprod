@@ -228,6 +228,8 @@ Ext.define('vcube.actions.snapshots',{
 	  				.done(function(data) {
 		  				
 	
+	  					win.setTitle('Details of ' + Ext.String.htmlEncode(data.name) + ' (' + vm.name + ')');
+	  					
 		  				data.machine._isSnapshot = true;
 	
 		  				// Set basic values

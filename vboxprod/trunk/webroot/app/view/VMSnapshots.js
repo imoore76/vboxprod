@@ -238,67 +238,80 @@ Ext.define('vcube.view.VMSnapshots.Details', {
     layout: 'fit',
     cls: 'snapshotDetails',
     items: [{
-	    frame:true,
-	    xtype: 'form',
-	    itemId: 'form',
-	    layout: 'form',
-	    defaults: {
-	    	labelAlign: 'right'
-	    },
-	    monitorValid:true,
-	    buttonAlign:'center',
-	    items: [{
-	    	xtype: 'textfield',
-	    	name: 'name',
-	    	allowBlank: false,
-	    	fieldLabel: vcube.utils.trans('Name'),
-	    	width: 300
-	    },{
-	    	xtype: 'displayfield',
-	    	fieldLabel: vcube.utils.trans('Taken'),
-	    	value: '',
-	    	itemId: 'taken'
-	    },{
-	    	fieldLabel: 'Preview',
-	    	xtype: 'displayfield',
-	    	itemId: 'preview',
-	    	value: ''
-	    },{
-	    	xtype: 'textareafield',
-	    	fieldLabel: 'Description',
-	    	name: 'description',
-	    	anchor: '100%'
-	    },{
-	    	xtype: 'panel',
-	    	layout: 'fit',
-	    	border: false,
-	    	frame: false,
-	    	items: [{
-	    		xtype: 'panel',
-	    		itemId: 'details',
-	    		cls: 'snapshotDetailsSection',
-	    		/*anchor: '100% -200',*/
-	    		bodyStyle: { padding: 4 },
-	    		margin: 4,
-	    		autoScroll: true,
-	    		height: 300	    		
-	    	}]
-	    }],
+    	layout: {
+    		type: 'vbox',
+    		align: 'stretch'
+    	},
+    	items: [{
+    		xtype: 'form',
+    		itemId: 'form',
+    		layout: 'form',
+    		frame: true,
+    		defaults: {
+    			labelAlign: 'right'
+    		},
+    		listeners: {
+    			validitychange: function(frm, valid) {
+    				frm.owner.up('.window').down('#ok').setDisabled(!valid);
+    			}
+    		},
+    		monitorValid:true,
+    		buttonAlign:'center',
+    		items: [{
+    			xtype: 'textfield',
+    			name: 'name',
+    			allowBlank: false,
+    			fieldLabel: vcube.utils.trans('Name'),
+    			width: 300
+    		},{
+    			xtype: 'displayfield',
+    			fieldLabel: vcube.utils.trans('Taken'),
+    			value: '',
+    			itemId: 'taken'
+    		},{
+    			fieldLabel: 'Preview',
+    			xtype: 'displayfield',
+    			itemId: 'preview',
+    			value: ''
+    		},{
+    			xtype: 'textareafield',
+    			fieldLabel: 'Description',
+    			name: 'description',
+    			anchor: '100%'
+    		}]
+    	},{
+			xtype: 'panel',
+			layout: 'fit',
+			flex: 1,
+			border: false,
+			frame: false,
+			cls: 'greyPanel',
+			items: [{
+				xtype: 'panel',
+				title: 'Details',
+				frame: false,
+				border: false,
+				itemId: 'details',
+				cls: 'snapshotDetailsSection',
+				padding: 4,
+				autoScroll: true
+			}]
+		}]    			
+    }],
 	    
-	    buttons:[{ 
-	    	text: vcube.utils.trans('OK'),
-	    	itemId: 'ok',
-	    	formBind: true
-	    },{
-	    	text: vcube.utils.trans('Cancel'),
-	    	listeners: {
-	    		click: function(btn) {
-	    			btn.up('.window').close();
-	    		}
-	    	}
-	    }]
-
+    buttons:[{ 
+    	text: vcube.utils.trans('OK'),
+    	itemId: 'ok',
+    	disabled: true
+    },{
+    	text: vcube.utils.trans('Cancel'),
+    	listeners: {
+    		click: function(btn) {
+    			btn.up('.window').close();
+    		}
+    	}
     }]
+
 });
 
 

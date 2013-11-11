@@ -4253,15 +4253,14 @@ class vboxConnector(object):
                     except:
                         pass
 
-            attachedTo.append({'machine':mid.name,'snapshots':snapshots})
+            attachedTo.append(mid.name + (' (' + ', '.join(snapshots) + ')' if len(snapshots) else ''))
 
         variant = 0;
         for v in vboxGetArray(m, 'variant'):
             variant += v
             
-        variant = vboxEnumToList('MediumVariant', variant)
-
-            
+        #variant = vboxEnumToList('MediumVariant', variant)
+        
         return {
                 'id' : m.id,
                 'description' : m.description,
@@ -4275,14 +4274,14 @@ class vboxConnector(object):
                 'type' : vboxEnumToString("MediumType",m.type),
                 'parent' : (m.parent.id if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.parent) else None),
                 'children' : children,
-                'base' :  ({'id':m.base.id} if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
+                'base' :  (self._mediumGetDetails(m.base, False, False) if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base and (not m.base.id == m.id)) else None),
                 'readOnly' : bool(m.readOnly),
                 'logicalSize' : (long(m.logicalSize)/1024)/1024,
                 'autoReset' : bool(m.autoReset),
                 'lastAccessError' : m.lastAccessError,
                 'variant' : variant,
                 'machineIds' : [],
-                'attachedTo' : attachedTo
+                'attachedTo' : ', '.join(attachedTo)
             }
 
 

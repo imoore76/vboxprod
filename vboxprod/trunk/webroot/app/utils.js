@@ -405,9 +405,18 @@ Ext.define('vcube.utils', {
 		 * 
 		 * @static
 		 */
-		getHardDiskVariant : function(m) {
+		getHardDiskVariant : function(variant) {
 			
-			var variants = $('#vboxPane').data('vboxMediumVariants');
+			var variants = {
+				Standard: 0,
+				VmdkSplit2G : 1,
+				VmdkRawDisk : 2,
+				VmdkStreamOptimized : 4,
+				VmdkESX : 8,
+				Fixed : 65536,
+				Diff : 131072,
+				NoCreateDir : 1073741824
+			} ;
 			
 			
 	/*
@@ -416,7 +425,7 @@ Ext.define('vcube.utils', {
 	 * 1073741824
 	 */
 			
-			switch(m.variant) {
+			switch(variant) {
 
 				case variants.Standard:
 		            return vcube.utils.trans("Dynamically allocated storage", "VBoxGlobal");

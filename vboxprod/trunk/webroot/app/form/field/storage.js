@@ -1152,7 +1152,7 @@ Ext.define('vcube.form.field.storage', {
     			if(this.cachedMedia[mid]) {
     				mdetails = this.cachedMedia[mid];
     			} else {
-    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumGetDetails',{medium:mid,'type':selection[0].raw.medium.deviceType,connector:this.up('.window').serverId})).done(function(data) {
+    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumGetBaseInfo',{medium:mid,'type':selection[0].raw.medium.deviceType,connector:this.up('.window').serverId})).done(function(data) {
     					
     					console.log("Got ...");
     					console.log(data);

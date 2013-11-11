@@ -224,16 +224,15 @@ Ext.define('vcube.actions.machine',{
 				
 				Ext.each(Ext.ComponentQuery.query('.field', sd), function(field) {
 					if(field.serverNotify) {
-						field.setServer(serverid);
+						field.setServer(serverId);
 					} else if(field.store && field.store.isServerStore) {
-						field.store.setServer(serverid);
+						field.store.setServer(serverId);
 					}
 				});
 				
 				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(selectionModel.getSelection()[0].get('id'))).done(function(data) {
 					sd.down('.form').getForm().setValues(data);
 					sd._data = data;
-					sd.serverId = serverid;
 				}).always(function(){
 					sd.setLoading(false);
 				});

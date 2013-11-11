@@ -342,7 +342,7 @@ Ext.define('vcube.utils', {
 		mediumPrint : function(m,nosize,usehtml) {
 			var name = vcube.utils.vboxMedia.getName(m);
 			if(nosize || !m || m.hostDrive) return name;
-			return name + ' (' + (m.deviceType == 'HardDisk' ? (usehtml ? '<i>' : '') + vcube.utils.trans(m.type,'VBoxGlobal') + (usehtml ? '</i>' : '') + ', ' : '') + vcube.utils.mbytesConvert(m.logicalSize) + ')';
+			return name + ' (' + (m.deviceType == 'HardDisk' ? vcube.utils.trans(m.type,'VBoxGlobal') + ', ' : '') + vcube.utils.mbytesConvert(m.logicalSize) + ')';
 		},
 
 		/**

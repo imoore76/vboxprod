@@ -1,4 +1,11 @@
 
+Medium Info:
+
+base.location
+base.attachedTo
+base.variant
+
+
 TODO:
 
 	"machine" -> "vm"

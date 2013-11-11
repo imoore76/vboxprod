@@ -8,7 +8,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers',
 	           'vcube.form.field.usbfilters', 'vcube.form.field.networkadapters',
 	           'vcube.form.field.serialports', 'vcube.form.field.parallelports',
-	           'vcube.form.field.sharedfolders', 'vcube.form.field.storage'],
+	           'vcube.form.field.sharedfolders', 'vcube.form.field.storage',
+	           'vcube.widget.fsbrowser'],
 	
 	sections: [{
 		name: 'General',
@@ -36,9 +37,39 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				labelAlign: 'right'
 			},
 			items: [{
-				xtype: 'textfield',
-				fieldLabel: 'Snapshot Folder',
-				name: 'snapshotFolder'
+				xtype: 'fieldcontainer',
+				layout: 'hbox',
+				items: [{
+					labelWidth: 150,
+					labelAlign: 'right',
+					xtype: 'textfield',
+					fieldLabel: 'Snapshot Folder',
+					name: 'snapshotFolder',
+					flex: 1
+				},{
+					xtype: 'button',
+					icon: 'images/vbox/select_file_16px.png',
+					height: 22,
+					width: 22,
+					margin: '1 0 0 2',
+					padding: 2,
+					handler: function(btn) {
+						
+						var txt = btn.up('.fieldcontainer').down('[name=snapshotFolder]');
+						
+						var browser = Ext.create('vcube.widget.fsbrowser',{
+			    			browserType: 'folder',
+			    			serverId: btn.up('.window').serverId,
+			    			title: 'Select folder...',
+			    			initialPath: txt.getValue()
+			    		});
+			    		
+			    		Ext.ux.Deferred.when(browser.browse()).done(function(f) {
+			    			txt.setValue(f);
+			    		});
+
+					}
+				}]
 			},{
 				xtype: 'checkbox',
 				fieldLabel: 'Removable Media',

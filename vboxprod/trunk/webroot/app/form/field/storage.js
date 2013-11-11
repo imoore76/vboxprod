@@ -576,6 +576,7 @@ Ext.define('vcube.form.field.storage', {
     				} else {
     					
     					this.actions['removeAttachment'].enable();
+    					
     				}
     				
     			},
@@ -960,7 +961,7 @@ Ext.define('vcube.form.field.storage', {
     	});
 
     	
-    	this.tree.on('selectionchange', function(tree, selection) {
+    	this.tree.on('selectionchange', function(sm, selection) {
     		var self = this;
     		Ext.each(this.attribsPanel.items.items, function(p) {
     			p.hide();
@@ -1041,7 +1042,37 @@ Ext.define('vcube.form.field.storage', {
     			
     		}
 
-    		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData()), true);
+    		var mdetails = {};
+    		if(selection[0].raw.medium) {
+    			
+    			var mid = selection[0].raw.medium.id;
+    			
+    			console.log(selection[0].raw.medium);
+    			
+    			console.log({medium:mid,'type':selection[0].raw.deviceType,connector:this.up('.window').serverId});
+    			
+    			if(this.cachedMedia[mid]) {
+    				mdetails = this.cachedMedia[mid];
+    			} else {
+    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumGetDetails',{medium:mid,'type':selection[0].raw.medium.deviceType,connector:this.up('.window').serverId})).done(function(data) {
+    					
+    					console.log("Got ...");
+    					console.log(data);
+    					
+    					// Add to cache
+    					self.cachedMedia[mid] = data;
+    					
+    					// Make sure the selection has not changed
+    					if(sm.getSelection().length && sm.getSelection()[0].raw.medium && sm.getSelection()[0].raw.medium.id == mid) {
+    						targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData(),{'medium':data}), true);
+    					}
+    				});
+    			}
+    			
+    		}
+			
+ 
+    		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData(),{'medium':mdetails}), true);
     		targetPanel.show();
     		
     	}, this);

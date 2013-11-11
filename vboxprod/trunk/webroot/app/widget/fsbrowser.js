@@ -156,7 +156,7 @@ Ext.define('vcube.widget.fsbrowser',{
 		     	proxy: {
 		    		type: 'vcubeAjax',
 		    		url: 'vbox/fsbrowser',
-		    		extraParams: {'connector': this.serverId, 'fileTypes': (fileTypesOptions.length ? fileTypesOptions[0].exts : null)},
+		    		extraParams: {'connector': this.serverId, 'fileTypes': this.fileTypes ? this.fileTypes : (fileTypesOptions.length ? fileTypesOptions[0].exts : null)},
 		        	reader: {
 		        		type: 'vcubeJsonReader'
 		        	}

@@ -3,8 +3,8 @@ Ext.define('vcube.form.field.sharedfolders', {
 	extend: 'Ext.form.field.Base',
     alias: 'widget.sharedfoldersfield',
     
-    requires: ['vcube.widget.selectfolder'],
-
+    requires: ['vcube.widget.fsbrowser'],
+    
     mixins: {
         field: 'Ext.form.field.Field'
     },
@@ -77,7 +77,7 @@ Ext.define('vcube.form.field.sharedfolders', {
     	} catch (err) {
     		// Remove config, something is corrupt
     		vcube.app.localConfig.remove('recentSharedFolders-' + this.serverId);
-    		list =[];
+    		list = [];
     	}
     	list.push(vcube.form.field.sharedfolders.sfOtherPathName);
     	

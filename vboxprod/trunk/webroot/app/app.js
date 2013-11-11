@@ -40,8 +40,8 @@ Ext.application({
     /* Controllers used by this app */
     controllers: [
                   
-                  // Machine ctions controller
-                  'machineactions',
+                  // Actions controllers
+                  'machineactions', 'serveractions',
                   
                   // Settings dialogs
                   'SettingsDialog',

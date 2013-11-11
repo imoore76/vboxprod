@@ -637,7 +637,7 @@ Ext.define('vcube.form.field.storage', {
     	var treeView = this.tree.getView();
     	treeView.on('render', function(view) {
     		
-	    	view.tip  = Ext.create('Ext.tip.ToolTip', {
+	    	view.tip = Ext.create('Ext.tip.ToolTip', {
 	    		
 		        // The overall target element.
 		        target: treeView.el,
@@ -674,8 +674,19 @@ Ext.define('vcube.form.field.storage', {
 		            			var tipText = '';
 		            			switch(medium.deviceType) {
 			            			case 'HardDisk':
-			            				tipText = 'Hard disk';
-			            				tipText += attachedTo(medium);
+			            				// Base info
+			            				tipText = '<b>' + medium.base.location + '</b><br />' +
+				            				'Type (Format): ' + medium.base.type + ' (' + medium.base.format + ')'+
+				            				attachedTo(medium.base);
+
+			            				if(medium.base && medium.base.id != medium.id) {
+
+			            					tipText += '<hr />This base hard disk is indirectly attached using the following differencing hard disk:<br />'+
+			            						'<b>' + medium.location + '</b><br />'+
+					            				'Type (Format): ' + medium.base.type + ' (' + medium.base.format + ')'+
+					            				attachedTo(medium);
+			            					
+			            				}
 			            				break
 			            			default:
 			            				if(medium.hostDrive) {
@@ -1156,10 +1167,6 @@ Ext.define('vcube.form.field.storage', {
     					
     					console.log("Got ...");
     					console.log(data);
-    					
-    					if(!data.base && data.deviceType == 'HardDisk') {
-    						data.base = Ext.Object.merge({},data);
-    					}
     					
     					// Add to cache
     					self.cachedMedia[mid] = data;

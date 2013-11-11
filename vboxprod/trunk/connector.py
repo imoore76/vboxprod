@@ -2116,7 +2116,7 @@ class vboxConnector(object):
         drives = []
         
         for d in vboxGetArray(vbox.host, 'DVDDrives'):
-            drives.append(self.remote_mediumGetBaseInfo(d))
+            drives.append(self.mediumGetBaseInfo(d))
         
         return drives
 
@@ -2128,7 +2128,7 @@ class vboxConnector(object):
         drives = []
         
         for d in vboxGetArray(vbox.host, 'floppyDrives'):
-            drives.append(self.remote_mediumGetBaseInfo(d))
+            drives.append(self.mediumGetBaseInfo(d))
         
         return drives
     
@@ -3798,19 +3798,7 @@ class vboxConnector(object):
         """ @m IMedium """
         m = self.vbox.openMedium(args['path'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 
-        return self.remote_mediumGetBaseInfo(m)
-
-    remote_mediumAdd.log = True
-    
-    @staticmethod
-    def remote_mediumAdd_log(args, results):
-        return {
-            'name' : "Add medium",
-            'details' : "Added `%s`" %(args.get('path','<unknown>')),
-            'machine': '',
-            'category' : vcube.constants.LOG_CATEGORY['MEDIA']
-        }
-
+        return self.mediumGetBaseInfo(m)
 
     """
      * Get VirtualBox generated machine configuration file name
@@ -4190,6 +4178,7 @@ class vboxConnector(object):
         Get enough info to display medium
     """
     def _mediumGetDisplayInfo(self, m):
+        
         return {
                 'id' : m.id,
                 'description' : m.description,
@@ -4200,13 +4189,25 @@ class vboxConnector(object):
                 'size' : long(m.size),
                 'type' : vboxEnumToString("MediumType",m.type),
                 'logicalSize' : (long(m.logicalSize)/1024)/1024
-            }
+            } if m else None
+
+    """
+     * Get base medium info - exposed
+    """
+    def remote_mediumGetBaseInfo(self, args):
+
+        """ @m IMedium """
+        m = self.vbox.openMedium(args['medium'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
+
+        return self.mediumGetBaseInfo(m)
 
     """
      * Get base medium info
     """
-    def remote_mediumGetBaseInfo(self, m):
+    def mediumGetBaseInfo(self, m, skipBase=False):
 
+        if m is None: return None
+        
         variant = 0;
         for v in vboxGetArray(m, 'variant'):
             variant += v
@@ -4215,7 +4216,7 @@ class vboxConnector(object):
         for mid in vboxGetArray(m,'machineIds'):
             try:
                 """ @mid IMachine """
-                m = self.vbox.findMachine(mid)
+                machine = self.vbox.findMachine(mid)
             except Exception as e:
                 continue
 
@@ -4223,11 +4224,11 @@ class vboxConnector(object):
             for sid in list(m.getSnapshotIds(mid)):
                 try:
                     """ @sn ISnapshot """
-                    snapshots.append(mid.findSnapshot(sid).name)                    
+                    snapshots.append(machine.findSnapshot(sid).name)                    
                 except:
                     pass
 
-            attachedTo.append(mid.name + (' (' + ', '.join(snapshots) + ')' if len(snapshots) else ''))
+            attachedTo.append(machine.name + (' (' + ', '.join(snapshots) + ')' if len(snapshots) else ''))
 
 
         return {
@@ -4240,7 +4241,7 @@ class vboxConnector(object):
                 'size' : long(m.size),
                 'format' : m.format,
                 'type' : vboxEnumToString("MediumType",m.type),
-                'base' :  (self._mediumGetBaseInfo(m.base) if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
+                'base' :  (self.mediumGetBaseInfo(m.base, True) if not skipBase and (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
                 'readOnly' : bool(m.readOnly),
                 'logicalSize' : (long(m.logicalSize)/1024)/1024,
                 'variant' : variant,

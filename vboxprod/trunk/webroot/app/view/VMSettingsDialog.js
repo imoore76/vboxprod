@@ -7,11 +7,13 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	
 	width: 800,
 	
+	
 	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers',
 	           'vcube.form.field.usbfilters', 'vcube.form.field.networkadapters',
 	           'vcube.form.field.serialports', 'vcube.form.field.parallelports',
 	           'vcube.form.field.sharedfolders', 'vcube.form.field.storage',
 	           'vcube.widget.fsbrowser'],
+	           
 	
 	sections: [{
 		name: 'General',

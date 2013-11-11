@@ -2116,7 +2116,7 @@ class vboxConnector(object):
         drives = []
         
         for d in vboxGetArray(vbox.host, 'DVDDrives'):
-            drives.append(self._mediumGetDetails(d, True))
+            drives.append(self.remote_mediumGetBaseInfo(d))
         
         return drives
 
@@ -2128,7 +2128,7 @@ class vboxConnector(object):
         drives = []
         
         for d in vboxGetArray(vbox.host, 'floppyDrives'):
-            drives.append(self._mediumGetDetails(d, True))
+            drives.append(self.remote_mediumGetBaseInfo(d))
         
         return drives
     
@@ -3339,7 +3339,7 @@ class vboxConnector(object):
 
         for ma in mas:
             attachments.append({
-                'medium' : self._mediumGetDetails(ma.medium, True),
+                'medium' : self._mediumGetDisplayInfo(ma.medium),
                 'controller' : ma.controller,
                 'port' : ma.port,
                 'device' : ma.device,
@@ -3798,7 +3798,7 @@ class vboxConnector(object):
         """ @m IMedium """
         m = self.vbox.openMedium(args['path'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 
-        return self._mediumGetDetails(m, True)
+        return self.remote_mediumGetBaseInfo(m)
 
     remote_mediumAdd.log = True
     
@@ -4187,12 +4187,66 @@ class vboxConnector(object):
         return True
 
     """
-     * Exposed get medium details
+        Get enough info to display medium
     """
-    def remote_mediumGetDetails(self, args):
-        m = self.vbox.openMedium(args['medium'],vboxStringToEnum('DeviceType', args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
-        return self._mediumGetDetails(m, False, args.get('children', False))
-    
+    def _mediumGetDisplayInfo(self, m):
+        return {
+                'id' : m.id,
+                'description' : m.description,
+                'location' : m.location,
+                'name' : (m.base.name if m.base else m.name),
+                'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
+                'hostDrive' : bool(m.hostDrive),
+                'size' : long(m.size),
+                'type' : vboxEnumToString("MediumType",m.type),
+                'logicalSize' : (long(m.logicalSize)/1024)/1024
+            }
+
+    """
+     * Get base medium info
+    """
+    def remote_mediumGetBaseInfo(self, m):
+
+        variant = 0;
+        for v in vboxGetArray(m, 'variant'):
+            variant += v
+            
+        attachedTo = []
+        for mid in vboxGetArray(m,'machineIds'):
+            try:
+                """ @mid IMachine """
+                m = self.vbox.findMachine(mid)
+            except Exception as e:
+                continue
+
+            snapshots = []
+            for sid in list(m.getSnapshotIds(mid)):
+                try:
+                    """ @sn ISnapshot """
+                    snapshots.append(mid.findSnapshot(sid).name)                    
+                except:
+                    pass
+
+            attachedTo.append(mid.name + (' (' + ', '.join(snapshots) + ')' if len(snapshots) else ''))
+
+
+        return {
+                'id' : m.id,
+                'description' : m.description,
+                'location' : m.location,
+                'name' : m.name,
+                'deviceType' : vboxEnumToString("DeviceType", m.deviceType),
+                'hostDrive' : bool(m.hostDrive),
+                'size' : long(m.size),
+                'format' : m.format,
+                'type' : vboxEnumToString("MediumType",m.type),
+                'base' :  (self._mediumGetBaseInfo(m.base) if (m.deviceType == vboxMgr.constants.DeviceType_HardDisk and m.base) else None),
+                'readOnly' : bool(m.readOnly),
+                'logicalSize' : (long(m.logicalSize)/1024)/1024,
+                'variant' : variant,
+                'attachedTo' : ', '.join(attachedTo)
+            }
+        
     """
      * Get medium details
      *
@@ -4259,8 +4313,6 @@ class vboxConnector(object):
         for v in vboxGetArray(m, 'variant'):
             variant += v
             
-        #variant = vboxEnumToList('MediumVariant', variant)
-        
         return {
                 'id' : m.id,
                 'description' : m.description,

@@ -193,34 +193,21 @@ Ext.define('vcube.view.VMDetails', {
 							var con = d['storageControllers'][a];
 							
 							// Controller name
-							rows[rows.length] = {
-									title: Ext.String.htmlEncode(vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',con.name)),
-									renderer: function(){return'';}
-							};
+							rows.push({
+								title: Ext.String.htmlEncode(vcube.utils.trans('Controller: %1','UIMachineSettingsStorage').replace('%1',con.name)),
+								renderer: function(){return'';}
+							});
 									
 							// Each attachment.
 							for(var b = 0; b < d['storageControllers'][a]['mediumAttachments'].length; b++) {
 								
-								var portName = vcube.utils.vboxStorage[d['storageControllers'][a].bus].slotName(d['storageControllers'][a]['mediumAttachments'][b].port, d['storageControllers'][a]['mediumAttachments'][b].device);
-
-								// Medium / host device info
-								var medium = d['storageControllers'][a]['mediumAttachments'][b].medium;
-								
-								// Get base medium (snapshot -> virtual disk file)
-								var it = false;
-								if(medium && medium.base && (medium.base != medium.id)) {
-									it = true;
-									medium = medium.base;
-								}
-								
-								portDesc = vcube.utils.vboxMedia.mediumPrint(medium,false,it);
-
-								rows[rows.length] = {
-									title: portName,
+								rows.push({
+									title: vcube.utils.vboxStorage[d['storageControllers'][a].bus].slotName(d['storageControllers'][a]['mediumAttachments'][b].port, d['storageControllers'][a]['mediumAttachments'][b].device),
 									indented: true,
-									data: (d['storageControllers'][a]['mediumAttachments'][b].type == 'DVD' ? vcube.utils.trans('[CD/DVD]','UIGDetails') + ' ' : '') + portDesc,
+									data: (d['storageControllers'][a]['mediumAttachments'][b].type == 'DVD' ? vcube.utils.trans('[CD/DVD]','UIGDetails') + ' ' : '') + 
+										vcube.utils.vboxMedia.mediumPrint(d['storageControllers'][a]['mediumAttachments'][b].medium, false),
 									html: true
-								};
+								});
 								
 							}
 							

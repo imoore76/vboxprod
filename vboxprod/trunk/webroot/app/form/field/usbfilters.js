@@ -339,7 +339,10 @@ Ext.define('vcube.form.field.usbfilters', {
 	    	   width: 20
 	       },{
 	    	   dataIndex: 'name',
-	    	   flex: 1
+	    	   flex: 1,
+	    	   renderer: function(v) {
+	    		   return Ext.String.htmlEncode(v);
+	    	   }
 	       }]
     	});
 

@@ -88,6 +88,11 @@ Ext.define('vcube.view.NavTree', {
     		}
     	},
     	
+    	serverContextMenuItems: [
+    	   // Add vm
+    	   vcube.actionpool.getAction('server','add')
+         ],
+    	                         
     	machineContextMenuItems: [
     	
     	    // settings

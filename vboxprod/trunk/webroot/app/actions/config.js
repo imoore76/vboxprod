@@ -148,11 +148,16 @@ Ext.define('vcube.actions.config.server',{
 	
 	statics : {
 		
-		actions: ['new','settings','remove'],
+		actions: ['new','add','settings','remove'],
 
 		'new':{
 			text: vcube.utils.trans('New...','UIActionPool'),
 			icon:'vm_new'
+		},
+		
+		add : {
+			text: 'Add Virtual Machine...',
+			icon: 'vm_add',
 		},
 		
 		settings: {
@@ -160,7 +165,7 @@ Ext.define('vcube.actions.config.server',{
 			icon:'vm_settings',
 		},
 		
-		'remove': {
+		remove: {
 			text: vcube.utils.trans('Remove...', 'UIActionPool'),
 			icon:'vm_delete'
 		}

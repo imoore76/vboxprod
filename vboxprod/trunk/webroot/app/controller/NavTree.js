@@ -38,13 +38,23 @@ Ext.define('vcube.controller.NavTree', {
 			    	    items: vcube.view.NavTree.machineContextMenuItems
 			    	});
 
+			    	serverContextMenu = Ext.create('Ext.menu.Menu', {
+			    	    renderTo: Ext.getBody(),
+			    	    items: vcube.view.NavTree.serverContextMenuItems
+			    	});
+			    	
+			    	console.log(vcube.actionpool.actionPool['server']['add']);
+			    	
 			    	var self = this;
 			    	tv.on('itemcontextmenu',function(t,r,i,index,e) {
 			    		e.stopEvent();
 			    		switch(r.get('type')) {
+				    		case 'server':
+				    			serverContextMenu.showAt(e.getXY());
+				    			break;
 			    			case 'vm':
 			    				machineContextMenu.showAt(e.getXY());
-			    			break;
+			    				break;
 			    		}
 
 			    	});

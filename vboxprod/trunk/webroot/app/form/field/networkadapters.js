@@ -195,9 +195,20 @@ Ext.define('vcube.form.field.networkadapters', {
     			columns: [{
     				header: 'Name',
     				dataIndex: 'name',
+    				renderer: function(v) {
+    					return Ext.String.htmlEncode(v);
+    				},
     				editor: {
     					xtype: 'textfield',
-    					allowBlank: false
+    					allowBlank: false,
+    					maskRe: /[^,]/,
+    					listeners: {
+    						change: function(txt,v) {
+    							if(v.indexOf(',') > -1) {
+    								txt.setValue(v.replace(/,/g,''));
+    							}
+    						}    						
+    					}
     				}
     			},{
     				header: 'Protocol',
@@ -656,7 +667,9 @@ Ext.define('vcube.form.field.networkadapters', {
     		});
     	}
     	
-	    this.callParent(arguments);
+    	this.childComponent.setActiveTab(0);
+
+    	this.callParent(arguments);	    
 	    
 	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
 

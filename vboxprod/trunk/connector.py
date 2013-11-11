@@ -1805,7 +1805,7 @@ class vboxConnector(object):
         """ @m IMachine """
         m = self.vbox.openMachine(args['file'])
         self.vbox.registerMachine(m)
-        return {'machine': m.id}
+        return {'machine': m.id, 'name': m.name}
     
     remote_machineAdd.log = True
     
@@ -1814,6 +1814,7 @@ class vboxConnector(object):
         return {
             'name': "Add virtual machine",
             'machine': results.get('machine',''),
+            'details': 'Machine `%s` added' %(results.get('name',''),),
             'category' : vcube.constants.LOG_CATEGORY['VBOX']
         }
 
@@ -3797,8 +3798,6 @@ class vboxConnector(object):
         """ @m IMedium """
         m = self.vbox.openMedium(args['path'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 
-        pprint.pprint(self._mediumGetDetails(m, True))
-        
         return self._mediumGetDetails(m, True)
 
     remote_mediumAdd.log = True
@@ -4188,12 +4187,19 @@ class vboxConnector(object):
         return True
 
     """
+     * Exposed get medium details
+    """
+    def remote_mediumGetDetails(self, args):
+        m = self.vbox.openMedium(args['medium'],vboxStringToEnum('DeviceType', args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
+        return self._mediumGetDetails(m, False, args.get('children', False))
+    
+    """
      * Get medium details
      *
      * @param IMedium m medium instance
      * @return array medium details
      """
-    def _mediumGetDetails(self, m, baseInfo=False):
+    def _mediumGetDetails(self, m, baseInfo=False, includeChildren=True):
 
         # No medium
         if m is None: return None
@@ -4224,8 +4230,9 @@ class vboxConnector(object):
         children = []
         attachedTo = []
 
-        for c in vboxGetArray(m,'children'):
-            children.append(self._mediumGetDetails(c))
+        if includeChildren:
+            for c in vboxGetArray(m,'children'):
+                children.append(self._mediumGetDetails(c))
 
         for mid in vboxGetArray(m,'machineIds'):
             sids = list(m.getSnapshotIds(mid))

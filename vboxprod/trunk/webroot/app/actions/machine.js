@@ -212,11 +212,15 @@ Ext.define('vcube.actions.machine',{
 			action:function(selectionModel){
 				
 				var sd = Ext.create('vcube.view.VMSettingsDialog');
+				var serverId = vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id');
+				sd.serverId = serverId;
+				
+				sd.setTitle(Ext.String.format(sd.title, selectionModel.getSelection()[0].get('name')));
+				
 				sd.show();
 				
 				sd.setLoading(true);
 				
-				var serverid = vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id');
 				
 				Ext.each(Ext.ComponentQuery.query('.field', sd), function(field) {
 					if(field.serverNotify) {

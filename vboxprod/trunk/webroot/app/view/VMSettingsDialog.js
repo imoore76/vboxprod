@@ -3,6 +3,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	extend: 'vcube.widget.SettingsDialog',
 	alias: 'view.VMSettingsDialog',
 	
+	title: '{0} - Settings',
+	
 	width: 800,
 	
 	requires: ['vcube.form.field.ostype', 'vcube.form.field.usbcontrollers',

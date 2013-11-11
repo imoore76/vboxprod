@@ -474,7 +474,8 @@ Ext.define('vcube.form.field.storage', {
                  flex: 1,
                  renderer: function(val,m,record) {
                 	 if(record.get('leaf')) {
-                		 return vcube.utils.vboxMedia.getName(record.get('medium'));
+                		 var medium = record.get('medium');
+                		 return vcube.utils.vboxMedia.getName(medium && medium.base ? medium.base : medium);
                 	 }
                 	 return 'Controller: ' + Ext.String.htmlEncode(val);
                  }
@@ -631,6 +632,76 @@ Ext.define('vcube.form.field.storage', {
     	});
     	
     	/*
+    	 * tool tips 
+    	 */
+    	var treeView = this.tree.getView();
+    	treeView.on('render', function(view) {
+    		
+	    	view.tip  = Ext.create('Ext.tip.ToolTip', {
+	    		
+		        // The overall target element.
+		        target: treeView.el,
+		        // Each grid row causes its own seperate show and hide.
+		        delegate: treeView.itemSelector,
+		        // Moving within the row should not hide the tip.
+		        trackMouse: true,
+		        // Render immediately so that tip.body can be referenced prior to the first show.
+		        renderTo: Ext.getBody(),
+		        listeners: {
+		            // Change content dynamically depending on which element triggered the show.
+		        	
+		            beforeshow: function updateTipBody(tip) {
+		            	
+		            	var record = treeView.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(treeView.itemSelector));
+	
+		            	if(!record) return false;
+		            	
+	
+		            	console.log(record);
+		            	
+		            	// Medium attachment
+		            	if(record.get('leaf')) {
+	
+		            		var medium = record.get('medium');
+		            		var attachedTo = function(medium) {
+		            			return '<br />Attached to: ' + (medium.attachedTo ? medium.attachedTo : '<i>Not Attached</i>');
+		            		}
+		            		
+		            		if(!medium) {
+		            			tip.update('<b>No disk image file selected</b><p>You can also change this while the machine is running.</p>');
+		            		} else {
+		            			
+		            			var tipText = '';
+		            			switch(medium.deviceType) {
+			            			case 'HardDisk':
+			            				tipText = 'Hard disk';
+			            				tipText += attachedTo(medium);
+			            				break
+			            			default:
+			            				if(medium.hostDrive) {
+			            					tipText = '<b>' + vcube.utils.vboxMedia.getName(medium) + '</b>';
+			            				} else {
+			            					tipText = '<b>' + medium.location + '</b>';
+			            				}
+			            				tipText += attachedTo(medium);
+		            			}
+		            			tip.update(tipText);	            			
+		            		}
+		            		
+		            	// Controller
+		            	} else {
+		            		tip.update('<b>' + Ext.String.htmlEncode(record.get('name')) + '</b><br />'+
+		            				'Bus: ' + record.raw.bus + '<br />' +
+		            				'Type: ' + vcube.utils.vboxStorage.getControllerType(record.get('controllerType')))
+		            	}
+		            	
+		            }
+		        }
+		    });
+
+    	});
+    	
+    	/*
     	 * Check box listener
     	 */
     	var cbListener = {
@@ -715,13 +786,13 @@ Ext.define('vcube.form.field.storage', {
     	});
     	
     	/* Renderer generator */
-    	function ifVal(fn, asInt) {
+    	var ifVal = function(fn, asInt) {
     		return function(val) {
-    			if(val && ((asInt && vcube.utils.toInt(val) > 0) || !asInt)) return (fn ? fn(val) : val);
+    			if(val !== '' && ((asInt && vcube.utils.toInt(val) > 0) || !asInt)) return (fn ? fn(val) : val);
     			return '--';    			
     		}
     	}
-
+    	
     	/* 
     	 * Slot combo config data
     	 */
@@ -793,8 +864,10 @@ Ext.define('vcube.form.field.storage', {
     			title: 'Information',
     			items: [{
 		        	fieldLabel: 'Type',
-		        	name: 'medium.type',
-		        	renderer: ifVal()
+		        	name: 'medium.hostDrive',
+		        	renderer: ifVal(function(v){
+		        		return (v == "false" ? 'Image' : 'Host Drive');
+		        	})
 		        },{
 		        	fieldLabel: 'Size',
 		        	name: 'medium.size',
@@ -864,8 +937,11 @@ Ext.define('vcube.form.field.storage', {
     			},
     			items: [{
     				fieldLabel: 'Type',
-    				name: 'medium.type',
-    				renderer: ifVal()
+    				name: 'medium.hostDrive',
+		        	renderer: ifVal(function(v){
+		        		return (v == "false" ? 'Image' : 'Host Drive');
+		        	})
+
     			},{
     				fieldLabel: 'Size',
     				name: 'medium.size',
@@ -877,7 +953,7 @@ Ext.define('vcube.form.field.storage', {
     			},{
     				fieldLabel: 'Attached to',
     				name: 'medium.attachedTo',
-    				renderer: ifVal()    				
+    				renderer: ifVal()	
     			}]
     		}]
     	});
@@ -932,10 +1008,30 @@ Ext.define('vcube.form.field.storage', {
     				xtype: 'displayfield',
     				labelWidth: 90
     			},
+    			/*
+    			 *         $('#vboxSettingsHDDetails').html(vboxMedia.getHardDiskVariant(disp));
+        $('#vboxSettingsHDlocation').html(disp.location);
+        $('#vboxSettingsHDtype').html(trans(disp.type,'VBoxGlobal') + ' (' + disp.format + ')');
+
+    			 */
     			items: [{
-	    			fieldLabel: 'Type (Format)',
-	    			name: 'medium',
-	    			renderer: ifVal()
+    				xtype: 'fieldcontainer',
+    				layout: 'hbox',
+    				fieldLabel: 'Type (Format)',
+    				border: true,
+        			defaults: {
+        				xtype: 'displayfield',
+        				border: true
+        			},
+        			items: [{
+        				name: 'medium.type',
+        				renderer: ifVal()        				
+        			},{
+        				name: 'medium.format',
+        				renderer: ifVal(function(v) {
+        					return '&nbsp;(' + v + ')';
+        				})
+        			}]
 	    		},{
 	    			fieldLabel: 'Virtual Size',
 	    			name: 'medium.logicalSize',
@@ -947,14 +1043,16 @@ Ext.define('vcube.form.field.storage', {
 	    		},{
 	    			fieldLabel: 'Details',
 	    			name: 'medium.variant',
-	    			renderer: ifVal()
+	    			renderer: function(v) {
+	    				return vcube.utils.vboxMedia.getHardDiskVariant(vcube.utils.toInt(v));
+	    			}
 	    		},{
 	    			fieldLabel: 'Location',
-	    			name: 'medium.location',
+	    			name: 'medium.base.location',
 	    			renderer: ifVal()
 	    		},{
 	    			fieldLabel: 'Attached to',
-	    			name: 'medium.attachedTo',
+	    			name: 'medium.base.attachedTo',
 	    			renderer: ifVal()
 	    		}]
     		}]
@@ -1059,11 +1157,18 @@ Ext.define('vcube.form.field.storage', {
     					console.log("Got ...");
     					console.log(data);
     					
+    					if(!data.base && data.deviceType == 'HardDisk') {
+    						data.base = Ext.Object.merge({},data);
+    					}
+    					
     					// Add to cache
     					self.cachedMedia[mid] = data;
     					
     					// Make sure the selection has not changed
     					if(sm.getSelection().length && sm.getSelection()[0].raw.medium && sm.getSelection()[0].raw.medium.id == mid) {
+    						sm.getSelection()[0].set('medium', data);
+    						console.log("Here ... with");
+    						console.log(sm.getSelection()[0]);
     						targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData(),{'medium':data}), true);
     					}
     				});

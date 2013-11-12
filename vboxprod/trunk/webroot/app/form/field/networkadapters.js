@@ -15,7 +15,7 @@ Ext.define('vcube.form.field.networkadapters', {
     
     natEngines: [],
     
-    server_id: null,
+    serverId: null,
     
     /* Stores */
     networkAdapterTypeStore: Ext.create('vcube.data.VboxEnumStore',{
@@ -70,41 +70,6 @@ Ext.define('vcube.form.field.networkadapters', {
 		fields: ['display','value']
 	}),
 	
-	serverNotify: true,
-	
-	setServer: function(server_id) {
-		
-		this.server_id = server_id;
-		this.networkAdapterTypeStore.setServer(server_id);
-		this.networkAttachmentTypeStore.setServer(server_id);
-		this.promiscPolicyModeStore.setServer(server_id);
-		
-		var self = this;
-		
-		// Load host networking info
-		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGetNetworking',{connector:server_id})).done(function(data){
-			
-			var rootToStore = {
-				nics: 'bridgedInterfacesStore',
-				genericDrivers: 'genericDriversStore',
-				NATNetworks: 'natNetworksStore',
-				networks: 'internalNetworksStore',
-				hostOnlyNics: 'hostOnlyInterfacesStore'
-			};
-			
-			Ext.iterate(rootToStore, function(k,v) {
-				
-				var dataToLoad = [];
-				Ext.each(data[k], function(item) {
-					dataToLoad.push({display: item, value: item});
-				});
-				
-				self[v].loadData(dataToLoad);
-				
-			})
-		});
-	},
-    
 	/**
 	 * NAT engine properties editor window config
 	 */
@@ -448,8 +413,8 @@ Ext.define('vcube.form.field.networkadapters', {
     							cbo.ownerCt.down('[name=netAdapter-'+name+'-'+num+']').hide();
     						});
 
-    						if(cbo.ownerCt.down('#natengine').isVisible())
-    							cbo.ownerCt.down('#natengine').hide();
+    						cbo.ownerCt.down('#natengine').hide();
+    						cbo.ownerCt.down('#genericproperties').hide();
     						
     						var targetCbo = null;
     						
@@ -458,6 +423,7 @@ Ext.define('vcube.form.field.networkadapters', {
     								targetCbo = cbo.ownerCt.down('[name=netAdapter-NATNetwork-'+num+']');
     								break;
     							case 'Generic':
+    								cbo.ownerCt.down('#genericproperties').show();
     								targetCbo = cbo.ownerCt.down('[name=netAdapter-genericDriver-'+num+']');
     								break;
     							case 'Internal':
@@ -604,6 +570,46 @@ Ext.define('vcube.form.field.networkadapters', {
     				allowBlank: false,
     				store: this.genericDriversStore
     			},{
+    				xtype: 'textarea',
+    				fieldLabel: 'Generic Properties',
+    				itemId: 'genericproperties',
+    				name: 'netAdapter-properties-'+i,
+        			plugins: [{
+        				ptype: 'fieldhelptext',
+        				text: 'Enter any configuration settings here for the network attachment driver you are using. The '+
+        					'settings should be in the form of <b>name=value</b> and will depend on the driver.'
+        			}],
+        			setValue: function(v) {
+        				
+        				this.value = v;
+        				if(!this.inputEl) return;
+        				
+        				var vals = [];
+        				Ext.iterate(v, function(k,v) {
+        					vals.push(k+'='+v);
+        				});
+        				this.inputEl.dom.value = vals.join("\n");
+        			},
+        			getValue: function() {
+
+        				if(!this.inputEl) return this.value;
+        				        				
+        				var val = this.inputEl.dom.value;        				
+        				var retVal = {};
+        				Ext.each(val.split("\n"), function(v) {
+        					if(v.indexOf('=') > 0 && v.length > 2) {
+        						var kv = v.split('=');
+        						retVal[kv[0]] = kv[1];
+        					}
+        				});
+        				return retVal;
+        			},
+        			getSubmitValue: function() {
+        				return this.getValue();
+        			},
+    				hidden: true,
+    				height: 48
+    			},{
     				xtype: 'combo',
     				editable: false,
     				fieldLabel: 'Adapter Type',
@@ -647,7 +653,7 @@ Ext.define('vcube.form.field.networkadapters', {
     							btn.setDisabled(true);
     							btn.ownerCt.down('#macaddress').setDisabled(true);
     							
-    							Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/vboxGenerateMacAddress',{connector: this.server_id})).done(function(mac){
+    							Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/vboxGenerateMacAddress',{connector: this.serverId})).done(function(mac){
     								btn.ownerCt.down('#macaddress').setValue(mac);
     							}).always(function(){
         							btn.setDisabled(false);
@@ -671,7 +677,46 @@ Ext.define('vcube.form.field.networkadapters', {
 
     	this.callParent(arguments);	    
 	    
-	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
+	    this.on({
+	    	
+	    	destroy : function() { Ext.destroy(this.childComponent);},
+
+	    	render: function() {
+
+
+				this.serverId = this.up('.window').serverId;
+				this.networkAdapterTypeStore.setServer(this.serverId);
+				this.networkAttachmentTypeStore.setServer(this.serverId);
+				this.promiscPolicyModeStore.setServer(this.serverId);
+				
+				var self = this;
+				
+				// Load host networking info
+				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGetNetworking',{connector:this.serverId})).done(function(data){
+					
+					var rootToStore = {
+						nics: 'bridgedInterfacesStore',
+						genericDrivers: 'genericDriversStore',
+						NATNetworks: 'natNetworksStore',
+						networks: 'internalNetworksStore',
+						hostOnlyNics: 'hostOnlyInterfacesStore'
+					};
+					
+					Ext.iterate(rootToStore, function(k,v) {
+						
+						var dataToLoad = [];
+						Ext.each(data[k], function(item) {
+							dataToLoad.push({display: item, value: item});
+						});
+						
+						self[v].loadData(dataToLoad);
+						
+					})
+				});
+
+	    	},
+	    	scope: this
+	    });
 
     },
     

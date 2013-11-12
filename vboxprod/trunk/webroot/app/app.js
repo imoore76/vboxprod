@@ -142,6 +142,30 @@ Ext.application({
     	
     	remove: function(id) {
     		localStorage.removeItem(id);
+    	},
+    	
+    	addToList: function(id, item, limit) {
+    		
+    		var list = vcube.app.localConfig.get(id) || [];
+    		
+    		// if it exists, move to top of list, else prepend,
+        	var index = Ext.Array.indexOf(list, item);
+        	
+        	// Is there anything to do?
+        	if(index == 0 && (!limit || (list.length < limit))) return list;
+        	
+        	if(index > -1) {
+        		list.splice(index,1);
+        	}
+        	list.unshift(item);
+    		
+    		if(limit && list.length > limit) {
+    			list.splice(-(list.length-limit), list.length);    			
+    		}
+    		
+    		vcube.app.localConfig.set(id, list);
+
+    		return list;
     	}
     	
     },

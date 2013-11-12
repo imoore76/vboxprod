@@ -289,8 +289,11 @@ Ext.define('vcube.view.VMDetails', {
 										// Check for properties
 										if(nic.properties) {
 											adp = vcube.utils.trans('Generic driver, \'%1\' { %2 }','UIDetailsPagePrivate').replace('%1', nic.genericDriver);
-											var np = nic.properties.split("\n");
-											adp = adp.replace('%2', np.join(" ,"));
+											var np = [];
+											Ext.iterate(nic.properties, function(k,v) {
+												np.push(Ext.String.htmlEncode(k)+'='+Ext.String.htmlEncode(v));
+											})
+											adp = adp.replace('%2', np.join(", "));
 											break;
 										}
 										adp = vcube.utils.trans('Generic driver, \'%1\'','UIDetailsPagePrivate').replace('%1', nic.genericDriver);

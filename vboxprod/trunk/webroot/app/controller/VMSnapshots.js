@@ -228,7 +228,7 @@ Ext.define('vcube.controller.VMSnapshots', {
     	        listeners: {
     	            // Change content dynamically depending on which element triggered the show.
     	        	
-    	            beforeshow: function updateTipBody(tip) {
+    	            beforeshow: function (tip) {
     	            	
     	            	var record = snapshotTreeView.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(snapshotTreeView.itemSelector));
 

@@ -98,7 +98,7 @@ Ext.define('vcube.view.VMSnapshots', {
 			    	afterrender: function(tbar) {
 						Ext.each(tbar.items.items,function(item) {
 							if(item.text) {
-								item.setTooltip(item.text + ' &nbsp; ');
+								item.setTooltip(item.text);
 								item.setText('');
 							}
 						})

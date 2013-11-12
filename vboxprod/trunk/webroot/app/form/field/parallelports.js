@@ -13,13 +13,6 @@ Ext.define('vcube.form.field.parallelports', {
     
     maxPorts: 2,
     
-	serverNotify: true,
-	
-	setServer: function(server_id) {
-		this.server_id = server_id;
-		this.portModeStore.setServer(server_id);
-	},
-
     portModeStore: Ext.create('vcube.data.VboxEnumStore',{
     	enumClass: 'PortMode',
     	ignoreNull: true,
@@ -200,7 +193,17 @@ Ext.define('vcube.form.field.parallelports', {
     	
 	    this.callParent(arguments);
 
-	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
+	    this.on({
+	    	
+	    	destroy : function() { Ext.destroy(this.childComponent);},
+
+	    	render: function() {
+	    		this.portModeStore.setServer(this.up('.window').serverId);
+	    	},
+	    	
+	    	scope: this
+
+	    });
     },
     
     // Generates the child component markup and let Ext.form.field.Base handle the rest

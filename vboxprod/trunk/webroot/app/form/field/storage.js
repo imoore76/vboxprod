@@ -12,20 +12,11 @@ Ext.define('vcube.form.field.storage', {
     msgTarget: 'side',
     submitFormat: 'c',
     
-    serverNotify: true,
-    serverId: null,
-    
-    setServer: function(serverid) {
-    	var self = this;
-    	Ext.each(Ext.ComponentQuery.query('MediaSelectButton', this.attribsPanel), function(b) {
-    		b.setServer(serverid);
-    	});
-    	this.serverId = serverid;
-    },
-    
     margin: 0,
     
     cachedMedia: {},
+    
+    attachedMedia: {},
     
     statics: {
     	
@@ -72,7 +63,7 @@ Ext.define('vcube.form.field.storage', {
     getValue: function() {
     	return '';
     	var filters = [];
-    	this.subPanel.getStore().each(function(record) {
+    	this.childComponent.getStore().each(function(record) {
     		filters.push(record.getData());
     	});
 
@@ -121,6 +112,22 @@ Ext.define('vcube.form.field.storage', {
 		c.appendChild(maNode);
 		
 		if(select) this.tree.getSelectionModel.select(maNode);
+		
+		// Get info about this attachment
+		if(ma.medium && ma.medium.id) {
+			
+			if(!this.cachedMedia[ma.medium.id]) {
+				// In-progress
+				this.cachedMedia[ma.medium.id] = {};
+				var self = this;
+				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumGetBaseInfo',{name:ma.medium.name, hostDrive:ma.medium.hostDrive,medium:ma.medium.id,'type':ma.medium.deviceType,connector:this.up('.window').serverId})).done(function(data){
+					Ext.apply(self.cachedMedia[ma.medium.id], data);
+					maNode.set('medium',data);
+				});
+			} else {
+				maNode.set('medium', this.cachedMedia[ma.medium.id]);
+			}
+		}
 				
     	
 		return maNode;
@@ -130,6 +137,7 @@ Ext.define('vcube.form.field.storage', {
     
     	var self = this;
     	this.tree.getRootNode().removeAll(true);
+    	this.attachedMedia = {};
     	
     	if(!controllers) controllers = [];
     	
@@ -142,6 +150,12 @@ Ext.define('vcube.form.field.storage', {
     	Ext.each(controllers, function(c) {
     		
     		self.addController(c);
+    		
+        	Ext.each(c.mediumAttachments, function(ma) {
+        		if(ma.medium && ma.medium.id)
+        			self.attachedMedia[ma.medium.id] = true;
+        	});
+
     		
     	});
 
@@ -270,11 +284,20 @@ Ext.define('vcube.form.field.storage', {
         			icon: 'images/vbox/' + vcube.utils.vboxStorage.getMAIconName({type:d}) + '_add_16px.png',
         			handler: function(btn) {
         				
+        				// Hold ref
+        				var self = this;
+        				
+        				// Selected controller
         				var controller = self.tree.getSelectionModel().getSelection()[0];
+        				
+        				// dialog buttons
         				var buttons = [];
+        				
+        				// dialog question
         				var q = '';
         				
-        				var electSlot = function() {
+        				// Slot in which to add media
+        				var slot = (function() {
         					
         					var slot = null;
         					
@@ -297,28 +320,124 @@ Ext.define('vcube.form.field.storage', {
 
         	    			return slot.split('-');
 
+        				})();
+        				
+        				// Helper to add empty medium attachment
+        				var addEmpty = function(matype) {
+        					
+        					self.tree.getSelectionModel().select(self.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
+								type: matype,
+								port: slot[0],
+								device: slot[1],
+								medium: null
+							}));
         				};
+        				
+        				// Helper for choose disk
+        				var chooseDisk = function(btn, browsetype, matype) {
+							
+							Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(browsetype, self.up('.window').serverId)).done(function(m) {
+								self.cachedMedia[m.id] = m;
+								self.tree.getSelectionModel().select(self.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
+    								type: matype,
+    								port: slot[0],
+    								device: slot[1],
+    								medium: m
+    							}));
+								btn.up('.window').close();
+							});
+
+        				};
+        				
+        				// Helper function to generate choose disk button or splitbutton
+        				var genChooseDiskButton = function(btext, mtype, matype) {
+
+        					var rmenu = undefined;
+        					
+        					var recents = vcube.app.localConfig.get('recentMedia-'+mtype+'-' + self.up('.window').serverId) || [];
+
+        					if(recents.length) {
+        						
+        						var serverId = self.up('.window').serverId;
+        						
+        						rmenu = {
+        								
+        							items: [],
+        							listeners: {
+        								
+        								click: function(mnu, item) {
+        									
+        									if(!item) return;
+        									
+        									vcube.app.setLoading(true);
+        									
+        									Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumAdd',{
+        										
+        										path:item.initialConfig._medium_path,
+        										connector: serverId,
+        										type: matype
+        										
+        									})).done(function(data) {
+        										
+        										self.cachedMedia[data.id] = data;
+        										
+        										self.tree.getSelectionModel().select(self.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
+        		    								type: matype,
+        		    								port: slot[0],
+        		    								device: slot[1],
+        		    								medium: data
+        		    							}));
+        										        										
+        										
+        									}).always(function(){
+        										vcube.app.setLoading(false);
+        									});
+        									mnu.up('.window').close();
+        								},
+        								scope: self
+        							}
+        						}
+        						Ext.each(recents, function(r) {
+        							rmenu.items.push({
+        								text: vcube.utils.basename(r),
+        								_medium_path: r
+        							});
+        						});
+        					}
+
+        					return {
+        						text: btext,
+        						xtype: (recents.length ? 'splitbutton' : 'button'),
+        						menu: rmenu,
+        						handler: function(btn) {
+        							chooseDisk(btn, mtype, matype);
+        						},
+        						scope: self
+        					}
+        				}
         				
         				switch(btn.attachmentType) {
         				
 	        				case 'HardDisk':
-	        					break;
 	        					
-	        				case 'DVD':
+	        					var rmenu = undefined;
+	        					var recents = vcube.app.localConfig.get('recentMedia-hd-' + this.up('.window').serverId) || [];
 	        					
-	        					q = String('You are about to add a new CD/DVD drive to the controller <b>%1</b>.<p>Would you'+
-		        						'like to choose a virtual CD/DVD disk to put in the drive or to leave '+
-		        						'it empty for now?</p>').replace('%1', Ext.String.htmlEncode(controller.get('name')));
-		        					
-	        					buttons = [{
-	        						text: 'Choose disk',
+	        					
+	        					
+	        					q = String('You are about a virtual hard disk to controller <b>%1</b>.<p>Would you'+
+		        						'create a new, empty file to hold the disk contents or select '+
+		        						'an existing one?</p>').replace('%1', Ext.String.htmlEncode(controller.get('name')));
+	        					
+	        					buttons = [genChooseDiskButton('Choose existing disk','hd','HardDisk'),
+	        					   {
+	        						text: 'Create new disk',
 	        						handler: function(btn) {
 	        							var self = this;
-	        							Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia('cd', this.serverId)).done(function(m) {
-	        								var slot = electSlot();
-	        								if(!slot) return;
+	        							Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia('cd', this.up('.window').serverId)).done(function(m) {
+	        								self.cachedMedia[m.id] = m;
 	        								self.tree.getSelectionModel().select(self.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
-		        								type: 'DVD',
+		        								type: 'HardDisk',
 		        								port: slot[0],
 		        								device: slot[1],
 		        								medium: m
@@ -327,17 +446,20 @@ Ext.define('vcube.form.field.storage', {
 	        							});
 	        						},
 	        						scope: self
-	        					},{
+	        					}];
+	        					
+	        					break;
+	        					
+	        				case 'DVD':
+	        					
+	        					q = String('You are about to add a new CD/DVD drive to the controller <b>%1</b>.<p>Would you'+
+		        						'like to choose a virtual CD/DVD disk to put in the drive or to leave '+
+		        						'it empty for now?</p>').replace('%1', Ext.String.htmlEncode(controller.get('name')));
+		        					
+	        					buttons = [genChooseDiskButton('Choose disk','cd','DVD'),{
 	        						text: 'Leave empty',
 	        						handler: function(btn) {
-        								var slot = electSlot();
-        								if(!slot) return;
-        								this.tree.getSelectionModel().select(this.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
-	        								type: 'DVD',
-	        								port: slot[0],
-	        								device: slot[1],
-	        								medium: null
-	        							}));
+	        							addEmpty('DVD');
 	        							btn.up('.window').close();
 	        						},
 	        						scope: self
@@ -350,34 +472,10 @@ Ext.define('vcube.form.field.storage', {
 	        						'like to choose a virtual floppy disk to put in the drive or to leave '+
 	        						'it empty for now?</p>').replace('%1', Ext.String.htmlEncode(controller.get('name')));
 	        					
-	        					buttons = [{
-	        						text: 'Choose disk',
-	        						handler: function(btn) {
-	        							var self = this;
-	        							Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia('fd', this.serverId)).done(function(m) {
-	        								var slot = electSlot();
-	        								if(!slot) return;
-	        								self.tree.getSelectionModel().select(self.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
-		        								type: 'Floppy',
-		        								port: slot[0],
-		        								device: slot[1],
-		        								medium: m
-		        							}));
-	        								btn.up('.window').close();
-	        							});
-	        						},
-	        						scope: self
-	        					},{
+	        					buttons = [genChooseDiskButton('Choose disk','fd','Floppy'),,{
 	        						text: 'Leave empty',
 	        						handler: function(btn) {
-	        							var slot = electSlot();
-	        							if(!slot) return;
-	        							this.tree.getSelectionModel().select(this.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
-	        								type: 'Floppy',
-	        								port: slot[0],
-	        								device: slot[1],
-	        								medium: null
-	        							}));
+	        							addEmpty('Floppy');
 	        							btn.up('.window').close();
 	        						},
 	        						scope: self
@@ -622,7 +720,7 @@ Ext.define('vcube.form.field.storage', {
 			    	afterrender: function(tbar) {
 						Ext.each(tbar.items.items,function(item) {
 							if(item.text) {
-								item.setTooltip(item.text + ' &nbsp; ');
+								item.setTooltip(item.text);
 								item.setText('');
 							}
 						})
@@ -650,15 +748,13 @@ Ext.define('vcube.form.field.storage', {
 		        listeners: {
 		            // Change content dynamically depending on which element triggered the show.
 		        	
-		            beforeshow: function updateTipBody(tip) {
+		            beforeshow: function(tip) {
 		            	
 		            	var record = treeView.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(treeView.itemSelector));
 	
 		            	if(!record) return false;
 		            	
 	
-		            	console.log(record);
-		            	
 		            	// Medium attachment
 		            	if(record.get('leaf')) {
 	
@@ -668,26 +764,36 @@ Ext.define('vcube.form.field.storage', {
 		            		}
 		            		
 		            		if(!medium) {
-		            			tip.update('<b>No disk image file selected</b><p>You can also change this while the machine is running.</p>');
+		            			tip.update('<b>No disk image file selected</b><br /><br />You can also change this while the machine is running.');
 		            		} else {
 		            			
 		            			var tipText = '';
 		            			switch(medium.deviceType) {
+		            			
 			            			case 'HardDisk':
+			            				
+			            				
 			            				// Base info
 			            				tipText = '<b>' + medium.base.location + '</b><br />' +
 				            				'Type (Format): ' + medium.base.type + ' (' + medium.base.format + ')'+
 				            				attachedTo(medium.base);
 
-			            				if(medium.base && medium.base.id != medium.id) {
+
+			            				// Is already attached using a differencing disk
+			            				if(medium.base && medium.base.id != medium.id && this.attachedMedia[medium.id]) {
 
 			            					tipText += '<hr />This base hard disk is indirectly attached using the following differencing hard disk:<br />'+
 			            						'<b>' + medium.location + '</b><br />'+
 					            				'Type (Format): ' + medium.base.type + ' (' + medium.base.format + ')'+
 					            				attachedTo(medium);
-			            					
+			            				
+			            				// Disk is readOnly, and not attached
+			            				} else if(medium.readOnly && !this.attachedMedia[medium.id]) {
+			            					tipText += '<hr />Attaching this hard disk will be performed indirectly using a newly created differencing hard disk.';
 			            				}
-			            				break
+			            				
+			            				break;
+			            				
 			            			default:
 			            				if(medium.hostDrive) {
 			            					tipText = '<b>' + vcube.utils.vboxMedia.getName(medium) + '</b>';
@@ -706,11 +812,12 @@ Ext.define('vcube.form.field.storage', {
 		            				'Type: ' + vcube.utils.vboxStorage.getControllerType(record.get('controllerType')))
 		            	}
 		            	
-		            }
+		            },
+		            scope: this
 		        }
 		    });
 
-    	});
+    	}, this);
     	
     	/*
     	 * Check box listener
@@ -862,12 +969,13 @@ Ext.define('vcube.form.field.storage', {
     						xtype: 'MediaSelectButton',
     						itemId: 'mediaselect',
     						mediaType: 'fd',
-    						serverId: this.serverId,
-    						callback: function(medium) {
-    							this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
-    							fdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);
-    						},
-    						scope: this
+    						listeners: {
+    							mediumselect: function(medium) {
+    								this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
+    								fdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);    								
+    							},
+    							scope: this
+    						}
     					}
     				]
     			}]
@@ -886,11 +994,15 @@ Ext.define('vcube.form.field.storage', {
 		        },{
 		        	fieldLabel: 'Location',
 		        	name: 'medium.location',
-		        	renderer: ifVal()
+		        	renderer: ifVal(function(a) {
+		        		return Ext.String.ellipsis(a, 60);
+		        	})
 		        },{
 		        	fieldLabel: 'Attached to',
 		        	name: 'medium.attachedTo',
-		        	renderer: ifVal()
+		        	renderer: ifVal(function(a) {
+		        		return Ext.String.ellipsis(a, 60);
+		        	})
 		        }]
     		}]
     	});
@@ -922,12 +1034,13 @@ Ext.define('vcube.form.field.storage', {
     						xtype: 'MediaSelectButton',
     						itemId: 'mediaselect',
     						mediaType: 'cd',
-    						serverId: this.serverId,
-    						callback: function(medium) {
-    							this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
-    							cdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);
-    						},
-    						scope: this
+    						listeners: {
+    							mediumselect: function(medium) {
+    								this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
+    								cdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);    								
+    							},
+    							scope: this
+    						}
     					}
     				]
     			},{
@@ -960,11 +1073,15 @@ Ext.define('vcube.form.field.storage', {
     			},{
     				fieldLabel: 'Location',
     				name: 'medium.location',
-    				renderer: ifVal()
+    				renderer: ifVal(function(a) {
+		        		return Ext.String.ellipsis(a, 60);
+		        	})
     			},{
     				fieldLabel: 'Attached to',
     				name: 'medium.attachedTo',
-    				renderer: ifVal()	
+    				renderer: ifVal(function(a) {
+		        		return Ext.String.ellipsis(a, 60);
+		        	})	
     			}]
     		}]
     	});
@@ -996,12 +1113,13 @@ Ext.define('vcube.form.field.storage', {
     						xtype: 'MediaSelectButton',
     						itemId: 'mediaselect',
     						mediaType: 'hd',
-    						serverId: this.serverId,
-    						callback: function(medium) {
-    							this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
-    							hdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);
-    						},
-    						scope: this
+    						listeners: {
+    							mediumselect: function(medium) {
+    								this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
+    								hdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);    								
+    							},
+    							scope: this
+    						}
     					}
     				]
     			},{
@@ -1019,12 +1137,6 @@ Ext.define('vcube.form.field.storage', {
     				xtype: 'displayfield',
     				labelWidth: 90
     			},
-    			/*
-    			 *         $('#vboxSettingsHDDetails').html(vboxMedia.getHardDiskVariant(disp));
-        $('#vboxSettingsHDlocation').html(disp.location);
-        $('#vboxSettingsHDtype').html(trans(disp.type,'VBoxGlobal') + ' (' + disp.format + ')');
-
-    			 */
     			items: [{
     				xtype: 'fieldcontainer',
     				layout: 'hbox',
@@ -1060,11 +1172,15 @@ Ext.define('vcube.form.field.storage', {
 	    		},{
 	    			fieldLabel: 'Location',
 	    			name: 'medium.base.location',
-	    			renderer: ifVal()
+	    			renderer: ifVal(function(a) {
+		        		return Ext.String.ellipsis(a, 60);
+		        	})
 	    		},{
 	    			fieldLabel: 'Attached to',
 	    			name: 'medium.base.attachedTo',
-	    			renderer: ifVal()
+	    			renderer: ifVal(function(a) {
+		        		return Ext.String.ellipsis(a, 60);
+		        	})
 	    		}]
     		}]
     	});
@@ -1102,7 +1218,7 @@ Ext.define('vcube.form.field.storage', {
     					maxPortNum = Math.max(maxPortNum, (node.get('port')+1));
     				});
     				// Set min and max values
-    				f.setMinValue(maxPortNum);
+    				f.setMinValue(Math.max(1,maxPortNum));
     				f.setMaxValue(vcube.utils.vboxStorage[selection[0].raw.bus].maxPortCount);
     				f.show();
     				
@@ -1150,41 +1266,8 @@ Ext.define('vcube.form.field.storage', {
     			
     			
     		}
-
-    		var mdetails = {};
-    		if(selection[0].raw.medium) {
-    			
-    			var mid = selection[0].raw.medium.id;
-    			
-    			console.log(selection[0].raw.medium);
-    			
-    			console.log({medium:mid,'type':selection[0].raw.deviceType,connector:this.up('.window').serverId});
-    			
-    			if(this.cachedMedia[mid]) {
-    				mdetails = this.cachedMedia[mid];
-    			} else {
-    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumGetBaseInfo',{medium:mid,'type':selection[0].raw.medium.deviceType,connector:this.up('.window').serverId})).done(function(data) {
-    					
-    					console.log("Got ...");
-    					console.log(data);
-    					
-    					// Add to cache
-    					self.cachedMedia[mid] = data;
-    					
-    					// Make sure the selection has not changed
-    					if(sm.getSelection().length && sm.getSelection()[0].raw.medium && sm.getSelection()[0].raw.medium.id == mid) {
-    						sm.getSelection()[0].set('medium', data);
-    						console.log("Here ... with");
-    						console.log(sm.getSelection()[0]);
-    						targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData(),{'medium':data}), true);
-    					}
-    				});
-    			}
-    			
-    		}
-			
  
-    		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData(),{'medium':mdetails}), true);
+    		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData()), true);
     		targetPanel.show();
     		
     	}, this);
@@ -1203,7 +1286,7 @@ Ext.define('vcube.form.field.storage', {
     		        controllerInfoPanel, cdInfoPanel, fdInfoPanel, hdInfoPanel]
     	})
     	
-    	this.subPanel = this.childComponent = Ext.create('Ext.panel.Panel',{
+    	this.childComponent = Ext.create('Ext.panel.Panel',{
     		
     		title: 'Storage',
     		height: 300,
@@ -1212,6 +1295,7 @@ Ext.define('vcube.form.field.storage', {
     		layout: {
     			type: 'border'
     		},
+    		ownerCt: this,
     		defaults: {
     		    split: true,
     		    layout: 'fit',
@@ -1251,7 +1335,11 @@ Ext.define('vcube.form.field.storage', {
 
     	this.callParent(arguments);
     	
-    	this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
+    	this.on('destroy', function() {
+    		Ext.destroy(this.childComponent);
+    		this.cachedMedia = {};
+    		this.attachedMedia = {};
+    	}, this);
     	
     	
     },
@@ -1290,18 +1378,11 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 	
 	margin: '2 0 0 4',
 		
-	callback: null,
-	serverId: null,
-	
-	scope: null,
-	
-	setServer: function(serverId) {
-		this.serverId = serverId;
-		if(this.mediaType != 'hd') this.loadDrives();
-	},
+	menuLoaded: false,
 	
 	browseLocation: null,
 	
+	/* Update menu when selection occurs */
 	updateMenu: function(media) {
 		var empty = this.menu.down('#empty');
 		if(media && media.location && !media.hostDrive) {
@@ -1313,29 +1394,111 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 		empty.setDisabled(!media);
 	},
 	
+	/* Browse for media */
 	browseMedia: function() {
 		
 		var self = this;
+		var serverId = this.up('.window').serverId;
 		
-		Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(this.mediaType, this.serverId, this.browseLocation)).done(function(data){
-			self.callback.call(self.scope, data);
+		Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(this.mediaType, serverId, this.browseLocation)).done(function(data){
+			
+			var recents = vcube.app.localConfig.addToList('recentMedia-' + self.mediaType + '-' + serverId, data.location, 5);
+			
+			self.updateRecent(recents);
+			
+			self.fireEvent('mediumselect', data);
 		});
 		
 	},
 	
-	loadDrives: function() {
+	/* Update recent media with list provided */
+	updateRecent: function(recents) {
 		
 		var self = this;
 		
+		self.menu.items.each(function(i) {
+			if(i.initialConfig._medium_path)
+				self.menu.remove(i, true);
+		});
+		
+		var index = this.menu.items.indexOf(this.menu.down('#recentmedia'));
+		Ext.each(recents, function(r) {
+			self.menu.insert(index++, {
+				text: vcube.utils.basename(r),
+				_medium_path: r
+			});
+		});
+
+	},
+	
+	/* "Recent" media menu item handler */
+	onMenuClick: function(menu, item) {
+		
+		if(!item || !item.initialConfig._medium_path) return;
+		
+		var serverId = this.up('.window').serverId;
+		
+		var self = this;
+		
+		vcube.app.setLoading(true);
+		
+		var vboxMediaType = 'HardDisk';
+		if(self.mediaType == 'fd') {
+			vboxMediaType = 'Floppy';
+		} else if (self.mediaType == 'cd') {
+			vboxMediaType = 'DVD';
+		}
+
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/mediumAdd',{
+			
+			path:item.initialConfig._medium_path,
+			connector: serverId,
+			type:vboxMediaType
+			
+		})).done(function(data) {
+			
+			var recents = vcube.app.localConfig.addToList('recentMedia-' + self.mediaType + '-' + serverId, data.location, 5);
+			
+			self.updateRecent(recents);
+			
+			self.up('.storagefield').cachedMedia[data.id] = data;
+			
+			
+			self.fireEvent('mediumselect', data);
+			self.updateMenu(data);
+			
+			
+		}).always(function(){
+			vcube.app.setLoading(false);
+		});
+
+	},
+	
+	/* Load data into menu. Host drives and recent media */
+	loadMenu: function() {
+		
+		if(this.menuLoaded) return;
+		this.menuLoaded = true;
+		
+		var self = this;
+
+		var serverId = this.up('.window').serverId;
+			
+		// Add recent media
+		this.updateRecent(vcube.app.localConfig.get('recentMedia-' + self.mediaType + '-' + serverId) || []);
+		
+		// HardDisk media does not have host drives option
+		if(this.mediaType == 'hd') return;
+		
 		// Load host drives
-		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGet'+(this.mediaType == 'fd' ? 'Floppy' : 'DVD') + 'Drives',{connector:this.serverId})).done(function(drives){
+		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGet'+(this.mediaType == 'fd' ? 'Floppy' : 'DVD') + 'Drives',{connector:serverId})).done(function(drives){
 			self.menu.remove('hostdrives', true);
 			Ext.each(drives, function(d) {
 				self.menu.insert(1, {
 					text: vcube.utils.vboxMedia.getName(d),
 					_medium: d,
 					handler: function(item) {
-						self.callback.call(self.scope, item.initialConfig._medium);
+						self.fireEvent('mediumselect', item.initialConfig._medium);
 						self.updateMenu(item.initialConfig._medium);
 					},
 					scope: self
@@ -1354,83 +1517,119 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 			// Floppy media
 			case 'fd':
 				this.icon = 'images/vbox/fd_16px.png',
-				this.menu = [{
-					text: 'Choose a virtual floppy disk file...',
-					icon: 'images/vbox/select_file_16px.png',
-					handler: function() {
-						this.browseMedia();
-					},
-					scope: this
-				},{
-					text: 'Loading host drives...',
-					itemId: 'hostdrives'
-				},
-				'-',
-				{
-					text: 'Remove disk from virtual drive',
-					itemId: 'empty',
-					icon: 'images/vbox/fd_unmount_16px.png',
-					handler: function() {
-						this.callback.call(this.scope, null);
-						this.updateMenu(null);
-					},
-					scope: this
-				}];
 				
-				if(this.serverId) this.loadDrives();
-				
+				this.menu = {
+					items: [{
+						text: 'Choose a virtual floppy disk file...',
+						icon: 'images/vbox/select_file_16px.png',
+						handler: function() {
+							this.browseMedia();
+						},
+						scope: this
+					},{
+						text: 'Loading host drives...',
+						itemId: 'hostdrives'
+					},{
+						itemId: 'recentmedia',
+						hidden: true
+					},
+					'-',
+					{
+						text: 'Remove disk from virtual drive',
+						itemId: 'empty',
+						icon: 'images/vbox/fd_unmount_16px.png',
+						handler: function() {
+							this.fireEvent('mediumselect', null);
+							this.updateMenu(null);
+						},
+						scope: this
+					}],
+					listeners: {
+						beforeshow: function() {
+							this.loadMenu();
+						},
+						click: this.onMenuClick,
+						scope: this
+					}
+				};
+								
 				break;
 				
 			// CD/DVD media
 			case 'cd':
 				this.icon = 'images/vbox/cd_16px.png',
-				this.menu = [{
-					text: 'Choose a virtual CD/DVD disk file...',
-					icon: 'images/vbox/select_file_16px.png',
-					handler: function() {
-						this.browseMedia();
+				this.menu = {
+					items: [{
+						text: 'Choose a virtual CD/DVD disk file...',
+						icon: 'images/vbox/select_file_16px.png',
+						handler: function() {
+							this.browseMedia();
+						},
+						scope: this
+					},{
+						text: 'Loading host drives...',
+						itemId: 'hostdrives'
+					},{
+						itemId: 'recentmedia',
+						hidden: true
 					},
-					scope: this
-				},{
-					text: 'Loading host drives...',
-					itemId: 'hostdrives'
-				},
-				'-',
-				{
-					text: 'Remove disk from virtual drive',
-					itemId: 'empty',
-					icon: 'images/vbox/cd_unmount_16px.png',
-					handler: function() {
-						this.callback.call(this.scope, null);
-						this.updateMenu(null);
-					},
-					scope: this
-				}];
+					'-',
+					{
+						text: 'Remove disk from virtual drive',
+						itemId: 'empty',
+						icon: 'images/vbox/cd_unmount_16px.png',
+						handler: function() {
+							this.fireEvent('mediumselect', null);
+							this.updateMenu(null);
+						},
+						scope: this
+					}],
+					listeners: {
+						beforeshow: function() {
+							this.loadMenu();
+						},
+						click: this.onMenuClick,
+						scope: this
+					}
+				};
 				
-				if(this.serverId) this.loadDrives();
 				break;
 				
 			// Hard disk
 			default:
 				this.icon = 'images/vbox/hd_16px.png',
-				this.menu = [{
-					text: 'Create a new hard disk...',
-					icon: 'images/vbox/vdm_new_16px.png',
-					handler: function() {
-						
-					},
-					scope: this
-				},{
-					text: 'Choose a virtual hard disk file...',
-					icon: 'images/vbox/select_file_16px.png',
-					handler: function() {
-						this.browseMedia();
-					},
-					scope: this
-				}]
+				this.menu = {
+					items: [{
+						text: 'Create a new hard disk...',
+						icon: 'images/vbox/vdm_new_16px.png',
+						handler: function() {
+							
+						},
+						scope: this
+					},{
+						text: 'Choose a virtual hard disk file...',
+						icon: 'images/vbox/select_file_16px.png',
+						handler: function() {
+							this.browseMedia();
+						},
+						scope: this
+					},{
+						itemId: 'recentmedia',
+						hidden: true
+					}],
+					listeners: {
+						beforeshow: function() {
+							this.loadMenu();
+						},
+						click: this.onMenuClick,
+						scope: this
+					}
+			};
+				
 		}
 		
 		this.callParent(arguments);
 		
+				
 	}
 });

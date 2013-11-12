@@ -209,7 +209,8 @@ Ext.define('vcube.actions.machine',{
 		
 		/** Invoke VM settings dialog */
 		settings: {
-			action:function(selectionModel){
+			
+			action: function(selectionModel) {
 				
 				var sd = Ext.create('vcube.view.VMSettingsDialog');
 				var serverId = vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id');
@@ -221,14 +222,6 @@ Ext.define('vcube.actions.machine',{
 				
 				sd.setLoading(true);
 				
-				
-				Ext.each(Ext.ComponentQuery.query('.field', sd), function(field) {
-					if(field.serverNotify) {
-						field.setServer(serverId);
-					} else if(field.store && field.store.isServerStore) {
-						field.store.setServer(serverId);
-					}
-				});
 				
 				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(selectionModel.getSelection()[0].get('id'))).done(function(data) {
 					sd.down('.form').getForm().setValues(data);

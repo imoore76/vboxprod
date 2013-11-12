@@ -70,7 +70,7 @@ def vboxGetArray(obj, elem):
 """
 Return base machine info
 """
-def _machineGetBaseInfo(machine):
+def machineGetBaseInfo(machine):
     
     if machine.accessible:
         
@@ -396,7 +396,7 @@ def enrichEvents(eventList):
                     if not machine or (machine and machine.id != event['machineId']):
                         machine = vbox.findMachine(event['machineId'])
                         
-                    eventList[ek]['enrichmentData'] = _machineGetBaseInfo(machine)
+                    eventList[ek]['enrichmentData'] = machineGetBaseInfo(machine)
                 
         
             # Update lastStateChange on OnMachineStateChange events
@@ -2650,7 +2650,7 @@ class vboxConnector(object):
         data['networkAdapters'] = self._machineGetNetworkAdapters(machine)
 
         # Storage Controllers
-        data['storageControllers'] = self._machineGetStorageControllers(machine)
+        data['storageControllers'] = self.machineGetStorageControllers(machine)
 
         # Serial Ports
         data['serialPorts'] = self._machineGetSerialPorts(machine)
@@ -2731,7 +2731,7 @@ class vboxConnector(object):
                 })
             
                 # Get removable media
-                data['storageControllers'] = self._machineGetStorageControllers(smachine)
+                data['storageControllers'] = self.machineGetStorageControllers(smachine)
                 
                 # Get network adapters
                 data['networkAdapters'] = self._machineGetNetworkAdapters(smachine)
@@ -3022,7 +3022,7 @@ class vboxConnector(object):
 
             try:
                 
-                vmlist.append(_machineGetBaseInfo(machine))
+                vmlist.append(machineGetBaseInfo(machine))
                 
                 
             except Exception as e:
@@ -3333,13 +3333,13 @@ class vboxConnector(object):
      * @param IMediumAttachment[] mas list of IMediumAttachment instances
      * @return array medium attachment info
      """
-    def _machineGetMediumAttachments(self, mas):
+    def machineGetMediumAttachments(self, mas):
 
         attachments = []
 
         for ma in mas:
             attachments.append({
-                'medium' : self._mediumGetDisplayInfo(ma.medium),
+                'medium' : self.mediumGetDisplayInfo(ma.medium),
                 'controller' : ma.controller,
                 'port' : ma.port,
                 'device' : ma.device,
@@ -3350,7 +3350,7 @@ class vboxConnector(object):
             })
 
         # sort by port then device
-        #usort(return,create_function('a,b', 'if a["port"] == b["port"]) { if a["device"] < b["device"]) { return -1 } if a["device"] > b["device"]) { return 1 } return 0 } if a["port"] < b["port"]) { return -1 } return 1'))
+        attachments.sort(cmp=lambda a,b: cmp(a['device'],b['device']) if a['port'] == b['port'] else cmp(a['port'],b['port']))
         
         return attachments
 
@@ -3608,7 +3608,7 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array storage controllers' details
      """
-    def _machineGetStorageControllers(self, m):
+    def machineGetStorageControllers(self, m):
 
         sc = []
 
@@ -3623,7 +3623,7 @@ class vboxConnector(object):
                 'portCount' : c.portCount,
                 'bus' : vboxEnumToString("StorageBus", c.bus),
                 'controllerType' : vboxEnumToString("StorageControllerType", c.controllerType),
-                'mediumAttachments' : self._machineGetMediumAttachments(m.getMediumAttachmentsOfController(c.name))
+                'mediumAttachments' : self.machineGetMediumAttachments(m.getMediumAttachmentsOfController(c.name))
             })
 
 
@@ -4177,7 +4177,7 @@ class vboxConnector(object):
     """
         Get enough info to display medium
     """
-    def _mediumGetDisplayInfo(self, m):
+    def mediumGetDisplayInfo(self, m):
         
         return {
                 'id' : m.id,
@@ -4197,7 +4197,13 @@ class vboxConnector(object):
     def remote_mediumGetBaseInfo(self, args):
 
         """ @m IMedium """
-        m = self.vbox.openMedium(args['medium'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
+        if args.get('hostDrive', False):
+            if args['type'] == 'Floppy':
+                m = self.vbox.host.findHostFloppyDrive(args['name'])
+            else:
+                m = self.vbox.host.findHostDVDDrive(args['name'])
+        else:
+            m = self.vbox.openMedium(args['medium'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 
         return self.mediumGetBaseInfo(m)
 

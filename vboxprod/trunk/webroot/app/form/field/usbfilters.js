@@ -11,12 +11,6 @@ Ext.define('vcube.form.field.usbfilters', {
     msgTarget: 'side',
     submitFormat: 'c',
 
-    server_id: null,
-    
-    serverNotify: true,
-    
-    setServer: function(sid) { this.server_id = sid; },
-    
     getSubmitValue: function() {
     	return this.getValue();
     },
@@ -216,14 +210,14 @@ Ext.define('vcube.form.field.usbfilters', {
 			    				
 			    				var self=this;
 			    				
-			    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGetUSBDevices',{connector:this.server_id})).done(function(devs) {
+			    				Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGetUSBDevices',{connector:this.up('.window').serverId})).done(function(devs) {
 			    					
 			    					if(!mnu) return;
 			    					mnu.removeAll(true);
 			    					
 			    					for(var i = 0; i < devs.length; i++) {
 			    						
-			    						var name = (devs[i].product ? devs[i].product : 'Unknown device ') + cleanHex(devs[i].vendorId) + (devs[i].vendorId ? ':' : '') + cleanHex(devs[i].productId) + 
+			    						var name = (devs[i].product ? (devs[i].product + ' ') : 'Unknown device ') + cleanHex(devs[i].vendorId) + (devs[i].vendorId ? ':' : '') + cleanHex(devs[i].productId) + 
 			    							(devs[i].revision ? ' [' + cleanHex(devs[i].revision) + ']' : '');
 			    						
 			    						mnu.add({

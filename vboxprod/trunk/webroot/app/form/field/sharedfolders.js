@@ -20,12 +20,6 @@ Ext.define('vcube.form.field.sharedfolders', {
     msgTarget: 'side',
     submitFormat: 'c',
     
-    serverId: null,
-    serverNotify: true,
-    setServer: function(serverId) {
-    	this.serverId = serverId;
-    },
-    
     /* Get / Set values */
     getSubmitValue: function() {
     	return this.getValue();
@@ -56,27 +50,19 @@ Ext.define('vcube.form.field.sharedfolders', {
     	
     	if(!path) return;
     	
-    	// if it exists, move to top of list, else prepend, trim to 5
-    	var items = (vcube.app.localConfig.get('recentSharedFolders-' + this.serverId) || []);
-    	var index = Ext.Array.indexOf(items, path);
-    	if(index > -1) {
-    		items.splice(index,1);
-    	}
-    	items.unshift(path);
-    	if(items.length > 5)
-    		items.splice(-(items.length-5), items.length);
+    	// Add to recent list
+    	vcube.app.localConfig.addToList('recentSharedFolders-' + this.up('.window').serverId, path, 5);
     	
-    	vcube.app.localConfig.set('recentSharedFolders-' + this.serverId, items);
     },
     
     getSharedFoldersCboItems: function() {
     	
     	var list = [];
     	try {
-    		list = vcube.app.localConfig.get('recentSharedFolders-' + this.serverId) || [];    		
+    		list = vcube.app.localConfig.get('recentSharedFolders-' + this.up('.window').serverId) || [];    		
     	} catch (err) {
     		// Remove config, something is corrupt
-    		vcube.app.localConfig.remove('recentSharedFolders-' + this.serverId);
+    		vcube.app.localConfig.remove('recentSharedFolders-' + this.up('.window').serverId);
     		list = [];
     	}
     	list.push(vcube.form.field.sharedfolders.sfOtherPathName);
@@ -154,7 +140,7 @@ Ext.define('vcube.form.field.sharedfolders', {
     							
     							var browser = Ext.create('vcube.widget.fsbrowser',{
     				    			browserType: 'folder',
-    				    			serverId: this.serverId,
+    				    			serverId: this.up('.window').serverId,
     				    			title: 'Select folder...',
     				    			initialPath: (oldVal ? oldVal : null),
     				    			pathType: 'sharedFolder'

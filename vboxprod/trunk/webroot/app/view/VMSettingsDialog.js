@@ -337,9 +337,6 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			xtype: 'usbcontrollersfield',
 			name: 'USBControllers'
 		},{
-			/*
-			title: 'USB Device Filters',
-			*/
 			xtype: 'usbfiltersfield',
 			name: 'USBDeviceFilters',
 			flex: 1

@@ -1,6 +1,18 @@
 /*
  * General
  */
+
+/* extjs4 tooltip bug */
+.x-tip {
+    width: auto !important;
+}
+.x-tip-body {
+    width: auto !important;
+}
+.x-tip-body span {
+    width: auto !important;
+}
+
 .icon16 { width: 16px; height: 16px; background-repeat: no-repeat;background-size:16px 16px; }
 .msgBoxTitle {
 	display: inline-block;

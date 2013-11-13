@@ -286,10 +286,10 @@ Ext.define('vcube.form.field.sharedfolders', {
 			},
 			store: Ext.create('Ext.data.Store',{
 				fields: [
-			         {name: 'accessible', type: 'int'},
+			         {name: 'accessible', type: 'boolean'},
 			         'name',
-			         {name:'autoMount', type: 'int'},
-			         {name:'writable', type: 'int'},
+			         {name:'autoMount', type: 'boolean'},
+			         {name:'writable', type: 'boolean'},
 			         'lastAccessError',
 			         'hostPath',
 			         'type'

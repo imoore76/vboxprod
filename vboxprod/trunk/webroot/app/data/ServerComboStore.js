@@ -8,7 +8,8 @@ Ext.define('vcube.data.ServerComboStore',{
 	autoload: false,
 	remoteSort: false,
 	remoteFilter: false,
-	
+	pageSize: 0,
+	defaultPageSize: 0,
 	isServerStore: true,
 	
 	/* For vbox enum conversion */
@@ -28,7 +29,7 @@ Ext.define('vcube.data.ServerComboStore',{
 		});
 		
 		this.callParent(arguments);
-		
+				
 	},
 	
 	
@@ -56,7 +57,9 @@ Ext.define('vcube.data.ServerComboStore',{
 		
 		// Update extra params before any request is made
 		this.on('beforeload', function(store) {
+			
 			Ext.apply(this.getProxy().extraParams, this.extraParams);
+			
 		}, this);
 		
 	},

@@ -20,7 +20,7 @@ Ext.define('vcube.form.field.ostype', {
     },
     
     getValue: function() {
-    	this.osTypeIdCombo.getValue();
+    	return this.osTypeIdCombo.getValue();
     },
     
     setValue: function(val) {

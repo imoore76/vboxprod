@@ -175,7 +175,16 @@ Ext.define('vcube.form.field.sharedfolders', {
         			fieldLabel: 'Folder Name',
         			name: 'name',
         			allowBlank:false,
-        			maskRe: /[^\s]/
+        			maskRe: /[^\s]/,
+        			validator: function(val) {
+        				return /[^\s]/.test(val);
+        			},
+        			listeners: {
+        				change: function(t, val) {
+        					val = val.replace(/\s+/g, '');
+        					t.setValue(val);
+        				}
+        			}
         		},{
         			xtype: 'checkbox',
         			fieldLabel: ' ',

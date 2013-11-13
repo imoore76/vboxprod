@@ -20,6 +20,8 @@ Ext.define('vcube.form.field.storage', {
     
     statics: {
     	
+    	recentMediaLimit: 5,
+    	
     	browseMedia: function(mediaType, serverId, initialPathO) {
     		
     		var promise = Ext.create('Ext.ux.Deferred');
@@ -44,6 +46,9 @@ Ext.define('vcube.form.field.storage', {
     				connector: serverId,
     				type:vboxMediaType
     			})).done(function(data) {
+    				
+    				vcube.app.localConfig.addToList('recentMedia-'+mediaType+'-' + serverId, data.location, vcube.form.field.storage.recentMediaLimit);
+    				
     				promise.resolve(data);
     			}).always(function(){
     				vcube.app.setLoading(false);
@@ -336,8 +341,12 @@ Ext.define('vcube.form.field.storage', {
         				// Helper for choose disk
         				var chooseDisk = function(btn, browsetype, matype) {
 							
-							Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(browsetype, self.up('.window').serverId)).done(function(m) {
+        					var serverId = self.up('.window').serverId;
+        					
+							Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(browsetype, serverId)).done(function(m) {
+
 								self.cachedMedia[m.id] = m;
+								
 								self.tree.getSelectionModel().select(self.addMediumAttachment(self.tree.getSelectionModel().getSelection()[0], {
     								type: matype,
     								port: slot[0],
@@ -354,11 +363,12 @@ Ext.define('vcube.form.field.storage', {
 
         					var rmenu = undefined;
         					
-        					var recents = vcube.app.localConfig.get('recentMedia-'+mtype+'-' + self.up('.window').serverId) || [];
+        					var serverId = self.up('.window').serverId;
+
+        					var recents = vcube.app.localConfig.get('recentMedia-'+mtype+'-' + serverId) || [];
 
         					if(recents.length) {
         						
-        						var serverId = self.up('.window').serverId;
         						
         						rmenu = {
         								
@@ -378,6 +388,8 @@ Ext.define('vcube.form.field.storage', {
         										type: matype
         										
         									})).done(function(data) {
+        										
+        										vcube.app.localConfig.addToList('recentMedia-'+mtype+'-' + serverId, data.location, vcube.form.field.storage.recentMediaLimit);
         										
         										self.cachedMedia[data.id] = data;
         										
@@ -1378,7 +1390,7 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 	
 	margin: '2 0 0 4',
 		
-	menuLoaded: false,
+	drivesAdded: false,
 	
 	browseLocation: null,
 	
@@ -1401,11 +1413,6 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 		var serverId = this.up('.window').serverId;
 		
 		Ext.ux.Deferred.when(vcube.form.field.storage.browseMedia(this.mediaType, serverId, this.browseLocation)).done(function(data){
-			
-			var recents = vcube.app.localConfig.addToList('recentMedia-' + self.mediaType + '-' + serverId, data.location, 5);
-			
-			self.updateRecent(recents);
-			
 			self.fireEvent('mediumselect', data);
 		});
 		
@@ -1457,9 +1464,7 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 			
 		})).done(function(data) {
 			
-			var recents = vcube.app.localConfig.addToList('recentMedia-' + self.mediaType + '-' + serverId, data.location, 5);
-			
-			self.updateRecent(recents);
+			vcube.app.localConfig.addToList('recentMedia-' + self.mediaType + '-' + serverId, data.location, vcube.form.field.storage.recentMediaLimit);
 			
 			self.up('.storagefield').cachedMedia[data.id] = data;
 			
@@ -1477,9 +1482,6 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 	/* Load data into menu. Host drives and recent media */
 	loadMenu: function() {
 		
-		if(this.menuLoaded) return;
-		this.menuLoaded = true;
-		
 		var self = this;
 
 		var serverId = this.up('.window').serverId;
@@ -1488,7 +1490,9 @@ Ext.define('vcube.form.field.storage.MediaSelectButton',{
 		this.updateRecent(vcube.app.localConfig.get('recentMedia-' + self.mediaType + '-' + serverId) || []);
 		
 		// HardDisk media does not have host drives option
-		if(this.mediaType == 'hd') return;
+		if(this.mediaType == 'hd' || this.drivesAdded) return;
+		
+		this.drivesAdded = true;
 		
 		// Load host drives
 		Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/hostGet'+(this.mediaType == 'fd' ? 'Floppy' : 'DVD') + 'Drives',{connector:serverId})).done(function(drives){

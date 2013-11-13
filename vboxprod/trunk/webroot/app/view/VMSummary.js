@@ -277,7 +277,7 @@ Ext.define('vcube.view.VMSummary.Edit', {
     		defaultType:'textfield',
     		monitorValid:true,
     		buttonAlign:'center',
-    		
+    	
     		items: [{
     			xtype: 'hidden',
     			name: 'id'
@@ -301,22 +301,22 @@ Ext.define('vcube.view.VMSummary.Edit', {
     			fieldLabel: 'Description',
     			name: 'description',
     			anchor: '100%'
-    		}],
-    		
-    		buttons:[{ 
-    			text: vcube.utils.trans('Save'),
-    			itemId: 'save',
-    			formBind: true
-    		},{
-    			text: vcube.utils.trans('Cancel'),
-    			listeners: {
-    				click: function(btn) {
-    					btn.up('.window').close();
-    				}
-    			}
     		}]
+    	}];
+    		
+		this.buttons = [{ 
+			text: vcube.utils.trans('Save'),
+			itemId: 'save',
+			disabled: true
+		},{
+			text: vcube.utils.trans('Cancel'),
+			listeners: {
+				click: function(btn) {
+					btn.up('.window').close();
+				}
+			}
+		}]
     	
-    	}]
     	this.callParent();
     },
 });

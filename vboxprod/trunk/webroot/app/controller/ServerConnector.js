@@ -55,6 +55,11 @@ Ext.define('vcube.controller.ServerConnector', {
     			/* Set values when window is shown */
     			show: function(pane) {
     				
+    				/* Change button on form validity change */
+    				pane.down('#form').on('validitychange', function(frm, valid) {
+    					pane.down('#save').setDisabled(!valid);
+    				});
+    				
     				var connectorData = vcube.storemanager.getStoreRecordData('server',this.selectionItemId);
     				pane.down('#form').getForm().setValues(
 						Ext.Object.merge({},connectorData,{
@@ -69,7 +74,7 @@ Ext.define('vcube.controller.ServerConnector', {
     					
     					win.setLoading(true);
     					
-    					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/updateConnector',btn.up('.form').getForm().getValues()))
+    					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('connectors/updateConnector',pane.down('.form').getForm().getValues()))
     						.done(function(data) {
 		    					
 		    						if(data) {

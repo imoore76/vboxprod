@@ -141,10 +141,10 @@ Ext.define('vcube.form.field.usbfilters', {
 				
 				selectionchange: function(sm, selected) {
 					
-					var index = this.grid.getStore().indexOf(selected[0]);
+					var index = selected.length ? this.grid.getStore().indexOf(selected[0]) : -1;
 					
-					this.grid.down('#btnMoveUp').setDisabled(index == 0);
-					this.grid.down('#btnMoveDown').setDisabled(index == (this.grid.getStore().getCount()-1));
+					this.grid.down('#btnMoveUp').setDisabled(index == 0 || !selected.length);
+					this.grid.down('#btnMoveDown').setDisabled(!selected.length || index == (this.grid.getStore().getCount()-1));
 					this.grid.down('#btnEdit').setDisabled(!selected.length);
 					this.grid.down('#btnRemove').setDisabled(!selected.length);
 					

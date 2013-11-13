@@ -212,16 +212,22 @@ Ext.define('vcube.actions.machine',{
 			
 			action: function(selectionModel) {
 				
-				var sd = Ext.create('vcube.view.VMSettingsDialog');
-				var serverId = vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id');
-				sd.serverId = serverId;
-				
+				var sd = Ext.create('vcube.view.VMSettingsDialog',{
+					serverId : vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id')
+				});				
 				sd.setTitle(Ext.String.format(sd.title, selectionModel.getSelection()[0].get('name')));
+				
+				sd.down('#save').on('click',function(btn) {
+					console.log('here...');
+					var mdata = sd.down('.form').getForm().getValues();
+					console.log(mdata);
+					vcube.utils.ajaxRequest('vbox/machineSave',Ext.Object.merge({},mdata,vcube.utils.vmAjaxParams(selectionModel.getSelection()[0].get('id'))));
+					btn.up('.window').close();
+				});
 				
 				sd.show();
 				
 				sd.setLoading(true);
-				
 				
 				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(selectionModel.getSelection()[0].get('id'))).done(function(data) {
 					sd.down('.form').getForm().setValues(data);

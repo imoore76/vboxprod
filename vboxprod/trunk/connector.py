@@ -306,7 +306,7 @@ def enrichEvents(eventList):
 
                     
                 try:
-                    eventList[ek]['enrichmentData'] = vboxConnector._machineGetNetworkAdapters(session.machine, event['networkAdapterSlot'])
+                    eventList[ek]['enrichmentData'] = vboxConnector.machineGetNetworkAdapters(session.machine, event['networkAdapterSlot'])
                 
                 except Exception as e:
                     logger.exception(str(e))
@@ -1224,9 +1224,9 @@ class vboxConnector(object):
                     if int(args['networkAdapters'][i]['NATEngine']['aliasMode'] & 2): aliasMode = aliasMode | 2
                     if int(args['networkAdapters'][i]['NATEngine']['aliasMode'] & 4): aliasMode = aliasMode | 4
                     n.NATEngine.aliasMode = aliasMode
-                    n.NATEngine.DNSProxy = int(args['networkAdapters'][i]['NATEngine']['DNSProxy'])
-                    n.NATEngine.DNSPassDomain = int(args['networkAdapters'][i]['NATEngine']['DNSPassDomain'])
-                    n.NATEngine.DNSUseHostResolver = int(args['networkAdapters'][i]['NATEngine']['DNSUseHostResolver'])
+                    n.NATEngine.DNSProxy = True if args['networkAdapters'][i]['NATEngine'].get('DNSProxy', None) else False
+                    n.NATEngine.DNSPassDomain = True if args['networkAdapters'][i]['NATEngine'].get('DNSPassDomain', None) else False
+                    n.NATEngine.DNSUseHostResolver = True if args['networkAdapters'][i]['NATEngine'].get('DNSUseHostResolver',None) else False
                     n.NATEngine.hostIP = args['networkAdapters'][i]['NATEngine']['hostIP']
                 
         
@@ -1295,7 +1295,7 @@ class vboxConnector(object):
         usbEx = []
         usbNew = []
 
-        usbc = self._machineGetUSBControllers(session.machine)
+        usbc = self.machineGetUSBControllers(session.machine)
 
         if state != 'Saved' and usbc['enabled']:
 
@@ -1399,388 +1399,333 @@ class vboxConnector(object):
 
         # create session and lock machine
         """ @machine IMachine """
-        machine = self.vbox.findMachine(args['id'])
+        machine = self.vbox.findMachine(args['vm'])
         
         vmState = machine.state
         vmRunning = machine.state in [vboxMgr.constants.MachineState_Running, vboxMgr.constants.MachineState_Paused, vboxMgr.constants.MachineState_Saved]
         session = vboxMgr.mgr.getSessionObject(self.vbox)
         machine.lockMachine(session, (vboxMgr.constants.LockType_Shared if vmRunning else vboxMgr.constants.LockType_Write))
 
-        # Switch to machineSaveRunning()?
-        if vmRunning:
-            return self._machineSaveRunning(args, vmState)
-
-        # Shorthand
-        """ @m IMachine """
-        m = session.machine
-
-
-        m.OSTypeId = args['OSTypeId']
-        m.CPUCount = args['CPUCount']
-        m.memorySize = args['memorySize']
-        m.firmwareType = args['firmwareType']
-        if args['chipsetType']: m.chipsetType = vboxStringToEnum('ChipsetType', args['chipsetType'])
-        if m.snapshotFolder != args['snapshotFolder']: m.snapshotFolder = args['snapshotFolder']
-        m.RTCUseUTC = (True if args['RTCUseUTC'] else False)
-        m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args['CpuProperties']['PAE'] else False))
-        # IOAPIC
-        m.BIOSSettings.IOAPICEnabled = (True if args['BIOSSettings']['IOAPICEnabled'] else False)
-        m.CPUExecutionCap = int(args['CPUExecutionCap'])
-        m.description = args['description']
-        
-        m.autostopType = args['autostopType']
-        m.autostartEnabled = int(args['autostartEnabled'])
-        m.autostartDelay = int(args['autostartDelay'])
-
-        
-        # Determine if host is capable of hw accel
-        hwAccelAvail = bool(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
-
-        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled,(True if int(args['HWVirtExProperties']['Enabled']) and hwAccelAvail else False))
-        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging, (True if int(args['HWVirtExProperties']['Enabled']) and hwAccelAvail and int(args['HWVirtExProperties']['NestedPaging']) else False))
-        
-        """ @def VBOX_WITH_PAGE_SHARING
-         * Enables the page sharing code.
-        * @remarks This must match GMMR0Init currently we only support page fusion on
-         *          all 64-bit hosts except Mac OS X """
-        
-        if int(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_LongMode)) and self.vbox.host.operatingSystem.lower().find("darwin") == -1:
-            try:
-                m.pageFusionEnabled = (True if int(args['pageFusionEnabled']) else False)
-            except:
-                pass
-
-        m.HPETEnabled = int(args['HPETEnabled'])
-        m.setExtraData("VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled", args['disableHostTimeSync'])
-        m.keyboardHIDType = vboxStringToEnum("KeyboardHIDType",args['keyboardHIDType'])
-        m.pointingHIDType = vboxStringToEnum("PointingHIDType",args['pointingHIDType'])
-        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages, (True if int(args['HWVirtExProperties']['LargePages']) else False))
-        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_UnrestrictedExecution, (True if int(args['HWVirtExProperties']['UnrestrictedExecution']) else False))
-        m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
-
-        """ Custom Icon """
-        m.setExtraData(vboxConnector.iconKey, args['icon'])
-
-        m.VRAMSize = args['VRAMSize']
-        
-        m.setExtraData('GUI/SaveMountedAtRuntime', (args['GUI'].get('SaveMountedAtRuntime','yes')))
-
-        # VRDE settings
         try:
-            if m.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
-                m.VRDEServer.enabled = int(args['VRDEServer']['enabled'])
-                m.VRDEServer.setVRDEProperty('TCP/Ports',args['VRDEServer']['ports'])
-                m.VRDEServer.setVRDEProperty('TCP/Address',args['VRDEServer']['netAddress'])
-                m.VRDEServer.setVRDEProperty('VNCPassword',args['VRDEServer'].get('VNCPassword',None))
-                m.VRDEServer.authType = args['VRDEServer'].get('authType', None)
-                m.VRDEServer.authTimeout = int(args['VRDEServer']['authTimeout'])
-                m.VRDEServer.allowMultiConnection = int(args['VRDEServer']['allowMultiConnection'])
-
-        except Exception as e:
-            self.errors.append((e,traceback.format_exc()))
             
-        # Audio controller settings
-        m.audioAdapter.enabled = (1 if args['audioAdapter']['enabled'] else 0)
-        m.audioAdapter.audioController = args['audioAdapter']['audioController']
-        m.audioAdapter.audioDriver = args['audioAdapter']['audioDriver']
-
-        # Boot order
-        for i in range(0, self.vbox.systemProperties.maxBootPosition):
-            if args['bootOrder'][i]:
-                m.setBootOrder((i + 1),args['bootOrder'][i])
-            else:
-                m.setBootOrder((i + 1),None)
-
-        # Storage Controllers
-        attachedEx = attachedNew = {}
-        for sc in vboxGetArray(m,'storageControllers'): # @sc IStorageController """
-
-            cType = sc.controllerType
-
-            for ma in m.getMediumAttachmentsOfController(sc.name):
-
-                attachedEx[sc.name.ma.port.ma.device] = (ma.medium.id if ma.medium else None)
-
-                # Remove IgnoreFlush key?
-                if self.settings.enableHDFlushConfig and ma.type == vboxMgr.constants.DeviceType_HardDisk:
-                    xtra = self._util_getIgnoreFlushKey(ma.port, ma.device, cType)
-                    if xtra:
-                        m.setExtraData(xtra,'')    
-
-                if ma.controller:
-                    m.detachDevice(ma.controller,ma.port,ma.device)
-
-            scname = sc.name
-            m.removeStorageController(scname)
-
-        # Add New
-        for sc in args['storageControllers']:
-
-            sc['name'] = sc['name'].strip()
-            name = sc.get('name',sc['bus'])
-
-
-            c = m.addStorageController(name,sc['bus'])
-            c.controllerType = sc['controllerType']
-            c.useHostIOCache = (True if int(sc['useHostIOCache']) else False)
-            
-            # Set sata port count
-            if sc['bus'] == 'SATA':
-                max = max(1,int(sc.get('portCount',0)))
-                for ma in sc['mediumAttachments']:
-                    max = max(max,(int(ma['port'])+1))
-                
-                c.portCount = min(int(c.maxPortCount),max(len(sc['mediumAttachments']),max))
-
-
-            # Medium attachments
-            for ma in sc['mediumAttachments']:
-
-                if ma['medium'] == 'None': ma['medium'] = None
-
-                attachedNew[name.ma['port'].ma['device']] = ma['medium']['id']
-
-                if ma['medium']:
-
-                    # Host drive
-                    if ma['medium']['hostDrive'].lower() == 'true' or ma['medium']['hostDrive'] == True:
-                        # CD / DVD Drive
-                        if ma['type'] == 'DVD':
-                            drives = self.vbox.host.DVDDrives
-                        # floppy drives
-                        else:
-                            drives = self.vbox.host.floppyDrives
-                        
-                        for md in drives:
-                            if md.id == ma['medium']['id']:
-                                med = md
-                                break
-                    else:
-                        
-                        """ @med IMedium """
-                        med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
-                    
-                else:
-                    med = None
-                
-                m.attachDevice(name,ma['port'],ma['device'],vboxStringToEnum("DeviceType", ma['type']), med)
-
-                # CD / DVD medium attachment type
-                if ma['type'] == 'DVD':
-
-                    if ma['medium']['hostDrive'].lower() == 'true' or ma['medium']['hostDrive'] == True:
-                        m.passthroughDevice(name,ma['port'],ma['device'],(True if int(ma['passthrough']) else False))
-                    else:
-                        m.temporaryEjectDevice(name,ma['port'],ma['device'],(True if int(ma['temporaryEject']) else False))
-
-                # HardDisk medium attachment type
-                elif ma['type'] == 'HardDisk':
-
-                    m.nonRotationalDevice(name,ma['port'],ma['device'],(True if int(ma['nonRotational']) else False))
-
-                    # Remove IgnoreFlush key?
-                    xtra = self._util_getIgnoreFlushKey(ma['port'], ma['device'], sc['controllerType'])
-
-                    if xtra:
-                        if int(ma['ignoreFlush']) == 0:
-                            m.setExtraData(xtra, 0)
-                        else:
-                            m.setExtraData(xtra, '')
-
-
-        """
-         *
-         * Network Adapters
-         *
-         """
-
-        netprops = ['enabled','attachmentType','adapterType','MACAddress','bridgedInterface','hostOnlyInterface','internalNetwork','NATNetwork','cableConnected','promiscModePolicy','genericDriver']
-        
+            # Switch to machineSaveRunning()?
+            if vmRunning:
+                return self._machineSaveRunning(args, vmState)
     
-        for i in range(0, len(args['networkAdapters'])):
-
-            n = m.getNetworkAdapter(i)
-
-            # Skip disabled adapters
-            if int(n.enabled) + int(args['networkAdapters'][i]['enabled']) == 0: continue
-
-            for p in range(0, len(netprops)):
-                if not netprops[p] in ['enabled', 'cableConnected']:
-                    setattr(n,netprops[p],args['networkAdapters'][i][netprops[p]])
-
-            # Special case for boolean values
-            n.enabled = int(args['networkAdapters'][i]['enabled'])
-            n.cableConnected = int(args['networkAdapters'][i]['cableConnected'])
+            # Shorthand
+            """ @m IMachine """
+            m = session.machine
+    
+    
+            m.OSTypeId = args['OSTypeId']
+            m.CPUCount = int(args['CPUCount'])
+            m.memorySize = int(args['memorySize'])
             
-            # Network properties
-            """
-            eprops = n.getProperties()
-            eprops = array_combine(eprops[1],eprops[0])
-            iprops = array_map(create_function('a','b=explode("=",a) return array(b[0]:b[1])'),preg_split('/[\r|\n]+/',args['networkAdapters'][i]['properties']))
-            inprops = array()
-            foreach(iprops as a) {
-                foreach(a as k:v)
-                    inprops[k] = v
-            }
-            # Remove any props that are in the existing properties array
-            # but not in the incoming properties array
-            foreach(array_diff(array_keys(eprops),array_keys(inprops)) as dk)
-                n.setProperty(dk, '')
+            m.firmwareType = vboxStringToEnum('FirmwareType', args['firmwareType'])
+            m.chipsetType = vboxStringToEnum('ChipsetType', args['chipsetType'])
             
-            # Set remaining properties
-            foreach(inprops as k : v)
-                n.setProperty(k, v)
+            if m.snapshotFolder != args['snapshotFolder']: m.snapshotFolder = args['snapshotFolder']
+            m.RTCUseUTC = (True if args.get('RTCUseUTC', None) else False)
+            m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args.get('CpuProperties.PAE',None) else False))
+            # IOAPIC
+            m.BIOSSettings.IOAPICEnabled = (True if args.get('BIOSSettings.IOAPICEnabled',None) else False)
+            m.CPUExecutionCap = int(args['CPUExecutionCap'])
+            m.description = args['description']
             
-            """
-            # Nat redirects and advanced settings
-            if args['networkAdapters'][i]['attachmentType'] == 'NAT':
-
-                # Remove existing redirects
-                for r in n.NATEngine.getRedirects():
-                    n.NATEngine.removeRedirect(r.split(',')[0])
-
-                # Add redirects
-                for r in args['networkAdapters'][i]['redirects']:
-                    r = r.split(',')
-                    n.NATEngine.addRedirect(r[0],r[1],r[2],r[3],r[4],r[5])
-                
-
-                # Advanced NAT settings
-                aliasMode = n.NATEngine.aliasMode & 1
-                if int(args['networkAdapters'][i]['NATEngine']['aliasMode'] & 2): aliasMode = aliasMode | 2
-                if int(args['networkAdapters'][i]['NATEngine']['aliasMode'] & 4): aliasMode = aliasMode | 4
-                n.NATEngine.aliasMode = aliasMode
-                n.NATEngine.DNSProxy = int(args['networkAdapters'][i]['NATEngine']['DNSProxy'])
-                n.NATEngine.DNSPassDomain = int(args['networkAdapters'][i]['NATEngine']['DNSPassDomain'])
-                n.NATEngine.DNSUseHostResolver = int(args['networkAdapters'][i]['NATEngine']['DNSUseHostResolver'])
-                n.NATEngine.hostIP = args['networkAdapters'][i]['NATEngine']['hostIP']
-
-
-        # Serial Ports
-        for i in range(0, len(args['serialPorts'])):
-
-            """ @p ISerialPort """
-            p = m.getSerialPort(i)
-
-            if not (p.enabled or int(args['serialPorts'][i]['enabled'])): continue
+            # Determine if host is capable of hw accel
+            hwAccelAvail = bool(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled,(True if args.get('HWVirtExProperties.Enabled',None) and hwAccelAvail else False))
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging, (True if args.get('HWVirtExProperties.Enabled',None) and hwAccelAvail and args.get('HWVirtExProperties.NestedPaging',None) else False))
             
-            try:
-                p.enabled = int(args['serialPorts'][i]['enabled'])
-                p.IOBase = int(args['serialPorts'][i]['IOBase'], 0)
-                p.IRQ = int(args['serialPorts'][i]['IRQ'])
-                if args['serialPorts'][i].get('path',None):
-                    p.path = args['serialPorts'][i]['path']
-                    p.hostMode = args['serialPorts'][i]['hostMode']
-                else:
-                    p.hostMode = args['serialPorts'][i]['hostMode']
-                    p.path = args['serialPorts'][i]['path']
-
-                p.server = int(args['serialPorts'][i]['server'])
-                
-            except Exception as e:
-                self.errors.append((e,traceback.format_exc()))
-
-        # LPT Ports
-        lptChanged = False
-
-        for i in range(0, len(args['parallelPorts'])):
-
-            """ @p IParallelPort """
-            p = m.getParallelPort(i)
-
-            if not (p.enabled or int(args['parallelPorts'][i]['enabled'])): continue
-            lptChanged = True
-            try:
-                p.IOBase = int(args['parallelPorts'][i]['IOBase'], 0)
-                p.IRQ = int(args['parallelPorts'][i]['IRQ'])
-                p.path = args['parallelPorts'][i]['path']
-                p.enabled = int(args['parallelPorts'][i]['enabled'])
-                
-            except Exception as e:
-                self.errors.append((e,traceback.format_exc()))
-
-
-        sharedEx = {}
-        sharedNew = {}
-        for s in self._machineGetSharedFolders(m):
-            sharedEx[s['name']] = {'name':s['name'],'hostPath':s['hostPath'],'autoMount':s['autoMount'],'writable':s['writable']}
-        
-        for s in args['sharedFolders']:
-            sharedNew[s['name']] = {'name':s['name'],'hostPath':s['hostPath'],'autoMount':s['autoMount'],'writable':s['writable']}
-
-        # Compare
-        if len(sharedEx) != len(sharedNew) or (serialize(sharedEx) != serialize(sharedNew)):
-            for s in sharedEx:
-                m.removeSharedFolder(s['name'])
-            for s in sharedNew:
+            """ @def VBOX_WITH_PAGE_SHARING
+             * Enables the page sharing code.
+            * @remarks This must match GMMR0Init currently we only support page fusion on
+             *          all 64-bit hosts except Mac OS X """
+            
+            if int(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_LongMode)) and self.vbox.host.operatingSystem.lower().find("darwin") == -1:
                 try:
-                    m.createSharedFolder(s['name'],s['hostPath'],s['writable'],s['autoMount'])
+                    m.pageFusionEnabled = (True if args.get('pageFusionEnabled',None) else False)
+                except:
+                    pass
+    
+            #m.HPETEnabled = int(args['HPETEnabled'])
+            """
+            m.setExtraData("VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled", args['disableHostTimeSync'])
+            m.keyboardHIDType = vboxStringToEnum("KeyboardHIDType",args['keyboardHIDType'])
+            m.pointingHIDType = vboxStringToEnum("PointingHIDType",args['pointingHIDType'])
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages, (True if int(args['HWVirtExProperties']['LargePages']) else False))
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_UnrestrictedExecution, (True if int(args['HWVirtExProperties']['UnrestrictedExecution']) else False))
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
+            """
+    
+            """ Custom Icon """
+            m.setExtraData(vboxConnector.iconKey, args['icon'])
+    
+            m.VRAMSize = int(args['VRAMSize'])
+            
+            m.setExtraData('GUI/SaveMountedAtRuntime', ('yes' if args.get('GUI.SaveMountedAtRuntime',None) else 'no'))
+    
+            # VRDE settings
+            try:
+                if m.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
+                    m.VRDEServer.enabled = True if args.get('VRDEServer.enabled', None) else False
+                    if args.get('VRDEServer.enabled', None):
+                        m.VRDEServer.setVRDEProperty('TCP/Ports',args.get('VRDEServer.ports'))
+                        m.VRDEServer.setVRDEProperty('TCP/Address',args.get('VRDEServer.netAddress'))
+                        m.VRDEServer.authType = vboxStringToEnum("AuthType",args.get('VRDEServer.authType', None))
+                        m.VRDEServer.authTimeout = int(args.get('VRDEServer.authTimeout',0))
+                        m.VRDEServer.allowMultiConnection = True if args.get('VRDEServer.allowMultiConnection', None) else False
+    
+            except Exception as e:
+                self.errors.append((e,traceback.format_exc()))
+                
+            # Audio controller settings
+            m.audioAdapter.enabled = (True if args.get('audioAdapter.enabled', None) else False)
+            if args.get('audioAdapter.enabled', None):
+                m.audioAdapter.audioController = args.get('audioAdapter.audioController', None)
+                m.audioAdapter.audioDriver = args.get('audioAdapter.audioDriver', None)
+    
+            # Boot order
+            bootOrder = args.get('bootOrder','').split(',')
+            for i in range(0, self.vbox.systemProperties.maxBootPosition):
+                try:
+                    device = vboxStringToEnum("DeviceType", bootOrder[i])
+                except:
+                    device = vboxMgr.constants.DeviceType_Null
+                m.setBootOrder((i + 1), device)
+    
+            # Storage Controllers
+            for sc in vboxGetArray(m,'storageControllers'): # @sc IStorageController """
+    
+                for ma in m.getMediumAttachmentsOfController(sc.name):
+    
+                    if ma.controller:
+                        m.detachDevice(ma.controller,ma.port,ma.device)
+    
+                m.removeStorageController(sc.name)
+    
+            # Add New
+            for sc in args['storageControllers']:
+    
+                sc['name'] = sc['name'].strip()
+                name = sc.get('name',sc['bus'])
+    
+    
+                c = m.addStorageController(name, vboxStringToEnum("StorageBus", sc['bus']))
+                c.controllerType = vboxStringToEnum("StorageControllerType", sc['controllerType'])
+                c.useHostIOCache = sc['useHostIOCache']
+                
+                # Set sata port count
+                if sc['bus'] == 'SATA':
+                    max = max(1,int(sc.get('portCount',0)))
+                    for ma in sc['mediumAttachments']:
+                        max = max(max,(int(ma['port'])+1))
+                    
+                    c.portCount = min(int(c.maxPortCount),max(len(sc['mediumAttachments']),max))
+    
+    
+                # Medium attachments
+                for ma in sc['mediumAttachments']:
+    
+                    if ma['medium']:
+    
+                        # Host drive
+                        if ma['medium']['hostDrive']:
+                            
+                            # CD / DVD Drive
+                            if ma['type'] == 'DVD':
+                                med = self.vbox.host.findHostDVDDrive(ma['medium']['name'])
+                            # floppy drives
+                            else:
+                                med = self.vbox.host.findHostFloppyDrive(ma['medium']['name'])
+                            
+                        else:
+                            
+                            """ @med IMedium """
+                            med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
+                        
+                    else:
+                        med = None
+                    
+                    m.attachDevice(name,ma['port'],ma['device'],vboxStringToEnum("DeviceType", ma['type']), med)
+    
+                    # CD / DVD medium attachment type
+                    if ma['type'] == 'DVD':
+    
+                        if ma['medium']['hostDrive']:
+                            m.passthroughDevice(name,ma['port'],ma['device'],(True if ma['passthrough'] else False))
+                        else:
+                            m.temporaryEjectDevice(name,ma['port'],ma['device'],(True if ma['temporaryEject'] else False))
+    
+                    # HardDisk medium attachment type
+                    elif ma['type'] == 'HardDisk':
+    
+                        m.nonRotationalDevice(name,ma['port'],ma['device'],(True if ma['nonRotational'] else False))
+    
+    
+            """
+             *
+             * Network Adapters
+             *
+             """
+    
+            netprops = ['enabled','MACAddress','bridgedInterface','hostOnlyInterface',
+                        'internalNetwork','NATNetwork','cableConnected','genericDriver']
+            
+        
+            for i in range(0, len(args['networkAdapters'])):
+    
+                n = m.getNetworkAdapter(i)
+    
+                # Skip disabled adapters
+                if not n.enabled and not args['networkAdapters'][i]['enabled']:
+                    continue
+                
+                for k in netprops:
+                    setattr(n, k, args['networkAdapters'][i].get(k))
+                    
+                n.attachmentType = vboxStringToEnum('NetworkAttachmentType', args['networkAdapters'][i]['attachmentType'])
+                n.adapterType = vboxStringToEnum('NetworkAdapterType', args['networkAdapters'][i]['adapterType'])
+                n.promiscModePolicy = vboxStringToEnum('NetworkAdapterPromiscModePolicy', args['networkAdapters'][i]['promiscModePolicy'])
+    
+                
+                # Network properties
+                props = n.getProperties('')
+                
+                # Set / remove
+                for idx, k in enumerate(props[0]):
+                    if props[1][idx] != args['networkAdapters'][i]['properties'].get(k,''):
+                        n.setProperty(k, args['networkAdapters'][i]['properties'].get(k,''))
+                
+                for k in args['networkAdapters'][i]['properties']:
+                    if not k in props[0]:
+                        n.setProperty(k, args['networkAdapters'][i]['properties'].get(k,''))
+                        
+                # Nat redirects and advanced settings
+                if args['networkAdapters'][i]['attachmentType'] == 'NAT':
+    
+                    # Remove existing redirects
+                    for r in n.NATEngine.getRedirects():
+                        n.NATEngine.removeRedirect(r.split(',')[0])
+                    
+                    # Add redirects
+                    for r in args['networkAdapters'][i]['NATEngine']['redirects']:
+                        r = r.split(',')
+                        n.NATEngine.addRedirect(r[0],r[1],r[2],r[3],r[4],r[5])
+                    
+    
+                    # Advanced NAT settings
+                    if vmState != 'Saved':
+                        aliasMode = n.NATEngine.aliasMode & 1
+                        if int(args['networkAdapters'][i]['NATEngine']['aliasMode'] & 2): aliasMode = aliasMode | 2
+                        if int(args['networkAdapters'][i]['NATEngine']['aliasMode'] & 4): aliasMode = aliasMode | 4
+                        n.NATEngine.aliasMode = aliasMode
+                        n.NATEngine.DNSProxy = True if args['networkAdapters'][i]['NATEngine'].get('DNSProxy', None) else False
+                        n.NATEngine.DNSPassDomain = True if args['networkAdapters'][i]['NATEngine'].get('DNSPassDomain', None) else False
+                        n.NATEngine.DNSUseHostResolver = True if args['networkAdapters'][i]['NATEngine'].get('DNSUseHostResolver',None) else False
+                        n.NATEngine.hostIP = args['networkAdapters'][i]['NATEngine']['hostIP']
+                    
+    
+            # Serial Ports
+            sprops = ['IRQ','path','server']
+            
+            for i in range(0, len(args['serialPorts'])):
+    
+                """ @p ISerialPort """
+                p = m.getSerialPort(i)
+    
+                if not p.enabled and not args['serialPorts'][i]['enabled']:
+                    continue
+                
+                try:
+                    p.enabled = args['serialPorts'][i]['enabled']
+                    
+                    if not args['serialPorts'][i]['enabled']:
+                        continue
+                    
+                    for k in sprops:
+                        setattr(p, k, args['serialPorts'][i][k])
+                        
+                    p.hostMode = vboxStringToEnum("PortMode", args['serialPorts'][i]['hostMode'])
+                    p.IOBase = long(args['serialPorts'][i]['IOBase'], base=16)
+                                    
                 except Exception as e:
                     self.errors.append((e,traceback.format_exc()))
-                        
-
-        # USB Filters
-        usbEx = {}
-        usbNew = {}
-
-        usbc = self._machineGetUSBControllers(session.machine)
-
-        # controller properties
-        if usbc['enabled'] != args['USBController']['enabled'] or usbc['enabledEHCI'] != args['USBController']['enabledEHCI']:
-            m.USBController.enabled = args['USBController']['enabled']
-            m.USBController.enabledEHCI = args['USBController']['enabledEHCI']
-
-        # filters
-        if args['USBController'].get('deviceFilters', None) is None: args['USBController']['deviceFilters'] = []
-        if len(usbc['deviceFilters']) != len(args['USBController']['deviceFilters']) or serialize(usbc['deviceFilters']) != serialize(args['USBController']['deviceFilters']):
-
-            # usb filter properties to change
-            usbProps = ['vendorId','productId','revision','manufacturer','product','serialNumber','port','remote']
-
-            # Remove and Add filters
-            try:
-
-
-                max = max(len(usbc['deviceFilters']),len(args['USBController']['deviceFilters']))
-                offset = 0
-
-                # Remove existing
-                for i in range(0, max):
-
-                    # Only if filter differs
-                    if serialize(usbc['deviceFilters'][i]) != serialize(args['USBController']['deviceFilters'][i]):
-
-                        # Remove existing?
-                        if i < len(usbc['deviceFilters']):
-                            m.USBController.removeDeviceFilter((i-offset))
-                            offset = offset + 1
-
-                        # Exists in new?
-                        if len(args['USBController']['deviceFilters'][i]):
-
-                            # Create filter
-                            f = m.USBController.createDeviceFilter(args['USBController']['deviceFilters'][i]['name'])
-                            f.active = args['USBController']['deviceFilters'][i]['active']
-
-                            for p in usbProps:
-                                setattr(f,p,args['USBController']['deviceFilters'][i][p])
-
-                            m.USBController.insertDeviceFilter(i,f)
-                            offset = offset - 1
-
-            except Exception as e:
-                self.errors.append((e,traceback.format_exc()))
-
-
-        # Rename goes last
-        if m.name != args['name']:
-            m.name = args['name']
+    
+            """
+            for i in range(0, len(args['parallelPorts'])):
+    
+                p = m.getParallelPort(i)
+    
+                if not (p.enabled or int(args['parallelPorts'][i]['enabled'])): continue
+                lptChanged = True
+                try:
+                    p.IOBase = int(args['parallelPorts'][i]['IOBase'], 0)
+                    p.IRQ = int(args['parallelPorts'][i]['IRQ'])
+                    p.path = args['parallelPorts'][i]['path']
+                    p.enabled = int(args['parallelPorts'][i]['enabled'])
+                    
+                except Exception as e:
+                    self.errors.append((e,traceback.format_exc()))
+    
+            """
+    
+            """
+            Shared folders - remove existing, add incoming
+            """
+            for sf in vboxGetArray(m,'sharedFolders'):
+                m.removeSharedFolder(sf.name)
+                
+            for sf in args['sharedFolders']:
+                try:
+                    m.createSharedFolder(sf['name'],sf['hostPath'],sf['writable'],sf['autoMount'])
+                except Exception as e:
+                    self.errors.append((e,traceback.format_exc()))
+                            
+    
+            """
+            USB Controllers
+            """
+            usbOHCI = usbEHCI = False
+            for c in vboxGetArray(m, 'USBControllers'):
+                if c.type == vboxMgr.constants.USBControllerType_OHCI: usbOHCI = True
+                else: usbEHCI = True
             
-        session.machine.saveSettings()
-
-        
-        session.unlockMachine()
-        session = None
+            removeOHCI = removeEHCI = True
+            for c in args['USBControllers']:
+                if (c['type'] == 'OHCI' and not usbOHCI) or (c['type'] == 'EHCI' and not usbEHCI):
+                    m.addUSBController(c['name'], vboxStringToEnum('USBControllerType', c['type']))
+                if c['type'] == 'OHCI': removeOHCI = False
+                else: removeEHCI = False
+            
+            if removeOHCI or removeEHCI:
+                for c in vboxGetArray(m, 'USBControllers'):
+                    if (removeOHCI and c.type == vboxMgr.constants.USBControllerType_OHCI) or (removeEHCI and c.type == vboxMgr.constants.USBControllerType_EHCI):
+                        m.removeUSBController(c)
+    
+            """
+            USB Filters
+            """            
+    
+            # remove existing filters
+            filters = range(0, len(vboxGetArray(m.USBDeviceFilters, 'deviceFilters')))
+            filters.reverse()
+            for idx in filters:
+                m.USBDeviceFilters.removeDeviceFilter(idx)
+                
+            fprops = ['active','vendorId','productId','revision','manufacturer','product','serialNumber',
+                    'port','remote']
+    
+            for idx, f in enumerate(args['USBDeviceFilters']):
+                filter = m.USBDeviceFilters.createDeviceFilter(f['name'])
+                for k in fprops:
+                    setattr(filter, k, f[k])
+                m.USBDeviceFilters.insertDeviceFilter(idx, filter)
+                
+            session.machine.saveSettings()
+            
+        finally:
+            session.unlockMachine()
 
         return True
 
@@ -2644,10 +2589,10 @@ class vboxConnector(object):
             args['vm'] = machine.id
 
         # Basic data
-        data = self._machineGetDetails(machine)
+        data = self.machineGetDetails(machine)
                 
         # Network Adapters
-        data['networkAdapters'] = self._machineGetNetworkAdapters(machine)
+        data['networkAdapters'] = self.machineGetNetworkAdapters(machine)
 
         # Storage Controllers
         data['storageControllers'] = self.machineGetStorageControllers(machine)
@@ -2662,8 +2607,8 @@ class vboxConnector(object):
         data['sharedFolders'] = self._machineGetSharedFolders(machine)
 
         # USB Controllers and Filters
-        data['USBControllers'] = self._machineGetUSBControllers(machine)
-        data['USBDeviceFilters'] = self._machineGetUSBDeviceFilters(machine)
+        data['USBControllers'] = self.machineGetUSBControllers(machine)
+        data['USBDeviceFilters'] = self.machineGetUSBDeviceFilters(machine)
 
         # Items when not obtaining snapshot machine info
         if not snapshot:
@@ -2734,7 +2679,7 @@ class vboxConnector(object):
                 data['storageControllers'] = self.machineGetStorageControllers(smachine)
                 
                 # Get network adapters
-                data['networkAdapters'] = self._machineGetNetworkAdapters(smachine)
+                data['networkAdapters'] = self.machineGetNetworkAdapters(smachine)
 
             finally:
                 # Close session and unlock machine
@@ -2948,7 +2893,7 @@ class vboxConnector(object):
      * @return array of network adapter information
      """
     @staticmethod
-    def _machineGetNetworkAdapters(m, slot=None):
+    def machineGetNetworkAdapters(m, slot=None):
 
         adapters = []
         
@@ -2989,8 +2934,7 @@ class vboxConnector(object):
                    'DNSUseHostResolver' : nd.DNSUseHostResolver,
                    'hostIP' : nd.hostIP,
                    'redirects' : vboxGetArray(nd,'redirects')
-                },
-                'lineSpeed' : n.lineSpeed,
+                }
             })
             
         return adapters
@@ -3067,7 +3011,7 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array USB controller info
      """
-    def _machineGetUSBControllers(self, m):
+    def machineGetUSBControllers(self, m):
 
         controllers = []
         
@@ -3086,7 +3030,7 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array USB controller info
      """
-    def _machineGetUSBDeviceFilters(self, m):
+    def machineGetUSBDeviceFilters(self, m):
 
         """ @u IUSBController """
 
@@ -3114,7 +3058,7 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array vm or snapshot data
      """
-    def _machineGetDetails(self, m):
+    def machineGetDetails(self, m):
 
         return {
             'name' : m.name,
@@ -4002,8 +3946,6 @@ class vboxConnector(object):
         
         pathList = []
         
-        pprint.pprint(args)
-        
         if args.get('path','root') == 'root':
             
             """ Drive list """
@@ -4055,8 +3997,7 @@ class vboxConnector(object):
                 'iconCls' : 'filetype-%s' %(ext,),
                 'fullPath': fullPath
             })
-         
-        pprint.pprint(pathList)
+
         return pathList
     
     """

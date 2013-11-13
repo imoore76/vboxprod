@@ -66,13 +66,42 @@ Ext.define('vcube.form.field.storage', {
     },
     
     getValue: function() {
-    	return '';
-    	var filters = [];
-    	this.childComponent.getStore().each(function(record) {
-    		filters.push(record.getData());
+
+    	/* Only these properties are submitted */
+    	var controllerProperties = ['name','controllerType','bus','portCount','useHostIOCache'];
+    	var attachmentProperties = ['device','port','medium','nonRotational','temporaryEject','type','passthrough'];
+    	var mediumProperties = ['id','hostDrive','name','location']
+    	var controllers = [];
+    	
+    	this.tree.getRootNode().eachChild(function(c) {
+    		
+    		var attachments = [];
+    		
+    		c.eachChild(function(ma) {
+    			var adata = ma.getData();
+    			var attachment = {};
+    			Ext.each(attachmentProperties, function(k){
+    				attachment[k] = adata[k];
+    				if(k == 'medium' && adata[k]) {
+    					attachment[k] = {}
+    					Ext.each(mediumProperties, function(mk) {
+    						attachment[k][mk] = adata[k][mk];    						
+    					})
+    				}
+    			})
+    			attachments.push(attachment);
+    		});
+    		
+    		var cdata = c.getData();
+    		var controller = {mediumAttachments: attachments};
+    		Ext.each(controllerProperties, function(k) {
+    			controller[k] = cdata[k];
+    		});
+    		
+    		controllers.push(controller);
     	});
 
-    	return filters;
+    	return controllers;
     },
     
     addController: function(c) {
@@ -700,13 +729,15 @@ Ext.define('vcube.form.field.storage', {
     			         {name:'expanded', type: 'boolean'},
     			         'text','icon','iconCls',
     			         {name: 'temporaryEject', type: 'boolean'},
+    			         {name: 'passthrough', type: 'boolean'},
     			         {name: 'nonRotational', type: 'boolean'},
     			         'medium',
     			         {name:'port', type: 'int'},
     			         {name: 'portCount', type: 'int'},
     			         {name:'device', type: 'int'},
-    			         'device',
+    			         'type',
     			         'medium',
+    			         'bus',
     			         {name:'useHostIOCache', type: 'boolean'},
     			         'name',
     			         'controllerType'],
@@ -956,9 +987,7 @@ Ext.define('vcube.form.field.storage', {
     	/*
     	 * Floppy disk Info panel
     	 */
-    	var fdInfoPanel = Ext.create('vcube.form.Panel',{
-    		hidden: true,
-    		border: false,
+    	var fdInfoPanel = Ext.create('vcube.form.field.storage.AttachmentInfoPanel',{
     		defaults: {
     			xtype: 'fieldset',
     			layout: 'form',
@@ -980,23 +1009,18 @@ Ext.define('vcube.form.field.storage', {
     					{
     						xtype: 'MediaSelectButton',
     						itemId: 'mediaselect',
-    						mediaType: 'fd',
-    						listeners: {
-    							mediumselect: function(medium) {
-    								this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
-    								fdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);    								
-    							},
-    							scope: this
-    						}
+    						mediaType: 'fd'
     					}
     				]
     			}]
     		},{
     			title: 'Information',
+    			itemId: 'mediumInfo',
     			items: [{
 		        	fieldLabel: 'Type',
 		        	name: 'medium.hostDrive',
 		        	renderer: ifVal(function(v){
+		        		if(v == '--') return v;
 		        		return (v == "false" ? 'Image' : 'Host Drive');
 		        	})
 		        },{
@@ -1022,14 +1046,8 @@ Ext.define('vcube.form.field.storage', {
     	/*
     	 * CD / DVD Info panel
     	 */
-    	var cdInfoPanel = Ext.create('vcube.form.Panel',{
-    		hidden: true,
-    		border: false,
-    		defaults: {
-    			xtype: 'fieldset',
-    			layout: 'form',
-    			value: '',
-    		},
+    	var cdInfoPanel = Ext.create('vcube.form.field.storage.AttachmentInfoPanel',{
+    		
     		items: [{
     			title: 'Attributes',
     			defaults: {
@@ -1045,14 +1063,7 @@ Ext.define('vcube.form.field.storage', {
     					{
     						xtype: 'MediaSelectButton',
     						itemId: 'mediaselect',
-    						mediaType: 'cd',
-    						listeners: {
-    							mediumselect: function(medium) {
-    								this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
-    								cdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);    								
-    							},
-    							scope: this
-    						}
+    						mediaType: 'cd'
     					}
     				]
     			},{
@@ -1061,10 +1072,26 @@ Ext.define('vcube.form.field.storage', {
     				xtype: 'checkbox',
     				boxLabel: 'Live CD/DVD',
     				name: 'temporaryEject',
-    				listeners: cbListener
+    				itemId: 'temporaryEject',
+    				listeners: cbListener,
+    				showTest: function(a) {
+    					return (!a.medium || !a.medium.hostDrive);
+    				}
+    			},{
+    				fieldLabel: ' ',
+    				labelSeparator: '',
+    				xtype: 'checkbox',
+    				boxLabel: 'Passthrough',
+    				name: 'passthrough',
+    				itemId: 'passthrough',
+    				listeners: cbListener,
+    				showTest: function(a) {
+    					return (a.medium && a.medium.hostDrive);
+    				}
     			}]
     		},{
     			title: 'Information',
+    			itemId: 'mediumInfo',
     			defaults: {
     				labelAlign: 'right',
     				xtype: 'displayfield',
@@ -1075,6 +1102,7 @@ Ext.define('vcube.form.field.storage', {
     				fieldLabel: 'Type',
     				name: 'medium.hostDrive',
 		        	renderer: ifVal(function(v){
+		        		if(v == '--') return v;
 		        		return (v == "false" ? 'Image' : 'Host Drive');
 		        	})
 
@@ -1101,14 +1129,7 @@ Ext.define('vcube.form.field.storage', {
     	/*
     	 * Hard disk info panel
     	 */
-    	var hdInfoPanel = Ext.create('vcube.form.Panel',{
-    		hidden: true,
-    		border: false,
-    		defaults: {
-    			xtype: 'fieldset',
-    			layout: 'form',
-    			value: ''
-    		},
+    	var hdInfoPanel = Ext.create('vcube.form.field.storage.AttachmentInfoPanel',{
     		items: [{
     			title: 'Attributes',
     			defaults: {
@@ -1124,14 +1145,7 @@ Ext.define('vcube.form.field.storage', {
     					{
     						xtype: 'MediaSelectButton',
     						itemId: 'mediaselect',
-    						mediaType: 'hd',
-    						listeners: {
-    							mediumselect: function(medium) {
-    								this.tree.getSelectionModel().getSelection()[0].set('medium',medium);
-    								hdInfoPanel.getForm().setValues(this.tree.getSelectionModel().getSelection()[0].getData(), true);    								
-    							},
-    							scope: this
-    						}
+    						mediaType: 'hd'
     					}
     				]
     			},{
@@ -1144,6 +1158,7 @@ Ext.define('vcube.form.field.storage', {
 		        }]
     		},{
     			title: 'Information',
+    			itemId: 'mediumInfo',
     			defaults: {
     				labelAlign: 'right',
     				xtype: 'displayfield',
@@ -1239,6 +1254,10 @@ Ext.define('vcube.form.field.storage', {
     				controllerInfoPanel.down('[name=portCount]').hide();
     			}
     			
+    	   		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData()), true);
+        		targetPanel.show();
+     
+    			
     		// Medium attachment
     		} else {
     			
@@ -1252,8 +1271,6 @@ Ext.define('vcube.form.field.storage', {
 	    			default:
 	    				targetPanel = hdInfoPanel;
     			}
-    			// Update medium select
-    			targetPanel.down('#mediaselect').updateMenu(selection[0].get('medium'));
     			
     			// Get used slots
     			var usedSlots = {};
@@ -1271,16 +1288,12 @@ Ext.define('vcube.form.field.storage', {
     			});
     			
     			targetPanel.down('[name=slot]').getStore().loadData(slots);
-
-    			// Set correct value
-    			targetPanel.down('[name=slot]').setValue(selection[0].get('port') + '-' + selection[0].get('device'));
     			
+    			targetPanel.updatePanel.call(targetPanel, selection[0].getData());
     			
-    			
+    			targetPanel.show();
     		}
  
-    		targetPanel.getForm().setValues(Ext.Object.merge({},selection[0].raw, selection[0].getData()), true);
-    		targetPanel.show();
     		
     	}, this);
     	
@@ -1380,6 +1393,56 @@ Ext.define('vcube.form.field.storage', {
 
 });
 
+Ext.define('vcube.form.field.storage.AttachmentInfoPanel', {
+	
+	extend: 'vcube.form.Panel',
+	alias: 'widget.AttachmentInfoPanel',
+	
+	hidden: true,
+	border: false,
+	updatePanel: function(attachment) {
+		
+		this.getForm().setValues(attachment);
+		
+		// Update media select button
+		this.down('.MediaSelectButton').updateMenu(attachment.medium);
+		
+		// Set correct slot value
+		this.down('[name=slot]').setValue(attachment.port + '-' + attachment.device);
+		
+		// show / hide fields
+		Ext.each(this.queryBy(function(f) {
+			return (f.showTest ? true : false);
+		}), function(f) {
+			f.setVisible(f.showTest(attachment));
+		});
+		
+		// Blank out all medium info fields if no medium is set
+		if(!attachment.medium) {
+			Ext.each(Ext.ComponentQuery.query('.field',this.down('#mediumInfo')), function(f) {
+				f.setValue('--');
+			});
+		}
+
+	},
+	defaults: {
+		xtype: 'fieldset',
+		layout: 'form',
+		value: ''
+	},
+	initComponent: function(options) {
+		
+		Ext.apply(this, options);
+		
+		this.callParent(options);
+		
+		this.down('.MediaSelectButton').on('mediumselect',function(medium) {
+			var record = this.up('.storagefield').tree.getSelectionModel().getSelection()[0];
+			record.set('medium',medium);
+			this.updatePanel(record.getData());
+		},this);
+	}
+});
 
 Ext.define('vcube.form.field.storage.MediaSelectButton',{
 	

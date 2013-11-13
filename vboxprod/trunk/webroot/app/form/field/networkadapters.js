@@ -472,6 +472,12 @@ Ext.define('vcube.form.field.networkadapters', {
     						
     						dlg.down('.form').getForm().setValues(natEngine);
     						
+    						console.log(natEngine.aliasMode);
+    						
+    						// Set alias mode check boxes
+    						dlg.down('[name=aliasModeProxy]').setValue((natEngine.aliasMode & 2) ? true : false);
+    						dlg.down('[name=aliasModeSame]').setValue((natEngine.aliasMode & 4) ? true : false);
+    						
     						var redirects = [];
     						for(var i = 0; i < natEngine.redirects.length; i++) {
     							var redir = natEngine.redirects[i].split(',');
@@ -504,7 +510,17 @@ Ext.define('vcube.form.field.networkadapters', {
     							
     							if(!valid) return;
     							
-    							this.natEngines[num] = dlg.down('.form').getForm().getValues();
+    							var engine = dlg.down('.form').getForm().getValues();
+    							
+    							engine.aliasMode = 0;
+    							
+    							if(engine['aliasModeProxy']) engine.aliasMode = engine.aliasMode | 2;
+    							if(engine['aliasModeSame']) engine.aliasMode = engine.aliasMode | 4;
+
+    							delete engine['aliasModeSame'];
+    							delete engine['aliasModeProxy'];
+    							
+    							this.natEngines[num] = engine;
     							this.natEngines[num]['redirects'] = redirects;
     							
     							dlg.close();

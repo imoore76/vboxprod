@@ -12,7 +12,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	           'vcube.form.field.usbfilters', 'vcube.form.field.networkadapters',
 	           'vcube.form.field.serialports', 'vcube.form.field.parallelports',
 	           'vcube.form.field.sharedfolders', 'vcube.form.field.storage',
-	           'vcube.widget.fsbrowser'],
+	           'vcube.widget.fsbrowser', 'vcube.form.field.folderbrowser',
+	           'vcube.form.field.serverstorecombo'],
 	           
 	
 	sections: [{
@@ -41,39 +42,11 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				labelAlign: 'right'
 			},
 			items: [{
-				xtype: 'fieldcontainer',
-				layout: 'hbox',
-				items: [{
-					labelWidth: 150,
-					labelAlign: 'right',
-					xtype: 'textfield',
-					fieldLabel: 'Snapshot Folder',
-					name: 'snapshotFolder',
-					flex: 1
-				},{
-					xtype: 'button',
-					icon: 'images/vbox/select_file_16px.png',
-					height: 22,
-					width: 22,
-					margin: '1 0 0 2',
-					padding: 2,
-					handler: function(btn) {
-						
-						var txt = btn.up('.fieldcontainer').down('[name=snapshotFolder]');
-						
-						var browser = Ext.create('vcube.widget.fsbrowser',{
-			    			browserType: 'folder',
-			    			serverId: btn.up('.window').serverId,
-			    			title: 'Select folder...',
-			    			initialPath: txt.getValue()
-			    		});
-			    		
-			    		Ext.ux.Deferred.when(browser.browse()).done(function(f) {
-			    			txt.setValue(f);
-			    		});
-
-					}
-				}]
+				xtype: 'folderbrowser',
+				labelWidth: 150,
+				labelAlign: 'right',
+				fieldLabel: 'Snapshot Folder',
+				name: 'snapshotFolder'
 			},{
 				xtype: 'checkbox',
 				fieldLabel: 'Removable Media',
@@ -85,10 +58,10 @@ Ext.define('vcube.view.VMSettingsDialog',{
 		},{
 			title: 'Description',
 			layout: 'fit',
-			name: 'description',
 			items: [{
 				xtype: 'textarea',
-				width: '100%'
+				width: '100%',
+				name: 'description'
 			}]
 		}]
 	},{
@@ -115,16 +88,9 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				name: 'bootOrder'
 			},{
 				fieldLabel: 'Chipset',
-				xtype: 'combo',
+				xtype: 'serverstorecombo',
 				editable: false,
 				name: 'chipsetType',
-				displayField: 'display',
-				valueField: 'value',
-				listeners: {
-					render: function(cbo) {
-						cbo.store.setServer(cbo.up('.window').serverId);
-					}
-				},
 				store: Ext.create('vcube.data.VboxEnumStore',{
 					enumClass: 'ChipsetType',
 					ignoreNull: true
@@ -240,17 +206,10 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: 'Server Port',
 				name: 'VRDEServer.ports'
 			},{
-				xtype: 'combo',
+				xtype: 'serverstorecombo',
 				editable: false,
 				fieldLabel: 'Authentication Method',
 				name: 'VRDEServer.authType',
-				displayField: 'display',
-				valueField: 'value',
-				listeners: {
-					render: function(cbo) {
-						cbo.store.setServer(cbo.up('.window').serverId);
-					}
-				},
 				store: Ext.create('vcube.data.VboxEnumStore',{
 					enumClass: 'AuthType'
 				})
@@ -292,35 +251,19 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				}
 			}
 		},{
-			xtype: 'combo',
+			xtype: 'serverstorecombo',
 			editable: false,
 			fieldLabel: 'Host Audio Driver',
 			name: 'audioAdapter.audioDriver',
-			displayField: 'display',
-			valueField: 'value',
-			lastQuery: '',
-			listeners: {
-				render: function(cbo) {
-					cbo.store.setServer(cbo.up('.window').serverId);
-				}
-			},
 			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioDriverType',
 				conversionFn: vcube.utils.vboxAudioDriver
 			})
 		},{
-			xtype: 'combo',
+			xtype: 'serverstorecombo',
 			editable: false,
 			fieldLabel: 'Audio Controller',
 			name: 'audioAdapter.audioController',
-			displayField: 'display',
-			valueField: 'value',
-			lastQuery: '',
-			listeners: {
-				render: function(cbo) {
-					cbo.store.setServer(cbo.up('.window').serverId);
-				}
-			},
 			store: Ext.create('vcube.data.VboxEnumStore',{
 				enumClass: 'AudioControllerType',
 				conversionFn: vcube.utils.vboxAudioController

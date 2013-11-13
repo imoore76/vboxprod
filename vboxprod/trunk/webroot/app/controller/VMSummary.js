@@ -49,17 +49,23 @@ Ext.define('vcube.controller.VMSummary', {
     	var self = this;
     	
     	Ext.create('vcube.view.VMSummary.Edit',{
+    		
     		listeners: {
     			
     			/* Set values when window is shown */
     			show: function(win) {
+    				
+    				/* Change button on validity change */
+    				win.down('#form').on('validitychange', function(frm, valid) {
+    					win.down('#save').setDisabled(!valid);
+    				});
     				
     				/* Save function */
     				win.down('#save').on('click',function(btn){
     					
     					win.setLoading(true);
     					
-    					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineSaveSummary',Ext.apply(btn.up('.form').getForm().getValues(), vcube.utils.vmAjaxParams(self.selectionItemId))))
+    					Ext.ux.Deferred.when(vcube.utils.ajaxRequest('vbox/machineSaveSummary',Ext.apply(win.down('.form').getForm().getValues(), vcube.utils.vmAjaxParams(self.selectionItemId))))
     						.done(function(data) {
 	    						if(data == true) {
 	    							win.close();

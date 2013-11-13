@@ -143,16 +143,16 @@ Ext.define('vcube.view.TasksAndEvents.TaskDetails', {
 	    },{
 	    	name: 'completed',
 	    	fieldLabel: vcube.utils.trans('Completed')
-	    }],
-	    
-	    buttons:[{ 
-	    	text: vcube.utils.trans('OK'),
-	    	listeners: {
-	    		click: function(btn) { btn.up('.window').close(); }
-	    	}
 	    }]
-
+    }],
+	    
+    buttons:[{ 
+    	text: vcube.utils.trans('OK'),
+    	listeners: {
+    		click: function(btn) { btn.up('.window').close(); }
+    	}
     }]
+
 });
 	
 
@@ -200,15 +200,15 @@ Ext.define('vcube.view.TasksAndEvents.EventDetails', {
 	    },{
 	    	name: 'time',
 	    	fieldLabel: vcube.utils.trans('Time')
-	    }],
-	    
-	    buttons:[{ 
-	    	text: vcube.utils.trans('OK'),
-	    	listeners: {
-	    		click: function(btn) { btn.up('.window').close(); }
-	    	}
 	    }]
-
+    }],
+	    
+    buttons:[{ 
+    	text: vcube.utils.trans('OK'),
+    	listeners: {
+    		click: function(btn) { btn.up('.window').close(); }
+    	}
     }]
+
 });
 

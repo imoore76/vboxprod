@@ -251,22 +251,22 @@ Ext.define('vcube.view.ServerConnector.AddEdit', {
             			name: "Enabled", value: vcube.app.constants.CONNECTOR_STATES['DISCONNECTED']
             		}]
     			})
-    		}],
-    		
-    		buttons:[{ 
-    			text: vcube.utils.trans('Save'),
-    			itemId: 'save',
-    			formBind: true
-    		},{
-    			text: vcube.utils.trans('Cancel'),
-    			listeners: {
-    				click: function(btn) {
-    					btn.up('.window').close();
-    				}
-    			}
     		}]
+    	}];
+    		
+		this.buttons = [{ 
+			text: vcube.utils.trans('Save'),
+			itemId: 'save',
+			disabled: true
+		},{
+			text: vcube.utils.trans('Cancel'),
+			listeners: {
+				click: function(btn) {
+					btn.up('.window').close();
+				}
+			}
+		}]
     	
-    	}]
     	this.callParent();
     },
 });

@@ -1209,7 +1209,7 @@ class vboxConnector(object):
             if args['networkAdapters'][i]['attachmentType'] == 'NAT':
 
                 # Remove existing redirects
-                for r in n.NATEngine.getRedirects():
+                for r in vboxGetArray(n.NATEngine, 'redirects'):
                     n.NATEngine.removeRedirect(r.split(',')[0])
                 
                 # Add redirects
@@ -1424,7 +1424,9 @@ class vboxConnector(object):
             m.firmwareType = vboxStringToEnum('FirmwareType', args['firmwareType'])
             m.chipsetType = vboxStringToEnum('ChipsetType', args['chipsetType'])
             
-            if m.snapshotFolder != args['snapshotFolder']: m.snapshotFolder = args['snapshotFolder']
+            if m.snapshotFolder != args['snapshotFolder']:
+                m.snapshotFolder = args['snapshotFolder']
+                
             m.RTCUseUTC = (True if args.get('RTCUseUTC', None) else False)
             m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args.get('CpuProperties.PAE',None) else False))
             # IOAPIC
@@ -1482,10 +1484,12 @@ class vboxConnector(object):
             # Audio controller settings
             m.audioAdapter.enabled = (True if args.get('audioAdapter.enabled', None) else False)
             if args.get('audioAdapter.enabled', None):
-                m.audioAdapter.audioController = args.get('audioAdapter.audioController', None)
-                m.audioAdapter.audioDriver = args.get('audioAdapter.audioDriver', None)
+                m.audioAdapter.audioController = vboxStringToEnum("AudioControllerType", args.get('audioAdapter.audioController'))
+                m.audioAdapter.audioDriver = vboxStringToEnum("AudioDriverType", args.get('audioAdapter.audioDriver'))
     
-            # Boot order
+            """
+                Boot order
+            """
             bootOrder = args.get('bootOrder','').split(',')
             for i in range(0, self.vbox.systemProperties.maxBootPosition):
                 try:
@@ -1494,11 +1498,18 @@ class vboxConnector(object):
                     device = vboxMgr.constants.DeviceType_Null
                 m.setBootOrder((i + 1), device)
     
-            # Storage Controllers
+            """
+                Storage Controllers
+            """
+            mediaRefs = {}
+            # remove existing
             for sc in vboxGetArray(m,'storageControllers'): # @sc IStorageController """
     
                 for ma in m.getMediumAttachmentsOfController(sc.name):
     
+                    if ma.medium:
+                        mediaRefs[ma.medium.id] = ma.medium
+                        
                     if ma.controller:
                         m.detachDevice(ma.controller,ma.port,ma.device)
     
@@ -1517,11 +1528,11 @@ class vboxConnector(object):
                 
                 # Set sata port count
                 if sc['bus'] == 'SATA':
-                    max = max(1,int(sc.get('portCount',0)))
+                    maxPort = max(1,int(sc.get('portCount',0)))
                     for ma in sc['mediumAttachments']:
-                        max = max(max,(int(ma['port'])+1))
+                        maxPort = max(maxPort,(int(ma['port'])+1))
                     
-                    c.portCount = min(int(c.maxPortCount),max(len(sc['mediumAttachments']),max))
+                    c.portCount = min(int(c.maxPortCount),max(len(sc['mediumAttachments']),maxPort))
     
     
                 # Medium attachments
@@ -1542,7 +1553,10 @@ class vboxConnector(object):
                         else:
                             
                             """ @med IMedium """
-                            med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
+                            if mediaRefs.get(ma['medium']['id'], None):
+                                med = mediaRefs[ma['medium']['id']]
+                            else:
+                                med = self.vbox.openMedium(ma['medium']['location'], vboxStringToEnum("DeviceType", ma['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
                         
                     else:
                         med = None
@@ -1552,7 +1566,7 @@ class vboxConnector(object):
                     # CD / DVD medium attachment type
                     if ma['type'] == 'DVD':
     
-                        if ma['medium']['hostDrive']:
+                        if ma['medium'] and ma['medium']['hostDrive']:
                             m.passthroughDevice(name,ma['port'],ma['device'],(True if ma['passthrough'] else False))
                         else:
                             m.temporaryEjectDevice(name,ma['port'],ma['device'],(True if ma['temporaryEject'] else False))
@@ -1605,7 +1619,7 @@ class vboxConnector(object):
                 if args['networkAdapters'][i]['attachmentType'] == 'NAT':
     
                     # Remove existing redirects
-                    for r in n.NATEngine.getRedirects():
+                    for r in vboxGetArray(n.NATEngine, 'redirects'):
                         n.NATEngine.removeRedirect(r.split(',')[0])
                     
                     # Add redirects
@@ -1721,7 +1735,8 @@ class vboxConnector(object):
                 for k in fprops:
                     setattr(filter, k, f[k])
                 m.USBDeviceFilters.insertDeviceFilter(idx, filter)
-                
+            
+            m.name = args['name']    
             session.machine.saveSettings()
             
         finally:
@@ -2906,19 +2921,15 @@ class vboxConnector(object):
     
             n = m.getNetworkAdapter(i)
     
-            aType = vboxEnumToString('NetworkAttachmentType', n.attachmentType)
-            
-            nd = n.NATEngine
-    
             props = n.getProperties('')
             props = dict(zip(props[0],props[1]))
              
             adapters.append({
                 'adapterType' : vboxEnumToString('NetworkAdapterType', n.adapterType),
                 'slot' : n.slot,
-                'enabled' : n.enabled,
+                'enabled' : bool(n.enabled),
                 'MACAddress' : n.MACAddress,
-                'attachmentType' : aType,
+                'attachmentType' : vboxEnumToString('NetworkAttachmentType', n.attachmentType),
                 'genericDriver' : n.genericDriver,
                 'hostOnlyInterface' : n.hostOnlyInterface,
                 'bridgedInterface' : n.bridgedInterface,
@@ -2926,14 +2937,14 @@ class vboxConnector(object):
                 'internalNetwork' : n.internalNetwork,
                 'NATNetwork' : n.NATNetwork,
                 'promiscModePolicy' : vboxEnumToString('NetworkAdapterPromiscModePolicy', n.promiscModePolicy),     
-                'cableConnected' : n.cableConnected,
+                'cableConnected' : bool(n.cableConnected),
                 'NATEngine' : {
-                   'aliasMode' : nd.aliasMode,
-                   'DNSPassDomain' : nd.DNSPassDomain,
-                   'DNSProxy' : nd.DNSProxy,
-                   'DNSUseHostResolver' : nd.DNSUseHostResolver,
-                   'hostIP' : nd.hostIP,
-                   'redirects' : vboxGetArray(nd,'redirects')
+                   'aliasMode' : n.NATEngine.aliasMode,
+                   'DNSPassDomain' : n.NATEngine.DNSPassDomain,
+                   'DNSProxy' : n.NATEngine.DNSProxy,
+                   'DNSUseHostResolver' : n.NATEngine.DNSUseHostResolver,
+                   'hostIP' : n.NATEngine.hostIP,
+                   'redirects' : vboxGetArray(n.NATEngine,'redirects')
                 }
             })
             

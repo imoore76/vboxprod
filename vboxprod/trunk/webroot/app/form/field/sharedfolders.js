@@ -244,15 +244,19 @@ Ext.define('vcube.form.field.sharedfolders', {
 			columns: [{
 				header: 'Name',
 				dataIndex: 'name',
-				renderer: function(v) {
-					return '<div style="margin-left: 24px">'+Ext.String.htmlEncode(v)+'</div>';
+				renderer: function(v,m,record) {
+					return '<div style="margin-left: 24px;">'+Ext.String.htmlEncode(v)+'</div>';
 				}
 			},{
 				header: 'Path',
 				dataIndex: 'hostPath',
 				flex: 1,
-				renderer: function(v) {
-					return Ext.String.htmlEncode(v);
+				renderer: function(v,m,record) {
+					var xtra = '';
+					if(!record.get('accessible') && record.get('lastAccessError')) {
+						xtra = '<img style="height: 12px; width:12px; display: inline-block; margin: 0px; padding: 0px; float:left; margin-right: 4px;" src="images/vbox/status_error_16px.png" />';
+					}
+					return xtra + Ext.String.htmlEncode(v);
 				}
 			},{
 				header: 'Auto-mount',
@@ -271,7 +275,35 @@ Ext.define('vcube.form.field.sharedfolders', {
 			}],
 			
 			viewConfig: {
-				markDirty: false
+				markDirty: false,
+		    	listeners: {
+		    		render :function(view) {
+				    	view.tip = Ext.create('Ext.tip.ToolTip', {
+				    		
+					        // The overall target element.
+					        target: view.el,
+					        // Each grid row causes its own seperate show and hide.
+					        delegate: view.itemSelector,
+					        // Moving within the row should not hide the tip.
+					        trackMouse: true,
+					        // Render immediately so that tip.body can be referenced prior to the first show.
+					        renderTo: Ext.getBody(),
+					        listeners: {
+					            // Change content dynamically depending on which element triggered the show.
+					        	
+					            beforeshow: function(tip) {
+					            	
+					            	var record = view.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(view.itemSelector));
+					            	if(!record.get('accessible') && record.get('lastAccessError')) {
+					            		tip.update(Ext.String.htmlEncode(record.get('lastAccessError')));
+					            	} else {
+					            		tip.update(Ext.String.htmlEncode(record.get('name')));
+					            	}
+					            }
+					        }
+				    	});
+		    		}
+		    	}
 			},
 
 			listeners: {
@@ -292,7 +324,7 @@ Ext.define('vcube.form.field.sharedfolders', {
 			         'name',
 			         {name:'autoMount', type: 'boolean'},
 			         {name:'writable', type: 'boolean'},
-			         'lastAccessError',
+			         {name:'lastAccessError', type: 'string'},
 			         'hostPath',
 			         'type'
 		         ],
@@ -351,8 +383,9 @@ Ext.define('vcube.form.field.sharedfolders', {
 			        				
 			        				var data = dlg.down('.form').getForm().getValues();
 
-			        				data.writable = (data.writable ? 0 : 1);
-			        				data.autoMount = (data.autoMount ? 1 : 0);			        				
+			        				data.writable = (data.writable ? true : false);
+			        				data.autoMount = (data.autoMount ? true : false);
+			        				data.accessible = true;
 			        				data.type = (dlg.down('#makePermanent').isVisible() && !dlg.down('#makePermanent').getValue() ? 'transient' : 'machine');
 			        				
 			        				this.grid.getStore().add(data);

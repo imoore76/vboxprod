@@ -3216,9 +3216,9 @@ class vboxConnector(object):
             folderlist.append({
                 'name' : sf.name,
                 'hostPath' : sf.hostPath,
-                'accessible' : sf.accessible,
-                'writable' : sf.writable,
-                'autoMount' : sf.autoMount,
+                'accessible' : bool(sf.accessible),
+                'writable' : bool(sf.writable),
+                'autoMount' : bool(sf.autoMount),
                 'lastAccessError' : sf.lastAccessError,
                 'type' : 'machine'
             })

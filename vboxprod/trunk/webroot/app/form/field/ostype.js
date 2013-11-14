@@ -57,6 +57,8 @@ Ext.define('vcube.form.field.ostype', {
 					
 					var store = this.osTypeIdCombo.getStore();
 					
+					var initialValue = this.osTypeIdCombo.getValue();
+					
 					store.removeAll();
 					var osTypes = [];
 					
@@ -70,7 +72,7 @@ Ext.define('vcube.form.field.ostype', {
 					});
 					
 					store.loadRawData(osTypes);
-					this.osTypeIdCombo.select(store.first());
+					this.osTypeIdCombo.select(store.getById(initialValue) || store.first());
 					
 				},
 				scope: this

@@ -10,8 +10,7 @@ Ext.define('vcube.form.field.sharedfolders', {
     },
     
     statics: {    	
-    	sfOtherPathName: 'Other ...',
-    	
+    	sfOtherPathName: 'Other ...',    	
     },
 
     layout: 'fit',
@@ -19,6 +18,9 @@ Ext.define('vcube.form.field.sharedfolders', {
     combineErrors: true,
     msgTarget: 'side',
     submitFormat: 'c',
+    
+    padding: 0,
+    margin: 0,
     
     /* Get / Set values */
     getSubmitValue: function() {

@@ -1651,20 +1651,17 @@ class vboxConnector(object):
                 if not p.enabled and not args['serialPorts'][i]['enabled']:
                     continue
                 
-                try:
-                    p.enabled = args['serialPorts'][i]['enabled']
+                p.enabled = args['serialPorts'][i]['enabled']
+                
+                if not args['serialPorts'][i]['enabled']:
+                    continue
+                
+                for k in sprops:
+                    setattr(p, k, args['serialPorts'][i][k])
                     
-                    if not args['serialPorts'][i]['enabled']:
-                        continue
-                    
-                    for k in sprops:
-                        setattr(p, k, args['serialPorts'][i][k])
-                        
-                    p.hostMode = vboxStringToEnum("PortMode", args['serialPorts'][i]['hostMode'])
-                    p.IOBase = long(args['serialPorts'][i]['IOBase'], base=16)
+                p.hostMode = vboxStringToEnum("PortMode", args['serialPorts'][i]['hostMode'])
+                p.IOBase = long(args['serialPorts'][i]['IOBase'], base=16)
                                     
-                except Exception as e:
-                    self.errors.append((e,traceback.format_exc()))
     
             """
             for i in range(0, len(args['parallelPorts'])):

@@ -200,7 +200,7 @@ Ext.define('vcube.vmdatamediator', {
 		
 		// Data exists
 		if(vcube.vmdatamediator.vmDetailsData[vmid] && !forceRefresh) {
-			vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
+			
 			return Ext.Object.merge({},vcube.vmdatamediator.vmDetailsData[vmid], vmData);
 		}
 		
@@ -213,12 +213,15 @@ Ext.define('vcube.vmdatamediator', {
 			.fail(function(){
 			
 				vcube.vmdatamediator.promises.getVMDetails[vmid].reject('failed to get machine details');
-				vcube.vmdatamediator.promises.getVMDetails[vmid] = null;
+
+				delete vcube.vmdatamediator.promises.getVMDetails[vmid];
 			
 			}).done(function(d){
 				
 				vcube.vmdatamediator.vmDetailsData[d.id] = d;
-				vcube.vmdatamediator.promises.getVMDetails[vmid].resolve(d);
+				vcube.vmdatamediator.promises.getVMDetails[vmid].resolve(Ext.Object.merge({}, d, vmData));
+				
+				delete vcube.vmdatamediator.promises.getVMDetails[vmid];
 			
 			});
 

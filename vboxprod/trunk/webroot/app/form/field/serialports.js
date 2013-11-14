@@ -153,8 +153,8 @@ Ext.define('vcube.form.field.serialports', {
         					change: function(cbo,val) {
         						
         						if(val=='User-defined') {
-        							cbo.ownerCt.down('#irq').setDisabled(false);
-        							cbo.ownerCt.down('#ioport').setDisabled(false);
+        							cbo.ownerCt.down('#irq').setReadOnly(false);
+        							cbo.ownerCt.down('#ioport').setReadOnly(false);
         							return;
         						}
         						
@@ -162,8 +162,8 @@ Ext.define('vcube.form.field.serialports', {
         						
     							cbo.ownerCt.down('#irq').setValue(r.get('irq'));
     							cbo.ownerCt.down('#ioport').setValue(r.get('port'));
-    							cbo.ownerCt.down('#irq').setDisabled(true);
-    							cbo.ownerCt.down('#ioport').setDisabled(true);
+    							cbo.ownerCt.down('#irq').setReadOnly(true);
+    							cbo.ownerCt.down('#ioport').setReadOnly(true);
         						
         					},
         					scope: this

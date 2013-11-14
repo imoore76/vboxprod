@@ -169,9 +169,12 @@ Ext.define('vcube.form.field.storage', {
     
     setValue: function(controllers) {
     
+    	// Reset these
+        this.cachedMedia = {};      
+        this.attachedMedia = {};
+
     	var self = this;
     	this.tree.getRootNode().removeAll(true);
-    	this.attachedMedia = {};
     	
     	if(!controllers) controllers = [];
     	

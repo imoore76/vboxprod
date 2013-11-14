@@ -324,9 +324,6 @@ Ext.define('vcube.form.field.networkadapters', {
     
     setValue: function(val) {
     	
-    	console.log("Net");
-    	console.log(val);
-    	
     	if(!val) val = [];
     	for(var i = 0; i < Math.min(val.length,this.maxAdapters); i++) {
     		var tab = this.childComponent.items.items[i];
@@ -474,8 +471,6 @@ Ext.define('vcube.form.field.networkadapters', {
     						var natEngine = this.natEngines[num];
     						
     						dlg.down('.form').getForm().setValues(natEngine);
-    						
-    						console.log(natEngine.aliasMode);
     						
     						// Set alias mode check boxes
     						dlg.down('[name=aliasModeProxy]').setValue((natEngine.aliasMode & 2) ? true : false);

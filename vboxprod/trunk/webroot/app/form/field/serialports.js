@@ -181,7 +181,17 @@ Ext.define('vcube.form.field.serialports', {
     					inputWidth: 50,
     					fieldLabel: 'I/O Port',
     					itemId: 'ioport',
-    					name: 'serialPort-IOBase-'+i
+    					name: 'serialPort-IOBase-'+i,
+    					maxLength: 5,
+    					allowBlank: false,
+    					enforceMaxLength: true,
+    					maskRe: /[x|0-9|a-f]/i,
+    					validator: function(v) {
+    						if(!(/^0x[a-f|0-9]{3}/i).test(v)) return 'Invliad I/O Port';
+    						return true;
+    					},
+    					
+    					
     				}]
     			},{
     				xtype: 'combo',

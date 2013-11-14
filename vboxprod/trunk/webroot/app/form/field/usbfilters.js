@@ -130,7 +130,66 @@ Ext.define('vcube.form.field.usbfilters', {
 				dataIndex: 'description'
 			}],
 			viewConfig: {
-				markDirty: false
+				markDirty: false,
+		    	listeners: {
+		    		render :function(view) {
+				    	view.tip = Ext.create('Ext.tip.ToolTip', {
+				    		
+					        // The overall target element.
+					        target: view.el,
+					        // Each grid row causes its own seperate show and hide.
+					        delegate: view.itemSelector,
+					        // Moving within the row should not hide the tip.
+					        trackMouse: true,
+					        // Render immediately so that tip.body can be referenced prior to the first show.
+					        renderTo: Ext.getBody(),
+					        listeners: {
+					            // Change content dynamically depending on which element triggered the show.
+					        	
+					            beforeshow: function(tip) {
+					            	
+					            	var record = view.getRecord(Ext.get(tip.triggerEvent.target).findParentNode(view.itemSelector));
+					            	var props = [{
+					            		fieldLabel: 'Vendor ID',
+					            		name: 'vendorId'
+						    		},{
+						    			fieldLabel: 'Product ID',
+						    			name: 'productId'
+						    		},{
+						    			fieldLabel: 'Revision',
+						    			name: 'revision'
+						    		},{
+						    			fieldLabel: 'Manufacturer',
+						    			name: 'manufacturer'
+						    		},{
+						    			fieldLabel: 'Product',
+						    			name: 'product'
+						    		},{
+						    			fieldLabel: 'Serial No.',
+						    			name: 'serialNumber'
+						    		},{
+						    			fieldLabel: 'Port',
+						    			name: 'port'
+						    		}];
+
+					            	var tipTextList = [];
+					            	Ext.each(props, function(p) {
+					            		if(record.get(p.name)) {
+					            			tipTextList.push(p.fieldLabel + ': ' + record.get(p.name));
+					            		}
+					            	});
+					            	
+					            	if(tipTextList.length) {
+					            		tip.update(tipTextList.join('<br />'));
+					            	} else {
+					            		return false;
+					            	}
+					            	
+					            }
+					        }
+				    	});
+		    		}
+		    	}
 			},
 
 			listeners: {
@@ -163,11 +222,12 @@ Ext.define('vcube.form.field.usbfilters', {
 				         {name: 'manufacturer', type: 'string'},
 				         {name: 'port', type: 'string'},
 				         {name: 'revision', type: 'string'}
-				         ]
+			         ]
 			}),
 			rbar: [
 			       {
 			    	   icon: 'images/vbox/usb_new_16px.png',
+			    	   tooltip: 'Adds a new USB device filter with all fields set to empty strings. Note that such a filter will match any attached USB device.',
 			    	   listeners: {
 			    		   click: function() {
 			    			   
@@ -188,6 +248,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			       },
 			       {
 			    	   icon: 'images/vbox/usb_add_16px.png',
+			    	   tooltip: 'Adds a new USB device filter with the values of the selected USB device attached to the host PC.',
 			    	   listeners: {
 			    		   
 			    		   click: function(btn) {
@@ -225,12 +286,14 @@ Ext.define('vcube.form.field.usbfilters', {
 			    							usbdata: devs[i],
 			    							listeners: {
 			    								click: function(item) {
+			    									console.log(item);
 			    									self.grid.getStore().add(Ext.apply({},{
 			    										name: item.text,
 			    										active: true,
 			    										vendorId: item.usbdata.vendorId.replace(/^0x/,''),
 			    										productId: item.usbdata.productId.replace(/^0x/,''),
-			    										revision: item.usbdata.revision.replace(/^0x/,'')
+			    										revision: item.usbdata.revision.replace(/^0x/,''),
+			    										port: (item.usbdata.port ? item.usbdata.port : undefined)
 			    									},item.usbdata));
 			    									
 		    					    			   self.grid.getView().focusRow(self.grid.getStore().getCount()-1);
@@ -250,6 +313,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			       },
 			       {
 			    	   icon: 'images/vbox/usb_filter_edit_16px.png',
+			    	   tooltip: 'Edits the selected USB filter.',
 			    	   itemId: 'btnEdit',
 			    	   disabled: true,
 			    	   listeners: {
@@ -272,6 +336,7 @@ Ext.define('vcube.form.field.usbfilters', {
 		    		   icon: 'images/vbox/usb_remove_16px.png',
 		    		   disabled: true,
 		    		   itemId: 'btnRemove',
+		    		   tooltip: 'Removes the selected USB filter.',
 			    	   listeners: {
 			    		   click: function() {
     						   
@@ -292,6 +357,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			       },{
 	    			   icon: 'images/vbox/usb_moveup_16px.png',
 	    			   itemId: 'btnMoveUp',
+	    			   tooltip: 'Moves the selected USB filter up.',
 	    			   disabled: true,
 			    	   listeners: {
 			    		   click: function() {
@@ -310,6 +376,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			       },{
     				   icon: 'images/vbox/usb_movedown_16px.png',
     				   itemId: 'btnMoveDown',
+    				   tooltip: 'Moves the selected USB filter down.',
     				   disabled: true,
     				   listeners: {
     					   click: function() {

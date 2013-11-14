@@ -90,7 +90,15 @@ Ext.define('vcube.view.NavTree', {
     	
     	serverContextMenuItems: [
     	   // Add vm
-    	   vcube.actionpool.getAction('server','add')
+    	   vcube.actionpool.getAction('server','addvm'),
+    	   // new vm
+    	   vcube.actionpool.getAction('server','newvm'),
+    	   '-',
+    	   // vbox settings
+    	   vcube.actionpool.getAction('server','vbsettings'),
+    	   '-',
+    	   // remove
+    	   vcube.actionpool.getAction('server','remove')
          ],
     	                         
     	machineContextMenuItems: [

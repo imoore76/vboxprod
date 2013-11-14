@@ -469,8 +469,8 @@ Ext.define('vcube.form.field.storage', {
 	        					
 	        					
 	        					
-	        					q = String('You are about a virtual hard disk to controller <b>%1</b>.<p>Would you'+
-		        						'create a new, empty file to hold the disk contents or select '+
+	        					q = String('You are about a virtual hard disk to controller <b>%1</b>.<p>Would you '+
+		        						'like to create a new, empty file to hold the disk contents or select '+
 		        						'an existing one?</p>').replace('%1', Ext.String.htmlEncode(controller.get('name')));
 	        					
 	        					buttons = [genChooseDiskButton('Choose existing disk','hd','HardDisk'),

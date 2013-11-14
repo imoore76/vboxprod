@@ -6,10 +6,10 @@ Ext.define('vcube.controller.NavTree', {
 	extend : 'Ext.app.Controller',
 
 	// Hold nav tree ref so that we only have to get this once
-	refs : [ {
+	refs : [{
 		selector : 'viewport > NavTree',
 		ref : 'NavTreeView'
-	} ],
+	}],
 
 	/* Watch for events */
 	init : function() {
@@ -42,8 +42,6 @@ Ext.define('vcube.controller.NavTree', {
 			    	    renderTo: Ext.getBody(),
 			    	    items: vcube.view.NavTree.serverContextMenuItems
 			    	});
-			    	
-			    	console.log(vcube.actionpool.actionPool['server']['add']);
 			    	
 			    	var self = this;
 			    	tv.on('itemcontextmenu',function(t,r,i,index,e) {

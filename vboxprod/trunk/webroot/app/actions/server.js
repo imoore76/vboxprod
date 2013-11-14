@@ -5,14 +5,28 @@ Ext.define('vcube.actions.server',{
 
 	statics: {
 		
+		isRunning: function(selectionModel) {
+			var selected = selectionModel.getSelection();
+			console.log("here.. in is running");
+			return (selected.length == 1 && vcube.storemanager.getStoreRecordData('server',selected[0].get('rawid')).state == vcube.app.constants.CONNECTOR_STATES.RUNNING);
+		},
+		
 		'new': {
-			
-			action: function(selectionModel) {
+		
+			action: function() {
 				
 			}
 		},
 		
-		add: {
+		newvm: {
+			
+			action: function(selectionModel) {
+				
+			},
+			enabled_test: function(sm) { return vcube.actions.server.isRunning(sm); }
+		},
+		
+		addvm: {
 			
 			action: function(selectionModel) {
 				
@@ -30,14 +44,18 @@ Ext.define('vcube.actions.server',{
 	    			vcube.utils.ajaxRequest('vbox/machineAdd',{connector:serverId,file:f});
 	    		});
 
-			}
+			},
+			
+			enabled_test: function(sm) { return vcube.actions.server.isRunning(sm); }
 			
 		},
 		
-		settings: {
+		vbsettings: {
 			action: function(selectionModel) {
 				
-			}
+			},
+			
+			enabled_test: function(sm) { return vcube.actions.server.isRunning(sm); }
 		},
 		
 		/** Delete / Remove a server */

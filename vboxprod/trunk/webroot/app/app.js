@@ -41,7 +41,7 @@ Ext.application({
     controllers: [
                   
                   // Actions controllers
-                  'machineactions', 'serveractions',
+                  'machineactions',
                   
                   // Settings dialogs
                   'SettingsDialog',

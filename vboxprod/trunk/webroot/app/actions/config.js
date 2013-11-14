@@ -148,21 +148,26 @@ Ext.define('vcube.actions.config.server',{
 	
 	statics : {
 		
-		actions: ['new','add','settings','remove'],
+		actions: ['newvm','addvm','vbsettings','remove','new'],
 
-		'new':{
-			text: vcube.utils.trans('New...','UIActionPool'),
+		'new': {
+			text: 'New connector...',
+			icon: 'virtualbox-vdi'
+		},
+		
+		'newvm':{
+			text: vcube.utils.trans('Create Virtual Machine...','UIActionPool'),
 			icon:'vm_new'
 		},
 		
-		add : {
+		addvm : {
 			text: 'Add Virtual Machine...',
 			icon: 'vm_add',
 		},
 		
-		settings: {
-			text: vcube.utils.trans('Settings...','UIActionPool'),
-			icon:'vm_settings',
+		vbsettings: {
+			text: vcube.utils.trans('VirtualBox Settings...','UIActionPool'),
+			icon:'OSE/VirtualBox',
 		},
 		
 		remove: {

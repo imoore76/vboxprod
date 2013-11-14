@@ -1418,21 +1418,20 @@ class vboxConnector(object):
     
     
             m.OSTypeId = args['OSTypeId']
-            m.CPUCount = int(args['CPUCount'])
-            m.memorySize = int(args['memorySize'])
+            m.setExtraData(vboxConnector.iconKey, args['icon'])
+            m.description = args['description']
+            m.snapshotFolder = args['snapshotFolder']
+
             
+            m.memorySize = int(args['memorySize'])
             m.firmwareType = vboxStringToEnum('FirmwareType', args['firmwareType'])
             m.chipsetType = vboxStringToEnum('ChipsetType', args['chipsetType'])
-            
-            if m.snapshotFolder != args['snapshotFolder']:
-                m.snapshotFolder = args['snapshotFolder']
-                
-            m.RTCUseUTC = (True if args.get('RTCUseUTC', None) else False)
-            m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args.get('CpuProperties.PAE',None) else False))
-            # IOAPIC
             m.BIOSSettings.IOAPICEnabled = (True if args.get('BIOSSettings.IOAPICEnabled',None) else False)
+            m.RTCUseUTC = (True if args.get('RTCUseUTC', None) else False)
+                            
+            m.CPUCount = int(args['CPUCount'])
             m.CPUExecutionCap = int(args['CPUExecutionCap'])
-            m.description = args['description']
+            m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args.get('CpuProperties.PAE',None) else False))
             
             # Determine if host is capable of hw accel
             hwAccelAvail = bool(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
@@ -1450,8 +1449,8 @@ class vboxConnector(object):
                 except:
                     pass
     
-            #m.HPETEnabled = int(args['HPETEnabled'])
             """
+            m.HPETEnabled = int(args['HPETEnabled'])
             m.setExtraData("VBoxInternal/Devices/VMMDev/0/Config/GetHostTimeDisabled", args['disableHostTimeSync'])
             m.keyboardHIDType = vboxStringToEnum("KeyboardHIDType",args['keyboardHIDType'])
             m.pointingHIDType = vboxStringToEnum("PointingHIDType",args['pointingHIDType'])
@@ -1460,14 +1459,14 @@ class vboxConnector(object):
             m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID, (True if int(args['HWVirtExProperties']['VPID']) else False))
             """
     
-            """ Custom Icon """
-            m.setExtraData(vboxConnector.iconKey, args['icon'])
     
-            m.VRAMSize = int(args['VRAMSize'])
             
             m.setExtraData('GUI/SaveMountedAtRuntime', ('yes' if args.get('GUI.SaveMountedAtRuntime',None) else 'no'))
     
-            # VRDE settings
+            """
+                Video / VRDE
+            """
+            m.VRAMSize = int(args['VRAMSize'])
             try:
                 if m.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
                     m.VRDEServer.enabled = True if args.get('VRDEServer.enabled', None) else False
@@ -1481,11 +1480,15 @@ class vboxConnector(object):
             except Exception as e:
                 self.errors.append((e,traceback.format_exc()))
                 
-            # Audio controller settings
+                
+            """
+                Audio Controller
+            """
             m.audioAdapter.enabled = (True if args.get('audioAdapter.enabled', None) else False)
             if args.get('audioAdapter.enabled', None):
                 m.audioAdapter.audioController = vboxStringToEnum("AudioControllerType", args.get('audioAdapter.audioController'))
                 m.audioAdapter.audioDriver = vboxStringToEnum("AudioDriverType", args.get('audioAdapter.audioDriver'))
+    
     
             """
                 Boot order
@@ -1497,6 +1500,7 @@ class vboxConnector(object):
                 except:
                     device = vboxMgr.constants.DeviceType_Null
                 m.setBootOrder((i + 1), device)
+    
     
             """
                 Storage Controllers
@@ -1578,10 +1582,8 @@ class vboxConnector(object):
     
     
             """
-             *
-             * Network Adapters
-             *
-             """
+                Network Adapters
+            """
     
             netprops = ['enabled','MACAddress','bridgedInterface','hostOnlyInterface',
                         'internalNetwork','NATNetwork','cableConnected','genericDriver']
@@ -1640,9 +1642,10 @@ class vboxConnector(object):
                         n.NATEngine.hostIP = args['networkAdapters'][i]['NATEngine']['hostIP']
                     
     
-            # Serial Ports
+            """
+                Serial Ports
+            """
             sprops = ['IRQ','path','server']
-            
             for i in range(0, len(args['serialPorts'])):
     
                 """ @p ISerialPort """
@@ -1714,16 +1717,18 @@ class vboxConnector(object):
                     if (removeOHCI and c.type == vboxMgr.constants.USBControllerType_OHCI) or (removeEHCI and c.type == vboxMgr.constants.USBControllerType_EHCI):
                         m.removeUSBController(c)
     
+    
+    
             """
             USB Filters
             """            
-    
             # remove existing filters
             filters = range(0, len(vboxGetArray(m.USBDeviceFilters, 'deviceFilters')))
             filters.reverse()
             for idx in filters:
                 m.USBDeviceFilters.removeDeviceFilter(idx)
                 
+            # add new
             fprops = ['active','vendorId','productId','revision','manufacturer','product','serialNumber',
                     'port','remote']
     

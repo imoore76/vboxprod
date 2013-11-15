@@ -102,7 +102,7 @@ Ext.define('vcube.storemanager',{
 			/*
 			 * Server / connector events
 			 */
-		    'ConnectorUpdated': function(eventData) {
+		    ConnectorUpdated: function(eventData) {
 		    	vcube.storemanager.updateStoreRecord('server', eventData.connector_id, eventData.connector);
 		    },
 		    

@@ -1,24 +1,24 @@
 
-Medium Info:
 
-base.location
-base.attachedTo
-base.variant
+Need something like requires: [] for data.. or these could be stores?
+.. do stores make sense? not really. a lot of overhead.. or maybe they do
+.. but stores are global
 
+.. could have individual stores with autoload set to true, but these would
+need a serverid and they are defined globally. COuld call update params or
+something. Stores may be overdoing it. 
 
-TODO:
+The dialog could have a data object or something. Components under it could
+have a serverdata: [{
+	name: 'limits',
+	url: 'vbox/getSystemProperties'
+}]
 
-	"machine" -> "vm"
-	
-	XInfoTab calls setTab onRender instead of this.onTabRender	
-    this.control({
-        'viewport > #MainPanel > ServerTabs > ServerHost' : {
-        	render: this.onTabRender
-        }
-    });
-    
-    Same for XTasksAndEventsTab
-    
+dialog.getData('limits')
+
+storageControllerProperties
+
+dialog.getData('storageControllerProperties')
 	
 Stores:
 

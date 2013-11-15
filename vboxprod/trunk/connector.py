@@ -1420,23 +1420,26 @@ class vboxConnector(object):
             m.OSTypeId = args['OSTypeId']
             m.setExtraData(vboxConnector.iconKey, args['icon'])
             m.description = args['description']
-            m.snapshotFolder = args['snapshotFolder']
+            if args['snapshotFolder'] != m.snapshotFolder:
+                m.snapshotFolder = args['snapshotFolder']
+            m.setExtraData('GUI/SaveMountedAtRuntime', args.get('GUI.SaveMountedAtRuntime','no'))
+
 
             
             m.memorySize = int(args['memorySize'])
             m.firmwareType = vboxStringToEnum('FirmwareType', args['firmwareType'])
             m.chipsetType = vboxStringToEnum('ChipsetType', args['chipsetType'])
-            m.BIOSSettings.IOAPICEnabled = (True if args.get('BIOSSettings.IOAPICEnabled',None) else False)
-            m.RTCUseUTC = (True if args.get('RTCUseUTC', None) else False)
+            m.BIOSSettings.IOAPICEnabled = args.get('BIOSSettings.IOAPICEnabled', False)
+            m.RTCUseUTC = args.get('RTCUseUTC', False)
                             
             m.CPUCount = int(args['CPUCount'])
             m.CPUExecutionCap = int(args['CPUExecutionCap'])
-            m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, (True if args.get('CpuProperties.PAE',None) else False))
+            m.setCPUProperty(vboxMgr.constants.CPUPropertyType_PAE, args.get('CpuProperties.PAE',False))
             
             # Determine if host is capable of hw accel
             hwAccelAvail = bool(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_HWVirtEx))
-            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled,(True if args.get('HWVirtExProperties.Enabled',None) and hwAccelAvail else False))
-            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging, (True if args.get('HWVirtExProperties.Enabled',None) and hwAccelAvail and args.get('HWVirtExProperties.NestedPaging',None) else False))
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled,(True if args.get('HWVirtExProperties.Enabled',False) and hwAccelAvail else False))
+            m.setHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging, (True if args.get('HWVirtExProperties.Enabled',False) and hwAccelAvail and args.get('HWVirtExProperties.NestedPaging',False) else False))
             
             """ @def VBOX_WITH_PAGE_SHARING
              * Enables the page sharing code.
@@ -1445,7 +1448,7 @@ class vboxConnector(object):
             
             if int(self.vbox.host.getProcessorFeature(vboxMgr.constants.ProcessorFeature_LongMode)) and self.vbox.host.operatingSystem.lower().find("darwin") == -1:
                 try:
-                    m.pageFusionEnabled = (True if args.get('pageFusionEnabled',None) else False)
+                    m.pageFusionEnabled = args.get('pageFusionEnabled', False)
                 except:
                     pass
     
@@ -1460,22 +1463,20 @@ class vboxConnector(object):
             """
     
     
-            
-            m.setExtraData('GUI/SaveMountedAtRuntime', ('yes' if args.get('GUI.SaveMountedAtRuntime',None) else 'no'))
-    
+                
             """
                 Video / VRDE
             """
             m.VRAMSize = int(args['VRAMSize'])
             try:
                 if m.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
-                    m.VRDEServer.enabled = True if args.get('VRDEServer.enabled', None) else False
-                    if args.get('VRDEServer.enabled', None):
+                    m.VRDEServer.enabled = args.get('VRDEServer.enabled', False)
+                    if args.get('VRDEServer.enabled', False):
                         m.VRDEServer.setVRDEProperty('TCP/Ports',args.get('VRDEServer.ports'))
                         m.VRDEServer.setVRDEProperty('TCP/Address',args.get('VRDEServer.netAddress'))
                         m.VRDEServer.authType = vboxStringToEnum("AuthType",args.get('VRDEServer.authType', None))
                         m.VRDEServer.authTimeout = int(args.get('VRDEServer.authTimeout',0))
-                        m.VRDEServer.allowMultiConnection = True if args.get('VRDEServer.allowMultiConnection', None) else False
+                        m.VRDEServer.allowMultiConnection = args.get('VRDEServer.allowMultiConnection', False)
     
             except Exception as e:
                 self.errors.append((e,traceback.format_exc()))
@@ -1484,8 +1485,8 @@ class vboxConnector(object):
             """
                 Audio Controller
             """
-            m.audioAdapter.enabled = (True if args.get('audioAdapter.enabled', None) else False)
-            if args.get('audioAdapter.enabled', None):
+            m.audioAdapter.enabled = args.get('audioAdapter.enabled', False)
+            if args.get('audioAdapter.enabled', False):
                 m.audioAdapter.audioController = vboxStringToEnum("AudioControllerType", args.get('audioAdapter.audioController'))
                 m.audioAdapter.audioDriver = vboxStringToEnum("AudioDriverType", args.get('audioAdapter.audioDriver'))
     
@@ -2942,9 +2943,9 @@ class vboxConnector(object):
                 'cableConnected' : bool(n.cableConnected),
                 'NATEngine' : {
                    'aliasMode' : n.NATEngine.aliasMode,
-                   'DNSPassDomain' : n.NATEngine.DNSPassDomain,
-                   'DNSProxy' : n.NATEngine.DNSProxy,
-                   'DNSUseHostResolver' : n.NATEngine.DNSUseHostResolver,
+                   'DNSPassDomain' : bool(n.NATEngine.DNSPassDomain),
+                   'DNSProxy' : bool(n.NATEngine.DNSProxy),
+                   'DNSUseHostResolver' : bool(n.NATEngine.DNSUseHostResolver),
                    'hostIP' : n.NATEngine.hostIP,
                    'redirects' : vboxGetArray(n.NATEngine,'redirects')
                 }
@@ -3301,9 +3302,9 @@ class vboxConnector(object):
                 'port' : ma.port,
                 'device' : ma.device,
                 'type' : vboxEnumToString("DeviceType", ma.type),
-                'passthrough' : ma.passthrough,
-                'temporaryEject' : ma.temporaryEject,
-                'nonRotational' : ma.nonRotational
+                'passthrough' : bool(ma.passthrough),
+                'temporaryEject' : bool(ma.temporaryEject),
+                'nonRotational' : bool(ma.nonRotational)
             })
 
         # sort by port then device
@@ -3586,6 +3587,8 @@ class vboxConnector(object):
 
         for i in range(0, len(sc)):
 
+            continue
+        
             for a in range(0, len(sc[i]['mediumAttachments'])):
 
                 # Value of '' means it is not applicable

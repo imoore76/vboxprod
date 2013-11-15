@@ -139,8 +139,10 @@ Ext.define('vcube.view.common.Login', {
     items: [{
 
     	xtype: 'form',
-    	labelAlign: 'right',
-        labelWidth:80,
+    	defaults: {
+    		labelAlign: 'right',
+    		labelWidth:80    		
+    	},
         frame:true, 
         defaultType:'textfield',
         monitorValid:true,

@@ -98,6 +98,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
+				inputValue: true,
 				boxLabel: 'Enable I/O APIC',
 				name: 'BIOSSettings.IOAPICEnabled'
 			},{
@@ -113,7 +114,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: ' ',
 				labelSeparator: '',
 				boxLabel: 'Hardware Clock in UTC Time',
-				name: 'RTCUseUTC'
+				name: 'RTCUseUTC',
+				inputValue: true
 			}]
 		},{
 			title: 'Processor',
@@ -140,6 +142,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},{
 				fieldLabel: 'Extended Features',
 				xtype: 'checkbox',
+				inputValue: true,
 				boxLabel: 'Enable PAE/NX',
 				name: 'CpuProperties.PAE'
 			}]
@@ -150,6 +153,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				fieldLabel: 'Hardware Virtualization',
 				labelWidth: 200,
 				xtype: 'checkbox',
+				inputValue: true,
 				boxLabel: 'Enable VT-x/AMD-V',
 				name: 'HWVirtExProperties.Enabled',
 				listeners: {
@@ -159,6 +163,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				}
 			},{
 				xtype: 'checkbox',
+				inputValue: true,
 				fieldLabel: ' ',
 				labelSeparator: '',
 				boxLabel: 'Enable Nested Paging',
@@ -191,6 +196,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},
 			items: [{
 				xtype: 'checkbox',
+				inputValue: true,
 				boxLabel: 'Enable Server',
 				name: 'VRDEServer.enabled',
 				disabled: false,
@@ -220,6 +226,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				name: 'VRDEServer.authTimeout'
 			},{
 				xtype: 'checkbox',
+				inputValue: true,
 				fieldLabel: 'Extended Features',
 				boxLabel: 'Allow Multiple Connections',
 				name: 'VRDEServer.allowMultiConnection'
@@ -243,6 +250,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			xtype: 'checkbox',
 			boxLabel: 'Enable Audio',
 			name: 'audioAdapter.enabled',
+			inputValue: true,
 			disabled: false,
 			listeners: {
 				change: function(cb, val) {

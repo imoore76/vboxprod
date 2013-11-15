@@ -189,6 +189,7 @@ Ext.define('vcube.form.field.sharedfolders', {
         			}
         		},{
         			xtype: 'checkbox',
+        			inputValue: true,
         			fieldLabel: ' ',
         			labelSeparator: '',
         			boxLabel: 'Read-only',
@@ -196,6 +197,7 @@ Ext.define('vcube.form.field.sharedfolders', {
         			itemId: 'writable'
         		},{
         			xtype: 'checkbox',
+        			inputValue: true,
         			fieldLabel: ' ',
         			labelSeparator: '',
         			boxLabel: 'Auto-mount',
@@ -203,6 +205,7 @@ Ext.define('vcube.form.field.sharedfolders', {
         			inputValue: 1
         		},{
         			xtype: 'checkbox',
+        			inputValue: true,
         			fieldLabel: ' ',
         			labelSeparator: '',
         			boxLabel: 'Make Permanent',

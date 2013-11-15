@@ -1,7 +1,7 @@
 /*
  * Update machine actions list
  */
-Ext.define('vcube.controller.machineactions', {
+Ext.define('vcube.controller.actions', {
 	
 	extend : 'Ext.app.Controller',
 	
@@ -26,7 +26,8 @@ Ext.define('vcube.controller.machineactions', {
 	 *  	the vm list selection model
 	 *  
 	 *  selectedVMIds will always be populated with the
-	 *  	contents of the VM selection model
+	 *  	contents of the VM selection model or the 
+	 *  	selected nav tree vm
 	 *  
 	 *  We'll have to watch for datachanged event on the
 	 *  	grids, and on the single selected nav tree item
@@ -41,6 +42,9 @@ Ext.define('vcube.controller.machineactions', {
 	
 	// Main nav-tree selection model
 	navTreeSelectionModel: null,
+	
+	// Selected nav tree record
+	navTreeSelectedRecord: null,
 	
 	/* Watch nav tree and vm list selections */
 	init : function() {
@@ -73,22 +77,57 @@ Ext.define('vcube.controller.machineactions', {
 			
         });
         
-		// Watch for changes that will affect actions
-		this.application.on({
-			'SessionStateChanged': this.onMachineChange,
-			'MachineStateChanged': this.onMachineChange,
-			'ConnectorStateChanged': this.onServerChange,
-			scope: this
-		});
 
-		// This is the master handler for all VM actions
+		// This is the master handler for all actions of these types
 		var self = this;
 		Ext.each(vcube.actionpool.getActions('machine'), function(action) {
-			action.setHandler(self.actionHandler, self);
+			action.setHandler(function(btn){
+				vcube.actions.machine[btn.itemId]['action'](self.vmSelectionModel);
+			});
 		});
-
+		Ext.each(vcube.actionpool.getActions('server'), function(action) {
+			action.setHandler(function(btn){
+				vcube.actions.server[btn.itemId]['action'](self.navTreeSelectionModel);
+			});
+		});
+		Ext.each(vcube.actionpool.getActions('vmgroup'), function(action) {
+			action.setHandler(function(btn){
+				vcube.actions.vmgroup[btn.itemId]['action'](self.navTreeSelectionModel);
+			});
+		});
 		
+		// Watch for changes that will affect actions
+		vcube.storemanager.getStore('server').on('update', this.onStoreRecordUpdated, this, {type:'server'});
+		vcube.storemanager.getStore('vm').on('update', this.onStoreRecordUpdated, this, {type:'vm'});
+		vcube.storemanager.getStore('vmgroup').on('update', this.onStoreRecordUpdated, this, {type:'vmgroup'});		
         
+	},
+	
+	/* Changes that should update actions */
+	onStoreRecordUpdated: function( store, record, operation, modifiedFieldNames, eOpts ) {
+		
+		if(operation != Ext.data.Model.EDIT) return;
+		
+		if(!this.navTreeSelectedRecord) return;
+		
+		if(this.navTreeSelectedRecord.get('type') != eOpts.type) return;
+		
+		switch(eOpts.type) {
+	
+			case 'server':
+				if(this.navTreeSelectedRecord.get('rawid') == record.get('id'))
+					this.updateServerActions();
+				break;
+
+			case 'vm':
+				if(Ext.Array.contains(this.selectedVMIds, record.get('id')))
+					this.updateVMActions();
+				break;
+			
+			case 'vmgroup':
+				break;
+		}
+		
 	},
 	
 	/* A machine list is shown */
@@ -99,11 +138,6 @@ Ext.define('vcube.controller.machineactions', {
 		this.onVMSelectionChange(this.vmSelectionModel, this.vmSelectionModel.getSelection());
 		
 		
-	},
-	
-	/* On action click */
-	actionHandler: function(btn) {
-		vcube.actions.machine[btn.itemId].action(this.vmSelectionModel);
 	},
 	
 	/* Update vm action list */
@@ -129,6 +163,8 @@ Ext.define('vcube.controller.machineactions', {
 	
 	/* Nav tree selection changed */
 	onSelectionChangeNavTree: function(selectionModel, records) {
+		
+		this.navTreeSelectedRecord = (records.length ? records[0] : null);
 		
 		if(records.length && records[0].get('type') == 'vm') {
 

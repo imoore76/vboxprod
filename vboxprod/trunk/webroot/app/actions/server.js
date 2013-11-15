@@ -7,7 +7,6 @@ Ext.define('vcube.actions.server',{
 		
 		isRunning: function(selectionModel) {
 			var selected = selectionModel.getSelection();
-			console.log("here.. in is running");
 			return (selected.length == 1 && vcube.storemanager.getStoreRecordData('server',selected[0].get('rawid')).state == vcube.app.constants.CONNECTOR_STATES.RUNNING);
 		},
 		
@@ -36,6 +35,7 @@ Ext.define('vcube.actions.server',{
 	    			serverId: serverId,
 	    			title: 'Select a machine to add...',
 	    			pathType: 'addMachine',
+	    			icon: 'images/vbox/vm_add_16px.png',
 	    			savePath: true,
 	    			fileTypes: ['vbox','xml']
 	    		});

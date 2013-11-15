@@ -939,6 +939,7 @@ Ext.define('vcube.form.field.storage', {
     				},
     			},{
     				xtype: 'checkbox',
+    				inputValue: true,
     				fieldLabel: ' ',
     				labelSeparator: '',
     				boxLabel: 'Use Host I/O Cache',
@@ -1073,6 +1074,7 @@ Ext.define('vcube.form.field.storage', {
     				fieldLabel: ' ',
     				labelSeparator: '',
     				xtype: 'checkbox',
+    				inputValue: true,
     				boxLabel: 'Live CD/DVD',
     				name: 'temporaryEject',
     				itemId: 'temporaryEject',
@@ -1084,6 +1086,7 @@ Ext.define('vcube.form.field.storage', {
     				fieldLabel: ' ',
     				labelSeparator: '',
     				xtype: 'checkbox',
+    				inputValue: true,
     				boxLabel: 'Passthrough',
     				name: 'passthrough',
     				itemId: 'passthrough',
@@ -1156,6 +1159,7 @@ Ext.define('vcube.form.field.storage', {
 		        	labelSeparator: '',
 		        	boxLabel: 'Solid-state Drive',
 		        	xtype: 'checkbox',
+		        	inputValue: true,
 		        	name: 'nonRotational',
 		        	listeners: cbListener
 		        }]

@@ -115,6 +115,7 @@ Ext.define('vcube.form.field.serialports', {
     			},
     			items: [{
     				xtype: 'checkbox',
+    				inputValue: true,
     				boxLabel: 'Enable Serial Port',
     				name: 'serialPort-enabled-'+i,
     				disabled: false,
@@ -227,6 +228,7 @@ Ext.define('vcube.form.field.serialports', {
     				fieldLabel: ' ',
     				labelSeparator: '',
     				xtype: 'checkbox',
+    				inputValue: true,
     				boxLabel: 'Create Pipe',
     				name: 'serialPort-server-'+i
     			},{

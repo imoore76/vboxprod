@@ -242,6 +242,8 @@ Ext.define('vcube.controller.NavTree', {
 			node.removeAll(true);
 			node.remove(true);
 		});
+		
+		// TODO: Trigger change on each parent
 	},
 	
 	/**

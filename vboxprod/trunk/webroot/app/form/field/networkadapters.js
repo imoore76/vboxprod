@@ -370,6 +370,7 @@ Ext.define('vcube.form.field.networkadapters', {
     			},
     			items: [{
     				xtype: 'checkbox',
+    				inputValue: true,
     				boxLabel: 'Enable Network Adapter',
     				name: 'netAdapter-enabled-'+i,
     				disabled: false,
@@ -681,6 +682,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				fieldLabel: ' ',
     				labelSeparator: '',
     				xtype: 'checkbox',
+    				inputValue: true,
     				name: 'netAdapter-cableConnected-'+i,
     				boxLabel: 'Cable Connected'
     			}]

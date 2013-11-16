@@ -31,6 +31,7 @@ Ext.define('vcube.controller.SettingsDialog', {
     /* Add sections to settings dialog */
     addSections: function(dlg) {
     	
+    	console.log("Adding sections");
     	var buttons = [];
     	var panels = [];
     	

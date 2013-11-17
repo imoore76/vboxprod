@@ -280,21 +280,18 @@ Ext.define('vcube.view.VMSnapshots.Details', {
     			anchor: '100%'
     		}]
     	},{
-			xtype: 'panel',
-			layout: 'fit',
+    		xtype: 'fieldset',
+    		title: 'Details',
+    		layout: 'fit',
 			flex: 1,
-			border: false,
-			frame: false,
+			margin: 6,
+			frame: true,
 			cls: 'greyPanel',
 			items: [{
-				xtype: 'panel',
-				title: 'Details',
-				frame: false,
-				border: false,
-				itemId: 'details',
-				cls: 'snapshotDetailsSection',
-				padding: 4,
-				autoScroll: true
+				padding: 6,
+				autoScroll: true,
+				cls: 'greyPanel snapshotDetailsSection',
+				itemId: 'details'				
 			}]
 		}]    			
     }],

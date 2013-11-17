@@ -72,7 +72,7 @@ Return base machine info
 """
 def machineGetBaseInfo(machine):
     
-    if machine.accessible:
+    if bool(machine.accessible):
         
         return { 
             'id' : machine.id,
@@ -83,7 +83,7 @@ def machineGetBaseInfo(machine):
             'OSTypeId' : machine.OSTypeId,
             'OSTypeDesc' : vboxMgr.vbox.getGuestOSType(machine.OSTypeId).description,
             'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
-            'currentStateModified': machine.currentStateModified,
+            'currentStateModified': bool(machine.currentStateModified),
             'sessionState' : vboxEnumToString("SessionState", machine.sessionState),
             'CPUCount' : machine.CPUCount,
             'CPUExecutionCap' : machine.CPUExecutionCap,
@@ -338,7 +338,7 @@ def enrichEvents(eventList):
                     
                     try:
                         eventList[ek]['enrichmentData'] = {
-                            'enabled' : int(vrde.enabled),
+                            'enabled' : bool(vrde.enabled),
                             'ports' : vrde.getVRDEProperty('TCP/Ports'),
                             'netAddress' : vrde.getVRDEProperty('TCP/Address'),
                             'VNCPassword' : vrde.getVRDEProperty('VNCPassword'),
@@ -377,7 +377,7 @@ def enrichEvents(eventList):
                     try:
                         eventList[ek]['enrichmentData'] = {
                             'port' : session.console.VRDEServerInfo.port,
-                            'enabled' : int(session.machine.VRDEServer.enabled)
+                            'enabled' : bool(session.machine.VRDEServer.enabled)
                         }
                     except:
                         # Just unlock the machine
@@ -410,7 +410,7 @@ def enrichEvents(eventList):
 
                     eventList[ek]['enrichmentData'] = {
                         'lastStateChange' : math.floor(long(machine.lastStateChange)/1000),
-                        'currentStateModified' : machine.currentStateModified
+                        'currentStateModified' : bool(machine.currentStateModified)
                     }
                     
                 except Exception as e:
@@ -1078,7 +1078,7 @@ class vboxConnector(object):
         try:
             if m.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
                 
-                m.VRDEServer.enabled = args['VRDEServer']['enabled']
+                m.VRDEServer.enabled = bool(args['VRDEServer']['enabled'])
                 m.VRDEServer.setVRDEProperty('TCP/Ports',args['VRDEServer']['ports'])
                 m.VRDEServer.setVRDEProperty('VNCPassword',args['VRDEServer'].get('VNCPassword', ''))
                 m.VRDEServer.authType = args['VRDEServer'].get('authType', None)
@@ -1166,7 +1166,7 @@ class vboxConnector(object):
             n = m.getNetworkAdapter(i)
 
             # Skip disabled adapters
-            if not n.enabled:
+            if not bool(n.enabled):
                 continue
 
             for p in range(0, len(netprops)):
@@ -1470,13 +1470,13 @@ class vboxConnector(object):
             m.VRAMSize = int(args['VRAMSize'])
             try:
                 if m.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
-                    m.VRDEServer.enabled = args.get('VRDEServer.enabled', False)
+                    m.VRDEServer.enabled = bool(args.get('VRDEServer.enabled', False))
                     if args.get('VRDEServer.enabled', False):
                         m.VRDEServer.setVRDEProperty('TCP/Ports',args.get('VRDEServer.ports'))
                         m.VRDEServer.setVRDEProperty('TCP/Address',args.get('VRDEServer.netAddress'))
                         m.VRDEServer.authType = vboxStringToEnum("AuthType",args.get('VRDEServer.authType', None))
                         m.VRDEServer.authTimeout = int(args.get('VRDEServer.authTimeout',0))
-                        m.VRDEServer.allowMultiConnection = args.get('VRDEServer.allowMultiConnection', False)
+                        m.VRDEServer.allowMultiConnection = bool(args.get('VRDEServer.allowMultiConnection', False))
     
             except Exception as e:
                 self.errors.append((e,traceback.format_exc()))
@@ -1485,7 +1485,7 @@ class vboxConnector(object):
             """
                 Audio Controller
             """
-            m.audioAdapter.enabled = args.get('audioAdapter.enabled', False)
+            m.audioAdapter.enabled = bool(args.get('audioAdapter.enabled', False))
             if args.get('audioAdapter.enabled', False):
                 m.audioAdapter.audioController = vboxStringToEnum("AudioControllerType", args.get('audioAdapter.audioController'))
                 m.audioAdapter.audioDriver = vboxStringToEnum("AudioDriverType", args.get('audioAdapter.audioDriver'))
@@ -1550,10 +1550,10 @@ class vboxConnector(object):
                             
                             # CD / DVD Drive
                             if ma['type'] == 'DVD':
-                                med = self.vbox.host.findHostDVDDrive(ma['medium']['name'])
+                                med = self.vbox.host.findHostDVDDrive(ma['medium']['name'] if ma['medium']['name'] else ma['medium']['location'])
                             # floppy drives
                             else:
-                                med = self.vbox.host.findHostFloppyDrive(ma['medium']['name'])
+                                med = self.vbox.host.findHostFloppyDrive(ma['medium']['name'] if ma['medium']['name'] else ma['medium']['location'])
                             
                         else:
                             
@@ -1595,7 +1595,7 @@ class vboxConnector(object):
                 n = m.getNetworkAdapter(i)
     
                 # Skip disabled adapters
-                if not n.enabled and not args['networkAdapters'][i]['enabled']:
+                if not bool(n.enabled) and not args['networkAdapters'][i]['enabled']:
                     continue
                 
                 for k in netprops:
@@ -1652,7 +1652,7 @@ class vboxConnector(object):
                 """ @p ISerialPort """
                 p = m.getSerialPort(i)
     
-                if not p.enabled and not args['serialPorts'][i]['enabled']:
+                if not bool(p.enabled) and not args['serialPorts'][i]['enabled']:
                     continue
                 
                 p.enabled = args['serialPorts'][i]['enabled']
@@ -2220,7 +2220,7 @@ class vboxConnector(object):
                 dhcp = self.vbox.createDHCPServer(nic.networkName)
             
             if dhcp:
-                dhcp.enabled = int(nics[i]['dhcpServer']['enabled'])
+                dhcp.enabled = bool(nics[i]['dhcpServer']['enabled'])
                 dhcp.setConfiguration(nics[i]['dhcpServer']['IPAddress'],nics[i]['dhcpServer']['networkMask'],nics[i]['dhcpServer']['lowerIP'],nics[i]['dhcpServer']['upperIP'])
 
         return True
@@ -2684,7 +2684,7 @@ class vboxConnector(object):
                 vrde = smachine.VRDEServer
                 
                 data['VRDEServer'] = (None if not vrde else {
-                        'enabled' : int(vrde.enabled),
+                        'enabled' : bool(vrde.enabled),
                         'ports' : vrde.getVRDEProperty('TCP/Ports'),
                         'netAddress' : vrde.getVRDEProperty('TCP/Address'),
                         'VNCPassword' : vrde.getVRDEProperty('VNCPassword'),
@@ -2817,7 +2817,7 @@ class vboxConnector(object):
 
             try:
                 if session.machine.VRDEServer and self.vbox.systemProperties.defaultVRDEExtPack:
-                    session.machine.VRDEServer.enabled = 1
+                    session.machine.VRDEServer.enabled = True
                     session.machine.VRDEServer.authTimeout = 5000
                     session.machine.VRDEServer.setVRDEProperty('TCP/Ports', '3390-5000')
                 
@@ -3053,7 +3053,7 @@ class vboxConnector(object):
 
             deviceFilters.append({
                 'name' : df.name,
-                'active' : df.active,
+                'active' : bool(df.active),
                 'vendorId' : df.vendorId,
                 'productId' : df.productId,
                 'revision' : df.revision,
@@ -3078,52 +3078,52 @@ class vboxConnector(object):
             'name' : m.name,
             'description' : m.description,
             'id' : m.id,
-            'autostartEnabled' : m.autostartEnabled,
+            'autostartEnabled' : bool(m.autostartEnabled),
             'settingsFilePath' : m.settingsFilePath,
             'OSTypeId' : m.OSTypeId,
             'OSTypeDesc' : self.vbox.getGuestOSType(m.OSTypeId).description,
             'CPUCount' : m.CPUCount,
-            'HPETEnabled' : m.HPETEnabled,
+            'HPETEnabled' : bool(m.HPETEnabled),
             'memorySize' : m.memorySize,
             'VRAMSize' : m.VRAMSize,
             'pointingHIDType' : vboxEnumToString("PointingHIDType", m.pointingHIDType),
             'keyboardHIDType' : vboxEnumToString("KeyboardHIDType", m.keyboardHIDType),
-            'accelerate3DEnabled' : m.accelerate3DEnabled,
-            'accelerate2DVideoEnabled' : m.accelerate2DVideoEnabled,
+            'accelerate3DEnabled' : bool(m.accelerate3DEnabled),
+            'accelerate2DVideoEnabled' : bool(m.accelerate2DVideoEnabled),
             'BIOSSettings' : {
-                'ACPIEnabled' : m.BIOSSettings.ACPIEnabled,
-                'IOAPICEnabled' : m.BIOSSettings.IOAPICEnabled,
+                'ACPIEnabled' : bool(m.BIOSSettings.ACPIEnabled),
+                'IOAPICEnabled' : bool(m.BIOSSettings.IOAPICEnabled),
                 'timeOffset' : m.BIOSSettings.timeOffset
                 },
             'firmwareType' : vboxEnumToString("FirmwareType", m.firmwareType),
             'snapshotFolder' : m.snapshotFolder,
             'monitorCount' : m.monitorCount,
-            'pageFusionEnabled' : m.pageFusionEnabled,
+            'pageFusionEnabled' : bool(m.pageFusionEnabled),
             'VRDEServer' : (None if not m.VRDEServer else {
-                'enabled' : m.VRDEServer.enabled,
+                'enabled' : bool(m.VRDEServer.enabled),
                 'ports' : m.VRDEServer.getVRDEProperty('TCP/Ports'),
                 'netAddress' : m.VRDEServer.getVRDEProperty('TCP/Address'),
                 'VNCPassword' : m.VRDEServer.getVRDEProperty('VNCPassword'),
                 'authType' : vboxEnumToString("AuthType", m.VRDEServer.authType),
                 'authTimeout' : m.VRDEServer.authTimeout,
-                'allowMultiConnection' : m.VRDEServer.allowMultiConnection,
+                'allowMultiConnection' : bool(m.VRDEServer.allowMultiConnection),
                 'VRDEExtPack' : m.VRDEServer.VRDEExtPack
                 }),
             'audioAdapter' : {
-                'enabled' : m.audioAdapter.enabled,
+                'enabled' : bool(m.audioAdapter.enabled),
                 'audioController' : vboxEnumToString("AudioControllerType", m.audioAdapter.audioController),
                 'audioDriver' : vboxEnumToString("AudioDriverType", m.audioAdapter.audioDriver),
                 },
-            'RTCUseUTC' : m.RTCUseUTC,
+            'RTCUseUTC' : bool(m.RTCUseUTC),
             'HWVirtExProperties' : {
-                'Enabled' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled),
-                'NestedPaging' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging),
-                'LargePages' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages),
-                'UnrestrictedExecution' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_UnrestrictedExecution),
-                'VPID' : m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID)
+                'Enabled' : bool(m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_Enabled)),
+                'NestedPaging' : bool(m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_NestedPaging)),
+                'LargePages' : bool(m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_LargePages)),
+                'UnrestrictedExecution' : bool(m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_UnrestrictedExecution)),
+                'VPID' :bool( m.getHWVirtExProperty(vboxMgr.constants.HWVirtExPropertyType_VPID))
                 },
             'CpuProperties' : {
-                'PAE' : m.getCPUProperty(vboxMgr.constants.CPUPropertyType_PAE)
+                'PAE' : bool(m.getCPUProperty(vboxMgr.constants.CPUPropertyType_PAE))
                 },
             'bootOrder' : self._machineGetBootOrder(m),
             'chipsetType' : vboxEnumToString('ChipsetType', m.chipsetType),
@@ -3168,11 +3168,11 @@ class vboxConnector(object):
                 p = m.getSerialPort(i)
                 ports.append({
                     'slot' : p.slot,
-                    'enabled' : p.enabled,
+                    'enabled' : bool(p.enabled),
                     'IOBase' : str('0X%x'%(p.IOBase,)).upper(),
                     'IRQ' : p.IRQ,
                     'hostMode' : vboxEnumToString("PortMode", p.hostMode),
-                    'server' : p.server,
+                    'server' : bool(p.server),
                     'path' : p.path
                 })
             except: pass
@@ -3194,7 +3194,7 @@ class vboxConnector(object):
                 p = m.getParallelPort(i)
                 ports.append({
                     'slot' : p.slot,
-                    'enabled' : p.enabled,
+                    'enabled' : bool(p.enabled),
                     'IOBase' : str('0X%x'%(p.IOBase,)).upper(),
                     'IRQ' : p.IRQ,
                     'path' : p.path
@@ -3254,9 +3254,9 @@ class vboxConnector(object):
                 sflist.append({
                     'name' : sf.name,
                     'hostPath' : sf.hostPath,
-                    'accessible' : sf.accessible,
-                    'writable' : sf.writable,
-                    'autoMount' : sf.autoMount,
+                    'accessible' : bool(sf.accessible),
+                    'writable' : bool(sf.writable),
+                    'autoMount' : bool(sf.autoMount),
                     'lastAccessError' : sf.lastAccessError,
                     'type' : 'transient'
                 })
@@ -3526,7 +3526,7 @@ class vboxConnector(object):
         response['snapshot'] = vboxConnector._snapshotGetDetails(s,True)
 
         response['currentSnapshotId'] = (machine.currentSnapshot.id if machine.currentSnapshot else '')
-        response['currentStateModified'] = machine.currentStateModified
+        response['currentStateModified'] = bool(machine.currentStateModified)
 
         return response
 
@@ -3555,7 +3555,7 @@ class vboxConnector(object):
             'description' : s.description,
             'timeStamp' : timestamp,
             'timeStampSplit' : vboxConnector._util_splitTime(int(time.time()) - timestamp),
-            'online' : s.online,
+            'online' : bool(s.online),
             'children' : children
         }
 
@@ -4156,9 +4156,9 @@ class vboxConnector(object):
         """ @m IMedium """
         if args.get('hostDrive', False):
             if args['type'] == 'Floppy':
-                m = self.vbox.host.findHostFloppyDrive(args['name'])
+                m = self.vbox.host.findHostFloppyDrive(args.get('name','') if args['name'] else args.get('medium',''))
             else:
-                m = self.vbox.host.findHostDVDDrive(args['name'])
+                m = self.vbox.host.findHostDVDDrive(args.get('name','') if args['name'] else args.get('medium',''))
         else:
             m = self.vbox.openMedium(args['medium'], vboxStringToEnum('DeviceType',args['type']), vboxMgr.constants.AccessMode_ReadOnly, False)
 

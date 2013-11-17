@@ -18,7 +18,9 @@ Ext.define('vcube.form.field.usbfilters', {
     getValue: function() {
     	var filters = [];
     	this.grid.getStore().each(function(record) {
-    		filters.push(record.getData());
+    		var filter = record.getData();
+    		delete filter.id;
+    		filters.push(filter);
     	});
 
     	return filters;
@@ -30,7 +32,9 @@ Ext.define('vcube.form.field.usbfilters', {
     	store.removeAll();
     	
     	if(!val) val = [];
-    	store.add(val);
+    	store.add(Ext.Array.map(val, function(v){
+    		return Ext.apply({id: 'usb-filter-' + Ext.id()}, v);
+    	}));
     	
     },
     
@@ -212,6 +216,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			},
 			store: Ext.create('Ext.data.Store',{
 				fields: [
+				         {name: 'id', type: 'string'},
 				         {name: 'vendorId', type: 'string'},
 				         {name: 'product', type: 'string'},
 				         {name: 'remote', type: 'string'},
@@ -239,7 +244,11 @@ Ext.define('vcube.form.field.usbfilters', {
 			    				   name = nameTpl + (++number);
 			    			   }
 			    			   
-			    			   this.grid.getStore().add({'name':name,active:true});
+			    			   this.grid.getStore().add({
+			    				   'name': name,
+			    				   active: true,
+			    				   id: 'usb-filter-'+Ext.id()
+			    			   });
 			    			   this.grid.getView().focusRow(this.grid.getStore().getCount()-1);
 			    		   },
 			    		   scope: this
@@ -288,6 +297,7 @@ Ext.define('vcube.form.field.usbfilters', {
 			    								click: function(item) {
 			    									console.log(item);
 			    									self.grid.getStore().add(Ext.apply({},{
+			    										id: 'usb-filter-'+Ext.id(),
 			    										name: item.text,
 			    										active: true,
 			    										vendorId: item.usbdata.vendorId.replace(/^0x/,''),

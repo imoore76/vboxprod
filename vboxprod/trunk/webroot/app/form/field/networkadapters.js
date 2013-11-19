@@ -655,7 +655,8 @@ Ext.define('vcube.form.field.networkadapters', {
     					fieldLabel: 'MAC Address',
     					name: 'netAdapter-MACAddress-'+i,
     					itemId: 'macaddress',
-    					labelAlign: 'right'
+    					labelAlign: 'right',
+    					maskRe: /[0-9a-fA-F]/
     				},{
     					xtype: 'button',
     					icon: 'images/vbox/refresh_16px.png',

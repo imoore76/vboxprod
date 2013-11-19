@@ -2619,10 +2619,10 @@ class vboxConnector(object):
         data['serialPorts'] = self._machineGetSerialPorts(machine)
 
         # LPT Ports
-        data['parallelPorts'] = self._machineGetParallelPorts(machine)
+        data['parallelPorts'] = self.machineGetParallelPorts(machine)
 
         # Shared Folders
-        data['sharedFolders'] = self._machineGetSharedFolders(machine)
+        data['sharedFolders'] = self.machineGetSharedFolders(machine)
 
         # USB Controllers and Filters
         data['USBControllers'] = self.machineGetUSBControllers(machine)
@@ -3185,7 +3185,7 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array parallel port info
      """
-    def _machineGetParallelPorts(self, m):
+    def machineGetParallelPorts(self, m):
 
         ports = []
         for i in range(0, self.vbox.systemProperties.parallelPortCount):
@@ -3210,7 +3210,7 @@ class vboxConnector(object):
      * @param IMachine m virtual machine instance
      * @return array shared folder info
      """
-    def _machineGetSharedFolders(self, m):
+    def machineGetSharedFolders(self, m):
         
         folderlist = []
         for sf in vboxGetArray(m,'sharedFolders'):

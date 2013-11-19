@@ -12,7 +12,10 @@ Ext.define('vcube.controller.XInfoTab', {
     	ref: 'NavTreeView'
     }],
 
-	/* Try?? */
+	/* Repopulate everything on record change ? */
+	repopulateOnRecrodChange: false,
+
+
     constructor: function() {
     	
     	
@@ -39,8 +42,7 @@ Ext.define('vcube.controller.XInfoTab', {
     	
     	/* Point to section config */
     	this.sectionConfig = {};
-    	
-    	
+    	    	
     	/* After new data is loaded */
     	this.callParent(arguments);
     	
@@ -111,11 +113,19 @@ Ext.define('vcube.controller.XInfoTab', {
     	if(this.selectionItemId != record.get('id'))
     		return;
 
+    	console.log('here1');
+    	if(this.repopulateOnRecrodChange) {
+    		this.populate(record.getData());
+    		return;
+    	}
+    	
     	var inf = this.getInfoPane();
     	
     	if(!inf) return;
     	
+    	console.log('here2');
     	inf.update(record.getData());
+    	console.log('here3');
     	
     },
     

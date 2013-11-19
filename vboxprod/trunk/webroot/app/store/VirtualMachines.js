@@ -20,7 +20,8 @@ Ext.define('vcube.store.VirtualMachines',{
 	      {name: 'group_id', type: 'int'},
 	      {name: 'CPUCount', type: 'int'},
 	      {name: 'CPUExecutionCap', type: 'int'},
-	      {name: 'memorySize', type: 'int'}
+	      {name: 'memorySize', type: 'int'},
+	      'accessError'
 	],
 	sorters: { property: 'name', direction : 'ASC' }
 });

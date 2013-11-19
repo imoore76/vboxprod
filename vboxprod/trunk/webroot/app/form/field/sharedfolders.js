@@ -386,7 +386,8 @@ Ext.define('vcube.form.field.sharedfolders', {
 			        				
 			        				var data = dlg.down('.form').getForm().getValues();
 
-			        				data.writable = (data.writable ? true : false);
+			        				// writable is labeled "Read-only"
+			        				data.writable = (data.writable ? false : true);
 			        				data.autoMount = (data.autoMount ? true : false);
 			        				data.accessible = true;
 			        				data.type = (dlg.down('#makePermanent').isVisible() && !dlg.down('#makePermanent').getValue() ? 'transient' : 'machine');
@@ -415,6 +416,7 @@ Ext.define('vcube.form.field.sharedfolders', {
 			        				dlg.down('#makePermanent').hide();
 			        			
 			        			var data = this.grid.getSelectionModel().getSelection()[0].getData();
+			        			// writable is labeled "Read-only"
 			        			data.writable = !(data.writable);
 
 			        			// Set name validator
@@ -433,8 +435,14 @@ Ext.define('vcube.form.field.sharedfolders', {
 			        			dlg.down('#ok').on('click',function(btn) {
 			        				
 			        				var data = dlg.down('.form').getForm().getValues();
-			        				data.writable = (data.writable ? 0 : 1);
-			        				data.autoMount = (data.autoMount ? 1 : 0);
+			        				
+			        				// writable is labeled "Read-only"
+			        				data.writable = (data.writable ? false : true);
+			        				data.autoMount = (data.autoMount ? true : false);
+			        				
+			        				// If path has changed, clear access error
+			        				if(data.hostPath != this.grid.getSelectionModel().getSelection()[0].get('hostPath'))
+			        					data.accessible = true;
 			        				
 			        				data.type = (dlg.down('#makePermanent').isVisible() && !dlg.down('#makePermanent').getValue() ? 'transient' : 'machine');
 			        				

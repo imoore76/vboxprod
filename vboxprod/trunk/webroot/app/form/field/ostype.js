@@ -1,5 +1,5 @@
 Ext.define('vcube.form.field.ostype', {
-    extend: 'Ext.form.field.Base',
+    extend: 'Ext.form.FieldContainer',
     mixins: {
         field: 'Ext.form.field.Field'
     },
@@ -9,9 +9,11 @@ Ext.define('vcube.form.field.ostype', {
     msgTarget: 'side',
     submitFormat: 'c',
     
-    height:56,
-    
     defaults: {},
+    
+    layout: 'hbox',
+    margin: 0,
+    padding: 0,
     
     ostypes: {},
     
@@ -109,18 +111,12 @@ Ext.define('vcube.form.field.ostype', {
 			}
     	});
     	
-    	this.childComponent = Ext.create('Ext.panel.Panel',{
-    	    layout: {
-    	    	type: 'hbox'
-    	    },
-    	    border: false,
-    		bodyStyle: { background: 'transparent' },
-    		defaults: {
-        		border: false,
-        		bodyStyle: { background: 'transparent' }    			
-    		},
-    		items: [{
+    	this.items = [{
     			layout: 'form',
+    			bodyStyle: { background: 'transparent' },
+    			border: false,
+    			padding: 0,
+    			margin: 0,
     			flex: 1,
     			defaults: {
     				labelAlign: 'right'
@@ -128,8 +124,7 @@ Ext.define('vcube.form.field.ostype', {
     			items: [this.osFamilyIdCombo, this.osTypeIdCombo]
     		},
     		this.osTypeImage
-    		]
-    	});
+    		];
     	
 	    
     	this.ostypes = {};
@@ -137,7 +132,6 @@ Ext.define('vcube.form.field.ostype', {
     	this.callParent(arguments);
 	    
 	    this.on({
-	    	destroy : function() { Ext.destroy(this.childComponent);},
 	    	render: function() {
 	    		
 	    		var self = this;
@@ -188,25 +182,6 @@ Ext.define('vcube.form.field.ostype', {
 	    	scope: this
 	    });
 
-    },
-    
-    // Generates the child component markup and let Ext.form.field.Base handle the rest
-    getSubTplMarkup: function() {
-        // generateMarkup will append to the passed empty array and return it
-    	// but we want to return a single string
-        return Ext.DomHelper.generateMarkup(this.childComponent.getRenderTree(), []).join('');
-    },
-    
-    // Regular containers implements this method to call finishRender for each of their
-    // child, and we need to do the same for the component to display smoothly
-    finishRenderChildren: function() {
-        this.callParent(arguments);
-        this.childComponent.finishRender();
-    },
-    
-    // This is important for layout notably
-    onResize: function(w, h) {
-        this.callParent(arguments);
-        this.childComponent.setSize(w - this.getLabelWidth(), h);
     }
+
 });

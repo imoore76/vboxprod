@@ -25,8 +25,12 @@ Ext.define('vcube.controller.VMSummary', {
     	    	
         /* Populate data function returns a deferred or data */
         this.populateData = function(data) {
-        	return vcube.storemanager.getStoreRecordData('vm',data.id);
+        	// this already contains the data we need from the record
+        	return data;
         };
+        
+        /* Repopulate everything on record change */
+        this.repopulateOnRecrodChange = true;
         
     	
         this.control({

@@ -43,10 +43,15 @@ Ext.define('vcube.controller.VMTabs', {
     		return;
     	
     	// Only show summary tab if this is not accessible
-    	if(vcube.storemanager.getStoreRecordData('vm',record.get('rawid')).state == 'Inaccessible') {
+    	var accessible = vcube.storemanager.getStoreRecordData('vm',record.get('rawid')).accessible;
+    	
+    	if(!accessible) {
     		this.getVMTabsView().setActiveTab(0);
     	}
 
+    	Ext.each(this.getVMTabsView().items.items, function(tab, idx) {
+    		if(idx > 0) tab.setDisabled(!accessible);
+    	});
     }
     
  	

@@ -1,15 +1,19 @@
 Ext.define('vcube.form.field.bootorder', {
-    extend: 'Ext.form.field.Base',
+	extend: 'Ext.form.FieldContainer',
     mixins: {
         field: 'Ext.form.field.Field'
     },
     alias: 'widget.bootorderfield',
     combineErrors: true,
-    layout: 'hbox',
     msgTarget: 'side',
     submitFormat: 'c',
     
     defaults: {},
+    
+	layout: 'hbox',
+	border: false,
+	bodyStyle: { background: 'transparent' },
+
     
     getSubmitValue: function() {
     	return this.getValue();
@@ -129,19 +133,14 @@ Ext.define('vcube.form.field.bootorder', {
 
     	});
     	
-    	this.childComponent = Ext.create('Ext.panel.Panel',{
-    		layout: 'hbox',
-    		border: false,
-    		bodyStyle: { background: 'transparent' },
-    		defaults: {
-        		border: false,
-        		bodyStyle: { background: 'transparent' }    			
-    		},
-    		items: [
+    	this.items = [
     		   this.grid,
     		   {
     			   layout: 'vbox',
     			   margin: '2 0 0 4',
+    			   border: false,
+    			   bodyStyle: { background: 'transparent' },
+    			   flex: 1,
     			   defaults: {
     				   xtype: 'button',
     				   height: 16,
@@ -193,32 +192,10 @@ Ext.define('vcube.form.field.bootorder', {
 
     			   }]
     		   }
-    		]
-    	});
+    		];
     	
 	    
 	    this.callParent(arguments);
 
-	    this.on('destroy', function() { Ext.destroy(this.childComponent); }, this);
-    },
-    
-    // Generates the child component markup and let Ext.form.field.Base handle the rest
-    getSubTplMarkup: function() {
-        // generateMarkup will append to the passed empty array and return it
-    	// but we want to return a single string
-        return Ext.DomHelper.generateMarkup(this.childComponent.getRenderTree(), []).join('');
-    },
-    
-    // Regular containers implements this method to call finishRender for each of their
-    // child, and we need to do the same for the component to display smoothly
-    finishRenderChildren: function() {
-        this.callParent(arguments);
-        this.childComponent.finishRender();
-    },
-    
-    // This is important for layout notably
-    onResize: function(w, h) {
-        this.callParent(arguments);
-        this.childComponent.setSize(w - this.getLabelWidth(), h);
     }
 });

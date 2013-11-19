@@ -13,7 +13,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 	           'vcube.form.field.serialports', 'vcube.form.field.parallelports',
 	           'vcube.form.field.sharedfolders', 'vcube.form.field.storage',
 	           'vcube.widget.fsbrowser', 'vcube.form.field.folderbrowser',
-	           'vcube.form.field.serverstorecombo'],
+	           'vcube.form.field.serverstorecombo', 'vcube.form.field.icon'],
 	           
 	
 	sections: [{
@@ -31,8 +31,7 @@ Ext.define('vcube.view.VMSettingsDialog',{
 				xtype: 'ostypefield',
 				name: 'OSTypeId'
 			},{
-				xtype: 'textfield',
-				fieldLabel: 'icon',
+				xtype: 'iconfield',
 				name: 'icon'
 			}]
 		},{
@@ -223,7 +222,8 @@ Ext.define('vcube.view.VMSettingsDialog',{
 			},{
 				xtype: 'numberfield',
 				fieldLabel: 'Authentication Timeout',
-				name: 'VRDEServer.authTimeout'
+				name: 'VRDEServer.authTimeout',
+				minValue: 0
 			},{
 				xtype: 'checkbox',
 				inputValue: true,

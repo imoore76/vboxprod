@@ -12,8 +12,7 @@ The dialog could have a data object or something. Components under it could
 have a serverdata: [{
 	name: 'limits',
 	url: 'vbox/getSystemProperties'
-}
-]
+}]
 
 dialog.getData('limits')
 

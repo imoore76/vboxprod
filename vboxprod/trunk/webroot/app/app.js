@@ -221,12 +221,13 @@ Ext.application({
     			self.constants = constants;
 
     			
-    			Ext.ux.Deferred.when(vcube.storemanager.start)
-	    			.then(vcube.vmdatamediator.start)
-    				.then(vcube.eventlistener.start)
-					.then(function() {
-						self.fireEvent('start');
-					});
+    			Ext.ux.Deferred.when(vcube.storemanager.start()).done(function(){
+    				Ext.ux.Deferred.when(vcube.vmdatamediator.start()).done(function() {
+    					Ext.ux.Deferred.when(vcube.eventlistener.start()).done(function() {
+    						self.fireEvent('start');    						
+    					});
+    				});
+    			});
     		});
     		
     	} else {

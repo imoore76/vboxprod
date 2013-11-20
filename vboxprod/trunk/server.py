@@ -39,8 +39,12 @@ class WebServerThread(threading.Thread):
             dbconfig[k] = v
         
         webconfig = {
+            'global' : {
+                'server.thread_pool' : 30,
+            },
             '/': {
                   
+                
                 'tools.staticdir.on': True,
                 'tools.staticdir.dir': basepath+'/webroot',                                                                                       
                 'tools.staticdir.index': 'index.html',
@@ -89,7 +93,7 @@ class WebServerThread(threading.Thread):
         """
         cherrypy.quickstart(DispatchRoot(), '/', webconfig)
 
-            
+        cherrypy.engine.autoreload.unsubscribe()
 
 
     

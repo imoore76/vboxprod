@@ -119,7 +119,7 @@ class dispatcher(dispatcher_parent):
         })
 
         vcube.getInstance().logTask({
-            'name': 'Change connector',
+            'name': 'Save connector settings',
             'user': cherrypy.session.get('user',{}).get('username','Unknown'),
             'details': 'Connector `%s` configuration changed' %(c.name,) + ('. State: %s' %(constants.CONNECTOR_STATES_TEXT[c.state],) if stateChanged else ''),
             'category': constants.LOG_CATEGORY['CONNECTOR'],

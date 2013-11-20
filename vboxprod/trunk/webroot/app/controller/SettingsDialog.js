@@ -11,6 +11,8 @@ Ext.define('vcube.controller.SettingsDialog', {
     			show: function(dlg) {
     				dlg.down('#linklist').items.items[0].toggle(true);
     			},
+    			add: this.compAdded,
+    			dockedadd: this.compAdded,
     			beforerender: this.addSections
     		},
     		'SettingsDialog #cancel' : {
@@ -26,6 +28,14 @@ Ext.define('vcube.controller.SettingsDialog', {
     		}
     	});
     	
+    },
+    
+    /* Comp added */
+    compAdded: function(dlg, cmp) {
+    	console.log("Added");
+    	console.log(cmp);
+    	cmp.on('add',this.compAdded, this);
+    	cmp.on('dockedadd',this.compAdded, this);
     },
     
     /* Add sections to settings dialog */
@@ -50,6 +60,8 @@ Ext.define('vcube.controller.SettingsDialog', {
     		dlg.sections[i].title = dlg.sections[i].label,
     		dlg.sections[i].itemId = dlg.sections[i].name;
     		settingsPane.add(dlg.sections[i]);
+    		//console.log("Adding section");
+    		//console.log(dlg.sections[i]);
     	}
     	
     },

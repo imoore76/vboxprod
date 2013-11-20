@@ -1,5 +1,57 @@
 
 
+OK - data list
+
+OS Types - the widget gets this from the store on render. This will be used
+	in other places, so can stay seperate
+
+
+How will "Limits" be set? A mixin?
+
+System Base memory - É this can be set on VMSettings view
+	.. part of "limits"
+
+Chipsets - .. this is set already defined as a serverstorecombo
+
+CPU min/max - need this
+	.. part of "limits"
+
+Virtualization support - need this
+	.. part of limits
+
+Video memory - need this
+	.. part of limits
+
+Remote display support - need this
+	.. part of limits
+
+Controller definitions - need this
+	.. can be loaded when Storage pane is shown
+	Chipset types .. can be in controller definitions..
+
+Audio driver .. set as serverstore combo
+Audio controller ^^
+
+Network - Attachment types
+	adapter types
+	nat networks
+	bridged adapters ..etc.. lots of stuff
+	.. can be loaded on-show of pane
+
+Max adapters - need this
+	.. can be part of "limits"
+Serial ports - max serial ports
+Parallel ^^
+
+USB - get device filters.. this can be done on-show of pane
+Shared folders - this can be done on-show of pane..
+
+.. these would have to be updated in saveSettings to ignore them. or getValues() would
+	have to just return the same 
+if they have not been set.
+.. Maybe even storage controllers as well
+
+
 Need something like requires: [] for data.. or these could be stores?
 .. do stores make sense? not really. a lot of overhead.. or maybe they do
 .. but stores are global
@@ -19,6 +71,11 @@ dialog.getData('limits')
 storageControllerProperties
 
 dialog.getData('storageControllerProperties')
+
+should this be kept in vCube memory since this will not change without
+an upgrade / connector disconnect - reconnect? 
+
+----------------------------
 
 something will have to keep track of group memberships
 	

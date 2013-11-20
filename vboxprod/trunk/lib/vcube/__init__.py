@@ -6,6 +6,7 @@ import time
 import os, sys, ConfigParser, threading, Queue
 import MySQLdb
 import pprint, traceback
+import SharedLock
 
 from connector import vboxConnector
 import constants
@@ -194,7 +195,7 @@ class Application(threading.Thread):
         VirtualMachines list
     """
     virtualMachines = {}
-    virtualMachinesLock = threading.Lock()
+    virtualMachinesLock = SharedLock.SharedLock()
     
     """
         Used for progress operation to task mapping
@@ -539,11 +540,11 @@ class Application(threading.Thread):
     def getVirtualMachines(self):
         
         vmList = []
-        self.virtualMachinesLock.acquire(True)
+        self.virtualMachinesLock.acquire_shared()
         try:
             vmList = list(self.virtualMachines.values())
         finally:
-            self.virtualMachinesLock.release()
+            self.virtualMachinesLock.release_shared()
 
         return vmList
     
@@ -571,7 +572,7 @@ class Application(threading.Thread):
                 
                 rpcVMList = self.vboxAction(event['connector_id'], 'vboxGetMachines', {})
                 
-                self.virtualMachinesLock.acquire(True)
+                self.virtualMachinesLock.acquire()
                 try:
                     
                     for vm in rpcVMList['responseData']:
@@ -595,7 +596,7 @@ class Application(threading.Thread):
             else:
                 """ Not running """
                 
-                self.virtualMachinesLock.acquire(True)
+                self.virtualMachinesLock.acquire()
                 vmListRemoved = []
                 try:
                     vmIds = self.virtualMachines.keys()
@@ -622,7 +623,7 @@ class Application(threading.Thread):
                 Machine added or removed from virtualbox server
             """
             
-            self.virtualMachinesLock.acquire(True)
+            self.virtualMachinesLock.acquire()
             try:
                 if event['registered']:
                     
@@ -654,7 +655,7 @@ class Application(threading.Thread):
             """
                 Machine session state change
             """
-            self.virtualMachinesLock.acquire(True)
+            self.virtualMachinesLock.acquire()
             try:
                 self.virtualMachines[event['machineId']]['sessionState']  = event['state']
             finally:
@@ -664,7 +665,7 @@ class Application(threading.Thread):
             """
                 Machine state changed
             """
-            self.virtualMachinesLock.acquire(True)
+            self.virtualMachinesLock.acquire()
             try:
                 if self.virtualMachines.get(event['machineId'], None) is not None:
                     self.virtualMachines[event['machineId']]['state']  = event['state']
@@ -676,7 +677,7 @@ class Application(threading.Thread):
             """
                 Any type of machine data changed
             """
-            self.virtualMachinesLock.acquire(True)
+            self.virtualMachinesLock.acquire()
             try:
                 self.virtualMachines[event['machineId']].update(event['enrichmentData'])
             finally:
@@ -686,7 +687,7 @@ class Application(threading.Thread):
             """
                 Group Changed
             """
-            self.virtualMachinesLock.acquire(True)
+            self.virtualMachinesLock.acquire()
             try:
                 self.virtualMachines[event['machineId']]['group_id']  = event['group']
             finally:
@@ -696,7 +697,7 @@ class Application(threading.Thread):
             """
                 Icon changed
             """
-            self.virtualMachinesLock.acquire(True)
+            self.virtualMachinesLock.acquire()
             try:
                 self.virtualMachines[event['machineId']]['icon']  = event['icon']
             finally:
@@ -709,7 +710,7 @@ class Application(threading.Thread):
             """
             if event['enrichmentData']['isCurrentSnapshot']:
                 
-                self.virtualMachinesLock.acquire(True)
+                self.virtualMachinesLock.acquire()
                 try:
                     self.virtualMachines[event['machineId']]['currentSnapshotName'] = event['enrichmentData']['name']
                 finally:

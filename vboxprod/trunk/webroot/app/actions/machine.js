@@ -212,16 +212,8 @@ Ext.define('vcube.actions.machine',{
 			
 			action: function(selectionModel) {
 				
-				var handleAdd = function(d, ct) {
-					ct.on('add', handleAdd);
-					ct.on('dockedadd', handleAdd);
-				};
-				
 				var sd = Ext.create('vcube.view.VMSettingsDialog',{
-					serverId : vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id'),
-					listeners: {
-						add: handleAdd
-					}
+					serverId : vcube.storemanager.getStoreRecord('vm',selectionModel.getSelection()[0].get('id')).get('connector_id')
 				});				
 				sd.setTitle(Ext.String.format(sd.title, selectionModel.getSelection()[0].get('name')));
 				

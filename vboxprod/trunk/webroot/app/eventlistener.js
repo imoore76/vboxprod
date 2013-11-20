@@ -53,6 +53,8 @@ Ext.define('vcube.eventlistener', {
 		};
 		  
 		vcube.eventlistener.ws.onopen = function() {
+			
+			console.log("OnOpen");
 			started.resolve();
 		};
 		

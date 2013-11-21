@@ -1,12 +1,18 @@
 
+.ServerBoundDialog instead of settings dialog...
+any component added to this will have to do this.up('.ServerBoundDialog') and
+find the serverId
 
-OK - data list
+
+OK - data list - This should be loaded before sections are added
+... maybe move into getSecions so it is evaluated at runtime rather
+... than at load time?
 
 OS Types - the widget gets this from the store on render. This will be used
 	in other places, so can stay seperate
 
 
-How will "Limits" be set? A mixin?
+How will "Limits" be set? A mixin? ... sure
 
 System Base memory - É this can be set on VMSettings view
 	.. part of "limits"

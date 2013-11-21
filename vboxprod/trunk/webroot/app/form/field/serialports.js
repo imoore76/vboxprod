@@ -173,6 +173,7 @@ Ext.define('vcube.form.field.serialports', {
     					xtype: 'numberfield',
     					labelWidth: 50,
     					inputWidth: 50,
+    					minValue: 0,
     					fieldLabel: 'IRQ',
     					itemId: 'irq',
     					name: 'serialPort-IRQ-'+i

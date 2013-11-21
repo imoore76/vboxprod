@@ -41,6 +41,8 @@ Ext.define('vcube.controller.SettingsDialog', {
     /* Add sections to settings dialog */
     addSections: function(dlg) {
     	
+    	Ext.suspendLayouts();
+    	
     	console.log("Adding sections");
     	var buttons = [];
     	var panels = [];
@@ -63,6 +65,8 @@ Ext.define('vcube.controller.SettingsDialog', {
     		//console.log("Adding section");
     		//console.log(dlg.sections[i]);
     	}
+    	
+    	Ext.resumeLayouts();
     	
     },
     

@@ -1836,7 +1836,80 @@ class vboxConnector(object):
         else:
             return map
         
-
+    """
+     * Get definitions required to configure a virtual machine
+    """
+    def remote_vboxGetVMSettingsDefs(self, args):
+        
+        defs = {
+            'chipsetBound' : {},
+            'storageBusTypes': {},
+            'controllerTypes' : {},
+            'vrdeSupport' : True if self.vbox.systemProperties.defaultVRDEExtPack else False,
+            'defaultAudioDriver' : vboxEnumToString('AudioDriverType', self.vbox.systemProperties.defaultAudioDriver),
+            'enums' : {}
+        }
+        
+        for p in ['minGuestRAM','maxGuestRAM','minGuestVRAM', 'maxGuestVRAM','minGuestCPUCount','maxGuestCPUCount','serialPortCount']:
+            defs[p] = getattr(self.vbox.systemProperties, p)
+        
+        # defs bound to chipset type
+        for chipsetStr, chipset in vboxEnumList('ChipsetType').items():
+            
+            if chipset == 0: continue
+            
+            defs['chipsetBound'][chipsetStr] = {}
+            
+            """ Just leave these at 8. More than that will just clutter the GUI """
+            """
+            defs['chipsetBound'][chipsetStr]['maxNetworkAdapters'] = self.vbox.systemProperties.getMaxNetworkAdapters(chipset)
+            
+            # Network attachment type
+            defs['chipsetBound'][chipsetStr]['maxNetworkAdaptersOfType'] = {}
+            for atStr, at in vboxEnumList('NetworkAttachmentType').items():
+                if at == 0: continue
+                defs['chipsetBound'][chipsetStr]['maxNetworkAdaptersOfType'][atStr] = self.vbox.systemProperties.getMaxNetworkAdaptersOfType(chipset, at)
+            """
+            
+            # Max instances of storage bus type
+            defs['chipsetBound'][chipsetStr]['maxInstancesOfStorageBus'] = {}
+            for sbStr, sb in vboxEnumList('StorageBus').items():
+                if sb == 0: continue
+                defs['chipsetBound'][chipsetStr]['maxInstancesOfStorageBus'][sbStr] = self.vbox.systemProperties.getMaxInstancesOfStorageBus(chipset,sb)
+            
+        # Storage bus defs
+        for sbStr, sb in vboxEnumList('StorageBus').items():
+            if sb == 0: continue
+            defs['storageBusTypes'][sbStr] = {
+                'maxDevicesPerPort' : self.vbox.systemProperties.getMaxDevicesPerPortForStorageBus(sb),
+                'minPortCount' : self.vbox.systemProperties.getMinPortCountForStorageBus(sb),
+                'maxPortCount' : self.vbox.systemProperties.getMaxPortCountForStorageBus(sb),
+                'deviceTypes' : [vboxEnumToString('DeviceType', d) for d in self.vbox.systemProperties.getDeviceTypesForStorageBus(sb)]
+            }
+            
+            # These are hard-coded. There is no way to get this from the API :(
+            defs['storageBusTypes'][sbStr]['controllerTypes'] = {
+                'SATA' : ['IntelAhci'],
+                'SCSI' : ['LsiLogic','BusLogic'],
+                'IDE' : ['PIIX3','PIIX4','ICH6'],
+                'Floppy' : ['I82078'],
+                'SAS' : ['LsiLogicSas']
+            }[sbStr]
+                
+        # Controller types
+        for ctStr, ct in vboxEnumList('StorageControllerType').items():
+            if ct == 0: continue
+            defs['controllerTypes'][ctStr] = {
+                'defaultIoCacheSetting' : bool(self.vbox.systemProperties.getDefaultIoCacheSettingForStorageController(ct))
+            }
+            
+        # Enums
+        for enum in ['NetworkAdapterType','NetworkAdapterPromiscModePolicy','PortMode','AudioDriverType','AudioControllerType','AuthType','StorageBus',
+                     'ChipsetType','NATAliasMode']:
+            defs['enums'][enum] = vboxEnumList(enum).keys()
+            
+        return defs
+ 
     """
      * Save VirtualBox system properties
      *

@@ -1,7 +1,7 @@
 import Queue
 
 """
-    Simple shared lock object
+    Very simple shared lock object
         
         - Not reentrant (I don't need it to be for my purposes)
         

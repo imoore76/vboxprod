@@ -7,22 +7,20 @@ Ext.define('vcube.controller.SettingsDialog', {
     init: function() {
     	
     	this.control({
+    		
     		'SettingsDialog' : {
     			show: function(dlg) {
     				dlg.down('#linklist').items.items[0].toggle(true);
     			},
-    			add: this.compAdded,
-    			dockedadd: this.compAdded,
     			beforerender: this.addSections
     		},
+    		
     		'SettingsDialog #cancel' : {
     			click: function(btn) {
     				btn.up('.window').close();
     			}
     		},
-    		'SettingsDialog #save' : {
-    			click: this.saveSettings
-    		},
+
     		'SettingsDialog #linklist > button' : {
     			toggle: this.buttonToggle
     		}
@@ -30,20 +28,11 @@ Ext.define('vcube.controller.SettingsDialog', {
     	
     },
     
-    /* Comp added */
-    compAdded: function(dlg, cmp) {
-    	console.log("Added");
-    	console.log(cmp);
-    	cmp.on('add',this.compAdded, this);
-    	cmp.on('dockedadd',this.compAdded, this);
-    },
-    
     /* Add sections to settings dialog */
     addSections: function(dlg) {
     	
     	Ext.suspendLayouts();
     	
-    	console.log("Adding sections");
     	var buttons = [];
     	var panels = [];
     	
@@ -61,29 +50,12 @@ Ext.define('vcube.controller.SettingsDialog', {
     		
     		dlg.sections[i].title = dlg.sections[i].label,
     		dlg.sections[i].itemId = dlg.sections[i].name;
+
     		settingsPane.add(dlg.sections[i]);
-    		//console.log("Adding section");
-    		//console.log(dlg.sections[i]);
+    		
     	}
     	
     	Ext.resumeLayouts();
-    	
-    },
-    
-    /* save settings button click */
-    saveSettings: function(btn) {
-    	
-    	var dlg = btn.up('.SettingsDialog');
-    	
-    	var vals = dlg.down('.form').getForm().getValues();
-    	
-    	console.log(vals);
-    	
-    	Ext.each(dlg.down('#settingsPane').items.items, function(pane) {
-    		pane.fireEvent('saveSettings');
-    	});
-    	
-    	dlg.fireEvent('saveSettings', dlg);
     	
     },
     

@@ -290,9 +290,9 @@ class WebSocketPlugin(plugins.SimplePlugin):
 
     def stop(self):
         cherrypy.log("Terminating WebSocket processing")
+        self.bus.unsubscribe('stop', self.cleanup)
         self.bus.unsubscribe('handle-websocket', self.handle)
         self.bus.unsubscribe('websocket-broadcast', self.broadcast)
-        self.bus.unsubscribe('stop', self.cleanup)
 
     def handle(self, ws_handler, peer_addr):
         """
@@ -307,7 +307,6 @@ class WebSocketPlugin(plugins.SimplePlugin):
         """
         Terminate all connections and clear the pool. Executed when the engine stops.
         """
-        cherrypy.log("Stopping WebSocket manager")
         self.manager.close_all()
         self.manager.stop()
         self.manager.join()

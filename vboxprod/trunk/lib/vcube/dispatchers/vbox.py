@@ -79,7 +79,6 @@ class dispatcher(dispatcher_parent):
         
         fn = os.path.basename(cherrypy.url())
         
-
         jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
         
         try:
@@ -91,7 +90,7 @@ class dispatcher(dispatcher_parent):
             
             for k in jsonResponse['data'].keys():
                 jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k])
-                
+            
                 
         except Exception as ex:
             

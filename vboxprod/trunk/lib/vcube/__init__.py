@@ -1,5 +1,5 @@
 import sys
-import json
+import json, hashlib
 import re
 from datetime import datetime
 import time
@@ -203,6 +203,12 @@ class Application(threading.Thread):
     progressOps = {}
     progressOpsLock = threading.Lock()
     progressOpsEventQueue = Queue.Queue()
+    
+    """
+        Cached query lock
+    """
+    cache = {}
+    cacheLock = SharedLock.SharedLock()
     
     def __init__(self):
 
@@ -437,6 +443,39 @@ class Application(threading.Thread):
     """
     def vboxAction(self, connector_id, action, args, user=''):
         
+        # Is this operation cachable?
+        if getattr(getattr(vboxConnector, 'remote_'+action), 'cache', False):
+            
+            cacheKey = hashlib.md5(str(connector_id)+'-'+str(action)+'-'+json.dumps(args, sort_keys=True)).hexdigest()
+            
+            # Check for cached item
+            self.cacheLock.acquire_shared()
+            
+            if self.cache.get(cacheKey, None) is not None:
+                try:
+                    response = self.cache[cacheKey]
+                finally:
+                    self.cacheLock.release_shared()
+                return response
+            
+            else:
+                
+                self.cacheLock.release_shared()
+                
+                self.cacheLock.acquire_exclusive()
+                
+                try:
+                    response = self.connectorActionPool[str(connector_id)].vboxAction(action, args)
+                    if response.get('success', False):
+                        self.cache[cacheKey] = response
+                    else:
+                        return response
+                finally:
+                    
+                    self.cacheLock.release_exclusive()
+                    
+                return self.cache[cacheKey]
+            
         # Pass-through non-loggable actions
         if not getattr(getattr(vboxConnector, 'remote_'+action), 'log', False):
             return self.connectorActionPool[str(connector_id)].vboxAction(action, args)

@@ -1836,6 +1836,9 @@ class vboxConnector(object):
         else:
             return map
         
+    # This is cachable
+    remote_vboxGetEnumerationMap.cache = True
+        
     """
      * Get definitions required to configure a virtual machine
     """
@@ -2426,6 +2429,10 @@ class vboxConnector(object):
             })
 
         return ostypes
+    
+    # This is cachable
+    remote_vboxGetGuestOSTypes.cache = True
+
 
     """
      * Set virtual machine state. Running, power off, save state, pause, etc..
@@ -4763,7 +4770,7 @@ class vboxEventListenerPool(threading.Thread):
 RPCHeartbeatInterval = 60
 class RPCRequestHandler(SocketServer.BaseRequestHandler):
 
-    sendLock = threading.Lock()
+    sendLock = None
     heartbeat = None
     file = None
     heartbeatTimer = None
@@ -4802,6 +4809,12 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
             Handle requests. Main loop
         """
         
+        if not self.sendLock:
+            self.sendLock = threading.Lock()
+        else:
+            self.sendLock.release()
+        
+        
         # Create file object from socket so that
         # we can just call readline
         self.file = self.request.makefile()
@@ -4813,16 +4826,11 @@ class RPCRequestHandler(SocketServer.BaseRequestHandler):
         service = None
         serviceObj = None
 
-    
-
             
         class heartbeatrunner(threading.Thread):
             """
                 Essentially just for keeping TCP alive.
             """
-            sendLock = None
-            request = None
-            timer = None
             running = False
             
             def __init__(self, handler):

@@ -31,12 +31,13 @@ class vboxRPCClientPool(threading.Thread):
                 
         
     def vboxAction(self, action, args):
-        
+
         for i in range(0,20):
             if not self.running: break
             for c in self.clients:
                 if c.available:
                     return c.rpcCall(action, args)
+                
             time.sleep(1)
             
         raise Exception("vboxRPCClientPool: no threads available to perform request")
@@ -74,8 +75,8 @@ class vboxRPCClient(threading.Thread):
     registerMessage = {}
     
     rpcRequestId = None
-    rpcResponse = Queue.Queue(1)
-    rpcLock = threading.Lock()
+    rpcResponse = None
+    rpcLock = None
     
     service = None
     
@@ -100,6 +101,9 @@ class vboxRPCClient(threading.Thread):
         self.setState(constants.CONNECTOR_STATES['DISCONNECTED'], '')
                 
         threading.Thread.__init__(self, name="%s-%s" %(self.__class__.__name__,id(self)))
+        
+        self.rpcResponse = Queue.Queue(1)
+        self.rpcLock = threading.Lock()
         
         
     def setState(self, state, message):
@@ -172,20 +176,28 @@ class vboxRPCClient(threading.Thread):
         """ 
             Disconnect from server
         """
-        if self.sock:
-            self.sock.close()
-        
-        if self.file:
-            try:
-                self.file._sock.close()
-            except:
-                pass
-            self.file.close()
-        
-        self.connected = False
-        self.registered = False
-        self.sock = None
-        self.file = None
+        try:
+            if self.sock:
+                try:
+                    self.sock.close()
+                except:
+                    pass
+            
+            if self.file:
+                try:
+                    self.file._sock.close()
+                except:
+                    pass
+                try:
+                    self.file.close()
+                except:
+                    pass
+
+        finally:       
+            self.connected = False
+            self.registered = False
+            self.sock = None
+            self.file = None
     
     
     def stop(self):
@@ -221,7 +233,6 @@ class vboxRPCClient(threading.Thread):
         self.rpcLock.acquire(True)
         response = None
         
-        startTime = time.time()
         try:
             if self.rpcRequestId:
                 raise Exception("RPC request already in progress")
@@ -238,7 +249,6 @@ class vboxRPCClient(threading.Thread):
             self.sock.sendall(json.dumps(sendMsg) + "\n")
             try:
                 response = self.rpcResponse.get(True, timeout)
-                print "rpcCall %s took %s seconds" %(call, (time.time()-startTime))
                 self.rpcResponse.task_done()
             except:
                 raise Exception("Request timed out: %s", json.dumps(sendMsg))

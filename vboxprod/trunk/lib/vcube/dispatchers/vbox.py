@@ -1,10 +1,11 @@
 import os
-import vcube
+import copy
 import json, base64
 import traceback, time
-from vcube.dispatchers import dispatcher_parent, jsonin, jsonout
-from vcube.models import Connector
 import pprint, cherrypy
+import vcube
+from vcube.dispatchers import dispatcher_parent, jsonin, jsonout, jsonResponseTemplate
+from vcube.models import Connector
 
 class dispatcher(dispatcher_parent):
     
@@ -79,7 +80,9 @@ class dispatcher(dispatcher_parent):
         
         fn = os.path.basename(cherrypy.url())
         
-        jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
+        jsonResponse = copy.deepcopy(jsonResponseTemplate)
+        
+        startTime = time.time()
         
         try:
             
@@ -88,14 +91,14 @@ class dispatcher(dispatcher_parent):
             
             response = vcube.getInstance().vboxAction(kwargs['connector'], fn, kwargs, cherrypy.session.get('user',{}).get('username','Unknown'))
             
-            for k in jsonResponse['data'].keys():
-                jsonResponse['data'][k] = response.get(k,jsonResponse['data'][k])
-            
+            jsonResponse['data'].update(response)
                 
         except Exception as ex:
             
             e = {'details': traceback.format_exc(), 'error': '%s' %(str(ex),) }
             jsonResponse['data']['errors'].append(e)
+            
+        jsonResponse['data']['messages'].append("vboxAction %s took %s seconds" %(fn, time.time() - startTime))
 
         if kwargs.get('_dispatcher_pprint', None):
             return pprint.pformat(jsonResponse)

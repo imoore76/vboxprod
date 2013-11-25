@@ -15,6 +15,7 @@ Ext.define('vcube.data.proxy.Ajax', {
     		},
     	},
     	type: 'ajax',
+    	noCache: false,
     	reader: {
     		type: 'vcube.data.reader.Json'
     	}    	

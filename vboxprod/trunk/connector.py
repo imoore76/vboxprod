@@ -1838,6 +1838,7 @@ class vboxConnector(object):
         
     # This is cachable
     remote_vboxGetEnumerationMap.cache = True
+    remote_vboxGetEnumerationMap.cacheArgs = ['class','ValueMap','KeysOnly']
         
     """
      * Get definitions required to configure a virtual machine
@@ -2432,6 +2433,8 @@ class vboxConnector(object):
     
     # This is cachable
     remote_vboxGetGuestOSTypes.cache = True
+    remote_vboxGetGuestOSTypes.cacheArgs = []
+    
 
 
     """
@@ -4251,6 +4254,11 @@ class vboxConnector(object):
 
         if m is None: return None
         
+        # Does this medium need to be refreshed?
+        if m.state == vboxMgr.constants.MediumState_Inaccessible and (not m.lastAccessError or m.lastAccessError.find('not yet performed') > -1):
+            m.refreshState()
+            
+
         variant = 0;
         for v in vboxGetArray(m, 'variant'):
             variant += v

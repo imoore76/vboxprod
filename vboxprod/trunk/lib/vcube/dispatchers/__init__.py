@@ -1,6 +1,7 @@
 
 import json, cherrypy, traceback, pprint
 import datetime
+import copy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ def jsonout(func):
         if kwargs.get('_jsonout_raw') == True:
             return func(*args, **kwargs)
         
-        jsonResponse = {'data':{'success':False,'errors':[],'messages':[],'responseData':None}}
+        jsonResponse = copy.deepcopy(jsonResponseTemplate)
 
         try:
             

@@ -1,4 +1,5 @@
 import sys
+import copy
 import json, hashlib
 import re
 from datetime import datetime
@@ -165,12 +166,6 @@ class Application(threading.Thread):
     connectorActionPool = {}
 
     """
-        dict by connector id of actions waiting
-        to be performed
-    """
-    connectorActionQueues = {}
-    
-    """
         Lock for manipulating connector list
     """
     connectorsLock = threading.Lock()
@@ -178,7 +173,7 @@ class Application(threading.Thread):
     """
         Max threads per connector
     """
-    connectorThreads = 5
+    connectorThreads = 10
 
     """
         Event handlers - callbacks to call when we emit
@@ -446,17 +441,18 @@ class Application(threading.Thread):
         # Is this operation cachable?
         if getattr(getattr(vboxConnector, 'remote_'+action), 'cache', False):
             
-            cacheKey = hashlib.md5(str(connector_id)+'-'+str(action)+'-'+json.dumps(args, sort_keys=True)).hexdigest()
+            cacheArgs = json.dumps([args.get(arg, '') for arg in getattr(getattr(vboxConnector, 'remote_'+action), 'cacheArgs', [])])
+            
+            cacheKey = hashlib.md5(str(connector_id)+'-'+str(action)+'-'+cacheArgs).hexdigest()
             
             # Check for cached item
             self.cacheLock.acquire_shared()
             
             if self.cache.get(cacheKey, None) is not None:
                 try:
-                    response = self.cache[cacheKey]
+                    return {'responseData':copy.deepcopy(self.cache[cacheKey].get('response')), 'success': True}
                 finally:
                     self.cacheLock.release_shared()
-                return response
             
             else:
                 
@@ -467,14 +463,14 @@ class Application(threading.Thread):
                 try:
                     response = self.connectorActionPool[str(connector_id)].vboxAction(action, args)
                     if response.get('success', False):
-                        self.cache[cacheKey] = response
+                        self.cache[cacheKey] = {'response':copy.deepcopy(response['responseData']),'connector':str(connector_id)}
                     else:
                         return response
                 finally:
                     
                     self.cacheLock.release_exclusive()
                     
-                return self.cache[cacheKey]
+                return {'responseData':copy.deepcopy(response['responseData']), 'success': True}
             
         # Pass-through non-loggable actions
         if not getattr(getattr(vboxConnector, 'remote_'+action), 'log', False):
@@ -635,6 +631,8 @@ class Application(threading.Thread):
             else:
                 """ Not running """
                 
+                
+                """ Remove virtual machines """
                 self.virtualMachinesLock.acquire()
                 vmListRemoved = []
                 try:
@@ -656,6 +654,17 @@ class Application(threading.Thread):
                                             
                 finally:
                     self.virtualMachinesLock.release()
+                    
+                
+                """ Remove cached items """
+                self.cacheLock.acquire_exclusive()
+                try:
+                    keys = self.cache.keys()
+                    for k in keys:
+                        if str(self.cache.get(k,{}).get('connector','')) == str(event['connector_id']):
+                            del self.cache[k]
+                finally:
+                    self.cacheLock.release_exclusive()
             
         elif event['eventType'] == 'MachineRegistered':
             """

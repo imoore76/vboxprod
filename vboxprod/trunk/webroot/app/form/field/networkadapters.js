@@ -198,7 +198,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				editor: {
     					xtype: 'textfield',
     					validator: function(ip) {
-    	    				if(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return true;
+    						if(/^[1-9][0-9]{0,2}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return true;
     	    				return 'Must be a numeric IP address';
     	    			},
     	    			maskRe: /[\d\.]/
@@ -220,7 +220,7 @@ Ext.define('vcube.form.field.networkadapters', {
     				editor: {
     					xtype: 'textfield',
     					validator: function(ip) {
-    	    				if(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return true;
+    	    				if(/^[1-9][0-9]{0,2}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) return true;
     	    				return 'Must be a numeric IP address';
     	    			},
     	    			maskRe: /[\d\.]/

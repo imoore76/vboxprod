@@ -1045,7 +1045,7 @@ Ext.define('vcube.utils', {
 				configurablePortCount: true,
 				ignoreFlush : true,
 				types : ['IntelAhci'],
-				driveTypes : ['DVD','HardDisk'],
+				driveTypes : ['HardDisk','DVD'],
 				slotName : function(p,d) { return vcube.utils.trans('SATA Port %1','VBoxGlobal').replace('%1',p); },
 				slots : function() {
 					var s = {};
@@ -1059,7 +1059,7 @@ Ext.define('vcube.utils', {
 			SCSI : {
 				maxPortCount : 16,
 				maxDevicesPerPortCount : 1,
-				driveTypes : ['HardDisk'],
+				driveTypes : ['HardDisk','DVD'],
 				types : ['LsiLogic','BusLogic'],
 				ignoreFlush : true,
 				slotName : function(p,d) { return vcube.utils.trans('SCSI Port %1','VBoxGlobal').replace('%1',p); },
@@ -1075,7 +1075,7 @@ Ext.define('vcube.utils', {
 				maxPortCount : 8,
 				maxDevicesPerPortCount : 1,
 				types : ['LsiLogicSas'],
-				driveTypes : ['HardDisk'],
+				driveTypes : ['HardDisk','DVD'],
 				slotName : function(p,d) { return vcube.utils.trans('SAS Port %1','VBoxGlobal').replace('%1',p); },
 				slots : function() {
 					var s = {};
@@ -1217,6 +1217,8 @@ Ext.define('vcube.utils', {
 			case "OS2Warp45":       strIcon = "os_os2warp45.png"; break;
 			case "OS2eCS":          strIcon = "os_os2ecs.png"; break;
 			case "OS2":             strIcon = "os_os2_other.png"; break;
+			case "Linux_64":
+			case "Linux":           strIcon = "os_linux_other.png"; break;
 			case "Linux22":         strIcon = "os_linux22.png"; break;
 			case "Linux24":         strIcon = "os_linux24.png"; break;
 			case "Linux24_64":      strIcon = "os_linux24_64.png"; break;
@@ -1242,7 +1244,6 @@ Ext.define('vcube.utils', {
 			case "Ubuntu_64":       strIcon = "os_ubuntu_64.png"; break;
 			case "Xandros":         strIcon = "os_xandros.png"; break;
 			case "Xandros_64":      strIcon = "os_xandros_64.png"; break;
-			case "Linux":           strIcon = "os_linux_other.png"; break;
 			case "FreeBSD":         strIcon = "os_freebsd.png"; break;
 			case "FreeBSD_64":      strIcon = "os_freebsd_64.png"; break;
 			case "OpenBSD":         strIcon = "os_openbsd.png"; break;

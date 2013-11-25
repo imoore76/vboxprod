@@ -32,13 +32,19 @@ class vboxRPCClientPool(threading.Thread):
         
     def vboxAction(self, action, args):
 
+        startTime = time.time()
+        
+        a = 0
         for i in range(0,20):
             if not self.running: break
             for c in self.clients:
-                if c.available:
-                    return c.rpcCall(action, args)
+                if c.isAvailable():
+                    response = c.rpcCall(action, args)
+                    response['messages'].append("vboxClientPool(%s - %s) %s took %s seconds" %(a, len(self.clients), action, time.time()-startTime))
+                    return response.copy()
+                a = a + 1
                 
-            time.sleep(1)
+            time.sleep(0.2)
             
         raise Exception("vboxRPCClientPool: no threads available to perform request")
                 
@@ -211,9 +217,8 @@ class vboxRPCClient(threading.Thread):
         
         self.setState(constants.CONNECTOR_STATES['DISCONNECTED'], '')
 
-    @property
-    def available(self):
-        return (self.running and self.connected and self.registered and not self.listening and not self.rpcRequestId)
+    def isAvailable(self):
+        return (self.running and self.connected and self.registered and not self.listening and not self.rpcLock.locked() and not self.rpcRequestId)
     
     def genRPCCallMsg(self, call, args, rpcRequestId=''):
         

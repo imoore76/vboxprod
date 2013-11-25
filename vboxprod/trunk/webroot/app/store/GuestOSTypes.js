@@ -5,6 +5,7 @@ Ext.define('vcube.store.GuestOSTypes',{
 	proxy: {
 		type: 'vcubeAjax',
 		url: 'vbox/vboxGetGuestOSTypes',
+		noCache: false,
     	reader: {
     		type: 'vcubeJsonReader'
     	}

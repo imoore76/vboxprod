@@ -35,6 +35,7 @@ Ext.define('vcube.data.ServerComboStore',{
 	
 	proxy: {
 		type: 'vcubeAjax',
+		noCache: false,
 		extraParams: {},
     	reader: {
     		type: 'vcubeJsonReader'

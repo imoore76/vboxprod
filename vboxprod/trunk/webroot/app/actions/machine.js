@@ -215,7 +215,10 @@ Ext.define('vcube.actions.machine',{
 				var vmdata = selectionModel.getSelection()[0].getData();
 				
 				var sd = Ext.create('vcube.view.VMSettingsDialog',{
-					serverId : vcube.storemanager.getStoreRecord('vm',vmdata.id).get('connector_id')
+					serverId : vcube.storemanager.getStoreRecord('vm',vmdata.id).get('connector_id'),
+					getFormData: function() {
+						return vcube.vmdatamediator.getVMDetails(vmdata.id);
+					}
 				});				
 				sd.setTitle(Ext.String.format(sd.title, vmdata.name));
 				
@@ -228,15 +231,6 @@ Ext.define('vcube.actions.machine',{
 				});
 				
 				sd.show();
-				
-				sd.setLoading(true);
-				
-				Ext.ux.Deferred.when(vcube.vmdatamediator.getVMDetails(vmdata.id)).done(function(data) {
-					sd.down('.form').getForm().setValues(data);
-					sd._data = data;
-				}).always(function(){
-					sd.setLoading(false);
-				});
 				
 			},
 			enabled_test: function (selectionModel) {

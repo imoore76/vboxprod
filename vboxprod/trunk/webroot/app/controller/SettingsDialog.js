@@ -9,10 +9,7 @@ Ext.define('vcube.controller.SettingsDialog', {
     	this.control({
     		
     		'SettingsDialog' : {
-    			show: function(dlg) {
-    				dlg.down('#linklist').items.items[0].toggle(true);
-    			},
-    			beforerender: this.addSections
+    			show: this.onShow
     		},
     		
     		'SettingsDialog #cancel' : {
@@ -28,34 +25,53 @@ Ext.define('vcube.controller.SettingsDialog', {
     	
     },
     
-    /* Add sections to settings dialog */
-    addSections: function(dlg) {
+    /* when dialog is shown */
+    onShow: function(dlg) {
     	
-    	Ext.suspendLayouts();
-    	
-    	var buttons = [];
-    	var panels = [];
+    	dlg.setLoading(true);
     	
     	var linkList = dlg.down('#linklist');
     	var settingsPane = dlg.down('#settingsPane');
     	
-    	for(var i = 0; i < dlg.sections.length; i++) {
+    	/* Add sections and get data to be loaded */
+    	Ext.suspendLayouts();
+    	
+    	Ext.ux.Deferred.when(vcube.utils.ajaxRequest(dlg.dialogDataURL,{connector:dlg.serverId})).done(function(data) {
     		
+    		var sections = dlg.getSections(data);
     		
-    		linkList.add({
-    			text: dlg.sections[i].label,
-    			icon: 'images/vbox/' + dlg.sections[i].image + '_16px.png',
-    			itemId : dlg.sections[i].name
+    		for(var i = 0; i < sections.length; i++) {
+    			
+    			
+    			linkList.add({
+    				text: sections[i].label,
+    				icon: 'images/vbox/' + sections[i].image + '_16px.png',
+    				itemId : sections[i].name
+    			});
+    			
+    			sections[i].title = sections[i].label,
+    			sections[i].itemId = sections[i].name;
+    			
+    			settingsPane.add(sections[i]);
+    			
+    		}
+    		
+    		dlg.down('#linklist').items.items[0].toggle(true);
+
+    		Ext.resumeLayouts();
+    		
+    		Ext.ux.Deferred.when(dlg.getFormData()).done(function(frmData) {
+    			dlg.down('.form').getForm().setValues(frmData);
+    			dlg.setLoading(false);    			
+    		}).fail(function(){
+    			dlg.setLoading(false);
     		});
     		
-    		dlg.sections[i].title = dlg.sections[i].label,
-    		dlg.sections[i].itemId = dlg.sections[i].name;
-
-    		settingsPane.add(dlg.sections[i]);
-    		
-    	}
+    	}).fail(function() {
+    		dlg.setLoading(false);
+    		Ext.resumeLayouts();
+    	});
     	
-    	Ext.resumeLayouts();
     	
     },
     

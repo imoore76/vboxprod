@@ -295,7 +295,11 @@ Ext.define('vcube.form.field.usbfilters', {
 			    							usbdata: devs[i],
 			    							listeners: {
 			    								click: function(item) {
-			    									console.log(item);
+			    									
+			    									// Correct "remote" on some platforms
+			    									if(item.usbdata.remote == false) item.usbdata.remote = '0';
+			    									else if(item.usbdata.remote == true) item.usbdata.remote = '1';
+			    									
 			    									self.grid.getStore().add(Ext.apply({},{
 			    										id: 'usb-filter-'+Ext.id(),
 			    										name: item.text,
